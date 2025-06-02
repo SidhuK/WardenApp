@@ -1,0 +1,93 @@
+name: ❓ Question
+description: Ask a question about Warden
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using Warden? We're here to help!
+
+        **Before asking**: Please check the README for basic information about features and setup.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm these before submitting
+      options:
+        - label: I have read the README for basic information
+          required: true
+        - label: I have searched existing issues to see if my question has been answered
+          required: true
+
+  - type: dropdown
+    id: question-category
+    attributes:
+      label: Question Category
+      description: What is your question about?
+      options:
+        - General Usage - How to use features
+        - AI Providers - Setting up or using specific AI services
+        - Assistants & Prompts - Custom assistants and system prompts
+        - Import/Export - Managing conversations and data
+        - Performance - App speed, memory usage, optimization
+        - Privacy & Security - Data handling, local storage
+        - Compatibility - macOS versions, system requirements
+        - Comparison - How Warden compares to other apps
+        - Roadmap & Future - Upcoming features and plans
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Please be as specific as possible with your question
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any additional context that might help us answer your question?
+      placeholder: |
+        - What are you trying to accomplish?
+        - What have you already tried?
+        - Any specific use case or workflow?
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Warden Version (if applicable)
+      description: What version of Warden are you using?
+      placeholder: "e.g., v1.2.3 (only if relevant to your question)"
+
+  - type: dropdown
+    id: macos-version
+    attributes:
+      label: macOS Version (if applicable)
+      description: What version of macOS are you running?
+      options:
+        - Not applicable to my question
+        - macOS 15 (Sequoia)
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - macOS 12 (Monterey)
+        - macOS 11 (Big Sur)
+        - Other
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else that might be relevant?
+      placeholder: |
+        - Screenshots or examples
+        - Specific AI providers you're asking about
+        - Any error messages or unexpected behavior
+        - Links to relevant documentation you've already read

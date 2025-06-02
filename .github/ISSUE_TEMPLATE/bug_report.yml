@@ -1,0 +1,169 @@
+name: 🐛 Bug Report
+description: Report a bug in Warden
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm these before submitting
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported already
+          required: true
+        - label: I have checked the latest release to see if this issue has been fixed
+          required: true
+        - label: I understand this is my first Swift app (as mentioned by the developer) and will be patient with bug fixes
+          required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Warden Version
+      description: What version of Warden are you using?
+      placeholder: "e.g., v1.2.3 (from About menu or GitHub release)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: macos-version
+    attributes:
+      label: macOS Version
+      description: What version of macOS are you running?
+      options:
+        - macOS 15 (Sequoia)
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - macOS 12 (Monterey)
+        - macOS 11 (Big Sur)
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-provider
+    attributes:
+      label: AI Provider
+      description: Which AI provider were you using when the bug occurred?
+      options:
+        - OpenAI (ChatGPT)
+        - Anthropic (Claude)
+        - xAI (Grok)
+        - Google Gemini
+        - Perplexity
+        - Groq
+        - Ollama (Local)
+        - OpenRouter
+        - Deepseek
+        - Custom OpenAI-compatible API
+        - Not applicable
+        - Multiple providers
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe what happened and what you expected to happen instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Type '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: A clear description of what you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: A clear description of what actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Screen Recordings
+      description: If applicable, add screenshots or screen recordings to help explain your problem
+      placeholder: Drag and drop images or paste them here
+
+  - type: textarea
+    id: console-logs
+    attributes:
+      label: Console Logs (if applicable)
+      description: |
+        If you're experiencing crashes or errors, please check Console.app for any Warden-related error messages.
+        1. Open Console.app
+        2. Search for "Warden" in the search bar
+        3. Look for any error messages around the time the bug occurred
+      placeholder: Paste any relevant console logs here
+      render: shell
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      description: How often does this bug occur?
+      options:
+        - Always (100% of the time)
+        - Often (50-99% of the time)
+        - Sometimes (10-49% of the time)
+        - Rarely (less than 10% of the time)
+        - Only once
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any way to work around this issue?
+      placeholder: Describe any temporary solutions you've found
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: |
+        - Was this working in a previous version?
+        - Any specific settings or configurations that might be relevant?
+        - Other apps or system configurations that might interfere?
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      description: How does this bug affect you?
+      options:
+        - label: Prevents me from using the app entirely
+        - label: Significantly impacts my workflow
+        - label: Minor inconvenience
+        - label: Cosmetic issue only

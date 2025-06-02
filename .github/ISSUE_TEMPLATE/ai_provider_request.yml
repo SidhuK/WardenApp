@@ -1,0 +1,189 @@
+name: 🤖 AI Provider Request
+description: Request support for a new AI provider/service
+title: "[AI Provider]: "
+labels: ["ai-provider", "enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new AI provider! This template helps gather the necessary information for integrating new AI services into Warden.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm these before submitting
+      options:
+        - label: I have searched existing issues to ensure this provider hasn't been requested already
+          required: true
+        - label: I have checked the current supported providers list in the README
+          required: true
+        - label: This provider offers a public API for developers
+          required: true
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: AI Provider Name
+      description: What is the name of the AI provider/service?
+      placeholder: "e.g., Cohere, Mistral AI, Replicate, etc."
+    validations:
+      required: true
+
+  - type: input
+    id: provider-website
+    attributes:
+      label: Provider Website
+      description: What is the official website of the provider?
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: input
+    id: api-documentation
+    attributes:
+      label: API Documentation
+      description: Link to the provider's API documentation
+      placeholder: "https://docs.provider.com/api"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-compatibility
+    attributes:
+      label: API Compatibility
+      description: Is this provider's API compatible with OpenAI's format?
+      options:
+        - "Yes - OpenAI-compatible API"
+        - "Partially - Similar but requires modifications"
+        - "No - Custom API format"
+        - "Unknown - Need to investigate"
+    validations:
+      required: true
+
+  - type: textarea
+    id: supported-models
+    attributes:
+      label: Supported Models
+      description: What AI models does this provider offer?
+      placeholder: |
+        List the main models available, e.g.:
+        - gpt-4o (text + vision)
+        - gpt-4o-mini (text only)
+        - claude-3-sonnet (text + vision)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: capabilities
+    attributes:
+      label: Provider Capabilities
+      description: What capabilities does this provider support?
+      options:
+        - label: Text generation
+        - label: Image understanding/vision
+        - label: Code generation
+        - label: Function calling/tools
+        - label: Streaming responses
+        - label: System prompts/roles
+        - label: Temperature/parameter control
+        - label: Token usage reporting
+        - label: Rate limiting information
+
+  - type: dropdown
+    id: pricing-model
+    attributes:
+      label: Pricing Model
+      description: How does this provider charge for API usage?
+      options:
+        - "Pay-per-token (like OpenAI)"
+        - "Subscription-based"
+        - "Free tier with limits"
+        - "Credits/points system"
+        - "Other (explain in additional context)"
+        - "Free/Open source"
+    validations:
+      required: true
+
+  - type: textarea
+    id: authentication
+    attributes:
+      label: Authentication Method
+      description: How does authentication work for this provider's API?
+      placeholder: |
+        e.g.:
+        - API key in header (Authorization: Bearer xxx)
+        - API key in query parameter
+        - OAuth 2.0
+        - Custom authentication
+    validations:
+      required: true
+
+  - type: textarea
+    id: unique-features
+    attributes:
+      label: Unique Features
+      description: What makes this provider special or different from existing ones?
+      placeholder: |
+        - Specialized in certain domains (code, creative writing, etc.)
+        - Unique model capabilities
+        - Better pricing
+        - Privacy features
+        - Local deployment options
+
+  - type: dropdown
+    id: request-priority
+    attributes:
+      label: Request Priority
+      description: How important is this provider to you?
+      options:
+        - "High - I would switch to Warden primarily for this provider"
+        - "Medium - It would significantly improve my workflow"
+        - "Low - Nice to have for completeness"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Your Use Case
+      description: How would you use this provider? What makes it better for your needs?
+      placeholder: |
+        - What tasks would you use this provider for?
+        - Why is this provider better than current options for your use case?
+        - How often would you use it?
+
+  - type: textarea
+    id: api-examples
+    attributes:
+      label: API Examples
+      description: If you have experience with this provider's API, please share example requests/responses
+      placeholder: |
+        ```
+        curl example or code snippet showing how the API works
+        ```
+      render: shell
+
+  - type: textarea
+    id: integration-challenges
+    attributes:
+      label: Potential Integration Challenges
+      description: Are there any known limitations or challenges with this provider's API?
+      placeholder: |
+        - Rate limiting specifics
+        - API quirks or limitations
+        - Authentication complexities
+        - Regional availability
+        - Beta/experimental status
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about this provider?
+      placeholder: |
+        - Company background
+        - Community adoption
+        - Integration examples in other apps
+        - Any other relevant details

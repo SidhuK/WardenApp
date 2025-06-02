@@ -1,0 +1,183 @@
+name: 🔧 Installation & Setup Help
+description: Get help with installing or setting up Warden
+title: "[Installation]: "
+labels: ["installation", "help-wanted", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Having trouble installing or setting up Warden? This template will help us assist you better.
+
+        **Before submitting**: Please try the troubleshooting steps in the README first.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm these before submitting
+      options:
+        - label: I have read the installation instructions in the README
+          required: true
+        - label: I have tried the basic troubleshooting steps (right-click + Open, checking Security settings)
+          required: true
+        - label: I understand this app is not signed/notarized by Apple Developer accounts
+          required: true
+
+  - type: dropdown
+    id: macos-version
+    attributes:
+      label: macOS Version
+      description: What version of macOS are you running?
+      options:
+        - macOS 15 (Sequoia)
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - macOS 12 (Monterey)
+        - macOS 11 (Big Sur)
+        - macOS 10.15 (Catalina) or older
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mac-model
+    attributes:
+      label: Mac Model
+      description: What type of Mac are you using?
+      options:
+        - MacBook Air (Apple Silicon - M1/M2/M3)
+        - MacBook Pro (Apple Silicon - M1/M2/M3)
+        - iMac (Apple Silicon - M1/M2/M3)
+        - Mac Studio (Apple Silicon)
+        - Mac Pro (Apple Silicon)
+        - MacBook Air (Intel)
+        - MacBook Pro (Intel)
+        - iMac (Intel)
+        - Mac Pro (Intel)
+        - Mac mini (Apple Silicon)
+        - Mac mini (Intel)
+        - Other/Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: download-source
+    attributes:
+      label: Download Source
+      description: Where did you download Warden from?
+      options:
+        - GitHub Releases
+        - Gumroad
+        - Other (please specify)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of installation issue are you experiencing?
+      options:
+        - Cannot open the app (security warning)
+        - App crashes immediately on launch
+        - App appears damaged/corrupted
+        - Cannot download or extract the file
+        - App won't move to Applications folder
+        - App opens but won't connect to AI providers
+        - App opens but missing features
+        - Other issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-message
+    attributes:
+      label: Error Message
+      description: What exact error message are you seeing?
+      placeholder: Copy and paste the exact error message, including any error codes
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-taken
+    attributes:
+      label: Steps Already Tried
+      description: What troubleshooting steps have you already attempted?
+      placeholder: |
+        e.g.:
+        - Right-clicked and selected "Open"
+        - Checked System Preferences > Security & Privacy
+        - Tried moving to Applications folder
+        - Redownloaded the app
+        - Ran: sudo spctl --master-disable
+    validations:
+      required: true
+
+  - type: textarea
+    id: detailed-description
+    attributes:
+      label: Detailed Description
+      description: Describe exactly what happens when you try to install or run Warden
+      placeholder: |
+        Please provide a step-by-step description:
+        1. I downloaded the app from...
+        2. When I try to open it...
+        3. The system shows...
+        4. I tried...
+        5. Then...
+    validations:
+      required: true
+
+  - type: textarea
+    id: console-logs
+    attributes:
+      label: Console Logs
+      description: |
+        Please check Console.app for any error messages related to Warden:
+        1. Open Console.app
+        2. Search for "Warden" in the search bar
+        3. Look for any error messages when trying to launch the app
+      placeholder: Paste any relevant console logs here
+      render: shell
+
+  - type: checkboxes
+    id: security-settings
+    attributes:
+      label: Security Settings Checked
+      description: Have you verified these security settings?
+      options:
+        - label: System Preferences > Security & Privacy > General shows "Allow apps downloaded from App Store and identified developers"
+        - label: I have tried right-clicking the app and selecting "Open" (not double-clicking)
+        - label: I have checked for any security prompts that appeared and dismissed them
+        - label: I have tried running "sudo spctl --master-disable" in Terminal (if comfortable with this)
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, please attach screenshots of any error dialogs or security warnings
+      placeholder: Drag and drop images here
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgent is this for you?
+      options:
+        - Low - I can wait for a solution
+        - Medium - I'd like to use the app soon
+        - High - I need this working for my workflow
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information?
+      placeholder: |
+        - Other similar apps that work/don't work
+        - Recent macOS updates
+        - Company/enterprise Mac with special restrictions
+        - Previous versions of Warden that worked
+        - Any other security software installed

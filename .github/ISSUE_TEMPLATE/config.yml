@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Twitter/X Support
+    url: https://x.com/karat_sidhu
+    about: For quick questions or community discussion, reach out on Twitter/X
+  - name: ☕ Support Development
+    url: https://www.buymeacoffee.com/karat
+    about: Buy me a coffee to support continued development of Warden
+  - name: 💰 Gumroad Page
+    url: https://karatsidhu.gumroad.com/l/warden
+    about: Download Warden or support development through Gumroad
+  - name: 📖 README & Documentation
+    url: https://github.com/SidhuK/WardenApp/blob/main/README.md
+    about: Check the README for installation instructions, features, and basic troubleshooting

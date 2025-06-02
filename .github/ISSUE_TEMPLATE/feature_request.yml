@@ -1,0 +1,157 @@
+name: ✨ Feature Request
+description: Suggest a new feature for Warden
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please check the roadmap in the README first to see if your feature is already planned.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm these before submitting
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested already
+          required: true
+        - label: I have checked the roadmap in the README to see if this feature is already planned
+          required: true
+        - label: I understand this is developed in spare time and features may take time to implement
+          required: true
+
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - AI Provider Support (new AI service)
+        - Chat Features (conversation management, UI improvements)
+        - Assistants & Prompts (custom assistants, system prompts)
+        - Import/Export (data management)
+        - macOS Integration (shortcuts, notifications, etc.)
+        - Performance & Memory
+        - Privacy & Security
+        - UI/UX Enhancement
+        - Developer Tools & API
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-summary
+    attributes:
+      label: Feature Summary
+      description: A brief, clear description of the feature you'd like to see
+      placeholder: "As a user, I would like to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What use case does it address?
+      placeholder: |
+        - What challenge are you facing that this feature would solve?
+        - How does this improve the user experience?
+        - What workflow would this enable or improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your ideal solution in detail
+      placeholder: |
+        - How should this feature work?
+        - What should the user interface look like?
+        - How should it integrate with existing features?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative approaches or workarounds?
+      placeholder: |
+        - Are there other ways to solve this problem?
+        - Have you tried any workarounds?
+        - How do other similar apps handle this?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to your workflow?
+      options:
+        - Critical - Can't use the app effectively without it
+        - High - Would significantly improve my experience
+        - Medium - Would be nice to have
+        - Low - Minor improvement
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: user-type
+    attributes:
+      label: User Type
+      description: Which type of user would benefit from this feature?
+      options:
+        - label: Casual users (occasional AI chat)
+        - label: Power users (frequent AI interactions)
+        - label: Developers (coding assistance)
+        - label: Researchers/Students (academic work)
+        - label: Content creators (writing, creative work)
+        - label: Business users (professional communication)
+        - label: Privacy-conscious users
+        - label: Local LLM users (Ollama)
+
+  - type: textarea
+    id: technical-considerations
+    attributes:
+      label: Technical Considerations
+      description: Any technical aspects or constraints to consider?
+      placeholder: |
+        - API limitations or requirements
+        - Performance considerations
+        - Privacy implications
+        - macOS version requirements
+        - Integration complexity
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or References
+      description: Any examples from other apps, mockups, or references that illustrate your idea?
+      placeholder: |
+        - Screenshots or mockups
+        - Links to similar features in other apps
+        - Examples of how this works elsewhere
+
+  - type: dropdown
+    id: implementation-complexity
+    attributes:
+      label: Estimated Implementation Complexity
+      description: How complex do you think this feature would be to implement? (This helps with prioritization)
+      options:
+        - Simple - Minor UI change or setting
+        - Moderate - New feature with some complexity
+        - Complex - Major feature requiring significant work
+        - Very Complex - Fundamental change to app architecture
+        - Unknown - Not sure about technical complexity
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else you'd like to add?
+      placeholder: |
+        - Related features that could be built together
+        - Long-term vision for how this fits into Warden
+        - Any other relevant information
