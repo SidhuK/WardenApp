@@ -1,0 +1,195 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Warden Development Guidelines
+
+Warden is a native macOS AI chat client built with SwiftUI that supports multiple AI providers. This project was originally based on macai by Renset and is maintained by **Karat Sidhu**.
+
+## Project Identity
+
+- **App Name**: Warden (internally referenced as macai in some legacy code)
+- **Creator**: Karat Sidhu
+- **Platform**: macOS 13.0+ (Universal Binary - Intel & Apple Silicon)
+- **Framework**: SwiftUI with Core Data persistence
+- **Architecture**: MVVM pattern with ObservableObject view models
+- **License**: Apache 2.0
+- **Support**: buymeacoffee.com/karatsidhu
+
+## Core Architecture Patterns
+
+### File Organization
+- **Main App**: [WardenApp.swift](mdc:Warden/WardenApp.swift) - App entry point with Core Data setup
+- **Models**: [Warden/Models/](mdc:Warden/Models) - Data models and transformers
+- **UI Components**: [Warden/UI/](mdc:Warden/UI) - Feature-based UI organization
+- **API Handlers**: [Warden/Utilities/APIHandlers/](mdc:Warden/Utilities/APIHandlers) - AI provider integrations
+- **Configuration**: [Warden/Configuration/AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - App-wide constants
+- **Data Store**: [Warden/Store/ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data management
+
+### SwiftUI Development Patterns
+- Use `@StateObject` for view model lifecycle management
+- Use `@ObservedObject` for shared view models passed between views
+- Use `@EnvironmentObject` for app-wide state like ChatStore
+- Use `@AppStorage` for user preferences and settings
+- All views should include SwiftUI previews with [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift)
+- Follow MVVM architecture with lightweight views
+
+### Data Management Philosophy
+- **Single Source of Truth**: All Core Data operations go through [ChatStore.swift](mdc:Warden/Store/ChatStore.swift)
+- **Privacy First**: 100% local data storage, no cloud synchronization
+- **Zero Telemetry**: No data collection or usage tracking
+- **Background Processing**: Heavy operations performed on background queues
+
+## AI Provider Integration
+
+### Supported Providers
+- OpenAI ChatGPT (including o1 reasoning models)
+- Anthropic Claude
+- Google Gemini
+- xAI Grok
+- Perplexity
+- OpenRouter (50+ models)
+- Ollama (local LLMs)
+- Mistral
+- Deepseek
+- Any OpenAI-compatible API
+
+### API Handler Implementation
+- All handlers implement [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift)
+- Use [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift) for handler creation
+- Implement streaming responses for real-time interaction
+- Include graceful error handling and user feedback
+- Secure API key storage and handling (never log API keys)
+
+## UI Development Guidelines
+
+### Component Organization
+- **Feature-based structure**: Chat, ChatList, Preferences, WelcomeScreen
+- **Reusable components**: [Warden/UI/Components/](mdc:Warden/UI/Components)
+- **Modular design**: Each feature has its own directory with related views
+
+### Naming Conventions
+- **Views**: PascalCase ending with "View" (e.g., `ChatListView`)
+- **View Models**: PascalCase ending with "ViewModel" or "Store"
+- **Properties**: camelCase with descriptive names
+- **Methods**: camelCase starting with verbs
+
+### Design Principles
+- Support both light and dark themes automatically
+- Use native macOS design patterns and SF Symbols
+- Maintain consistent spacing and typography
+- Optimize for both Intel and Apple Silicon Macs
+
+## Key Features Implementation
+
+### AI Personas System
+- Customizable system instructions per persona
+- Temperature settings for creativity control
+- Default personas defined in [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift)
+- Per-chat persona override capability
+
+### Message Handling
+- Real-time streaming responses via [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift)
+- Syntax highlighting for code blocks
+- LaTeX equation rendering
+- HTML/CSS/JavaScript preview via [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift)
+- Image upload support for compatible models
+
+### Search and Indexing
+- Spotlight integration via [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift)
+- Fast search across all chats and messages
+- Automatic indexing of new content
+
+## Development Best Practices
+
+### Code Quality Standards
+- Follow Swift naming conventions and [.swift-format](mdc:Warden/.swift-format) configuration
+- Include comprehensive error handling
+- Write unit tests for new features in [WardenTests/](mdc:WardenTests)
+- Use meaningful commit messages
+
+### Performance Optimization
+- Use LazyVStack/LazyHStack for large lists
+- Optimize image loading and caching
+- Minimize view redraws through efficient state management
+- Background processing for API calls and heavy operations
+
+### Security and Privacy Requirements
+- **Never log or expose API keys** in any circumstances
+- Secure storage of user credentials using Keychain
+- Local data processing only - no external data transmission
+- No telemetry, analytics, or usage tracking
+
+## Core Data Patterns
+
+### Entity Structure
+- **ChatEntity**: Primary conversation entity with messages relationship
+- **MessageEntity**: Individual messages within chats
+- **APIServiceEntity**: AI service configurations and API keys
+- **PersonaEntity**: AI persona definitions with system instructions
+
+### Best Practices
+- Use NSPredicate for efficient filtering and queries
+- Implement proper cascade delete rules
+- Perform saves strategically to balance performance and data safety
+- Use background contexts for heavy operations
+- Handle migration carefully with [DatabasePatcher.swift](mdc:Warden/Utilities/DatabasePatcher.swift)
+
+## Testing and Quality Assurance
+
+### Test Structure
+- Unit tests in [WardenTests/](mdc:WardenTests)
+- UI tests in [WardenUITests/](mdc:WardenUITests)
+- Mock data for SwiftUI previews using [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift)
+
+### Testing Guidelines
+- Test API handlers with mock responses
+- Validate Core Data migrations thoroughly
+- Test UI components with various data states
+- Ensure accessibility compliance
+
+## Build and Distribution
+
+### Requirements
+- Xcode 14.3 or later
+- macOS 13.0+ deployment target
+- Universal binary support (Intel + Apple Silicon)
+- Apple Developer account for notarization
+
+### Release Process
+- Apple notarization for security compliance
+- GitHub releases for manual download
+- Homebrew cask for package management
+- Open source availability for custom builds
+
+## Contributing Guidelines
+
+When working on Warden:
+
+1. **Check existing issues** on GitHub before creating new ones
+2. **Follow established patterns** and architecture in the codebase
+3. **Update documentation** for significant changes
+4. **Include tests** for new features and bug fixes
+5. **Respect privacy principles** - maintain zero data collection policy
+6. **Maintain compatibility** with macOS 13.0+
+7. **Credit contributors** appropriately in documentation
+
+## Legacy and Attribution
+
+- Some internal references still use "macai" from the original project by Renset
+- Core Data model is named "warenDataModel" for historical reasons
+- Maintain backward compatibility when possible
+- Original project: github.com/Renset/macai by Renset
+- Current maintainer: Karat Sidhu
+- Support the project: buymeacoffee.com/karatsidhu
+
+## Important Notes for AI Assistance
+
+When helping with Warden development:
+- Always reference the app as "Warden" in user-facing content
+- Remember that Karat Sidhu is the creator and maintainer
+- Prioritize privacy and local data storage in all implementations
+- Follow the established SwiftUI and Core Data patterns
+- Ensure compatibility with both Intel and Apple Silicon Macs
+- Never implement any form of telemetry or data collection

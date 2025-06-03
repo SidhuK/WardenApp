@@ -1,0 +1,135 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Testing and Debugging Patterns
+
+Warden includes comprehensive testing strategies and debugging patterns to ensure code quality and maintainability.
+
+## Testing Structure
+
+### Unit Tests (`WardenTests/`)
+- **Test Organization**: Tests organized to mirror the main app structure
+- **Core Data Testing**: Mock Core Data stack for isolated testing
+- **API Handler Testing**: Mock implementations for all API services
+- **Model Testing**: Validation of data models and transformations
+- **Utility Testing**: Unit tests for parsing, formatting, and helper functions
+
+### UI Tests (`WardenUITests/`)
+- **Integration Testing**: End-to-end user workflows
+- **Accessibility Testing**: VoiceOver and keyboard navigation validation
+- **Performance Testing**: UI responsiveness and memory usage
+- **Screenshot Testing**: Visual regression testing for UI changes
+
+### Preview Testing
+- **Preview State Manager**: [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) provides realistic test data
+- **SwiftUI Previews**: All major views include comprehensive preview scenarios
+- **Mock Data**: Consistent test data across previews and tests
+- **State Variations**: Preview different app states and edge cases
+
+## Testing Patterns
+
+### Mock Implementations
+- **API Mocks**: Simulated API responses for consistent testing
+- **Core Data Mocks**: In-memory database for isolated tests
+- **Network Mocks**: Controlled network conditions and error scenarios
+- **Service Mocks**: Mock implementations of external services
+
+### Test Data Management
+- **Fixture Data**: Predefined test datasets for consistent scenarios
+- **Factory Methods**: Programmatic generation of test objects
+- **State Setup**: Helper methods for establishing test conditions
+- **Cleanup Procedures**: Proper teardown after each test
+
+### Async Testing
+- **XCTestExpectation**: Proper handling of async operations in tests
+- **Actor Testing**: Testing actor-isolated code safely
+- **Timeout Handling**: Reasonable timeouts for async operations
+- **Cancellation Testing**: Verify proper cleanup when operations are cancelled
+
+## Debugging Strategies
+
+### Logging Patterns
+- **Structured Logging**: Consistent log levels and formatting
+- **Context Information**: Include relevant context in log messages
+- **Privacy Protection**: Never log API keys or sensitive user data
+- **Debug vs Release**: Different logging verbosity for different builds
+
+### Development Tools
+- **Xcode Instruments**: Profiling memory usage and performance
+- **Debug Builds**: Additional validation and logging in debug mode
+- **Simulator Testing**: Testing across different macOS versions
+- **Device Testing**: Validation on real hardware when possible
+
+### Error Handling Testing
+- **Error Scenarios**: Comprehensive testing of error conditions
+- **Network Failures**: Test behavior during network outages
+- **Invalid Data**: Handling of malformed API responses
+- **Resource Constraints**: Testing under low memory conditions
+
+### Performance Testing
+- **Memory Leaks**: Detection and prevention of memory leaks
+- **CPU Usage**: Monitoring background processing efficiency
+- **UI Responsiveness**: Ensuring smooth user interactions
+- **Startup Time**: Optimizing app launch performance
+
+## Debugging Tools and Techniques
+
+### Core Data Debugging
+- **Database Inspection**: Tools for examining Core Data store contents
+- **Migration Testing**: Validation of schema changes and data migration
+- **Relationship Debugging**: Ensuring proper object graph integrity
+- **Performance Monitoring**: Identifying slow queries and optimization opportunities
+
+### UI Debugging
+- **View Hierarchy**: SwiftUI view inspector for layout debugging
+- **Auto Layout**: Constraint debugging and resolution
+- **Animation Debugging**: Smooth transitions and proper timing
+- **Accessibility Auditing**: VoiceOver and assistive technology testing
+
+### API Integration Debugging
+- **Network Monitoring**: Inspection of API requests and responses
+- **Error Handling**: Validation of error scenarios and user feedback
+- **Streaming Debugging**: Real-time response processing validation
+- **Rate Limiting**: Testing API quotas and throttling behavior
+
+### State Management Debugging
+- **State Changes**: Tracking state mutations and their effects
+- **Environment Objects**: Validation of shared state propagation
+- **User Defaults**: Monitoring preference changes and persistence
+- **Core Data Changes**: Observing entity modifications and relationships
+
+## Quality Assurance
+
+### Code Quality Metrics
+- **Test Coverage**: Maintaining high test coverage for critical paths
+- **Code Complexity**: Monitoring cyclomatic complexity
+- **Documentation Coverage**: Ensuring public APIs are documented
+- **Lint Compliance**: Following Swift style guidelines with [.swift-format](mdc:Warden/.swift-format)
+
+### Continuous Integration
+- **Automated Testing**: Running tests on code changes
+- **Build Validation**: Ensuring builds succeed across configurations
+- **Static Analysis**: Detecting potential issues before runtime
+- **Performance Regression**: Monitoring for performance degradation
+
+### Manual Testing Procedures
+- **Smoke Testing**: Basic functionality validation
+- **Edge Case Testing**: Boundary conditions and unusual scenarios
+- **User Experience Testing**: Real-world usage patterns
+- **Accessibility Testing**: Manual validation of assistive technologies
+
+## Best Practices
+
+### Test Writing Guidelines
+- **Descriptive Names**: Test names clearly describe what is being tested
+- **Single Responsibility**: Each test validates one specific behavior
+- **Isolated Tests**: Tests don't depend on other tests or external state
+- **Readable Assertions**: Clear expectations and failure messages
+
+### Debugging Best Practices
+- **Reproducible Issues**: Steps to consistently reproduce problems
+- **Minimal Examples**: Reduced test cases that isolate the issue
+- **Version Control**: Track when issues were introduced
+- **Documentation**: Record debugging steps and solutions for future reference

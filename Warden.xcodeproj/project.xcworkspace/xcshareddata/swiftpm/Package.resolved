@@ -1,0 +1,60 @@
+{
+  "originHash" : "b8203d59b545ed96dacf988eb61c0951489942c9307ec684ab077df46bff9f8e",
+  "pins" : [
+    {
+      "identity" : "attributedtext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/AttributedText",
+      "state" : {
+        "revision" : "0e811cb14de367bbd58a94d12259687e5ee08bea",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "highlightr",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/raspu/Highlightr",
+      "state" : {
+        "branch" : "master",
+        "revision" : "bcf2d0590f32ac2528feb72d7e34f5b463801a47"
+      }
+    },
+    {
+      "identity" : "keychainaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kishikawakatsumi/KeychainAccess",
+      "state" : {
+        "branch" : "master",
+        "revision" : "e0c7eebc5a4465a3c4680764f26b7a61f567cdaf"
+      }
+    },
+    {
+      "identity" : "omentextfield",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Renset/OmenTextField",
+      "state" : {
+        "branch" : "main",
+        "revision" : "4e077092b140241d7b3448352ade33a839478892"
+      }
+    },
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "0ef1ee0220239b3776f433314515fd849025673f",
+        "version" : "2.6.4"
+      }
+    },
+    {
+      "identity" : "swiftmath",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mgriebling/SwiftMath",
+      "state" : {
+        "revision" : "606f9be66db6afe0c41c3b064723a57061723db7",
+        "version" : "1.7.1"
+      }
+    }
+  ],
+  "version" : 3
+}

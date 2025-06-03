@@ -1,0 +1,83 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# UI Architecture and Component Structure
+
+Warden follows a modular UI architecture built with SwiftUI, organizing components by feature and reusability. This guide covers the UI structure and component patterns.
+
+## Main UI Structure
+
+### Core Views
+- **Content View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift) - Main application interface with sidebar and content area
+- **Chat View**: [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Primary chat interface
+- **Chat List**: [ChatListView.swift](mdc:Warden/UI/ChatList/ChatListView.swift) - Sidebar chat navigation
+- **Preferences**: [PreferencesView.swift](mdc:Warden/UI/Preferences/PreferencesView.swift) - Application settings
+
+### Feature-Based Organization
+
+#### Chat Interface (`Warden/UI/Chat/`)
+- **Chat View**: Main conversation interface
+- **Chat ViewModel**: [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift) - Chat state management
+- **Bubble Views**: [BubbleView/](mdc:Warden/UI/Chat/BubbleView) - Message display components
+- **Bottom Container**: [BottomContainer/](mdc:Warden/UI/Chat/BottomContainer) - Input area and controls
+- **Chat Parameters**: [ChatParameters/](mdc:Warden/UI/Chat/ChatParameters) - Model and setting controls
+- **Code View**: [CodeView/](mdc:Warden/UI/Chat/CodeView) - Syntax highlighting and code preview
+
+#### Chat List (`Warden/UI/ChatList/`)
+- Sidebar navigation for chat management
+- Chat search and filtering
+- New chat creation interface
+
+#### Preferences (`Warden/UI/Preferences/`)
+- **General Settings**: [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift)
+- **API Services**: [TabAPIServicesView.swift](mdc:Warden/UI/Preferences/TabAPIServicesView.swift)
+- **AI Personas**: [TabAIPersonasView.swift](mdc:Warden/UI/Preferences/TabAIPersonasView.swift)
+- **Backup & Restore**: [TabBackupRestoreView.swift](mdc:Warden/UI/Preferences/TabBackupRestoreView.swift)
+- **Danger Zone**: [TabDangerZoneView.swift](mdc:Warden/UI/Preferences/TabDangerZoneView.swift)
+
+#### Welcome Screen (`Warden/UI/WelcomeScreen/`)
+- Initial user onboarding
+- Service setup and API key configuration
+
+### Reusable Components (`Warden/UI/Components/`)
+- **Entity List**: [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display
+- **Button with Status**: [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states
+- **Highlighted Text**: [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift) - Text highlighting
+- **Theme Mode**: [ThemeMode.swift](mdc:Warden/UI/Components/ThemeMode.swift) - Light/dark theme support
+- **Toolbar Button**: [ToolbarButton.swift](mdc:Warden/UI/Components/ToolbarButton.swift) - Consistent toolbar styling
+
+### Specialized UI Components
+- **HTML Preview**: [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift) - Web content rendering
+- **Zoomable Image**: [ZoomableImageView.swift](mdc:Warden/UI/Chat/ZoomableImageView.swift) - Image viewer with zoom
+- **Thinking Process**: [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - AI reasoning display
+
+## Preview Support
+- **Preview State Manager**: [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) - Mock data for SwiftUI previews
+- All major views include SwiftUI previews with realistic data
+
+## Design Patterns
+- **MVVM Architecture**: Views paired with view models for complex state
+- **Environment Objects**: Shared state via ChatStore and other environment objects
+- **Modular Components**: Reusable components for consistent UI
+- **Theme Support**: Adaptive light/dark mode throughout the app
+- **Accessibility**: VoiceOver and keyboard navigation support
+
+## Navigation Structure
+- **Sidebar Navigation**: Primary chat list and navigation
+- **Tab-based Preferences**: Organized settings by category
+- **Sheet Presentations**: Modal views for focused tasks
+- **Toolbar Actions**: Context-appropriate actions in each view
+
+## State Management
+- **Local State**: `@State` for view-specific data
+- **Shared State**: `@ObservedObject` and `@EnvironmentObject` for app-wide state
+- **Preferences**: `@AppStorage` for user settings
+- **Core Data**: Integrated through ChatStore for persistence
+
+## Performance Considerations
+- **Lazy Loading**: Large lists use LazyVStack/LazyHStack
+- **View Hierarchy**: Efficient view composition to minimize redraws
+- **Image Handling**: Optimized image loading and caching
+- **Memory Management**: Proper cleanup of view resources

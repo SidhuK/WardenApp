@@ -1,0 +1,82 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# API Architecture and Handler Patterns
+
+Warden implements a modular API architecture that supports multiple AI providers through a unified interface. This guide covers the API handler patterns and integration strategies.
+
+## Architecture Overview
+
+### Core API Framework
+- **Protocol Definition**: [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift) - Unified interface for all AI providers
+- **Service Factory**: [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift) - Creates appropriate handler instances
+- **Service Configuration**: [APIServiceConfig.swift](mdc:Warden/Utilities/APIHandlers/APIServiceConfig.swift) - Common configuration structure
+- **Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination
+
+### Handler Implementations
+- **ChatGPT**: [ChatGPTHandler.swift](mdc:Warden/Utilities/APIHandlers/ChatGPTHandler.swift) - OpenAI API integration
+- **Claude**: [ClaudeHandler.swift](mdc:Warden/Utilities/APIHandlers/ClaudeHandler.swift) - Anthropic API integration
+- **Gemini**: [GeminiHandler.swift](mdc:Warden/Utilities/APIHandlers/GeminiHandler.swift) - Google AI integration
+- **Ollama**: [OllamaHandler.swift](mdc:Warden/Utilities/APIHandlers/OllamaHandler.swift) - Local LLM integration
+- **OpenRouter**: [OpenRouterHandler.swift](mdc:Warden/Utilities/APIHandlers/OpenRouterHandler.swift) - Multi-model proxy service
+- **Perplexity**: [PerplexityHandler.swift](mdc:Warden/Utilities/APIHandlers/PerplexityHandler.swift) - Search-augmented AI
+- **Deepseek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - Deepseek API integration
+- **Mistral**: [MistralHandler.swift](mdc:Warden/Utilities/APIHandlers/MistralHandler.swift) - Mistral AI integration
+
+## Implementation Patterns
+
+### Protocol Conformance
+All handlers implement the `APIProtocol` which defines:
+- `sendMessage()` - Primary communication method
+- Streaming response handling
+- Error management
+- Authentication handling
+
+### Request/Response Flow
+1. **Message Preparation**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) formats messages
+2. **API Call**: Handler-specific implementation sends request
+3. **Streaming**: Real-time response processing
+4. **Parsing**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) processes AI responses
+5. **Storage**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) persists conversation data
+
+### Configuration Management
+- **App Constants**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Service definitions and defaults
+- **User Preferences**: API keys and model preferences stored securely
+- **Dynamic Configuration**: Runtime service discovery and configuration
+
+## Service-Specific Features
+
+### Streaming Support
+- **Real-time Updates**: Progressive message building
+- **Cancellation**: User can stop generation mid-stream
+- **Error Recovery**: Graceful handling of stream interruptions
+
+### Multimodal Support
+- **Image Uploads**: [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) handles image processing
+- **Vision Models**: Automatic detection of vision-capable models
+- **Content Formatting**: Proper multipart request construction
+
+### Local Integration (Ollama)
+- **Service Discovery**: Automatic detection of local Ollama instance
+- **Model Management**: Download and manage local models
+- **Performance Optimization**: Apple Silicon specific optimizations
+
+## Error Handling Strategy
+- **Network Errors**: Retry logic and user feedback
+- **API Errors**: Service-specific error interpretation
+- **Rate Limiting**: Respect provider limits and quotas
+- **Graceful Degradation**: Fallback options for service failures
+
+## Testing and Development
+- **Mock Handlers**: Test implementations for development
+- **API Key Validation**: Secure testing without exposing credentials
+- **Response Simulation**: Predictable responses for UI testing
+
+## Best Practices
+- **Handler Independence**: Each handler is self-contained
+- **Configuration Consistency**: Unified configuration across all services
+- **Resource Management**: Proper cleanup of network resources
+- **Security**: Never log or expose API keys in any handler
+- **Performance**: Efficient request/response processing

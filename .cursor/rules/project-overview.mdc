@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Warden Project Overview
+
+Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that supports multiple AI providers including ChatGPT, Claude, xAI (Grok), Google Gemini, Perplexity, Ollama, OpenRouter, and OpenAI-compatible APIs.
+
+## Project Structure
+
+### Core Application
+- **Entry Point**:  - [WardenApp.swift](mdc:Warden/WardenApp.swift) Main app file with SwiftUI App protocol, Sparkle updater integration, and Core Data setup
+- **Main View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift) - Primary application interface
+- **App Configuration**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Central configuration and constants
+
+### Data Layer
+- **Models**: [Models.swift](mdc:Warden/Models/Models.swift) - Core data models for chats, messages, and AI services
+- **Message Content**: [MessageContent.swift](mdc:Warden/Models/MessageContent.swift) - Message content handling and formatting
+- **Image Attachments**: [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) - Image upload and attachment support
+- **Data Store**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data persistence and chat management
+- **Core Data Model**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld) - Core Data schema
+
+### UI Components
+- **Chat Interface**: Located in [Warden/UI/Chat/](mdc:Warden/UI/Chat) - Chat view components and message handling
+- **Chat List**: Located in [Warden/UI/ChatList/](mdc:Warden/UI/ChatList) - Sidebar chat list and navigation
+- **Preferences**: Located in [Warden/UI/Preferences/](mdc:Warden/UI/Preferences) - Settings and configuration UI
+- **Welcome Screen**: Located in [Warden/UI/WelcomeScreen/](mdc:Warden/UI/WelcomeScreen) - Initial user experience
+- **Reusable Components**: Located in [Warden/UI/Components/](mdc:Warden/UI/Components) - Shared UI components
+
+### Key Features
+- Multi-LLM support with API key management
+- AI Personas with customizable system instructions
+- Image upload support for compatible models
+- Real-time streaming responses
+- Local data storage with backup/restore
+- Syntax highlighting and code preview
+- LaTeX equation rendering
+- Native macOS integration with light/dark themes
+
+## Development Guidelines
+- Built with SwiftUI for macOS 13.0+
+- Uses Core Data for persistence
+- Follows MVVM architecture pattern
+- Supports both Intel and Apple Silicon Macs
+- Includes Sparkle framework for automatic updates

@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# SwiftUI Patterns and Conventions
+
+This project follows specific SwiftUI patterns and conventions for consistency and maintainability.
+
+## Architecture Pattern
+- **MVVM (Model-View-ViewModel)**: Views are kept lightweight with business logic in ObservableObject view models
+- **Environment Objects**: Shared state like [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) is passed through the environment
+- **Core Data Integration**: Uses `@Environment(\.managedObjectContext)` for database operations
+
+## State Management
+- **@AppStorage**: Used for user preferences and settings (see  [WardenApp.swift](mdc:Warden/WardenApp.swift))
+- **@StateObject**: For view model lifecycle management
+- **@ObservedObject**: For shared view models passed between views
+- **@State**: For local view state only
+
+## View Organization
+- **Modular Components**: Reusable UI components in [Warden/UI/Components/](mdc:Warden/UI/Components)
+- **Feature-based Structure**: Views organized by feature (Chat, ChatList, Preferences, etc.)
+- **Preview Support**: All views should include SwiftUI previews with [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift)
+
+## Data Flow
+- **Unidirectional**: Data flows down through environment objects and @ObservedObject
+- **Actions Up**: User actions bubble up through closures or NotificationCenter
+- **Core Data**: Managed through [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) as the single source of truth
+
+## Naming Conventions
+- **Views**: PascalCase ending with "View" (e.g., `ChatListView`)
+- **View Models**: PascalCase ending with "ViewModel" or "Store"
+- **Properties**: camelCase with descriptive names
+- **Methods**: camelCase starting with verbs
+
+## Performance Considerations
+- **Lazy Loading**: Use LazyVStack/LazyHStack for large lists
+- **@ViewBuilder**: For conditional view composition
+- **Avoid Heavy Computations**: Move expensive operations to background queues
+- **Memory Management**: Proper cleanup of observers and timers
+
+## Platform Integration
+- **macOS Native**: Leverage AppKit integration where needed
+- **Keyboard Shortcuts**: Defined in  [WardenApp.swift](mdc:Warden/WardenApp.swift) ommands
+- **Menu Integration**: Custom menu items and context menus
+- **Window Management**: Multi-window support with proper state isolation
