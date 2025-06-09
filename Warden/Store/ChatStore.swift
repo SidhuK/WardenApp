@@ -283,6 +283,186 @@ class ChatStore: ObservableObject {
 
     }
 
+    // MARK: - Project Management Methods
+    
+    func createProject(name: String, description: String? = nil, colorCode: String = "#007AFF", customInstructions: String? = nil) -> ProjectEntity {
+        let project = ProjectEntity(context: viewContext)
+        project.id = UUID()
+        project.name = name
+        project.projectDescription = description
+        project.colorCode = colorCode
+        project.customInstructions = customInstructions
+        project.createdAt = Date()
+        project.updatedAt = Date()
+        project.isArchived = false
+        project.sortOrder = getNextProjectSortOrder()
+        
+        saveInCoreData()
+        return project
+    }
+    
+    func updateProject(_ project: ProjectEntity, name: String? = nil, description: String? = nil, colorCode: String? = nil, customInstructions: String? = nil) {
+        if let name = name {
+            project.name = name
+        }
+        if let description = description {
+            project.projectDescription = description
+        }
+        if let colorCode = colorCode {
+            project.colorCode = colorCode
+        }
+        if let customInstructions = customInstructions {
+            project.customInstructions = customInstructions
+        }
+        project.updatedAt = Date()
+        
+        saveInCoreData()
+    }
+    
+    func deleteProject(_ project: ProjectEntity) {
+        // Remove project relationship from all chats in this project
+        if let chats = project.chats?.allObjects as? [ChatEntity] {
+            for chat in chats {
+                chat.project = nil
+            }
+        }
+        
+        viewContext.delete(project)
+        saveInCoreData()
+    }
+    
+    func moveChatsToProject(_ project: ProjectEntity?, chats: [ChatEntity]) {
+        for chat in chats {
+            chat.project = project
+            chat.updatedDate = Date()
+        }
+        
+        if let project = project {
+            project.updatedAt = Date()
+        }
+        
+        saveInCoreData()
+    }
+    
+    func removeChatFromProject(_ chat: ChatEntity) {
+        let oldProject = chat.project
+        chat.project = nil
+        chat.updatedDate = Date()
+        
+        if let project = oldProject {
+            project.updatedAt = Date()
+        }
+        
+        saveInCoreData()
+    }
+    
+    func generateProjectSummary(_ project: ProjectEntity) {
+        // This will be implemented in Phase 2 when we add AI summarization
+        // For now, we just update the lastSummarizedAt timestamp
+        project.lastSummarizedAt = Date()
+        saveInCoreData()
+    }
+    
+    func generateChatSummary(_ chat: ChatEntity) {
+        // This will be implemented in Phase 2 when we add AI summarization  
+        // For now, this is a placeholder method
+    }
+    
+    func updateProjectSummary(_ project: ProjectEntity, summary: String) {
+        project.aiGeneratedSummary = summary
+        project.lastSummarizedAt = Date()
+        project.updatedAt = Date()
+        saveInCoreData()
+    }
+    
+    func getAllProjects() -> [ProjectEntity] {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ProjectEntity.isArchived, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.createdAt, ascending: false)
+        ]
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching projects: \(error)")
+            return []
+        }
+    }
+    
+    func getActiveProjects() -> [ProjectEntity] {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "isArchived == %@", NSNumber(value: false))
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.createdAt, ascending: false)
+        ]
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching active projects: \(error)")
+            return []
+        }
+    }
+    
+    func getChatsInProject(_ project: ProjectEntity) -> [ChatEntity] {
+        guard let chats = project.chats?.allObjects as? [ChatEntity] else {
+            return []
+        }
+        
+        return chats.sorted { chat1, chat2 in
+            let date1 = chat1.updatedDate
+            let date2 = chat2.updatedDate
+            return date1 > date2
+        }
+    }
+    
+    func getChatsWithoutProject() -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.predicate = NSPredicate(format: "project == nil")
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching chats without project: \(error)")
+            return []
+        }
+    }
+    
+    func archiveProject(_ project: ProjectEntity) {
+        project.isArchived = true
+        project.updatedAt = Date()
+        saveInCoreData()
+    }
+    
+    func unarchiveProject(_ project: ProjectEntity) {
+        project.isArchived = false
+        project.updatedAt = Date()
+        saveInCoreData()
+    }
+    
+    private func getNextProjectSortOrder() -> Int32 {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: false)]
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let projects = try viewContext.fetch(fetchRequest)
+            if let lastProject = projects.first {
+                return lastProject.sortOrder + 1
+            }
+        } catch {
+            print("Error getting next sort order: \(error)")
+        }
+        
+        return 0
+    }
+
     // MARK: - Spotlight Integration Methods
     
     /// Index a specific chat for Spotlight search

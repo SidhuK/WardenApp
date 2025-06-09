@@ -3,7 +3,7 @@ import CoreData
 import Foundation
 import SwiftUI
 
-class ChatEntity: NSManagedObject, Identifiable {
+public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var id: UUID
     @NSManaged public var messages: NSOrderedSet
     @NSManaged public var requestMessages: [[String: String]]
@@ -21,6 +21,8 @@ class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var persona: PersonaEntity?
     @NSManaged public var apiService: APIServiceEntity?
     @NSManaged public var isPinned: Bool
+    @NSManaged public var project: ProjectEntity?
+    @NSManaged public var aiGeneratedSummary: String?
 
     public var messagesArray: [MessageEntity] {
         let array = messages.array as? [MessageEntity] ?? []
@@ -45,7 +47,7 @@ class ChatEntity: NSManagedObject, Identifiable {
 
 }
 
-class MessageEntity: NSManagedObject, Identifiable {
+public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var id: Int64
     @NSManaged public var name: String
     @NSManaged public var body: String
