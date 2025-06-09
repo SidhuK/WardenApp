@@ -180,6 +180,34 @@ class ChatStore: ObservableObject {
         }
     }
 
+    func deleteSelectedChats(_ chatIDs: Set<UUID>) {
+        guard !chatIDs.isEmpty else { return }
+        
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.predicate = NSPredicate(format: "id IN %@", chatIDs)
+
+        do {
+            let chatEntities = try self.viewContext.fetch(fetchRequest)
+
+            for chat in chatEntities {
+                // Remove from Spotlight index before deleting
+                removeChatFromSpotlight(chatId: chat.id)
+                self.viewContext.delete(chat)
+            }
+
+            DispatchQueue.main.async {
+                do {
+                    try self.viewContext.save()
+                } catch {
+                    print("Error saving context after deleting selected chats: \(error)")
+                    self.viewContext.rollback()
+                }
+            }
+        } catch {
+            print("Error deleting selected chats: \(error)")
+        }
+    }
+
     func deleteAllPersonas() {
         let fetchRequest = PersonaEntity.fetchRequest()
 

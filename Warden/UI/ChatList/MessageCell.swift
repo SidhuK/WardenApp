@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 
 struct MessageCell: View, Equatable {
@@ -13,7 +11,9 @@ struct MessageCell: View, Equatable {
                lhs.timestamp == rhs.timestamp &&
                lhs.message == rhs.message &&
                lhs.searchText == rhs.searchText &&
-               lhs.chat.isPinned == rhs.chat.isPinned
+               lhs.chat.isPinned == rhs.chat.isPinned &&
+               lhs.isSelectionMode == rhs.isSelectionMode &&
+               lhs.isSelected == rhs.isSelected
     }
     
     @ObservedObject var chat: ChatEntity
@@ -25,6 +25,9 @@ struct MessageCell: View, Equatable {
     @Environment(\.colorScheme) var colorScheme
 
     var searchText: String = ""
+    var isSelectionMode: Bool = false
+    var isSelected: Bool = false
+    var onSelectionToggle: ((Bool) -> Void)?
     
     private var filteredMessage: String {
         if !message.starts(with: "<think>") {
@@ -45,6 +48,19 @@ struct MessageCell: View, Equatable {
             EmptyView()
         } else {
             HStack {
+                // Selection checkbox (only shown in selection mode)
+                if isSelectionMode {
+                    Button(action: {
+                        onSelectionToggle?(!isSelected)
+                    }) {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(isSelected ? .accentColor : .secondary)
+                            .font(.system(size: 18))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.leading, 8)
+                }
+                
                 // AI Model Logo
                 Image("logo_\(chat.apiService?.type ?? "")")
                     .resizable()
@@ -52,7 +68,7 @@ struct MessageCell: View, Equatable {
                     .interpolation(.high)
                     .frame(width: 16, height: 16)
                     .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
-                    .padding(.leading, 8)
+                    .padding(.leading, isSelectionMode ? 4 : 8)
                 
                 VStack(alignment: .leading) {
                     if !chat.name.isEmpty {
@@ -100,7 +116,10 @@ struct MessageCell_Previews: PreviewProvider {
                 timestamp: Date(),
                 message: "Hello, how are you?",
                 isActive: .constant(false),
-                viewContext: PersistenceController.preview.container.viewContext
+                viewContext: PersistenceController.preview.container.viewContext,
+                searchText: "",
+                isSelectionMode: false,
+                isSelected: false
             )
 
             MessageCell(
@@ -108,7 +127,10 @@ struct MessageCell_Previews: PreviewProvider {
                 timestamp: Date(),
                 message: "This is a selected chat preview",
                 isActive: .constant(true),
-                viewContext: PersistenceController.preview.container.viewContext
+                viewContext: PersistenceController.preview.container.viewContext,
+                searchText: "",
+                isSelectionMode: false,
+                isSelected: false
             )
 
             MessageCell(
@@ -117,7 +139,21 @@ struct MessageCell_Previews: PreviewProvider {
                 message:
                     "This is a very long message that should be truncated when displayed in the preview cell of our chat application",
                 isActive: .constant(false),
-                viewContext: PersistenceController.preview.container.viewContext
+                viewContext: PersistenceController.preview.container.viewContext,
+                searchText: "",
+                isSelectionMode: false,
+                isSelected: false
+            )
+            
+            MessageCell(
+                chat: createPreviewChat(name: "Selection Mode"),
+                timestamp: Date(),
+                message: "This shows selection mode with checkbox",
+                isActive: .constant(false),
+                viewContext: PersistenceController.preview.container.viewContext,
+                searchText: "",
+                isSelectionMode: true,
+                isSelected: true
             )
         }
         .previewLayout(.fixed(width: 300, height: 100))

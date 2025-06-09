@@ -3,12 +3,15 @@ import SwiftUI
 
 struct ChatListView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var store: ChatStore
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var scrollOffset: CGFloat = 0
     @State private var previousOffset: CGFloat = 0
     @State private var newChatButtonTapped = false
     @State private var settingsButtonTapped = false
+    @State private var selectedChatIDs: Set<UUID> = []
+    @State private var lastSelectedChatID: UUID?
     @FocusState private var isSearchFocused: Bool
 
     @FetchRequest(
@@ -63,13 +66,32 @@ struct ChatListView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
+            // Selection toolbar (only shown when chats are selected)
+            if !selectedChatIDs.isEmpty {
+                selectionToolbar
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+            }
+
             List {
                 ForEach(filteredChats, id: \.objectID) { chat in
                     ChatListRow(
                         chat: chat,
                         selectedChat: $selectedChat,
                         viewContext: viewContext,
-                        searchText: searchText
+                        searchText: searchText,
+                        isSelectionMode: !selectedChatIDs.isEmpty,
+                        isSelected: selectedChatIDs.contains(chat.id),
+                        onSelectionToggle: { chatID, isSelected in
+                            if isSelected {
+                                selectedChatIDs.insert(chatID)
+                            } else {
+                                selectedChatIDs.remove(chatID)
+                            }
+                        },
+                        onKeyboardSelection: { chatID, isCmd, isShift in
+                            handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
+                        }
                     )
                 }
             }
@@ -82,7 +104,24 @@ struct ChatListView: View {
             .keyboardShortcut("f", modifiers: .command)
             .opacity(0)
         )
-        .onChange(of: selectedChat) { _ in
+        .background(
+            Button("") {
+                if !selectedChatIDs.isEmpty {
+                    deleteSelectedChats()
+                }
+            }
+            .keyboardShortcut(.delete, modifiers: .command)
+            .opacity(0)
+        )
+        .background(
+            Button("") {
+                selectedChatIDs.removeAll()
+                lastSelectedChatID = nil
+            }
+            .keyboardShortcut(.escape)
+            .opacity(0)
+        )
+        .onChange(of: selectedChat) { _, _ in
             isSearchFocused = false
         }
     }
@@ -246,5 +285,141 @@ struct ChatListView: View {
         .padding(.vertical, 12)
         .padding(.bottom, 8)
         .frame(maxWidth: .infinity)
+    }
+
+    private var selectionToolbar: some View {
+        HStack(spacing: 12) {
+            // Select All/None button
+            Button(action: {
+                if selectedChatIDs.count == filteredChats.count {
+                    selectedChatIDs.removeAll()
+                    lastSelectedChatID = nil
+                } else {
+                    selectedChatIDs = Set(filteredChats.map { $0.id })
+                    lastSelectedChatID = filteredChats.last?.id
+                }
+            }) {
+                Image(systemName: selectedChatIDs.count == filteredChats.count ? "checklist" : "checklist.unchecked")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentColor.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                            )
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help(selectedChatIDs.count == filteredChats.count ? "Deselect All" : "Select All")
+            
+            // Delete button
+            Button(action: {
+                deleteSelectedChats()
+            }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.red.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                            )
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("Delete Selected")
+            .disabled(selectedChatIDs.isEmpty)
+            
+            // Clear selection button
+            Button(action: {
+                selectedChatIDs.removeAll()
+                lastSelectedChatID = nil
+            }) {
+                Image(systemName: "xmark.circle")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.primary.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                            )
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("Clear Selection")
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.8))
+        .cornerRadius(8)
+    }
+
+
+    
+    private func deleteSelectedChats() {
+        guard !selectedChatIDs.isEmpty else { return }
+        
+        let alert = NSAlert()
+        alert.messageText = "Delete \(selectedChatIDs.count) chat\(selectedChatIDs.count == 1 ? "" : "s")?"
+        alert.informativeText = "Are you sure you want to delete the selected chats? This action cannot be undone."
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                // Clear selectedChat if it's in the list to be deleted
+                if let selectedChatID = selectedChat?.id, selectedChatIDs.contains(selectedChatID) {
+                    selectedChat = nil
+                }
+                
+                // Perform bulk delete
+                store.deleteSelectedChats(selectedChatIDs)
+                
+                // Clear selection
+                selectedChatIDs.removeAll()
+                lastSelectedChatID = nil
+            }
+        }
+    }
+
+    private func handleKeyboardSelection(chatID: UUID, isCommandPressed: Bool, isShiftPressed: Bool) {
+        if isCommandPressed {
+            // Command+click: toggle selection
+            if selectedChatIDs.contains(chatID) {
+                selectedChatIDs.remove(chatID)
+            } else {
+                selectedChatIDs.insert(chatID)
+                lastSelectedChatID = chatID
+            }
+        } else if isShiftPressed, let lastID = lastSelectedChatID {
+            // Shift+click: select range from last selected to current
+            if let startIndex = filteredChats.firstIndex(where: { $0.id == lastID }),
+               let endIndex = filteredChats.firstIndex(where: { $0.id == chatID }) {
+                let range = min(startIndex, endIndex)...max(startIndex, endIndex)
+                for chat in filteredChats[range] {
+                    selectedChatIDs.insert(chat.id)
+                }
+            }
+        } else {
+            // Regular selection handling
+            if selectedChatIDs.contains(chatID) {
+                selectedChatIDs.remove(chatID)
+            } else {
+                selectedChatIDs.insert(chatID)
+                lastSelectedChatID = chatID
+            }
+        }
     }
 }

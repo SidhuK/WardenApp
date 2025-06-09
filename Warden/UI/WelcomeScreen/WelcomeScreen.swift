@@ -26,9 +26,17 @@ struct WelcomeScreen: View {
                 } else {
                     // Original welcome screen with enhanced design
                     ZStack {
-                        // Subtle animated gradient background
-                        AnimatedGradientBackground()
-                            .opacity(0.1)
+                        // Static gradient background
+                        LinearGradient(
+                            colors: [
+                                .blue.opacity(0.05),
+                                .purple.opacity(0.05),
+                                .pink.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
 
                         VStack(spacing: 32) {
                             Spacer()
@@ -75,8 +83,6 @@ struct WelcomeScreen: View {
                                                 .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
                                             }
                                             .buttonStyle(PlainButtonStyle())
-                                            .scaleEffect(1.0)
-                                            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showInteractiveOnboarding)
                                         }
                                         
                                         Text("or")
@@ -169,10 +175,6 @@ struct WelcomeScreen: View {
 
 struct WelcomeIcon: View {
     @State private var isHovered = false
-    @State private var floatOffset: CGFloat = 0
-    @State private var pulseScale: CGFloat = 1.0
-    @State private var shimmerOffset: CGFloat = -200
-    @State private var glowIntensity: Double = 0.3
 
     var body: some View {
         ZStack {
@@ -182,80 +184,29 @@ struct WelcomeIcon: View {
                 .scaledToFit()
                 .frame(width: 120, height: 120)
                 .blur(radius: 8)
-                .opacity(glowIntensity)
+                .opacity(0.4)
                 .scaleEffect(1.1)
             
-            // Main icon with shimmer overlay
+            // Main icon
             Image("WelcomeIcon")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 120, height: 120)
-                .overlay(
-                    // Shimmer effect
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    .clear,
-                                    .white.opacity(0.3),
-                                    .clear
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .rotationEffect(.degrees(45))
-                        .offset(x: shimmerOffset)
-                        .clipped()
-                )
-                .mask(
-                    Image("WelcomeIcon")
-                        .resizable()
-                        .scaledToFit()
-                )
         }
-        .scaleEffect(pulseScale * (isHovered ? 1.05 : 1.0))
+        .scaleEffect(isHovered ? 1.05 : 1.0)
         .shadow(
             color: Color.accentColor.opacity(0.3),
             radius: isHovered ? 20 : 12,
             x: 0,
             y: isHovered ? 8 : 6
         )
-        .offset(y: floatOffset)
         .frame(width: 120, height: 120) // Fixed frame to prevent layout changes
         .animation(.easeInOut(duration: 0.3), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-            if hovering {
-                // Trigger shimmer on hover
-                withAnimation(.easeInOut(duration: 0.8)) {
-                    shimmerOffset = 200
-                }
-            }
         }
         .onAppear {
-            // Floating animation - reduced range to be more subtle
-            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
-                floatOffset = -4
-            }
-            
-            // Subtle pulse animation
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                pulseScale = 1.02
-            }
-            
-            // Glow breathing effect
-            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
-                glowIntensity = 0.6
-            }
-            
-            // Periodic shimmer
-            Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-                shimmerOffset = -200
-                withAnimation(.easeInOut(duration: 1.2)) {
-                    shimmerOffset = 200
-                }
-            }
+            // Static state - no animations
         }
     }
 }

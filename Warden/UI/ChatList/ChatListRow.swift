@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct ChatListRow: View, Equatable {
@@ -9,6 +8,8 @@ struct ChatListRow: View, Equatable {
         lhs.chat?.lastMessage?.body == rhs.chat?.lastMessage?.body &&
         lhs.chat?.isPinned == rhs.chat?.isPinned &&
         lhs.searchText == rhs.searchText &&
+        lhs.isSelectionMode == rhs.isSelectionMode &&
+        lhs.isSelected == rhs.isSelected &&
         (lhs.selectedChat?.id == rhs.selectedChat?.id)
     }
     let chat: ChatEntity?
@@ -17,19 +18,31 @@ struct ChatListRow: View, Equatable {
     let viewContext: NSManagedObjectContext
     @EnvironmentObject private var store: ChatStore
     var searchText: String = ""
+    var isSelectionMode: Bool = false
+    var isSelected: Bool = false
+    var onSelectionToggle: ((UUID, Bool) -> Void)?
+    var onKeyboardSelection: ((UUID, Bool, Bool) -> Void)?
     @StateObject private var chatViewModel: ChatViewModel
 
     init(
         chat: ChatEntity?,
         selectedChat: Binding<ChatEntity?>,
         viewContext: NSManagedObjectContext,
-        searchText: String = ""
+        searchText: String = "",
+        isSelectionMode: Bool = false,
+        isSelected: Bool = false,
+        onSelectionToggle: ((UUID, Bool) -> Void)? = nil,
+        onKeyboardSelection: ((UUID, Bool, Bool) -> Void)? = nil
     ) {
         self.chat = chat
         self.chatID = chat?.id ?? UUID()
         self._selectedChat = selectedChat
         self.viewContext = viewContext
         self.searchText = searchText
+        self.isSelectionMode = isSelectionMode
+        self.isSelected = isSelected
+        self.onSelectionToggle = onSelectionToggle
+        self.onKeyboardSelection = onKeyboardSelection
         self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat!, viewContext: viewContext))
     }
 
@@ -51,7 +64,23 @@ struct ChatListRow: View, Equatable {
 
     var body: some View {
         Button {
-            selectedChat = chat
+            let currentEvent = NSApp.currentEvent
+            let isCommandPressed = currentEvent?.modifierFlags.contains(.command) ?? false
+            let isShiftPressed = currentEvent?.modifierFlags.contains(.shift) ?? false
+            
+            if isCommandPressed {
+                // Command+click: toggle selection of this item
+                onKeyboardSelection?(chatID, isCommandPressed, isShiftPressed)
+            } else if isShiftPressed {
+                // Shift+click: select range
+                onKeyboardSelection?(chatID, isCommandPressed, isShiftPressed)
+            } else if isSelectionMode {
+                // Regular click in selection mode: toggle selection
+                onSelectionToggle?(chatID, !isSelected)
+            } else {
+                // Regular click: set as selected chat
+                selectedChat = chat
+            }
         } label: {
             MessageCell(
                 chat: chat!,
@@ -59,7 +88,12 @@ struct ChatListRow: View, Equatable {
                 message: chat?.lastMessage?.body ?? "",
                 isActive: isActive,
                 viewContext: viewContext,
-                searchText: searchText
+                searchText: searchText,
+                isSelectionMode: isSelectionMode,
+                isSelected: isSelected,
+                onSelectionToggle: { selected in
+                    onSelectionToggle?(chatID, selected)
+                }
             )
         }
         .buttonStyle(.plain)
