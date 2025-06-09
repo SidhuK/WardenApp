@@ -44,16 +44,17 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## AI Provider Integration
 
 ### Supported Providers
-- OpenAI ChatGPT (including o1 reasoning models)
-- Anthropic Claude
-- Google Gemini
-- xAI Grok
-- Perplexity
-- OpenRouter (50+ models)
-- Ollama (local LLMs)
-- Mistral
-- Deepseek
-- Any OpenAI-compatible API
+- **OpenAI ChatGPT**: Including o1/o3 reasoning models (o1-preview, o1-mini, o3-mini, etc.)
+- **Anthropic Claude**: Latest Claude models with vision support
+- **Google Gemini**: Gemini 1.5 and 2.0 models
+- **xAI Grok**: Grok-beta and future xAI models
+- **Perplexity**: Including reasoning-capable models (sonar-reasoning-pro)
+- **DeepSeek**: Chat and reasoning models (deepseek-chat, deepseek-reasoner)
+- **Groq**: High-speed inference models
+- **OpenRouter**: 50+ models including reasoning models
+- **Ollama**: Local LLM support with Apple Silicon optimization
+- **Mistral**: Mistral AI models
+- **Any OpenAI-compatible API**: Custom endpoints supported
 
 ### API Handler Implementation
 - All handlers implement [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift)
@@ -90,16 +91,20 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 - Per-chat persona override capability
 
 ### Message Handling
-- Real-time streaming responses via [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift)
-- Syntax highlighting for code blocks
-- LaTeX equation rendering
-- HTML/CSS/JavaScript preview via [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift)
-- Image upload support for compatible models
+- **Real-time Streaming**: Responses via [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift)
+- **Reasoning Support**: Thinking process display via [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift)
+- **Syntax Highlighting**: Code block detection and formatting
+- **LaTeX Rendering**: Mathematical equation support
+- **HTML/CSS/JavaScript Preview**: Interactive preview via [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift)
+- **Image Upload Support**: For compatible vision models
+- **Multi-Agent Support**: [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) for complex workflows
 
 ### Search and Indexing
-- Spotlight integration via [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift)
-- Fast search across all chats and messages
-- Automatic indexing of new content
+- **Spotlight Integration**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) enables macOS system search
+- **Fast Local Search**: Search across all chats and messages within the app
+- **Automatic Indexing**: New content automatically indexed for Spotlight search
+- **User Controls**: Rebuild and clear index operations in preferences
+- **Privacy Focused**: All indexing local only, no external data transmission
 
 ## Development Best Practices
 

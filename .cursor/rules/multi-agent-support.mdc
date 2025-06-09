@@ -1,0 +1,311 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Multi-Agent Support Guide
+
+This guide covers the implementation and usage of Warden's multi-agent functionality, which allows users to query multiple AI services simultaneously and compare their responses in real-time.
+
+## Core Components
+
+### Multi-Agent Message Manager
+[MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) is the central orchestrator for multi-agent operations:
+
+```swift
+class MultiAgentMessageManager: ObservableObject {
+    @Published var activeAgents: [AgentResponse] = []
+    @Published var isProcessing = false
+    
+    struct AgentResponse: Identifiable {
+        let serviceName: String
+        let serviceType: String
+        let model: String
+        var response: String = ""
+        var isComplete: Bool = false
+        var error: APIError?
+        var timestamp: Date = Date()
+    }
+}
+```
+
+### UI Integration
+Multi-agent functionality is integrated into [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) with:
+- Service selection interface
+- Real-time response display
+- Mode toggling and management
+
+## Implementation Patterns
+
+### Concurrent Service Requests
+Send requests to multiple AI services simultaneously using DispatchGroup:
+
+```swift
+func sendMessageToMultipleServices(
+    _ message: String,
+    chat: ChatEntity,
+    selectedServices: [APIServiceEntity],
+    contextSize: Int,
+    completion: @escaping (Result<[AgentResponse], Error>) -> Void
+) {
+    let dispatchGroup = DispatchGroup()
+    
+    // Create initial agent responses
+    for service in limitedServices {
+        let agentResponse = AgentResponse(
+            serviceName: service.name ?? "Unknown",
+            serviceType: service.type ?? "unknown",
+            model: service.model ?? "unknown"
+        )
+        activeAgents.append(agentResponse)
+    }
+    
+    // Send requests concurrently
+    for (index, service) in limitedServices.enumerated() {
+        dispatchGroup.enter()
+        // Process individual service request
+        dispatchGroup.leave()
+    }
+    
+    dispatchGroup.notify(queue: .main) {
+        completion(.success(self.activeAgents))
+    }
+}
+```
+
+### Streaming Response Handling
+Handle real-time streaming responses from multiple services:
+
+```swift
+private func sendStreamRequest(
+    apiService: APIService,
+    requestMessages: [[String: String]],
+    temperature: Float,
+    agentIndex: Int,
+    dispatchGroup: DispatchGroup
+) {
+    Task {
+        let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
+        var accumulatedResponse = ""
+        
+        for try await chunk in stream {
+            accumulatedResponse += chunk
+            
+            await MainActor.run {
+                if agentIndex < self.activeAgents.count {
+                    self.activeAgents[agentIndex].response = accumulatedResponse
+                    self.activeAgents[agentIndex].timestamp = Date()
+                }
+            }
+        }
+    }
+}
+```
+
+## User Interface Components
+
+### Service Selection
+Provide interface for users to select which AI services to query:
+
+```swift
+@State private var selectedMultiAgentServices: Set<APIServiceEntity> = []
+@State private var showServiceSelector = false
+
+.sheet(isPresented: $showServiceSelector) {
+    MultiAgentServiceSelector(
+        selectedServices: $selectedMultiAgentServices,
+        isVisible: $showServiceSelector,
+        availableServices: Array(apiServices)
+    )
+}
+```
+
+### Response Display
+Show responses from multiple agents in organized format:
+
+```swift
+if enableMultiAgentMode && isMultiAgentMode && (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing) {
+    MultiAgentResponseView(
+        responses: multiAgentManager.activeAgents,
+        isProcessing: multiAgentManager.isProcessing
+    )
+}
+```
+
+### Mode Management
+Integrate multi-agent mode toggle with chat interface:
+
+```swift
+@State private var isMultiAgentMode = false
+
+.onChange(of: enableMultiAgentMode) { oldValue, newValue in
+    if !newValue && isMultiAgentMode {
+        isMultiAgentMode = false
+        multiAgentManager.activeAgents.removeAll()
+    }
+}
+```
+
+## Service Limitations and Constraints
+
+### Maximum Service Limit
+Limit concurrent requests to maintain optimal performance and user experience:
+
+```swift
+// Limit to maximum 3 services for optimal UX
+let limitedServices = Array(selectedServices.prefix(3))
+
+if limitedServices.count != selectedMultiAgentServices.count {
+    // Update the selection to reflect the limit
+    selectedMultiAgentServices = Set(limitedServices)
+}
+```
+
+### Resource Management
+- **Memory Usage**: Monitor memory consumption with multiple active streams
+- **Network Resources**: Manage concurrent network connections efficiently
+- **UI Performance**: Ensure responsive interface during multiple operations
+
+## Configuration Management
+
+### API Service Loading
+Load configuration for each selected service:
+
+```swift
+private func loadAPIConfig(for service: APIServiceEntity) -> APIServiceConfiguration? {
+    guard let apiServiceUrl = service.url else { return nil }
+    
+    var apiKey = ""
+    do {
+        apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
+    } catch {
+        print("Error extracting token: \(error)")
+    }
+    
+    return APIServiceConfig(
+        name: service.type ?? "chatgpt",
+        apiUrl: apiServiceUrl,
+        apiKey: apiKey,
+        model: service.model ?? AppConstants.chatGptDefaultModel
+    )
+}
+```
+
+### Message Construction
+Construct consistent request messages across all services:
+
+```swift
+private func constructRequestMessages(chat: ChatEntity, forUserMessage userMessage: String?, contextSize: Int) -> [[String: String]] {
+    var messages: [[String: String]] = []
+    
+    let systemMessage = chat.persona?.systemMessage ?? chat.systemMessage
+    
+    // Handle reasoning models that don't support system role
+    if !AppConstants.openAiReasoningModels.contains(chat.gptModel) {
+        messages.append(["role": "system", "content": systemMessage])
+    } else {
+        messages.append(["role": "user", "content": "Take this message as the system message: \(systemMessage)"])
+    }
+    
+    // Add conversation history and new message
+    return messages
+}
+```
+
+## Error Handling Strategies
+
+### Per-Service Error Handling
+Handle errors individually for each service without affecting others:
+
+```swift
+switch result {
+case .success(let response):
+    self.activeAgents[agentIndex].response = response
+    self.activeAgents[agentIndex].isComplete = true
+
+case .failure(let error):
+    self.activeAgents[agentIndex].error = error
+    self.activeAgents[agentIndex].isComplete = true
+}
+```
+
+### Graceful Degradation
+- **Partial Failures**: Continue operation if some services fail
+- **Service Unavailability**: Handle cases where selected services are temporarily unavailable
+- **Network Issues**: Provide appropriate feedback for connectivity problems
+
+## User Experience Considerations
+
+### Performance Optimization
+1. **Concurrent Execution**: All requests sent simultaneously for faster results
+2. **Streaming Updates**: Real-time response display as data arrives
+3. **Response Ordering**: Maintain consistent ordering of agent responses
+4. **Status Indicators**: Clear indication of completion status for each agent
+
+### Visual Organization
+1. **Service Identification**: Clear labeling of which service provided each response
+2. **Response Timing**: Display timestamps for response completion
+3. **Error States**: Distinguish between successful responses and errors
+4. **Loading States**: Show progress indicators during processing
+
+## Best Practices
+
+### Implementation Guidelines
+1. **Service Validation**: Validate selected services before sending requests
+2. **Resource Cleanup**: Properly cleanup resources when switching modes
+3. **State Management**: Maintain consistent state across mode changes
+4. **Error Recovery**: Implement retry logic where appropriate
+
+### UI/UX Guidelines
+1. **Clear Boundaries**: Visually separate responses from different services
+2. **Consistent Formatting**: Apply consistent formatting across all responses
+3. **Accessibility**: Ensure multi-agent responses are accessible to screen readers
+4. **Performance Feedback**: Provide clear feedback about operation status
+
+### Testing Strategies
+1. **Service Combinations**: Test various combinations of AI services
+2. **Error Scenarios**: Test behavior when some services fail
+3. **Performance Testing**: Verify performance with maximum concurrent requests
+4. **UI Responsiveness**: Ensure interface remains responsive during operations
+
+## Integration with Other Features
+
+### Reasoning Model Support
+Handle reasoning models in multi-agent context:
+- Check each service's model for reasoning capability
+- Apply appropriate system message handling per service
+- Display thinking process for reasoning-capable responses
+
+### Spotlight Integration
+Ensure multi-agent responses are properly indexed:
+- Index responses from all services
+- Maintain attribution to specific services
+- Include multi-agent context in search metadata
+
+### Export Functionality
+Include multi-agent responses in data export:
+- Preserve service attribution in exports
+- Maintain response ordering and timing
+- Include error information for failed requests
+
+## Troubleshooting
+
+### Common Issues
+1. **Service Selection**: Users not selecting any services before activating multi-agent mode
+2. **API Key Issues**: Missing or invalid API keys for selected services
+3. **Rate Limiting**: Some services hitting rate limits during concurrent requests
+4. **Memory Usage**: High memory consumption with multiple active streams
+
+### Debug Strategies
+1. **Service Status**: Monitor individual service connection status
+2. **Response Tracking**: Log response timing and completion status
+3. **Error Analysis**: Analyze patterns in service failures
+4. **Performance Monitoring**: Track resource usage during multi-agent operations
+
+## Future Enhancements
+
+### Potential Features
+1. **Response Comparison**: Side-by-side comparison of responses
+2. **Consensus Building**: Algorithms to identify common themes across responses
+3. **Service Ranking**: User preference-based ranking of service responses
+4. **Custom Workflows**: Predefined multi-agent workflows for specific use cases

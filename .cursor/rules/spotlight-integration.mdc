@@ -1,0 +1,303 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Spotlight Search Integration Guide
+
+This guide covers the implementation and maintenance of macOS Spotlight search integration in Warden, enabling users to search chat content directly from the system search.
+
+## Core Components
+
+### Spotlight Index Manager
+[SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) is the central component for all Spotlight operations:
+
+```swift
+class SpotlightIndexManager: ObservableObject {
+    static let shared = SpotlightIndexManager()
+    private let searchableIndex = CSSearchableIndex.default()
+    private let domainIdentifier = "karatsidhu.WardenAI.chats"
+}
+```
+
+### Integration Points
+- **ChatStore**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) integrates Spotlight operations with Core Data changes
+- **App Delegate**: [WardenApp.swift](mdc:Warden/WardenApp.swift) handles Spotlight search result selection
+- **Preferences**: [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift) provides user controls
+
+## Implementation Patterns
+
+### Automatic Indexing
+Integrate with Core Data change notifications for automatic indexing:
+
+```swift
+@objc private func contextDidSave(_ notification: Notification) {
+    guard SpotlightIndexManager.isSpotlightAvailable else { return }
+    
+    let updatedObjects = notification.userInfo?[NSUpdatedObjectsKey] as? Set<NSManagedObject> ?? Set()
+    let insertedObjects = notification.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject> ?? Set()
+    let deletedObjects = notification.userInfo?[NSDeletedObjectsKey] as? Set<NSManagedObject> ?? Set()
+    
+    // Re-index affected chats
+    let affectedChats = (updatedObjects.union(insertedObjects)).compactMap { $0 as? ChatEntity }
+    for chat in affectedChats {
+        spotlightManager.indexChat(chat)
+    }
+}
+```
+
+### Searchable Item Creation
+Create comprehensive searchable items with rich metadata:
+
+```swift
+private func createSearchableItem(from chatEntity: ChatEntity) -> CSSearchableItem? {
+    let attributeSet = CSSearchableItemAttributeSet(contentType: UTType.text)
+    
+    // Basic attributes
+    attributeSet.title = chatEntity.name.isEmpty ? "Untitled Chat" : chatEntity.name
+    attributeSet.displayName = attributeSet.title
+    
+    // Content from messages
+    let messageContents = chatEntity.messagesArray
+        .filter { !$0.body.isEmpty }
+        .prefix(10) // Performance limit
+        .map { $0.body }
+        .joined(separator: " ")
+    
+    attributeSet.contentDescription = String(messageContents.prefix(500))
+    attributeSet.textContent = messageContents
+    
+    // Keywords for better search
+    attributeSet.keywords = [
+        chatEntity.gptModel,
+        chatEntity.apiService?.name ?? "",
+        chatEntity.persona?.name ?? "",
+        "Warden", "chat", "ai"
+    ].compactMap { $0.isEmpty ? nil : $0 }
+    
+    return CSSearchableItem(
+        uniqueIdentifier: chatEntity.id.uuidString,
+        domainIdentifier: domainIdentifier,
+        attributeSet: attributeSet
+    )
+}
+```
+
+## Search Result Handling
+
+### User Activity Processing
+Handle Spotlight search result selection in app delegate:
+
+```swift
+private func handleSpotlightSearch(userActivity: NSUserActivity) {
+    guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+          let chatId = SpotlightIndexManager.handleSpotlightSelection(with: identifier) else {
+        return
+    }
+    
+    // Find and select the chat
+    let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+    fetchRequest.predicate = NSPredicate(format: "id == %@", chatId as CVarArg)
+    
+    do {
+        let chats = try persistenceController.container.viewContext.fetch(fetchRequest)
+        if let chat = chats.first {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SelectChatFromSpotlight"),
+                object: chat
+            )
+        }
+    } catch {
+        print("Chat not found for Spotlight search: \(chatId)")
+    }
+}
+```
+
+### Navigation Integration
+Connect Spotlight results to app navigation using NotificationCenter:
+
+```swift
+// In ContentView or main navigation component
+.onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SelectChatFromSpotlight"))) { notification in
+    if let chat = notification.object as? ChatEntity {
+        // Navigate to the selected chat
+        selectedChat = chat
+    }
+}
+```
+
+## Performance Optimization
+
+### Content Limits
+Implement reasonable limits to maintain performance:
+
+```swift
+// Limit message content for indexing
+let messageContents = chatEntity.messagesArray
+    .filter { !$0.body.isEmpty }
+    .prefix(10) // Only first 10 messages
+    .map { $0.body }
+    .joined(separator: " ")
+
+// Limit description length
+attributeSet.contentDescription = String(messageContents.prefix(500))
+```
+
+### Background Processing
+Perform heavy indexing operations on background queues:
+
+```swift
+@MainActor
+private func indexChats(from context: NSManagedObjectContext) async {
+    let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+    
+    do {
+        let chats = try context.fetch(fetchRequest)
+        let searchableItems = chats.compactMap { createSearchableItem(from: $0) }
+        
+        try await searchableIndex.indexSearchableItems(searchableItems)
+        print("Successfully indexed \(searchableItems.count) chats")
+    } catch {
+        print("Error indexing chats: \(error)")
+    }
+}
+```
+
+## User Interface Integration
+
+### Preferences UI
+Provide user controls in preferences:
+
+```swift
+GridRow {
+    Text("Spotlight Search")
+        .fontWeight(.medium)
+    
+    VStack(alignment: .leading, spacing: 8) {
+        Text("Enable chat content to be searchable from macOS Spotlight")
+            .foregroundColor(.secondary)
+            .font(.caption)
+        
+        HStack(spacing: 12) {
+            Button(action: rebuildSpotlightIndex) {
+                HStack(spacing: 4) {
+                    if isRebuildingIndex {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    Text(isRebuildingIndex ? "Rebuilding..." : "Rebuild Index")
+                }
+            }
+            .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
+            
+            Button(action: clearSpotlightIndex) {
+                HStack(spacing: 4) {
+                    Image(systemName: "trash")
+                    Text("Clear Index")
+                }
+            }
+            .disabled(!SpotlightIndexManager.isSpotlightAvailable)
+        }
+    }
+}
+```
+
+### Availability Checks
+Always check Spotlight availability before operations:
+
+```swift
+guard SpotlightIndexManager.isSpotlightAvailable else { 
+    // Handle unavailable state
+    return 
+}
+```
+
+## Best Practices
+
+### Data Privacy
+1. **Local Only**: All indexing happens locally, no data sent to external services
+2. **User Control**: Provide clear controls for managing search index
+3. **Selective Indexing**: Consider allowing users to exclude certain chats
+
+### Performance
+1. **Batch Operations**: Index multiple items together when possible
+2. **Incremental Updates**: Only re-index changed content
+3. **Content Limits**: Limit indexed content to maintain responsiveness
+4. **Background Processing**: Perform heavy operations off main thread
+
+### Error Handling
+1. **Graceful Degradation**: App should work normally if Spotlight is unavailable
+2. **Silent Failures**: Don't interrupt user workflow for indexing errors
+3. **Retry Logic**: Implement appropriate retry for transient failures
+
+### Content Management
+1. **Rich Metadata**: Include comprehensive keywords and metadata
+2. **Content Relevance**: Index meaningful content, skip empty or system messages
+3. **Freshness**: Keep index up-to-date with content changes
+4. **Cleanup**: Remove deleted items from index promptly
+
+## Maintenance Operations
+
+### Index Rebuilding
+Provide manual rebuild capability for troubleshooting:
+
+```swift
+func regenerateIndexes(from context: NSManagedObjectContext) {
+    Task {
+        await clearIndex()
+        await indexChats(from: context)
+    }
+}
+```
+
+### Index Clearing
+Allow users to clear the index completely:
+
+```swift
+func clearAllIndexes() {
+    Task {
+        await clearIndex()
+    }
+}
+
+private func clearIndex() async {
+    do {
+        try await searchableIndex.deleteSearchableItems(withDomainIdentifiers: [domainIdentifier])
+        print("Successfully cleared all Spotlight indexes")
+    } catch {
+        print("Error clearing Spotlight indexes: \(error)")
+    }
+}
+```
+
+## Testing Strategies
+
+### Unit Testing
+1. Test searchable item creation with various chat configurations
+2. Verify proper handling of empty or missing content
+3. Test index operations with mock Core Data contexts
+
+### Integration Testing
+1. Test Spotlight search result handling
+2. Verify navigation from search results
+3. Test index rebuilding and clearing operations
+
+### Performance Testing
+1. Test indexing performance with large chat datasets
+2. Verify UI responsiveness during indexing operations
+3. Test memory usage during bulk operations
+
+## Troubleshooting
+
+### Common Issues
+1. **Spotlight Unavailable**: Check system permissions and Spotlight status
+2. **Missing Results**: Verify index rebuilding and content indexing
+3. **Navigation Failures**: Check NotificationCenter integration
+4. **Performance Issues**: Review content limits and background processing
+
+### Debug Strategies
+1. **Logging**: Add comprehensive logging for indexing operations
+2. **System Checks**: Verify Spotlight system availability
+3. **Content Inspection**: Review indexed content for completeness
+4. **UI State**: Monitor index rebuilding states and user feedback

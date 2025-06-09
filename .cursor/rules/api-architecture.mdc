@@ -22,7 +22,8 @@ Warden implements a modular API architecture that supports multiple AI providers
 - **Ollama**: [OllamaHandler.swift](mdc:Warden/Utilities/APIHandlers/OllamaHandler.swift) - Local LLM integration
 - **OpenRouter**: [OpenRouterHandler.swift](mdc:Warden/Utilities/APIHandlers/OpenRouterHandler.swift) - Multi-model proxy service
 - **Perplexity**: [PerplexityHandler.swift](mdc:Warden/Utilities/APIHandlers/PerplexityHandler.swift) - Search-augmented AI
-- **Deepseek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - Deepseek API integration
+- **Deepseek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - Deepseek API integration with reasoning support
+- **Groq**: Inherits from ChatGPTHandler for high-speed inference
 - **Mistral**: [MistralHandler.swift](mdc:Warden/Utilities/APIHandlers/MistralHandler.swift) - Mistral AI integration
 
 ## Implementation Patterns
@@ -34,15 +35,24 @@ All handlers implement the `APIProtocol` which defines:
 - Error management
 - Authentication handling
 
+### Reasoning Model Support
+Special handling patterns for reasoning-capable models:
+- **System Message Conversion**: Convert system role to user message for reasoning models
+- **Reasoning Content Parsing**: Extract and format thinking process content
+- **Dual Stream Handling**: Separate reasoning and content streams in real-time
+- **UI Integration**: Connect to [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) for display
+
 ### Request/Response Flow
 1. **Message Preparation**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) formats messages
-2. **API Call**: Handler-specific implementation sends request
-3. **Streaming**: Real-time response processing
-4. **Parsing**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) processes AI responses
-5. **Storage**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) persists conversation data
+2. **Reasoning Check**: Detect reasoning models and adjust message format
+3. **API Call**: Handler-specific implementation sends request
+4. **Streaming**: Real-time response processing with reasoning support
+5. **Parsing**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) processes AI responses
+6. **Storage**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) persists conversation data
 
 ### Configuration Management
 - **App Constants**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Service definitions and defaults
+- **Reasoning Model List**: Centralized list of reasoning-capable models
 - **User Preferences**: API keys and model preferences stored securely
 - **Dynamic Configuration**: Runtime service discovery and configuration
 
@@ -50,6 +60,7 @@ All handlers implement the `APIProtocol` which defines:
 
 ### Streaming Support
 - **Real-time Updates**: Progressive message building
+- **Reasoning Streams**: Separate handling for thinking process content
 - **Cancellation**: User can stop generation mid-stream
 - **Error Recovery**: Graceful handling of stream interruptions
 
@@ -63,16 +74,23 @@ All handlers implement the `APIProtocol` which defines:
 - **Model Management**: Download and manage local models
 - **Performance Optimization**: Apple Silicon specific optimizations
 
+### Reasoning Integration
+- **Model Detection**: Check [AppConstants.openAiReasoningModels](mdc:Warden/Configuration/AppConstants.swift) for reasoning capability
+- **Content Processing**: Handle `<think>` tags and reasoning content
+- **UI Coordination**: Automatic integration with thinking process display
+
 ## Error Handling Strategy
 - **Network Errors**: Retry logic and user feedback
 - **API Errors**: Service-specific error interpretation
 - **Rate Limiting**: Respect provider limits and quotas
 - **Graceful Degradation**: Fallback options for service failures
+- **Reasoning Errors**: Handle incomplete reasoning streams gracefully
 
 ## Testing and Development
 - **Mock Handlers**: Test implementations for development
 - **API Key Validation**: Secure testing without exposing credentials
 - **Response Simulation**: Predictable responses for UI testing
+- **Reasoning Testing**: Mock reasoning content for UI development
 
 ## Best Practices
 - **Handler Independence**: Each handler is self-contained
@@ -80,3 +98,5 @@ All handlers implement the `APIProtocol` which defines:
 - **Resource Management**: Proper cleanup of network resources
 - **Security**: Never log or expose API keys in any handler
 - **Performance**: Efficient request/response processing
+- **Reasoning Support**: Always check for reasoning capability before special processing
+- **Stream Management**: Proper handling of dual content streams for reasoning models
