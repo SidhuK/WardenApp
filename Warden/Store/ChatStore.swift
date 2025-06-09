@@ -434,6 +434,21 @@ class ChatStore: ObservableObject {
         }
     }
     
+    func getAllChats() -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching all chats: \(error)")
+            return []
+        }
+    }
+    
     func archiveProject(_ project: ProjectEntity) {
         project.isArchived = true
         project.updatedAt = Date()
