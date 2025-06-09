@@ -88,6 +88,11 @@
 		7F6BED692DF6FE2F006B9E6E /* ProjectSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */; };
 		7F6BED6B2DF6FF6D006B9E6E /* SmartSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */; };
 		7F6BED6D2DF6FFF5006B9E6E /* ChatSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */; };
+		7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6E2DF70151006B9E6E /* ProjectListView.swift */; };
+		7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */; };
+		7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */; };
+		7F6BED752DF70238006B9E6E /* ProjectSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED742DF70238006B9E6E /* ProjectSummaryView.swift */; };
+		7F6BED772DF70308006B9E6E /* MoveToProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */; };
 		7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */; };
 		7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */; };
 		7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */; };
@@ -212,6 +217,11 @@
 		7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummarizationService.swift; sourceTree = "<group>"; };
 		7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSummarizationService.swift; sourceTree = "<group>"; };
 		7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSummarizationService.swift; sourceTree = "<group>"; };
+		7F6BED6E2DF70151006B9E6E /* ProjectListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectListView.swift; sourceTree = "<group>"; };
+		7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProjectView.swift; sourceTree = "<group>"; };
+		7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsView.swift; sourceTree = "<group>"; };
+		7F6BED742DF70238006B9E6E /* ProjectSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryView.swift; sourceTree = "<group>"; };
+		7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveToProjectView.swift; sourceTree = "<group>"; };
 		7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredInputView.swift; sourceTree = "<group>"; };
 		7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSupportDeveloperView.swift; sourceTree = "<group>"; };
 		7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabCreditsView.swift; sourceTree = "<group>"; };
@@ -359,6 +369,11 @@
 			children = (
 				4A885C572CEA3F7B0018BBED /* ChatListRow.swift */,
 				4A885C552CEA3F6C0018BBED /* ChatListView.swift */,
+				7F6BED6E2DF70151006B9E6E /* ProjectListView.swift */,
+				7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */,
+				7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */,
+				7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */,
+				7F6BED742DF70238006B9E6E /* ProjectSummaryView.swift */,
 				4A1F0A0929CEFB7F002A139A /* MessageCell.swift */,
 			);
 			path = ChatList;
@@ -668,9 +683,11 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				4A2D3CEB2D5794B10082A262 /* ThemeMode.swift in Sources */,
+				7F6BED772DF70308006B9E6E /* MoveToProjectView.swift in Sources */,
 				4A1F0A0A29CEFB7F002A139A /* MessageCell.swift in Sources */,
 				4ABB867B2CFC79ED004EC7B1 /* ErrorBubbleView.swift in Sources */,
 				4A5F64B829C64E21000403F7 /* ChatBubbleView.swift in Sources */,
+				7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */,
 				4AFEE7232C472FA1006F99FB /* ChatGPTHandler.swift in Sources */,
 				7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */,
 				4A5F64C129C78B64000403F7 /* SceneKitParticlesView.swift in Sources */,
@@ -711,6 +728,7 @@
 				4A5F64BA29C64F9D000403F7 /* ChatView.swift in Sources */,
 				4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */,
 				4A885C542CEA3D960018BBED /* PreviewStateManager.swift in Sources */,
+				7F6BED752DF70238006B9E6E /* ProjectSummaryView.swift in Sources */,
 				4AA6EF5B2C565FDF003B6D41 /* APIServiceFactory.swift in Sources */,
 				4AA681C72D3DAB40005C4E6E /* ChatBottomContainerView.swift in Sources */,
 				7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */,
@@ -723,9 +741,11 @@
 				7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */,
 				4A399C9929BC8FEF00E98796 /* WardenApp.swift in Sources */,
 				4A775A042C1486F3004301D3 /* Extensions.swift in Sources */,
+				7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */,
 				4AFDEB7E2AFF90FB00BA8642 /* TabDangerZoneView.swift in Sources */,
 				4A27FF8F2DA1C41B0075D730 /* ZoomableImageView.swift in Sources */,
 				4A194C062C9633BC003C8782 /* EntityListView.swift in Sources */,
+				7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */,
 				4AE3CEB92C93AEA800A9CF4C /* APIServiceDetailView.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,

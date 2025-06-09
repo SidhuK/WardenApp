@@ -83,6 +83,20 @@ struct MessageCell: View, Equatable {
                 
                 Spacer()
                 
+                // Project indicator
+                if let project = chat.project {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
+                            .frame(width: 8, height: 8)
+                        Text(project.name ?? "Project")
+                            .font(.caption2)
+                            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .secondary)
+                            .lineLimit(1)
+                    }
+                    .padding(.trailing, 4)
+                }
+                
                 if chat.isPinned {
                     Image(systemName: "pin.fill")
                         .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .gray)

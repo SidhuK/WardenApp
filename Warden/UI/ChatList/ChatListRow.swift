@@ -23,6 +23,7 @@ struct ChatListRow: View, Equatable {
     var onSelectionToggle: ((UUID, Bool) -> Void)?
     var onKeyboardSelection: ((UUID, Bool, Bool) -> Void)?
     @StateObject private var chatViewModel: ChatViewModel
+    @State private var showingMoveToProject = false
 
     init(
         chat: ChatEntity?,
@@ -115,6 +116,14 @@ struct ChatListRow: View, Equatable {
             .tint(chat!.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            // Move to Project action
+            Button {
+                showingMoveToProject = true
+            } label: {
+                Label("Move to Project", systemImage: "folder.badge.plus")
+            }
+            .tint(Color(.systemGreen).opacity(0.7))
+            
             // Rename action
             Button {
                 renameChat(chat!)
@@ -172,6 +181,12 @@ struct ChatListRow: View, Equatable {
             
             Divider()
             
+            Button(action: {
+                showingMoveToProject = true
+            }) {
+                Label("Move to Project", systemImage: "folder.badge.plus")
+            }
+            
             Menu("Share Chat") {
                 Button(action: {
                     ChatSharingService.shared.shareChat(chat!, format: .markdown)
@@ -195,6 +210,16 @@ struct ChatListRow: View, Equatable {
             Divider()
             Button(action: { deleteChat(chat!) }) {
                 Label("Delete", systemImage: "trash")
+            }
+        }
+        .sheet(isPresented: $showingMoveToProject) {
+            if let chat = chat {
+                MoveToProjectView(
+                    chats: [chat],
+                    onComplete: {
+                        // Refresh or update as needed
+                    }
+                )
             }
         }
     }

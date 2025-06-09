@@ -58,6 +58,11 @@ struct ChatListView: View {
             return false
         }
     }
+    
+    private var chatsWithoutProject: [ChatEntity] {
+        let allChats = searchText.isEmpty ? Array(chats) : filteredChats
+        return allChats.filter { $0.project == nil }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -74,25 +79,12 @@ struct ChatListView: View {
             }
 
             List {
-                ForEach(filteredChats, id: \.objectID) { chat in
-                    ChatListRow(
-                        chat: chat,
-                        selectedChat: $selectedChat,
-                        viewContext: viewContext,
-                        searchText: searchText,
-                        isSelectionMode: !selectedChatIDs.isEmpty,
-                        isSelected: selectedChatIDs.contains(chat.id),
-                        onSelectionToggle: { chatID, isSelected in
-                            if isSelected {
-                                selectedChatIDs.insert(chatID)
-                            } else {
-                                selectedChatIDs.remove(chatID)
-                            }
-                        },
-                        onKeyboardSelection: { chatID, isCmd, isShift in
-                            handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
-                        }
-                    )
+                // Projects section
+                projectsSection
+                
+                // Chats without project section
+                if !chatsWithoutProject.isEmpty {
+                    chatsWithoutProjectSection
                 }
             }
             .listStyle(.sidebar)
@@ -419,6 +411,73 @@ struct ChatListView: View {
             } else {
                 selectedChatIDs.insert(chatID)
                 lastSelectedChatID = chatID
+            }
+        }
+    }
+    
+    // MARK: - Section Views
+    
+    private var projectsSection: some View {
+        Section {
+            ProjectListView(
+                selectedChat: $selectedChat,
+                searchText: $searchText,
+                onNewChatInProject: { project in
+                    let uuid = UUID()
+                    let newChat = ChatEntity(context: viewContext)
+                    
+                    newChat.id = uuid
+                    newChat.newChat = true
+                    newChat.temperature = 0.8
+                    newChat.top_p = 1.0
+                    newChat.behavior = "default"
+                    newChat.newMessage = ""
+                    newChat.createdDate = Date()
+                    newChat.updatedDate = Date()
+                    newChat.systemMessage = AppConstants.chatGptSystemMessage
+                    newChat.name = "New Chat"
+                    
+                    store.moveChatsToProject(project, chats: [newChat])
+                    selectedChat = newChat
+                    onNewChat()
+                }
+            )
+        }
+    }
+    
+    private var chatsWithoutProjectSection: some View {
+        Section {
+            ForEach(chatsWithoutProject, id: \.objectID) { chat in
+                ChatListRow(
+                    chat: chat,
+                    selectedChat: $selectedChat,
+                    viewContext: viewContext,
+                    searchText: searchText,
+                    isSelectionMode: !selectedChatIDs.isEmpty,
+                    isSelected: selectedChatIDs.contains(chat.id),
+                    onSelectionToggle: { chatID, isSelected in
+                        if isSelected {
+                            selectedChatIDs.insert(chatID)
+                        } else {
+                            selectedChatIDs.remove(chatID)
+                        }
+                    },
+                    onKeyboardSelection: { chatID, isCmd, isShift in
+                        handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
+                    }
+                )
+            }
+        } header: {
+            if !store.getActiveProjects().isEmpty {
+                HStack {
+                    Text("No Project")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
             }
         }
     }
