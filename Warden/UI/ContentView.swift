@@ -1,4 +1,3 @@
-
 import AppKit
 import Combine
 import CoreData
@@ -22,6 +21,7 @@ struct ContentView: View {
     private var apiServices: FetchedResults<APIServiceEntity>
 
     @State var selectedChat: ChatEntity?
+    @State var selectedProject: ProjectEntity?
     @AppStorage("gptToken") var gptToken = ""
     @AppStorage("gptModel") var gptModel = AppConstants.chatGptDefaultModel
     @AppStorage("lastOpenedChatId") var lastOpenedChatId = ""
@@ -38,6 +38,7 @@ struct ContentView: View {
         NavigationSplitView {
             ChatListView(
                 selectedChat: $selectedChat,
+                selectedProject: $selectedProject,
                 showingSettings: $showingSettings,
                 onNewChat: newChat,
                 onOpenPreferences: openPreferencesView
@@ -52,6 +53,10 @@ struct ContentView: View {
                 if showingSettings {
                     // Show settings in main content area
                     InlinePreferencesView()
+                        .frame(minWidth: 400)
+                } else if let project = selectedProject {
+                    // Show project summary when project is selected
+                    ProjectSummaryView(project: project)
                         .frame(minWidth: 400)
                 } else if selectedChat != nil {
                     ChatView(viewContext: viewContext, chat: selectedChat!)
@@ -68,7 +73,7 @@ struct ContentView: View {
                     )
                 }
 
-                if previewStateManager.isPreviewVisible && !showingSettings {
+                if previewStateManager.isPreviewVisible && !showingSettings && selectedProject == nil {
                     PreviewPane(stateManager: previewStateManager)
                 }
             }
@@ -144,9 +149,18 @@ struct ContentView: View {
                 self.openedChatId = newValue?.id.uuidString
                 previewStateManager.hidePreview()
             }
-            // Close settings when selecting a chat
-            if newValue != nil && showingSettings {
+            // Close settings and clear project selection when selecting a chat
+            if newValue != nil {
                 showingSettings = false
+                selectedProject = nil
+            }
+        }
+        .onChange(of: selectedProject) { newValue in
+            // Clear chat selection and close settings when selecting a project
+            if newValue != nil {
+                selectedChat = nil
+                showingSettings = false
+                previewStateManager.hidePreview()
             }
         }
         .onChange(of: showingSettings) { newValue in

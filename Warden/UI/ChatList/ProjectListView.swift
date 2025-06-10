@@ -11,6 +11,7 @@ struct ProjectListView: View {
     @State private var showingProjectSettings = false
     
     @Binding var selectedChat: ChatEntity?
+    @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
     
     let onNewChatInProject: (ProjectEntity) -> Void
@@ -47,6 +48,7 @@ struct ProjectListView: View {
                             project: project,
                             isExpanded: expandedProjects.contains(project.id ?? UUID()),
                             selectedChat: $selectedChat,
+                            selectedProject: $selectedProject,
                             searchText: $searchText,
                             onToggleExpansion: {
                                 guard let projectId = project.id else { return }
@@ -159,6 +161,7 @@ struct ProjectListView: View {
                         project: project,
                         isExpanded: expandedProjects.contains(project.id ?? UUID()),
                         selectedChat: $selectedChat,
+                        selectedProject: $selectedProject,
                         searchText: $searchText,
                         onToggleExpansion: {
                             guard let projectId = project.id else { return }
@@ -242,6 +245,7 @@ struct ProjectRow: View {
     @ObservedObject var project: ProjectEntity
     let isExpanded: Bool
     @Binding var selectedChat: ChatEntity?
+    @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
     
     let onToggleExpansion: () -> Void
@@ -272,49 +276,66 @@ struct ProjectRow: View {
     var body: some View {
         VStack(spacing: 0) {
             // Project header
-            Button(action: onToggleExpansion) {
-                HStack(spacing: 2) {
-                    // Colored folder icon - aligned with AI logo (8pt from left edge)
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(projectColor)
-                        .padding(.leading, -8) // Offset container padding to align with AI logo
-                    
-                    // Project name
-                    Text(project.name ?? "Untitled Project")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                        .padding(.leading, 8) // Add spacing between folder and name
-                    
-                    Spacer()
-                    
-                    // Chat count badge
-                    if projectChats.count > 0 {
-                        HStack(spacing: 4) {
-                            Text("\(projectChats.count)")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
+            HStack(spacing: 0) {
+                // Project selection button (larger area)
+                Button(action: {
+                    selectedProject = project
+                }) {
+                                    HStack(spacing: 2) {
+                        // Colored folder icon - aligned with AI logo (8pt from left edge)
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(projectColor)
+                            .padding(.leading, -8) // Offset container padding to align with AI logo
+                        
+                        // Project name
+                        Text(project.name ?? "Untitled Project")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .padding(.leading, 8) // Add spacing between folder and name
+                        
+                        Spacer()
+                        
+                        // Chat count badge
+                        if projectChats.count > 0 {
+                            HStack(spacing: 4) {
+                                Text("\(projectChats.count)")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(projectColor.opacity(0.8))
+                            )
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(projectColor.opacity(0.8))
-                        )
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(selectedProject?.objectID == project.objectID ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
+                    )
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isExpanded ? projectColor.opacity(0.05) : Color.clear)
-                )
-                .contentShape(Rectangle())
+                .buttonStyle(PlainButtonStyle())
+                
+                // Expansion toggle button (small area on the right)
+                Button(action: onToggleExpansion) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.trailing, 8)
             }
-            .buttonStyle(PlainButtonStyle())
             .contextMenu {
                 projectContextMenu
             }
@@ -460,6 +481,7 @@ struct ProjectChatRow: View {
 #Preview {
     ProjectListView(
         selectedChat: .constant(nil),
+        selectedProject: .constant(nil),
         searchText: .constant(""),
         onNewChatInProject: { _ in }
     )

@@ -25,6 +25,7 @@ struct ChatListView: View {
     private var chats: FetchedResults<ChatEntity>
 
     @Binding var selectedChat: ChatEntity?
+    @Binding var selectedProject: ProjectEntity?
     @Binding var showingSettings: Bool
     let onNewChat: () -> Void
     let onOpenPreferences: () -> Void
@@ -421,6 +422,7 @@ struct ChatListView: View {
         Section {
             ProjectListView(
                 selectedChat: $selectedChat,
+                selectedProject: $selectedProject,
                 searchText: $searchText,
                 onNewChatInProject: { project in
                     let uuid = UUID()
