@@ -33,6 +33,11 @@ struct ContentView: View {
     @State private var openedChatId: String? = nil
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var showingSettings = false
+    
+    // New state variables for inline project views
+    @State private var showingCreateProject = false
+    @State private var showingEditProject = false
+    @State private var projectToEdit: ProjectEntity?
 
     var body: some View {
         NavigationSplitView {
@@ -40,6 +45,9 @@ struct ContentView: View {
                 selectedChat: $selectedChat,
                 selectedProject: $selectedProject,
                 showingSettings: $showingSettings,
+                showingCreateProject: $showingCreateProject,
+                showingEditProject: $showingEditProject,
+                projectToEdit: $projectToEdit,
                 onNewChat: newChat,
                 onOpenPreferences: openPreferencesView
             )
@@ -54,6 +62,20 @@ struct ContentView: View {
                     // Show settings in main content area
                     InlinePreferencesView()
                         .frame(minWidth: 400)
+                } else if showingCreateProject {
+                    // Show create project view inline
+                    CreateProjectView(onProjectCreated: { project in
+                        selectedProject = project
+                        showingCreateProject = false
+                    })
+                    .frame(minWidth: 400)
+                } else if showingEditProject, let project = projectToEdit {
+                    // Show edit project view inline
+                    ProjectSettingsView(project: project, onComplete: {
+                        showingEditProject = false
+                        projectToEdit = nil
+                    })
+                    .frame(minWidth: 400)
                 } else if let project = selectedProject {
                     // Show project summary when project is selected
                     ProjectSummaryView(project: project)

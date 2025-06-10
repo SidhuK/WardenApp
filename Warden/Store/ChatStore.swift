@@ -356,17 +356,52 @@ class ChatStore: ObservableObject {
         saveInCoreData()
     }
     
-
-    
-
-    
-
-    
-
-    
-
-    
-
+    // Regenerate titles for all chats in a project
+    func regenerateChatTitlesInProject(_ project: ProjectEntity) {
+        guard let chats = project.chats?.allObjects as? [ChatEntity], !chats.isEmpty else { return }
+        
+        // Find a suitable API service for title generation
+        let apiServiceFetch = NSFetchRequest<APIServiceEntity>(entityName: "APIServiceEntity")
+        apiServiceFetch.fetchLimit = 1
+        
+        do {
+            guard let apiServiceEntity = try viewContext.fetch(apiServiceFetch).first else {
+                print("No API service available for title regeneration")
+                return
+            }
+            
+            // Create API service configuration from entity
+            guard let apiUrl = apiServiceEntity.url else {
+                print("API service URL is missing")
+                return
+            }
+            
+            let apiConfig = APIServiceConfig(
+                name: apiServiceEntity.name ?? "default",
+                apiUrl: apiUrl,
+                apiKey: "", // We'll use the stored API key
+                model: apiServiceEntity.model ?? AppConstants.chatGptDefaultModel
+            )
+            
+            // Create API service from config
+            let apiService = APIServiceFactory.createAPIService(config: apiConfig)
+            
+            // Create a message manager for title generation
+            let messageManager = MessageManager(
+                apiService: apiService,
+                viewContext: viewContext
+            )
+            
+            // Regenerate titles for each chat
+            for chat in chats {
+                if !chat.messagesArray.isEmpty {
+                    messageManager.generateChatNameIfNeeded(chat: chat, force: true)
+                }
+            }
+        } catch {
+            print("Error fetching API service for title regeneration: \(error)")
+        }
+    }
     
     // MARK: - Performance Optimized Project Queries
     

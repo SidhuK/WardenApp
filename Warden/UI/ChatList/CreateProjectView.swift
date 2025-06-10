@@ -52,7 +52,30 @@ struct CreateProjectView: View {
     }
     
     var body: some View {
-        NavigationView {
+        VStack {
+            // Toolbar
+            HStack {
+                Button("Cancel") {
+                    dismiss()
+                }
+                
+                Spacer()
+                
+                Text("Create Project")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("Create") {
+                    createProject()
+                }
+                .disabled(!isValidInput)
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            
+            // Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header
@@ -74,24 +97,7 @@ struct CreateProjectView: View {
                 }
                 .padding(24)
             }
-            .navigationTitle("Create Project")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        createProject()
-                    }
-                    .disabled(!isValidInput)
-                    .buttonStyle(.borderedProminent)
-                }
-            }
         }
-        .frame(width: 800, height: 900)
         .onChange(of: selectedTemplate) { _, newValue in
             if let template = newValue {
                 projectName = template.name
@@ -100,6 +106,11 @@ struct CreateProjectView: View {
                 if projectDescription.isEmpty {
                     projectDescription = template.description
                 }
+            }
+        }
+        .sheet(isPresented: $showingTemplateDetails) {
+            if let template = selectedTemplate {
+                TemplateDetailView(template: template)
             }
         }
     }
@@ -212,11 +223,6 @@ struct CreateProjectView: View {
                         .foregroundColor(.secondary)
                         .padding(.vertical, 20)
                 }
-            }
-        }
-        .sheet(isPresented: $showingTemplateDetails) {
-            if let template = selectedTemplate {
-                TemplateDetailView(template: template)
             }
         }
     }

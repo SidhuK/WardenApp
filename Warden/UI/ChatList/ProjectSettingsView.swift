@@ -7,6 +7,7 @@ struct ProjectSettingsView: View {
     @EnvironmentObject private var store: ChatStore
     
     @ObservedObject var project: ProjectEntity
+    let onComplete: () -> Void
     
     @State private var projectName: String = ""
     @State private var projectDescription: String = ""
@@ -46,7 +47,30 @@ struct ProjectSettingsView: View {
     }
     
     var body: some View {
-        NavigationView {
+        VStack {
+            // Toolbar
+            HStack {
+                Button("Cancel") {
+                    onComplete()
+                }
+                
+                Spacer()
+                
+                Text("Project Settings")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("Save") {
+                    saveChanges()
+                }
+                .disabled(!isValidInput || !hasChanges)
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            
+            // Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header with project info
@@ -61,8 +85,6 @@ struct ProjectSettingsView: View {
                     // Custom Instructions
                     instructionsSection
                     
-
-                    
                     // Danger Zone
                     dangerZoneSection
                     
@@ -70,24 +92,7 @@ struct ProjectSettingsView: View {
                 }
                 .padding(24)
             }
-            .navigationTitle("Project Settings")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveChanges()
-                    }
-                    .disabled(!isValidInput || !hasChanges)
-                    .buttonStyle(.borderedProminent)
-                }
-            }
         }
-        .frame(width: 600, height: 800)
         .onAppear {
             loadProjectData()
         }
@@ -316,12 +321,12 @@ struct ProjectSettingsView: View {
             customInstructions: trimmedInstructions.isEmpty ? nil : trimmedInstructions
         )
         
-        dismiss()
+        onComplete()
     }
     
     private func deleteProject() {
         store.deleteProject(project)
-        dismiss()
+        onComplete()
     }
 }
 
@@ -363,7 +368,7 @@ extension ProjectSettingsView {
 
 #Preview {
     if let project = PreviewStateManager.shared.sampleProject {
-        ProjectSettingsView(project: project)
+        ProjectSettingsView(project: project, onComplete: {})
             .environmentObject(PreviewStateManager.shared.chatStore)
             .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
     } else {

@@ -6,13 +6,13 @@ struct ProjectListView: View {
     @EnvironmentObject private var store: ChatStore
     
     @State private var expandedProjects: Set<UUID> = []
-    @State private var selectedProjectForEdit: ProjectEntity?
-    @State private var showingCreateProject = false
-    @State private var showingProjectSettings = false
     
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
+    @Binding var showingCreateProject: Bool
+    @Binding var showingEditProject: Bool
+    @Binding var projectToEdit: ProjectEntity?
     
     let onNewChatInProject: (ProjectEntity) -> Void
     
@@ -61,8 +61,8 @@ struct ProjectListView: View {
                                 }
                             },
                             onEditProject: {
-                                selectedProjectForEdit = project
-                                showingProjectSettings = true
+                                projectToEdit = project
+                                showingEditProject = true
                             },
                             onDeleteProject: {
                                 deleteProject(project)
@@ -85,18 +85,6 @@ struct ProjectListView: View {
             }
             
             Spacer()
-        }
-        .sheet(isPresented: $showingCreateProject) {
-            CreateProjectView(onProjectCreated: { project in
-                if let projectId = project.id {
-                    expandedProjects.insert(projectId)
-                }
-            })
-        }
-        .sheet(isPresented: $showingProjectSettings) {
-            if let project = selectedProjectForEdit {
-                ProjectSettingsView(project: project)
-            }
         }
     }
     
@@ -172,8 +160,8 @@ struct ProjectListView: View {
                             }
                         },
                         onEditProject: {
-                            selectedProjectForEdit = project
-                            showingProjectSettings = true
+                            projectToEdit = project
+                            showingEditProject = true
                         },
                         onDeleteProject: {
                             deleteProject(project)
@@ -206,8 +194,6 @@ struct ProjectListView: View {
             }
         }
     }
-    
-
     
     // MARK: - Performance Optimization Methods
     
@@ -374,6 +360,10 @@ struct ProjectRow: View {
                 onEditProject()
             }
             
+            Button("Regenerate Chat Titles") {
+                store.regenerateChatTitlesInProject(project)
+            }
+            
             Divider()
             
             if isArchived {
@@ -391,8 +381,6 @@ struct ProjectRow: View {
             }
         }
     }
-    
-
     
     private var emptyProjectState: some View {
         VStack(spacing: 4) {
@@ -476,13 +464,14 @@ struct ProjectChatRow: View {
     }
 }
 
-
-
 #Preview {
     ProjectListView(
         selectedChat: .constant(nil),
         selectedProject: .constant(nil),
         searchText: .constant(""),
+        showingCreateProject: .constant(false),
+        showingEditProject: .constant(false),
+        projectToEdit: .constant(nil),
         onNewChatInProject: { _ in }
     )
     .environmentObject(PreviewStateManager.shared.chatStore)

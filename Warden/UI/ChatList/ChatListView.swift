@@ -27,6 +27,10 @@ struct ChatListView: View {
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
     @Binding var showingSettings: Bool
+    @Binding var showingCreateProject: Bool
+    @Binding var showingEditProject: Bool
+    @Binding var projectToEdit: ProjectEntity?
+    
     let onNewChat: () -> Void
     let onOpenPreferences: () -> Void
 
@@ -424,6 +428,9 @@ struct ChatListView: View {
                 selectedChat: $selectedChat,
                 selectedProject: $selectedProject,
                 searchText: $searchText,
+                showingCreateProject: $showingCreateProject,
+                showingEditProject: $showingEditProject,
+                projectToEdit: $projectToEdit,
                 onNewChatInProject: { project in
                     let uuid = UUID()
                     let newChat = ChatEntity(context: viewContext)
@@ -439,6 +446,10 @@ struct ChatListView: View {
                     newChat.systemMessage = AppConstants.chatGptSystemMessage
                     newChat.name = "New Chat"
                     
+                    // Save the chat first to ensure it exists in the database
+                    try? viewContext.save()
+                    
+                    // Then move it to the project
                     store.moveChatsToProject(project, chats: [newChat])
                     selectedChat = newChat
                     onNewChat()
