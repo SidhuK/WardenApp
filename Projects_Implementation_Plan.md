@@ -242,32 +242,15 @@ Implement a Projects feature similar to ChatGPT and Claude that allows users to 
   - "Learning Project"
 - [ ] Template system with pre-configured instructions and summarization settings
 
-### Phase 8: Polish & Performance
+### Phase 6: Polish & Performance
 
-#### Task 8.1: Performance Optimization
+#### Task 6.1: Performance Optimization
 
 - [ ] Lazy loading of project summaries
 - [ ] Efficient project context building
 - [ ] Background summarization processing
 - [ ] Optimize Core Data queries for projects
 - [ ] Cache AI-generated summaries intelligently
-
-#### Task 8.2: User Experience Enhancements
-
-- [ ] Project onboarding flow for new users
-- [ ] Empty state designs for new projects
-- [ ] Keyboard shortcuts for project navigation
-- [ ] Drag & drop improvements for chat organization
-- [ ] Smart summary refresh timing
-
-#### Task 8.3: Error Handling & Edge Cases
-
-- [ ] Handle summarization API errors gracefully
-- [ ] Manage API quota limits for summarization
-- [ ] Handle incomplete or failed summarizations
-- [ ] Project deletion safeguards with summary preservation
-
----
 
 ## Technical Considerations
 

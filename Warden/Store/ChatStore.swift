@@ -444,12 +444,15 @@ class ChatStore: ObservableObject {
     
     // MARK: - Private Helper Methods for AI Summarization
     
-    /// Builds a comprehensive prompt for project summarization
+    /// Builds a comprehensive prompt for project summarization with template-aware styling
     private func buildProjectSummaryPrompt(for project: ProjectEntity) -> String {
         let chats = getChatsInProject(project)
         
+        // Determine summarization style based on project configuration
+        let summarizationStyle = determineSummarizationStyle(for: project)
+        
         var prompt = """
-        Analyze this project and provide a comprehensive summary:
+        Analyze this project and provide a \(summarizationStyle.styleDescription) summary:
         
         PROJECT: \(project.name ?? "Untitled Project")
         """
@@ -493,26 +496,56 @@ class ChatStore: ObservableObject {
             }
         }
         
-        prompt += """
-        
-        Please provide a structured summary that includes:
-        1. Project overview and main purpose
-        2. Key themes and topics discussed
-        3. Notable progress or achievements
-        4. Current status and activity level
-        """
+        // Add style-specific instructions
+        prompt += "\n\n\(summarizationStyle.instructions)"
         
         return prompt
     }
     
-    /// Builds a focused prompt for chat summarization
+    /// Determines the appropriate summarization style for a project
+    private func determineSummarizationStyle(for project: ProjectEntity) -> ProjectSummarizationStyle {
+        // Try to match project characteristics to template styles
+        let instructions = project.customInstructions?.lowercased() ?? ""
+        let description = project.projectDescription?.lowercased() ?? ""
+        let name = project.name?.lowercased() ?? ""
+        
+        // Check for technical keywords
+        if instructions.contains("code") || instructions.contains("development") || 
+           instructions.contains("programming") || instructions.contains("software") ||
+           name.contains("code") || description.contains("development") {
+            return .technical
+        }
+        
+        // Check for research keywords
+        if instructions.contains("research") || instructions.contains("analysis") ||
+           instructions.contains("academic") || instructions.contains("study") ||
+           name.contains("research") || description.contains("analysis") {
+            return .analytical
+        }
+        
+        // Check for creative keywords
+        if instructions.contains("creative") || instructions.contains("writing") ||
+           instructions.contains("design") || instructions.contains("storytelling") ||
+           name.contains("creative") || description.contains("writing") {
+            return .creative
+        }
+        
+        // Default to detailed for most projects
+        return .detailed
+    }
+    
+    /// Builds a focused prompt for chat summarization with style awareness
     private func buildChatSummaryPrompt(for chat: ChatEntity) -> String {
         let messages = chat.messagesArray.sorted { 
             ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) 
         }
         
+        // Use project's summarization style if available
+        let summarizationStyle = chat.project != nil ? 
+            determineSummarizationStyle(for: chat.project!) : .concise
+        
         var prompt = """
-        Summarize this conversation concisely:
+        Summarize this conversation with a \(summarizationStyle.styleDescription) approach:
         
         CHAT: \(chat.name ?? "Untitled Chat")
         MESSAGES: \(messages.count)
@@ -520,6 +553,10 @@ class ChatStore: ObservableObject {
         
         if let persona = chat.persona {
             prompt += "\nAI PERSONA: \(persona.name ?? "Default")"
+        }
+        
+        if let project = chat.project {
+            prompt += "\nPROJECT: \(project.name ?? "Unknown")"
         }
         
         prompt += "\n\nCONVERSATION CONTENT:"
@@ -535,17 +572,143 @@ class ChatStore: ObservableObject {
             }
         }
         
-        prompt += """
-        
-        Provide a brief summary focusing on:
-        - Main topic and purpose of the conversation
-        - Key points discussed or problems solved
-        - Current status or outcome
-        
-        Keep it under 100 words.
-        """
+        prompt += "\n\n\(summarizationStyle.chatInstructions)"
         
         return prompt
+    }
+    
+    /// Project summarization styles with specific instructions
+    private enum ProjectSummarizationStyle {
+        case detailed
+        case concise
+        case technical
+        case creative
+        case analytical
+        
+        var styleDescription: String {
+            switch self {
+            case .detailed: return "comprehensive and detailed"
+            case .concise: return "concise and focused"
+            case .technical: return "technical and implementation-focused"
+            case .creative: return "creative and insight-driven"
+            case .analytical: return "analytical and data-driven"
+            }
+        }
+        
+        var instructions: String {
+            switch self {
+            case .detailed:
+                return """
+                Please provide a structured summary that includes:
+                1. Project overview and main purpose
+                2. Key themes and topics discussed
+                3. Notable progress or achievements
+                4. Current status and activity level
+                5. Detailed insights and recommendations
+                
+                Aim for 200-300 words with rich context and actionable insights.
+                """
+                
+            case .concise:
+                return """
+                Please provide a brief summary focusing on:
+                1. Main purpose and current status
+                2. Key accomplishments
+                3. Next steps or priorities
+                
+                Keep it under 100 words, highlighting only the most important aspects.
+                """
+                
+            case .technical:
+                return """
+                Please provide a technical summary that includes:
+                1. Technical objectives and architecture decisions
+                2. Code quality, patterns, and best practices discussed
+                3. Development progress and implementation details
+                4. Technical challenges and solutions
+                5. Code review insights and recommendations
+                
+                Focus on technical depth, specific technologies, and development metrics.
+                """
+                
+            case .creative:
+                return """
+                Please provide a creative summary that includes:
+                1. Creative vision and artistic direction
+                2. Inspiration sources and creative processes
+                3. Innovative ideas and breakthrough moments
+                4. Creative challenges and solutions
+                5. Artistic growth and style evolution
+                
+                Emphasize creativity, innovation, and artistic development.
+                """
+                
+            case .analytical:
+                return """
+                Please provide an analytical summary that includes:
+                1. Research objectives and methodology
+                2. Key findings and data insights
+                3. Analysis patterns and trends identified
+                4. Evidence quality and source evaluation
+                5. Conclusions and future research directions
+                
+                Focus on data, evidence, methodology, and rigorous analysis.
+                """
+            }
+        }
+        
+        var chatInstructions: String {
+            switch self {
+            case .detailed:
+                return """
+                Provide a detailed summary focusing on:
+                - Main topic and purpose of the conversation
+                - Key points discussed and insights gained
+                - Problem-solving approaches and solutions
+                - Learning outcomes and knowledge acquired
+                - Current status and next steps
+                
+                Aim for 100-150 words with comprehensive coverage.
+                """
+                
+            case .concise:
+                return """
+                Provide a brief summary focusing on:
+                - Main topic and purpose
+                - Key outcome or conclusion
+                - Current status
+                
+                Keep it under 50 words, highlighting only essentials.
+                """
+                
+            case .technical:
+                return """
+                Provide a technical summary focusing on:
+                - Technical problem or implementation discussed
+                - Solutions, patterns, and approaches used
+                - Code quality and architecture decisions
+                - Technical outcomes and lessons learned
+                """
+                
+            case .creative:
+                return """
+                Provide a creative summary focusing on:
+                - Creative challenge or project discussed
+                - Innovative ideas and creative solutions
+                - Artistic insights and inspiration
+                - Creative progress and next steps
+                """
+                
+            case .analytical:
+                return """
+                Provide an analytical summary focusing on:
+                - Research question or analytical problem
+                - Data sources and methodology used
+                - Key findings and insights
+                - Analytical conclusions and implications
+                """
+            }
+        }
     }
     
     /// Formats date for inclusion in AI prompts
