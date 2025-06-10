@@ -62,7 +62,39 @@ struct ProjectSummarySheet: View {
     }
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Custom header with title and buttons
+            HStack {
+                Text("Project Summary")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button(action: {
+                    refreshSummary()
+                }) {
+                    HStack(spacing: 4) {
+                        if isRefreshingSummary {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        Text("Refresh")
+                    }
+                }
+                .disabled(isRefreshingSummary || projectChats.isEmpty)
+                .buttonStyle(.borderedProminent)
+                
+                Button("Close") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+            .background(Material.bar)
+            
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Project header
@@ -85,31 +117,6 @@ struct ProjectSummarySheet: View {
                     Spacer(minLength: 100)
                 }
                 .padding(24)
-            }
-            .navigationTitle("Project Summary")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
-                        refreshSummary()
-                    }) {
-                        HStack(spacing: 4) {
-                            if isRefreshingSummary {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                            }
-                            Text("Refresh")
-                        }
-                    }
-                    .disabled(isRefreshingSummary || projectChats.isEmpty)
-                }
             }
         }
     }
@@ -155,7 +162,7 @@ struct ProjectSummarySheet: View {
                     .foregroundColor(.secondary)
                 
                 if let lastSummary = project.lastSummarizedAt {
-                    Label("Updated \(lastSummary, style: .relative)", systemImage: "doc.text")
+                    Label("Last Summary \(lastSummary, style: .date)", systemImage: "doc.text")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -200,7 +207,7 @@ struct ProjectSummarySheet: View {
             if let lastActivity = projectChats.first?.updatedDate {
                 ProjectStatCard(
                     title: "Last Activity",
-                    value: relativeDateString(lastActivity),
+                    value: formatDateString(lastActivity),
                     icon: "clock.arrow.circlepath",
                     color: .purple
                 )
@@ -231,7 +238,7 @@ struct ProjectSummarySheet: View {
                         .foregroundColor(.primary)
                     
                     if let lastSummary = project.lastSummarizedAt {
-                        Text("Generated \(lastSummary, style: .relative)")
+                        Text("Generated \(lastSummary, style: .date)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -326,7 +333,7 @@ struct ProjectSummarySheet: View {
                         
                         Spacer()
                         
-                        Text(chat.updatedDate, style: .relative)
+                        Text(chat.updatedDate, style: .date)
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -400,10 +407,11 @@ struct ProjectSummarySheet: View {
     
     // MARK: - Helper Methods
     
-    private func relativeDateString(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+    private func formatDateString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
     
     private func refreshSummary() {

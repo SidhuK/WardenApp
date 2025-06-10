@@ -275,18 +275,9 @@ struct ProjectRow: View {
             Button(action: onToggleExpansion) {
                 HStack(spacing: 10) {
                     // Colored folder icon
-                    Image(systemName: isExpanded ? "folder.fill" : "folder.fill")
+                    Image(systemName: "folder.fill")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(projectColor)
-                        .overlay(
-                            // Expansion chevron on folder
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 6, weight: .bold))
-                                .foregroundColor(.white)
-                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                                .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                                .offset(x: 1, y: -1)
-                        )
                     
                     // Project name
                     Text(project.name ?? "Untitled Project")
@@ -402,6 +393,8 @@ struct ProjectChatRow: View {
     @ObservedObject var chat: ChatEntity
     @Binding var selectedChat: ChatEntity?
     let searchText: String
+    @Environment(\.colorScheme) var colorScheme
+    @State private var isHovered = false
     
     private var isSelected: Bool {
         selectedChat?.objectID == chat.objectID
@@ -411,52 +404,50 @@ struct ProjectChatRow: View {
         Button(action: {
             selectedChat = chat
         }) {
-            HStack(spacing: 8) {
-                // Indent indicator with connecting line
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 1, height: 24)
-                        .offset(x: 8)
-                    
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 8, height: 1)
-                        .offset(x: 8, y: 0)
-                    
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(width: 8)
+            HStack {
+                // AI Model Logo (same as regular chats)
+                Image("logo_\(chat.apiService?.type ?? "")")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
+                    .padding(.leading, 8)
+                
+                VStack(alignment: .leading) {
+                    if !chat.name.isEmpty {
+                        HighlightedText(chat.name, highlight: searchText)
+                            .font(.body)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
                 }
-                
-                // Chat icon
-                Image(systemName: "message")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                
-                // Chat name
-                Text(chat.name)
-                    .font(.caption)
-                    .fontWeight(isSelected ? .medium : .regular)
-                    .foregroundColor(isSelected ? .accentColor : .primary)
-                    .lineLimit(1)
+                .padding(.vertical, 8)
+                .padding(.trailing, 8)
                 
                 Spacer()
                 
-                // Last activity
-                if let lastMessage = chat.lastMessage {
-                    Text(lastMessage.timestamp ?? Date(), style: .relative)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                if chat.isPinned {
+                    Image(systemName: "pin.fill")
+                        .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .gray)
+                        .font(.caption)
+                        .padding(.trailing, 8)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(
+                        isSelected
+                            ? (colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
+                            : isHovered
+                                ? (colorScheme == .dark ? Color(hex: "#666666")! : Color(hex: "#CCCCCC")!) : Color.clear
+                    )
             )
-            .contentShape(Rectangle())
+            .onHover { hovering in
+                isHovered = hovering
+            }
         }
         .buttonStyle(PlainButtonStyle())
     }
