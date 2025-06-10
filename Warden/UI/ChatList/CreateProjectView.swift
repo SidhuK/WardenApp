@@ -12,7 +12,7 @@ struct CreateProjectView: View {
     @State private var selectedColor: String = "#007AFF"
     @State private var selectedTemplate: AppConstants.ProjectTemplate?
     @State private var selectedCategory: AppConstants.ProjectTemplate.ProjectTemplateCategory = .professional
-    @State private var showingTemplateDetails = false
+
     @State private var searchText: String = ""
     
     let onProjectCreated: (ProjectEntity) -> Void
@@ -109,11 +109,7 @@ struct CreateProjectView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingTemplateDetails) {
-            if let template = selectedTemplate {
-                TemplateDetailView(template: template)
-            }
-        }
+
     }
     
     private var headerSection: some View {
@@ -174,9 +170,6 @@ struct CreateProjectView: View {
                                 isSelected: selectedTemplate?.id == template.id,
                                 onSelect: {
                                     selectedTemplate = template
-                                },
-                                onShowDetails: {
-                                    showingTemplateDetails = true
                                 }
                             )
                         }
@@ -211,9 +204,6 @@ struct CreateProjectView: View {
                                 isSelected: selectedTemplate?.id == template.id,
                                 onSelect: {
                                     selectedTemplate = template
-                                },
-                                onShowDetails: {
-                                    showingTemplateDetails = true
                                 }
                             )
                         }
@@ -350,7 +340,6 @@ struct AdvancedTemplateCard: View {
     let template: AppConstants.ProjectTemplate
     let isSelected: Bool
     let onSelect: () -> Void
-    let onShowDetails: () -> Void
     
     var body: some View {
         Button(action: onSelect) {
@@ -428,13 +417,7 @@ struct AdvancedTemplateCard: View {
                     }
                 }
                 
-                // Details button
-                Button("View Details") {
-                    onShowDetails()
-                }
-                .font(.caption)
-                .foregroundColor(.accentColor)
-                .padding(.top, 4)
+
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -519,120 +502,7 @@ struct CustomTemplateCard: View {
     }
 }
 
-struct TemplateDetailView: View {
-    let template: AppConstants.ProjectTemplate
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: template.icon)
-                                .font(.title)
-                                .foregroundColor(Color(hex: template.colorCode) ?? .accentColor)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(template.name)
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                Text(template.category.rawValue)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                        }
-                        
-                        Text(template.detailedDescription)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    // Configuration details
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Template Configuration")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                        
-                        VStack(spacing: 12) {
-                            ConfigRow(title: "Summarization Style", value: template.summarizationStyle.description)
-                            ConfigRow(title: "Usage Level", value: template.estimatedUsage.rawValue.capitalized)
-                            ConfigRow(title: "Suggested Models", value: template.suggestedModels.joined(separator: ", "))
-                        }
-                    }
-                    
-                    // Tags
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Tags")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                        
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                            ForEach(template.tags, id: \.self) { tag in
-                                Text(tag)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.accentColor.opacity(0.1))
-                                    .foregroundColor(.accentColor)
-                                    .cornerRadius(6)
-                            }
-                        }
-                    }
-                    
-                    // Custom instructions preview
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Custom Instructions Preview")
-                            .font(.headline)
-                            .fontWeight(.medium)
-                        
-                        Text(template.customInstructions)
-                            .font(.system(.caption, design: .monospaced))
-                            .padding(12)
-                            .background(Color(NSColor.controlBackgroundColor))
-                            .cornerRadius(8)
-                    }
-                }
-                .padding(24)
-            }
-            .navigationTitle("Template Details")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .frame(width: 600, height: 700)
-    }
-}
 
-struct ConfigRow: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.trailing)
-        }
-        .padding(.vertical, 4)
-    }
-}
 
 struct ColorOption: View {
     let colorHex: String
