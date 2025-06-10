@@ -267,7 +267,7 @@ struct ProjectRow: View {
                 Button(action: {
                     selectedProject = project
                 }) {
-                                    HStack(spacing: 2) {
+                    HStack(spacing: 2) {
                         // Colored folder icon - aligned with AI logo (8pt from left edge)
                         Image(systemName: "folder.fill")
                             .font(.system(size: 16, weight: .medium))
@@ -322,6 +322,7 @@ struct ProjectRow: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.trailing, 8)
             }
+            .contentShape(Rectangle()) // Ensure entire row is tappable
             .contextMenu {
                 projectContextMenu
             }
@@ -405,7 +406,18 @@ struct ProjectChatRow: View {
     @Binding var selectedChat: ChatEntity?
     let searchText: String
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var store: ChatStore
     @State private var isHovered = false
+    @State private var showingMoveToProject = false
+    @StateObject private var chatViewModel: ChatViewModel
+    
+    init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
+        self.chat = chat
+        self._selectedChat = selectedChat
+        self.searchText = searchText
+        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: chat.managedObjectContext!))
+    }
     
     private var isSelected: Bool {
         selectedChat?.objectID == chat.objectID
@@ -461,6 +473,127 @@ struct ProjectChatRow: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+        .contextMenu {
+            Button(action: { 
+                togglePinChat(chat) 
+            }) {
+                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
+            }
+            
+            Button(action: { renameChat(chat) }) {
+                Label("Rename", systemImage: "pencil")
+            }
+            
+            if chat.apiService?.generateChatNames ?? false {
+                Button(action: {
+                    chatViewModel.regenerateChatName()
+                }) {
+                    Label("Regenerate Name", systemImage: "arrow.clockwise")
+                }
+            }
+            
+            Button(action: { clearChat(chat) }) {
+                Label("Clear Chat", systemImage: "eraser")
+            }
+            
+            Divider()
+            
+            Button(action: {
+                showingMoveToProject = true
+            }) {
+                Label("Move to Project", systemImage: "folder.badge.plus")
+            }
+            
+            Menu("Share Chat") {
+                Button(action: {
+                    ChatSharingService.shared.shareChat(chat, format: .markdown)
+                }) {
+                    Label("Share as Markdown", systemImage: "square.and.arrow.up")
+                }
+                
+                Button(action: {
+                    ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
+                }) {
+                    Label("Copy as Markdown", systemImage: "doc.on.doc")
+                }
+                
+                Button(action: {
+                    ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
+                }) {
+                    Label("Export to File", systemImage: "doc.badge.arrow.up")
+                }
+            }
+            
+            Divider()
+            Button(action: { deleteChat(chat) }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .sheet(isPresented: $showingMoveToProject) {
+            MoveToProjectView(
+                chats: [chat],
+                onComplete: {
+                    // Refresh or update as needed
+                }
+            )
+        }
+    }
+    
+    private func togglePinChat(_ chat: ChatEntity) {
+        chat.isPinned.toggle()
+        try? viewContext.save()
+    }
+    
+    private func renameChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Rename Chat"
+        alert.informativeText = "Enter a new name for this chat:"
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        textField.stringValue = chat.name
+        alert.accessoryView = textField
+        
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            chat.name = textField.stringValue
+            try? viewContext.save()
+        }
+    }
+    
+    private func clearChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Clear Chat"
+        alert.informativeText = "This will delete all messages in this chat. Are you sure?"
+        alert.alertStyle = .warning
+        
+        alert.addButton(withTitle: "Clear")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            chat.messages = []
+            try? viewContext.save()
+        }
+    }
+    
+    private func deleteChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Delete Chat?"
+        alert.informativeText = "This action cannot be undone."
+        alert.alertStyle = .warning
+        
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            viewContext.delete(chat)
+            try? viewContext.save()
+            
+            if selectedChat?.objectID == chat.objectID {
+                selectedChat = nil
+            }
+        }
     }
 }
 

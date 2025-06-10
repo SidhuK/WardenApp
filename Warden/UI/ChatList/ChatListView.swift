@@ -452,7 +452,6 @@ struct ChatListView: View {
                     // Then move it to the project
                     store.moveChatsToProject(project, chats: [newChat])
                     selectedChat = newChat
-                    onNewChat()
                 }
             )
         }

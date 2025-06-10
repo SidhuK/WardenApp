@@ -110,9 +110,14 @@ struct MoveToProjectView: View {
         }
         .frame(width: 500, height: 600)
         .sheet(isPresented: $showingCreateProject) {
-            CreateProjectView(onProjectCreated: { project in
-                selectedProject = project
-            })
+            CreateProjectView(
+                onProjectCreated: { project in
+                    selectedProject = project
+                },
+                onCancel: {
+                    showingCreateProject = false
+                }
+            )
         }
     }
     

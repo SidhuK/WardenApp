@@ -64,10 +64,15 @@ struct ContentView: View {
                         .frame(minWidth: 400)
                 } else if showingCreateProject {
                     // Show create project view inline
-                    CreateProjectView(onProjectCreated: { project in
-                        selectedProject = project
-                        showingCreateProject = false
-                    })
+                    CreateProjectView(
+                        onProjectCreated: { project in
+                            selectedProject = project
+                            showingCreateProject = false
+                        },
+                        onCancel: {
+                            showingCreateProject = false
+                        }
+                    )
                     .frame(minWidth: 400)
                 } else if showingEditProject, let project = projectToEdit {
                     // Show edit project view inline

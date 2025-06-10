@@ -16,6 +16,7 @@ struct CreateProjectView: View {
     @State private var searchText: String = ""
     
     let onProjectCreated: (ProjectEntity) -> Void
+    let onCancel: () -> Void
     
     // Predefined color options
     private let colorOptions: [String] = [
@@ -56,7 +57,7 @@ struct CreateProjectView: View {
             // Toolbar
             HStack {
                 Button("Cancel") {
-                    dismiss()
+                    onCancel()
                 }
                 
                 Spacer()
@@ -667,7 +668,7 @@ struct ColorOption: View {
 }
 
 #Preview {
-    CreateProjectView(onProjectCreated: { _ in })
+    CreateProjectView(onProjectCreated: { _ in }, onCancel: {})
         .environmentObject(PreviewStateManager.shared.chatStore)
         .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
 } 
