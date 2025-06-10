@@ -171,7 +171,7 @@ struct ContentView: View {
                 print("Saving state...")
             }
         }
-        .onChange(of: selectedChat) { newValue in
+        .onChange(of: selectedChat) { oldValue, newValue in
             if self.openedChatId != newValue?.id.uuidString {
                 self.openedChatId = newValue?.id.uuidString
                 previewStateManager.hidePreview()
@@ -182,7 +182,7 @@ struct ContentView: View {
                 selectedProject = nil
             }
         }
-        .onChange(of: selectedProject) { newValue in
+        .onChange(of: selectedProject) { oldValue, newValue in
             // Clear chat selection and close settings when selecting a project
             if newValue != nil {
                 selectedChat = nil
@@ -190,10 +190,13 @@ struct ContentView: View {
                 previewStateManager.hidePreview()
             }
         }
-        .onChange(of: showingSettings) { newValue in
+        .onChange(of: showingSettings) { oldValue, newValue in
             // Hide preview when showing settings
             if newValue {
                 previewStateManager.hidePreview()
+                // Clear both selections when opening settings
+                selectedChat = nil
+                selectedProject = nil
             }
         }
         .environmentObject(previewStateManager)

@@ -423,37 +423,158 @@ struct ChatListView: View {
     // MARK: - Section Views
     
     private var projectsSection: some View {
-        Section {
-            ProjectListView(
-                selectedChat: $selectedChat,
-                selectedProject: $selectedProject,
-                searchText: $searchText,
-                showingCreateProject: $showingCreateProject,
-                showingEditProject: $showingEditProject,
-                projectToEdit: $projectToEdit,
-                onNewChatInProject: { project in
-                    let uuid = UUID()
-                    let newChat = ChatEntity(context: viewContext)
-                    
-                    newChat.id = uuid
-                    newChat.newChat = true
-                    newChat.temperature = 0.8
-                    newChat.top_p = 1.0
-                    newChat.behavior = "default"
-                    newChat.newMessage = ""
-                    newChat.createdDate = Date()
-                    newChat.updatedDate = Date()
-                    newChat.systemMessage = AppConstants.chatGptSystemMessage
-                    newChat.name = "New Chat"
-                    
-                    // Save the chat first to ensure it exists in the database
-                    try? viewContext.save()
-                    
-                    // Then move it to the project
-                    store.moveChatsToProject(project, chats: [newChat])
-                    selectedChat = newChat
+        Group {
+            // Projects header
+            if !store.getActiveProjects().isEmpty || !getArchivedProjects().isEmpty {
+                Section {
+                    EmptyView()
+                } header: {
+                    projectsHeader
                 }
-            )
+            }
+            
+            // Active projects - each as individual list item
+            ForEach(store.getActiveProjects(), id: \.objectID) { project in
+                ProjectRowInList(
+                    project: project,
+                    selectedChat: $selectedChat,
+                    selectedProject: $selectedProject,
+                    searchText: $searchText,
+                    showingCreateProject: $showingCreateProject,
+                    showingEditProject: $showingEditProject,
+                    projectToEdit: $projectToEdit,
+                    onNewChatInProject: { project in
+                        let uuid = UUID()
+                        let newChat = ChatEntity(context: viewContext)
+                        
+                        newChat.id = uuid
+                        newChat.newChat = true
+                        newChat.temperature = 0.8
+                        newChat.top_p = 1.0
+                        newChat.behavior = "default"
+                        newChat.newMessage = ""
+                        newChat.createdDate = Date()
+                        newChat.updatedDate = Date()
+                        newChat.systemMessage = AppConstants.chatGptSystemMessage
+                        newChat.name = "New Chat"
+                        
+                        // Save the chat first to ensure it exists in the database
+                        try? viewContext.save()
+                        
+                        // Then move it to the project
+                        store.moveChatsToProject(project, chats: [newChat])
+                        selectedChat = newChat
+                    }
+                )
+            }
+            
+            // Archived projects section (if any exist and are shown)
+            if !getArchivedProjects().isEmpty {
+                archivedProjectsSection
+            }
+        }
+    }
+    
+    @State private var showingArchivedProjects = false
+    
+    private func getArchivedProjects() -> [ProjectEntity] {
+        return store.getProjectsPaginated(limit: 100, offset: 0, includeArchived: true)
+            .filter { $0.isArchived }
+    }
+    
+    private var projectsHeader: some View {
+        HStack {
+            Text("Projects")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Button(action: {
+                showingCreateProject = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.accentColor)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("Create New Project")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+    
+    private var archivedProjectsSection: some View {
+        Group {
+            // Archived projects header
+            Section {
+                EmptyView()
+            } header: {
+                Button(action: {
+                    showingArchivedProjects.toggle()
+                }) {
+                    HStack {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .medium))
+                            .rotationEffect(.degrees(showingArchivedProjects ? 90 : 0))
+                            .animation(.easeInOut(duration: 0.2), value: showingArchivedProjects)
+                        
+                        Text("Archived Projects")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                        
+                        Text("(\(getArchivedProjects().count))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Archived projects list
+            if showingArchivedProjects {
+                ForEach(getArchivedProjects(), id: \.objectID) { project in
+                    ProjectRowInList(
+                        project: project,
+                        selectedChat: $selectedChat,
+                        selectedProject: $selectedProject,
+                        searchText: $searchText,
+                        showingCreateProject: $showingCreateProject,
+                        showingEditProject: $showingEditProject,
+                        projectToEdit: $projectToEdit,
+                        onNewChatInProject: { project in
+                            let uuid = UUID()
+                            let newChat = ChatEntity(context: viewContext)
+                            
+                            newChat.id = uuid
+                            newChat.newChat = true
+                            newChat.temperature = 0.8
+                            newChat.top_p = 1.0
+                            newChat.behavior = "default"
+                            newChat.newMessage = ""
+                            newChat.createdDate = Date()
+                            newChat.updatedDate = Date()
+                            newChat.systemMessage = AppConstants.chatGptSystemMessage
+                            newChat.name = "New Chat"
+                            
+                            // Save the chat first to ensure it exists in the database
+                            try? viewContext.save()
+                            
+                            // Then move it to the project
+                            store.moveChatsToProject(project, chats: [newChat])
+                            selectedChat = newChat
+                        },
+                        isArchived: true
+                    )
+                }
+            }
         }
     }
     

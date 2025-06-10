@@ -42,39 +42,37 @@ struct ProjectListView: View {
             
             // Active projects with lazy loading
             if !activeProjects.isEmpty {
-                LazyVStack(spacing: 0) {
-                    ForEach(activeProjects, id: \.objectID) { project in
-                        ProjectRow(
-                            project: project,
-                            isExpanded: expandedProjects.contains(project.id ?? UUID()),
-                            selectedChat: $selectedChat,
-                            selectedProject: $selectedProject,
-                            searchText: $searchText,
-                            onToggleExpansion: {
-                                guard let projectId = project.id else { return }
-                                if expandedProjects.contains(projectId) {
-                                    expandedProjects.remove(projectId)
-                                } else {
-                                    expandedProjects.insert(projectId)
-                                    // Preload project data when expanded for better performance
-                                    store.preloadProjectData(for: [project])
-                                }
-                            },
-                            onEditProject: {
-                                projectToEdit = project
-                                showingEditProject = true
-                            },
-                            onDeleteProject: {
-                                deleteProject(project)
-                            },
-                            onNewChatInProject: {
-                                onNewChatInProject(project)
+                ForEach(activeProjects, id: \.objectID) { project in
+                    ProjectRow(
+                        project: project,
+                        isExpanded: expandedProjects.contains(project.id ?? UUID()),
+                        selectedChat: $selectedChat,
+                        selectedProject: $selectedProject,
+                        searchText: $searchText,
+                        onToggleExpansion: {
+                            guard let projectId = project.id else { return }
+                            if expandedProjects.contains(projectId) {
+                                expandedProjects.remove(projectId)
+                            } else {
+                                expandedProjects.insert(projectId)
+                                // Preload project data when expanded for better performance
+                                store.preloadProjectData(for: [project])
                             }
-                        )
-                        .onAppear {
-                            // Preload next few projects when this one appears
-                            preloadNearbyProjects(for: project)
+                        },
+                        onEditProject: {
+                            projectToEdit = project
+                            showingEditProject = true
+                        },
+                        onDeleteProject: {
+                            deleteProject(project)
+                        },
+                        onNewChatInProject: {
+                            onNewChatInProject(project)
                         }
+                    )
+                    .onAppear {
+                        // Preload next few projects when this one appears
+                        preloadNearbyProjects(for: project)
                     }
                 }
             }
@@ -259,76 +257,63 @@ struct ProjectRow: View {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
     }
     
+    private var isSelected: Bool {
+        selectedProject?.objectID == project.objectID
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Project header
-            HStack(spacing: 0) {
-                // Project selection button (larger area)
-                Button(action: {
-                    selectedProject = project
-                }) {
-                    HStack(spacing: 2) {
-                        // Colored folder icon - aligned with AI logo (8pt from left edge)
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(projectColor)
-                            .padding(.leading, -8) // Offset container padding to align with AI logo
-                        
-                        // Project name
-                        Text(project.name ?? "Untitled Project")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                            .padding(.leading, 8) // Add spacing between folder and name
-                        
-                        Spacer()
-                        
-                        // Chat count badge
-                        if projectChats.count > 0 {
-                            HStack(spacing: 4) {
-                                Text("\(projectChats.count)")
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(projectColor.opacity(0.8))
-                            )
-                        }
+            // Project header row with swipe actions applied here
+            projectHeaderRow
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    // Delete action (destructive, red)
+                    Button(role: .destructive) {
+                        onDeleteProject()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(selectedProject?.objectID == project.objectID ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
-                    )
-                    .contentShape(Rectangle())
+                    
+                    // Archive/Unarchive action
+                    Button {
+                        if isArchived {
+                            store.unarchiveProject(project)
+                        } else {
+                            store.archiveProject(project)
+                        }
+                    } label: {
+                        Label(isArchived ? "Unarchive" : "Archive", 
+                              systemImage: isArchived ? "tray.and.arrow.up" : "tray.and.arrow.down")
+                    }
+                    .tint(Color(.systemOrange).opacity(0.7))
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Expansion toggle button (small area on the right)
-                Button(action: onToggleExpansion) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                        .frame(width: 20, height: 20)
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    // Edit action
+                    Button {
+                        onEditProject()
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .tint(Color(.systemBlue).opacity(0.7))
+                    
+                    // New chat in project action
+                    Button {
+                        onNewChatInProject()
+                    } label: {
+                        Label("New Chat", systemImage: "plus.message")
+                    }
+                    .tint(Color(.systemGreen).opacity(0.7))
+                    
+                    // Regenerate chat titles action
+                    Button {
+                        store.regenerateChatTitlesInProject(project)
+                    } label: {
+                        Label("Regenerate Titles", systemImage: "arrow.clockwise")
+                    }
+                    .tint(Color(.systemPurple).opacity(0.7))
                 }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.trailing, 8)
-            }
-            .contentShape(Rectangle()) // Ensure entire row is tappable
-            .contextMenu {
-                projectContextMenu
-            }
-            .opacity(isArchived ? 0.7 : 1.0)
+                .opacity(isArchived ? 0.7 : 1.0)
             
-            // Project chats (when expanded)
+            // Project chats (when expanded) - separate from swipe actions
             if isExpanded {
                 VStack(spacing: 0) {
                     // Chats in project
@@ -346,6 +331,78 @@ struct ProjectRow: View {
                     }
                 }
             }
+        }
+    }
+    
+    private var projectHeaderRow: some View {
+        HStack(spacing: 0) {
+            // Project selection button (larger area)
+            Button(action: {
+                // Only select if not already selected, otherwise deselect
+                if isSelected {
+                    selectedProject = nil
+                } else {
+                    selectedProject = project
+                }
+            }) {
+                HStack(spacing: 2) {
+                    // Colored folder icon - aligned with AI logo (8pt from left edge)
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(projectColor)
+                        .padding(.leading, -8) // Offset container padding to align with AI logo
+                    
+                    // Project name
+                    Text(project.name ?? "Untitled Project")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .padding(.leading, 8) // Add spacing between folder and name
+                    
+                    Spacer()
+                    
+                    // Chat count badge
+                    if projectChats.count > 0 {
+                        HStack(spacing: 4) {
+                            Text("\(projectChats.count)")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(projectColor.opacity(0.8))
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expansion toggle button (small area on the right)
+            Button(action: onToggleExpansion) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.trailing, 8)
+        }
+        .contentShape(Rectangle()) // Ensure entire row is tappable
+        .contextMenu {
+            projectContextMenu
         }
     }
     
@@ -475,14 +532,15 @@ struct ProjectChatRow: View {
         .buttonStyle(PlainButtonStyle())
         .contextMenu {
             Button(action: { 
-                togglePinChat(chat) 
+                togglePinChat() 
             }) {
                 Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
             }
             
-            Button(action: { renameChat(chat) }) {
+            Button(action: { renameChat() }) {
                 Label("Rename", systemImage: "pencil")
             }
+            .tint(.green)
             
             if chat.apiService?.generateChatNames ?? false {
                 Button(action: {
@@ -492,41 +550,66 @@ struct ProjectChatRow: View {
                 }
             }
             
-            Button(action: { clearChat(chat) }) {
-                Label("Clear Chat", systemImage: "eraser")
+            Button(action: { showingMoveToProject = true }) {
+                Label("Move to Project", systemImage: "folder")
             }
             
             Divider()
             
-            Button(action: {
-                showingMoveToProject = true
-            }) {
-                Label("Move to Project", systemImage: "folder.badge.plus")
-            }
-            
-            Menu("Share Chat") {
-                Button(action: {
-                    ChatSharingService.shared.shareChat(chat, format: .markdown)
-                }) {
-                    Label("Share as Markdown", systemImage: "square.and.arrow.up")
-                }
-                
-                Button(action: {
-                    ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
-                }) {
-                    Label("Copy as Markdown", systemImage: "doc.on.doc")
-                }
-                
-                Button(action: {
-                    ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
-                }) {
-                    Label("Export to File", systemImage: "doc.badge.arrow.up")
-                }
-            }
-            
-            Divider()
-            Button(action: { deleteChat(chat) }) {
+            Button(action: { deleteChat() }) {
                 Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            // Delete action (destructive, red)
+            Button(role: .destructive) {
+                deleteChat()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            
+            // Pin/Unpin action
+            Button {
+                togglePinChat()
+            } label: {
+                Label(chat.isPinned ? "Unpin" : "Pin", 
+                      systemImage: chat.isPinned ? "pin.slash" : "pin")
+            }
+            .tint(chat.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            // Move to Project action
+            Button {
+                showingMoveToProject = true
+            } label: {
+                Label("Move to Project", systemImage: "folder")
+            }
+            .tint(Color(.systemGreen).opacity(0.7))
+            
+            // Rename action
+            Button {
+                renameChat()
+            } label: {
+                Label("Rename", systemImage: "pencil")
+            }
+            .tint(.green)
+            
+            // Share action
+            Button {
+                ChatSharingService.shared.shareChat(chat, format: .markdown)
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color(.systemBlue).opacity(0.7))
+            
+            // Regenerate name action (only if supported)
+            if chat.apiService?.generateChatNames ?? false {
+                Button {
+                    chatViewModel.regenerateChatName()
+                } label: {
+                    Label("Regenerate", systemImage: "arrow.clockwise")
+                }
+                .tint(Color(.systemPurple).opacity(0.6))
             }
         }
         .sheet(isPresented: $showingMoveToProject) {
@@ -539,59 +622,65 @@ struct ProjectChatRow: View {
         }
     }
     
-    private func togglePinChat(_ chat: ChatEntity) {
+    private func togglePinChat() {
         chat.isPinned.toggle()
-        try? viewContext.save()
+        do {
+            try viewContext.save()
+        } catch {
+            print("Error toggling pin status: \(error.localizedDescription)")
+        }
     }
     
-    private func renameChat(_ chat: ChatEntity) {
+    private func renameChat() {
+        // Implementation for renaming chat
         let alert = NSAlert()
         alert.messageText = "Rename Chat"
         alert.informativeText = "Enter a new name for this chat:"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
         
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
         textField.stringValue = chat.name
         alert.accessoryView = textField
         
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancel")
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            chat.name = textField.stringValue
-            try? viewContext.save()
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !newName.isEmpty {
+                    chat.name = newName
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error renaming chat: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
     }
     
-    private func clearChat(_ chat: ChatEntity) {
-        let alert = NSAlert()
-        alert.messageText = "Clear Chat"
-        alert.informativeText = "This will delete all messages in this chat. Are you sure?"
-        alert.alertStyle = .warning
-        
-        alert.addButton(withTitle: "Clear")
-        alert.addButton(withTitle: "Cancel")
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            chat.messages = []
-            try? viewContext.save()
-        }
-    }
-    
-    private func deleteChat(_ chat: ChatEntity) {
+    private func deleteChat() {
         let alert = NSAlert()
         alert.messageText = "Delete Chat?"
-        alert.informativeText = "This action cannot be undone."
+        alert.informativeText = "Are you sure you want to delete \"\(chat.name)\"? This action cannot be undone."
         alert.alertStyle = .warning
         
         alert.addButton(withTitle: "Delete")
         alert.addButton(withTitle: "Cancel")
         
         if alert.runModal() == .alertFirstButtonReturn {
-            viewContext.delete(chat)
-            try? viewContext.save()
-            
+            // Clear selection if this chat is selected
             if selectedChat?.objectID == chat.objectID {
                 selectedChat = nil
+            }
+            
+            // Remove from Spotlight index before deleting
+            store.removeChatFromSpotlight(chatId: chat.id)
+            
+            viewContext.delete(chat)
+            do {
+                try viewContext.save()
+            } catch {
+                print("Error deleting chat: \(error.localizedDescription)")
             }
         }
     }
@@ -609,4 +698,529 @@ struct ProjectChatRow: View {
     )
     .environmentObject(PreviewStateManager.shared.chatStore)
     .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
+}
+
+// MARK: - ProjectRowInList for use in main List
+struct ProjectRowInList: View {
+    @EnvironmentObject private var store: ChatStore
+    @ObservedObject var project: ProjectEntity
+    @Binding var selectedChat: ChatEntity?
+    @Binding var selectedProject: ProjectEntity?
+    @Binding var searchText: String
+    @Binding var showingCreateProject: Bool
+    @Binding var showingEditProject: Bool
+    @Binding var projectToEdit: ProjectEntity?
+    
+    let onNewChatInProject: (ProjectEntity) -> Void
+    var isArchived: Bool = false
+    
+    @State private var isExpanded = false
+    
+    private var projectChats: [ChatEntity] {
+        // Use optimized Core Data query instead of relationship access for better performance
+        let chats = store.getChatsInProject(project)
+        
+        // Apply search filter if needed
+        guard !searchText.isEmpty else { return chats }
+        
+        let searchQuery = searchText.lowercased()
+        return chats.filter { chat in
+            chat.name.lowercased().contains(searchQuery) ||
+            chat.systemMessage.lowercased().contains(searchQuery) ||
+            (chat.persona?.name?.lowercased().contains(searchQuery) ?? false)
+        }
+    }
+    
+    private var projectColor: Color {
+        Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
+    }
+    
+    private var isSelected: Bool {
+        selectedProject?.objectID == project.objectID
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Project header row
+            HStack(spacing: 0) {
+                // Project selection button (larger area)
+                Button(action: {
+                    // Only select if not already selected, otherwise deselect
+                    if isSelected {
+                        selectedProject = nil
+                    } else {
+                        selectedProject = project
+                    }
+                }) {
+                    HStack(spacing: 2) {
+                        // Colored folder icon - aligned with AI logo (8pt from left edge)
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(projectColor)
+                            .padding(.leading, -8) // Offset container padding to align with AI logo
+                        
+                        // Project name
+                        Text(project.name ?? "Untitled Project")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .padding(.leading, 8) // Add spacing between folder and name
+                        
+                        Spacer()
+                        
+                        // Chat count badge
+                        if projectChats.count > 0 {
+                            HStack(spacing: 4) {
+                                Text("\(projectChats.count)")
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(projectColor.opacity(0.8))
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isSelected ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // Expansion toggle button (small area on the right)
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.trailing, 8)
+            }
+            .contentShape(Rectangle()) // Ensure entire row is tappable
+            .contextMenu {
+                projectContextMenu
+            }
+            
+            // Project chats (when expanded) - separate from swipe actions
+            if isExpanded {
+                VStack(spacing: 0) {
+                    // Chats in project
+                    ForEach(projectChats, id: \.objectID) { chat in
+                        ProjectChatRowInList(
+                            chat: chat,
+                            selectedChat: $selectedChat,
+                            searchText: searchText
+                        )
+                    }
+                    
+                    // Empty state for projects without chats
+                    if projectChats.isEmpty {
+                        emptyProjectState
+                    }
+                }
+            }
+        }
+        .opacity(isArchived ? 0.7 : 1.0)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            // Delete action (destructive, red)
+            Button(role: .destructive) {
+                deleteProject()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            
+            // Archive/Unarchive action
+            Button {
+                if isArchived {
+                    store.unarchiveProject(project)
+                } else {
+                    store.archiveProject(project)
+                }
+            } label: {
+                Label(isArchived ? "Unarchive" : "Archive", 
+                      systemImage: isArchived ? "tray.and.arrow.up" : "tray.and.arrow.down")
+            }
+            .tint(Color(.systemOrange).opacity(0.7))
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            // Edit action
+            Button {
+                editProject()
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .tint(Color(.systemBlue).opacity(0.7))
+            
+            // New chat in project action
+            Button {
+                onNewChatInProject(project)
+            } label: {
+                Label("New Chat", systemImage: "plus.message")
+            }
+            .tint(Color(.systemGreen).opacity(0.7))
+            
+            // Regenerate chat titles action
+            Button {
+                store.regenerateChatTitlesInProject(project)
+            } label: {
+                Label("Regenerate Titles", systemImage: "arrow.clockwise")
+            }
+            .tint(Color(.systemPurple).opacity(0.7))
+        }
+    }
+    
+    private var projectContextMenu: some View {
+        Group {
+            Button("New Chat in Project") {
+                onNewChatInProject(project)
+            }
+            
+            Divider()
+            
+            Button("Edit Project") {
+                editProject()
+            }
+            
+            Button("Regenerate Chat Titles") {
+                store.regenerateChatTitlesInProject(project)
+            }
+            
+            Divider()
+            
+            if isArchived {
+                Button("Unarchive Project") {
+                    store.unarchiveProject(project)
+                }
+            } else {
+                Button("Archive Project") {
+                    store.archiveProject(project)
+                }
+            }
+            
+            Button("Delete Project") {
+                deleteProject()
+            }
+        }
+    }
+    
+    private var emptyProjectState: some View {
+        VStack(spacing: 4) {
+            Text("No chats in this project")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Button("Start New Chat") {
+                onNewChatInProject(project)
+            }
+            .font(.caption)
+            .foregroundColor(.accentColor)
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 8)
+    }
+    
+    private func editProject() {
+        projectToEdit = project
+        showingEditProject = true
+    }
+    
+    private func deleteProject() {
+        let chatCount = project.chats?.count ?? 0
+        
+        let alert = NSAlert()
+        alert.messageText = "Delete Project \"\(project.name ?? "Untitled")\"?"
+        alert.informativeText = chatCount > 0 ? 
+            "This project contains \(chatCount) chat\(chatCount == 1 ? "" : "s"). The chats will be moved to \"No Project\" and won't be deleted." : 
+            "This action cannot be undone."
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                store.deleteProject(project)
+            }
+        }
+    }
+}
+
+// MARK: - ProjectChatRowInList for use in main List
+struct ProjectChatRowInList: View {
+    @ObservedObject var chat: ChatEntity
+    @Binding var selectedChat: ChatEntity?
+    let searchText: String
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var store: ChatStore
+    @State private var isHovered = false
+    @State private var showingMoveToProject = false
+    @StateObject private var chatViewModel: ChatViewModel
+    
+    init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
+        self.chat = chat
+        self._selectedChat = selectedChat
+        self.searchText = searchText
+        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: chat.managedObjectContext!))
+    }
+    
+    private var isSelected: Bool {
+        selectedChat?.objectID == chat.objectID
+    }
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // Chat selection area
+            Button(action: {
+                selectedChat = chat
+            }) {
+                HStack(spacing: 12) {
+                    // Indentation to show hierarchy
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 24) // Indent to show it's under a project
+                    
+                    // AI service logo
+                    if let apiServiceName = chat.apiService?.name,
+                       let image = getServiceLogo(for: apiServiceName) {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
+                    } else {
+                        Image(systemName: "message")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 16, height: 16)
+                    }
+                    
+                    // Chat info
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(getChatDisplayName())
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        
+                        if let lastMessage = getLastMessage() {
+                            Text(lastMessage)
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Pin indicator
+                    if chat.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.orange)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .contextMenu {
+            chatContextMenu
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            // Delete action
+            Button(role: .destructive) {
+                deleteChat()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            
+            // Move to project action
+            Button {
+                showingMoveToProject = true
+            } label: {
+                Label("Move", systemImage: "folder")
+            }
+            .tint(.blue)
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            // Pin/Unpin action
+            Button {
+                togglePinChat()
+            } label: {
+                Label(chat.isPinned ? "Unpin" : "Pin", 
+                      systemImage: chat.isPinned ? "pin.slash" : "pin")
+            }
+            .tint(.orange)
+            
+            // Rename action
+            Button {
+                renameChat()
+            } label: {
+                Label("Rename", systemImage: "pencil")
+            }
+            .tint(.green)
+        }
+        .sheet(isPresented: $showingMoveToProject) {
+            // Move to project sheet would go here
+        }
+    }
+    
+    private var chatContextMenu: some View {
+        Group {
+            Button(action: { 
+                togglePinChat() 
+            }) {
+                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
+            }
+            
+            Button(action: { renameChat() }) {
+                Label("Rename", systemImage: "pencil")
+            }
+            
+            if chat.apiService?.generateChatNames ?? false {
+                Button(action: {
+                    chatViewModel.regenerateChatName()
+                }) {
+                    Label("Regenerate Name", systemImage: "arrow.clockwise")
+                }
+            }
+            
+            Button(action: { showingMoveToProject = true }) {
+                Label("Move to Project", systemImage: "folder")
+            }
+            
+            Divider()
+            
+            Button(action: { deleteChat() }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+    
+    private func getChatDisplayName() -> String {
+        if searchText.isEmpty {
+            return chat.name
+        }
+        
+        // Return highlighted name if there's a search
+        return chat.name
+    }
+    
+    private func getLastMessage() -> String? {
+        if let messages = chat.messages.array as? [MessageEntity],
+           let lastMessage = messages.last {
+            return lastMessage.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return nil
+    }
+    
+    private func getServiceLogo(for serviceName: String) -> Image? {
+        switch serviceName.lowercased() {
+        case "openai", "chatgpt":
+            return Image("logo_chatgpt")
+        case "anthropic", "claude":
+            return Image("logo_claude")
+        case "google", "gemini":
+            return Image("logo_gemini")
+        case "ollama":
+            return Image("logo_ollama")
+        case "openrouter":
+            return Image("logo_openrouter")
+        case "perplexity":
+            return Image("logo_perplexity")
+        case "deepseek":
+            return Image("logo_deepseek")
+        case "groq":
+            return Image("logo_groq")
+        case "mistral":
+            return Image("logo_mistral")
+        case "xai", "grok":
+            return Image("logo_xai")
+        default:
+            return nil
+        }
+    }
+    
+    private func togglePinChat() {
+        chat.isPinned.toggle()
+        do {
+            try viewContext.save()
+        } catch {
+            print("Error toggling pin status: \(error.localizedDescription)")
+        }
+    }
+    
+    private func renameChat() {
+        // Implementation for renaming chat
+        let alert = NSAlert()
+        alert.messageText = "Rename Chat"
+        alert.informativeText = "Enter a new name for this chat:"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        textField.stringValue = chat.name
+        alert.accessoryView = textField
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !newName.isEmpty {
+                    chat.name = newName
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error renaming chat: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    }
+    
+    private func deleteChat() {
+        let alert = NSAlert()
+        alert.messageText = "Delete Chat?"
+        alert.informativeText = "Are you sure you want to delete \"\(chat.name)\"? This action cannot be undone."
+        alert.alertStyle = .warning
+        
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        if alert.runModal() == .alertFirstButtonReturn {
+            // Clear selection if this chat is selected
+            if selectedChat?.objectID == chat.objectID {
+                selectedChat = nil
+            }
+            
+            // Remove from Spotlight index before deleting
+            store.removeChatFromSpotlight(chatId: chat.id)
+            
+            viewContext.delete(chat)
+            do {
+                try viewContext.save()
+            } catch {
+                print("Error deleting chat: \(error.localizedDescription)")
+            }
+        }
+    }
 } 
