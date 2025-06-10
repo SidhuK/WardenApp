@@ -417,10 +417,4 @@ struct SummarizationRecommendation {
 
 // MARK: - Extensions
 
-extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
-            Array(self[$0..<Swift.min($0 + size, count)])
-        }
-    }
-} 
+// Note: chunked extension is defined in ChatStore.swift to avoid duplication 

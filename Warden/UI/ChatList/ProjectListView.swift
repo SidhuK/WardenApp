@@ -39,36 +39,44 @@ struct ProjectListView: View {
             // Projects header with create button
             projectsHeader
             
-            // Active projects
+            // Active projects with lazy loading
             if !activeProjects.isEmpty {
-                ForEach(activeProjects, id: \.objectID) { project in
-                    ProjectRow(
-                        project: project,
-                        isExpanded: expandedProjects.contains(project.id ?? UUID()),
-                        selectedChat: $selectedChat,
-                        searchText: $searchText,
-                        onToggleExpansion: {
-                            guard let projectId = project.id else { return }
-                            if expandedProjects.contains(projectId) {
-                                expandedProjects.remove(projectId)
-                            } else {
-                                expandedProjects.insert(projectId)
+                LazyVStack(spacing: 0) {
+                    ForEach(activeProjects, id: \.objectID) { project in
+                        ProjectRow(
+                            project: project,
+                            isExpanded: expandedProjects.contains(project.id ?? UUID()),
+                            selectedChat: $selectedChat,
+                            searchText: $searchText,
+                            onToggleExpansion: {
+                                guard let projectId = project.id else { return }
+                                if expandedProjects.contains(projectId) {
+                                    expandedProjects.remove(projectId)
+                                } else {
+                                    expandedProjects.insert(projectId)
+                                    // Preload project data when expanded for better performance
+                                    store.preloadProjectData(for: [project])
+                                }
+                            },
+                            onEditProject: {
+                                selectedProjectForEdit = project
+                                showingProjectSettings = true
+                            },
+                            onDeleteProject: {
+                                deleteProject(project)
+                            },
+                            onNewChatInProject: {
+                                onNewChatInProject(project)
+                            },
+                            onGenerateSummary: {
+                                generateProjectSummary(project)
                             }
-                        },
-                        onEditProject: {
-                            selectedProjectForEdit = project
-                            showingProjectSettings = true
-                        },
-                        onDeleteProject: {
-                            deleteProject(project)
-                        },
-                        onNewChatInProject: {
-                            onNewChatInProject(project)
-                        },
-                        onGenerateSummary: {
-                            generateProjectSummary(project)
+                        )
+                        .onAppear {
+                            // Preload next few projects when this one appears
+                            preloadNearbyProjects(for: project)
                         }
-                    )
+                    }
                 }
             }
             
@@ -203,9 +211,45 @@ struct ProjectListView: View {
     }
     
     private func generateProjectSummary(_ project: ProjectEntity) {
-        // TODO: Implement AI summarization when Phase 2 integration is complete
-        // For now, this is a placeholder
-        print("Generating summary for project: \(project.name ?? "Unknown")")
+        Task {
+            do {
+                                            await MainActor.run {
+                                store.generateProjectSummary(project)
+                            }
+            } catch {
+                print("Error generating summary for project \(project.name ?? "Unknown"): \(error)")
+            }
+        }
+    }
+    
+    // MARK: - Performance Optimization Methods
+    
+    private func preloadNearbyProjects(for currentProject: ProjectEntity) {
+        guard let currentIndex = activeProjects.firstIndex(of: currentProject) else { return }
+        
+        // Preload next 3 projects for smoother scrolling
+        let startIndex = max(0, currentIndex)
+        let endIndex = min(activeProjects.count - 1, currentIndex + 3)
+        let projectsToPreload = Array(activeProjects[startIndex...endIndex])
+        
+        Task.detached(priority: .background) {
+            await MainActor.run {
+                store.preloadProjectData(for: projectsToPreload)
+            }
+        }
+    }
+    
+    private func optimizePerformanceIfNeeded() {
+        Task.detached(priority: .background) {
+            let stats = await MainActor.run { store.getPerformanceStats() }
+            
+            // Optimize if we have too many registered objects
+            if stats.registeredObjects > 500 {
+                await MainActor.run {
+                    store.optimizeMemoryUsage()
+                }
+            }
+        }
     }
 }
 
@@ -224,14 +268,14 @@ struct ProjectRow: View {
     var isArchived: Bool = false
     
     private var projectChats: [ChatEntity] {
-        guard let chats = project.chats?.allObjects as? [ChatEntity] else { return [] }
-        let sortedChats = chats.sorted { $0.updatedDate > $1.updatedDate }
+        // Use optimized Core Data query instead of relationship access for better performance
+        let chats = store.getChatsInProject(project)
         
         // Apply search filter if needed
-        guard !searchText.isEmpty else { return sortedChats }
+        guard !searchText.isEmpty else { return chats }
         
         let searchQuery = searchText.lowercased()
-        return sortedChats.filter { chat in
+        return chats.filter { chat in
             chat.name.lowercased().contains(searchQuery) ||
             chat.systemMessage.lowercased().contains(searchQuery) ||
             (chat.persona?.name?.lowercased().contains(searchQuery) ?? false)

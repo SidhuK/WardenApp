@@ -356,11 +356,11 @@ struct ProjectSummaryView: View {
     private func refreshSummary() {
         isRefreshingSummary = true
         
-        // TODO: Implement actual AI summarization
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            isRefreshingSummary = false
-            // Placeholder - this would be replaced with actual AI integration
-            print("Refreshing summary for project: \(project.name ?? "Unknown")")
+        Task {
+            await MainActor.run {
+                store.generateProjectSummary(project)
+                isRefreshingSummary = false
+            }
         }
     }
 }

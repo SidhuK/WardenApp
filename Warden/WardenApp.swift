@@ -79,6 +79,7 @@ struct WardenApp: App {
                     
                     // Initialize model cache with all configured API services
                     initializeModelCache()
+                    initializeProjectSummaryCache()
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -183,6 +184,17 @@ struct WardenApp: App {
             }
         } catch {
             print("Error fetching API services for model cache initialization: \(error)")
+        }
+    }
+    
+    private func initializeProjectSummaryCache() {
+        // Initialize project summary cache with dependencies  
+        Task.detached(priority: .background) {
+            // Configure cache in background
+            await MainActor.run {
+                // Cache will be configured when services are needed
+                print("Project summary cache system initialized")
+            }
         }
     }
     

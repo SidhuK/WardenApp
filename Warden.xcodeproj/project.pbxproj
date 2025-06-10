@@ -83,6 +83,8 @@
 		4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7202C472F53006F99FB /* APIProtocol.swift */; };
 		4AFEE7232C472FA1006F99FB /* ChatGPTHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7222C472FA1006F99FB /* ChatGPTHandler.swift */; };
 		4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */; };
+		7F5CD1E32DF7F281003248F9 /* ProjectSummaryCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */; };
+		7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */; };
 		7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244D2DEA0771007AB8FC /* RephraseService.swift */; };
 		7F6024502DEA078A007AB8FC /* RephraseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244F2DEA078A007AB8FC /* RephraseButton.swift */; };
 		7F6BED692DF6FE2F006B9E6E /* ProjectSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */; };
@@ -212,6 +214,8 @@
 		4AFEE7202C472F53006F99FB /* APIProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIProtocol.swift; sourceTree = "<group>"; };
 		4AFEE7222C472FA1006F99FB /* ChatGPTHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTHandler.swift; sourceTree = "<group>"; };
 		4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaHandler.swift; sourceTree = "<group>"; };
+		7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryCache.swift; sourceTree = "<group>"; };
+		7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizedCoreDataManager.swift; sourceTree = "<group>"; };
 		7F60244D2DEA0771007AB8FC /* RephraseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseService.swift; sourceTree = "<group>"; };
 		7F60244F2DEA078A007AB8FC /* RephraseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseButton.swift; sourceTree = "<group>"; };
 		7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummarizationService.swift; sourceTree = "<group>"; };
@@ -429,8 +433,10 @@
 				7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */,
 				7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
+				7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
 				7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */,
+				7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */,
 				7F60244D2DEA0771007AB8FC /* RephraseService.swift */,
 				7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */,
 				7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */,
@@ -692,6 +698,7 @@
 				7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */,
 				4A5F64C129C78B64000403F7 /* SceneKitParticlesView.swift in Sources */,
 				4A27FF942DA1C4640075D730 /* MessageContent.swift in Sources */,
+				7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */,
 				4A27FF952DA1C4640075D730 /* ImageAttachment.swift in Sources */,
 				4AB4B08D2D75099E00CA41B6 /* DeepseekHandler.swift in Sources */,
 				7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */,
@@ -735,6 +742,7 @@
 				4A1614132D46B9BA00A1EF8D /* SystemMessageBubbleView.swift in Sources */,
 				4AA6EF592C565F90003B6D41 /* APIServiceConfig.swift in Sources */,
 				4AADF71F2C9CE788001B7A26 /* ClaudeHandler.swift in Sources */,
+				7F5CD1E32DF7F281003248F9 /* ProjectSummaryCache.swift in Sources */,
 				4A27FF912DA1C43E0075D730 /* MessageInputView.swift in Sources */,
 				4A49187A2D9F4186007EB4A2 /* ToolbarButton.swift in Sources */,
 				4A270AE329D4AFE7005E063C /* AppConstants.swift in Sources */,
