@@ -268,27 +268,16 @@ class MessageManager: ObservableObject {
         
         // 2. Add project context if available
         if let project = chat.project {
-            // Add project summary as context if available
-            if let projectSummary = project.aiGeneratedSummary, !projectSummary.isEmpty {
-                let projectContext = """
-                
-                PROJECT CONTEXT:
-                You are working within the "\(project.name ?? "Untitled Project")" project. Here's a summary of this project:
-                \(projectSummary)
-                """
-                systemMessageComponents.append(projectContext)
+            // Provide basic project info
+            let projectInfo = """
+            
+            PROJECT CONTEXT:
+            You are working within the "\(project.name ?? "Untitled Project")" project.
+            """
+            if let description = project.projectDescription, !description.isEmpty {
+                systemMessageComponents.append(projectInfo + " Project description: \(description)")
             } else {
-                // If no AI summary, provide basic project info
-                let projectInfo = """
-                
-                PROJECT CONTEXT:
-                You are working within the "\(project.name ?? "Untitled Project")" project.
-                """
-                if let description = project.projectDescription, !description.isEmpty {
-                    systemMessageComponents.append(projectInfo + " Project description: \(description)")
-                } else {
-                    systemMessageComponents.append(projectInfo)
-                }
+                systemMessageComponents.append(projectInfo)
             }
             
             // 3. Add project-specific custom instructions

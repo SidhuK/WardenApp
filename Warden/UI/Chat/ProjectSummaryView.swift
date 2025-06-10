@@ -6,7 +6,6 @@ struct ProjectSummaryView: View {
     @EnvironmentObject private var store: ChatStore
     
     @ObservedObject var project: ProjectEntity
-    @State private var isRefreshingSummary = false
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -22,9 +21,6 @@ struct ProjectSummaryView: View {
             VStack(alignment: .center, spacing: 32) {
                 // Centered project header
                 centeredProjectHeader
-                
-                // AI Summary section
-                summarySection
                 
                 // Recent activity
                 recentActivitySection
@@ -42,24 +38,6 @@ struct ProjectSummaryView: View {
                 Text(project.name ?? "Project Summary")
                     .font(.title2)
                     .fontWeight(.semibold)
-            }
-            
-            ToolbarItem(placement: .automatic) {
-                Button(action: {
-                    refreshSummary()
-                }) {
-                    HStack(spacing: 4) {
-                        if isRefreshingSummary {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        Text("Refresh")
-                    }
-                }
-                .disabled(isRefreshingSummary || projectChats.isEmpty)
-                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -91,12 +69,6 @@ struct ProjectSummaryView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                if let lastSummary = project.lastSummarizedAt {
-                    Label("Last Summary \(lastSummary, style: .date)", systemImage: "doc.text")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
                 if project.isArchived {
                     Label("Archived", systemImage: "archivebox")
                         .font(.subheadline)
@@ -118,9 +90,7 @@ struct ProjectSummaryView: View {
             compactStatsCard
             
             // Insights Card
-            if hasInsights {
-                compactInsightsCard
-            }
+            compactInsightsCard
         }
     }
     
@@ -250,114 +220,73 @@ struct ProjectSummaryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("AI Summary")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                if isRefreshingSummary {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
-            }
-            
-            if let summary = project.aiGeneratedSummary, !summary.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(summary)
-                        .font(.body)
-                        .lineSpacing(4)
-                        .foregroundColor(.primary)
-                    
-                    if let lastSummary = project.lastSummarizedAt {
-                        Text("Generated \(lastSummary, style: .date)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
-            } else {
-                ProjectEmptyStateView(
-                    icon: "doc.text",
-                    title: "No Summary Available",
-                    description: projectChats.isEmpty ? 
-                        "Add some chats to this project to generate an AI summary." :
-                        "Click \"Refresh\" to generate an AI summary of this project.",
-                    action: projectChats.isEmpty ? nil : ("Generate Summary", refreshSummary)
-                )
-            }
-        }
-    }
-    
-    private var hasInsights: Bool {
-        project.aiGeneratedSummary != nil && !projectChats.isEmpty
-    }
-    
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Recent Activity")
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            VStack(spacing: 8) {
-                ForEach(Array(projectChats.prefix(5)), id: \.objectID) { chat in
-                    Button(action: {
-                        // Post notification to select the chat
-                        NotificationCenter.default.post(
-                            name: NSNotification.Name("SelectChatFromProjectSummary"),
-                            object: chat
-                        )
-                    }) {
-                        HStack {
-                            // AI Model Logo (same as regular chats) - aligned with proper padding
-                            Image("logo_\(chat.apiService?.type ?? "")")
-                                .resizable()
-                                .renderingMode(.template)
-                                .interpolation(.high)
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(.primary)
-                                .padding(.leading, 8)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(chat.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .lineLimit(1)
+            if projectChats.isEmpty {
+                ProjectEmptyStateView(
+                    icon: "message",
+                    title: "No Chats Yet",
+                    description: "Add some chats to this project to see activity here.",
+                    action: nil
+                )
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(Array(projectChats.prefix(5)), id: \.objectID) { chat in
+                        Button(action: {
+                            // Post notification to select the chat
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                object: chat
+                            )
+                        }) {
+                            HStack {
+                                // AI Model Logo (same as regular chats) - aligned with proper padding
+                                Image("logo_\(chat.apiService?.type ?? "")")
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .interpolation(.high)
+                                    .frame(width: 16, height: 16)
                                     .foregroundColor(.primary)
+                                    .padding(.leading, 8)
                                 
-                                if let lastMessage = chat.lastMessage {
-                                    Text(lastMessage.body)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(2)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(chat.name)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .lineLimit(1)
+                                        .foregroundColor(.primary)
+                                    
+                                    if let lastMessage = chat.lastMessage {
+                                        Text(lastMessage.body)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(2)
+                                    }
                                 }
+                                
+                                Spacer()
+                                
+                                Text(chat.updatedDate, style: .date)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
                             }
-                            
-                            Spacer()
-                            
-                            Text(chat.updatedDate, style: .date)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                            )
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
+                        .buttonStyle(.plain)
+                        .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(NSColor.controlBackgroundColor))
+                                .stroke(Color.clear, lineWidth: 2)
                         )
                     }
-                    .buttonStyle(.plain)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.clear, lineWidth: 2)
-                    )
                 }
             }
         }
@@ -427,17 +356,6 @@ struct ProjectSummaryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
-    }
-    
-    private func refreshSummary() {
-        isRefreshingSummary = true
-        
-        Task {
-            await MainActor.run {
-                store.generateProjectSummary(project)
-                isRefreshingSummary = false
-            }
-        }
     }
 }
 

@@ -61,8 +61,7 @@ struct ProjectSettingsView: View {
                     // Custom Instructions
                     instructionsSection
                     
-                    // AI Summary Section
-                    summarySection
+
                     
                     // Danger Zone
                     dangerZoneSection
@@ -146,11 +145,7 @@ struct ProjectSettingsView: View {
                 Spacer()
             }
             
-            if let lastSummarized = project.lastSummarizedAt {
-                Text("Last summarized \(lastSummarized, style: .relative)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+
         }
         .padding(16)
         .background(
@@ -259,58 +254,7 @@ struct ProjectSettingsView: View {
         }
     }
     
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("AI Summary")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                
-                Spacer()
-                
-                Button("Refresh") {
-                    // TODO: Trigger AI summarization
-                    print("Refreshing project summary")
-                }
-                .foregroundColor(.accentColor)
-                .disabled(true) // Disabled until AI integration is complete
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                if let summary = project.aiGeneratedSummary, !summary.isEmpty {
-                    Text(summary)
-                        .font(.body)
-                        .foregroundColor(.primary)
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(hex: selectedColor)?.opacity(0.05) ?? Color.accentColor.opacity(0.05))
-                        )
-                } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "doc.text")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        
-                        Text("No summary yet")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("AI summaries will be generated automatically as you add chats to this project.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.primary.opacity(0.05))
-                    )
-                }
-            }
-        }
-    }
+
     
     private var dangerZoneSection: some View {
         VStack(alignment: .leading, spacing: 16) {

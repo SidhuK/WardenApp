@@ -26,7 +26,6 @@ class PreviewStateManager: ObservableObject {
         sampleProject.updatedAt = Date()
         sampleProject.isArchived = false
         sampleProject.sortOrder = 0
-        sampleProject.aiGeneratedSummary = "This is a sample project created for preview purposes. It demonstrates the project structure and functionality."
         
         // Create sample chat
         let sampleChat = ChatEntity(context: context)

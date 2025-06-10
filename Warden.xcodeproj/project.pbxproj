@@ -85,17 +85,12 @@
 		4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */; };
 		7F298E1A2DF8166C00326DBB /* ProjectSummaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */; };
 		7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */; };
-		7F5CD1E32DF7F281003248F9 /* ProjectSummaryCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */; };
 		7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */; };
 		7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244D2DEA0771007AB8FC /* RephraseService.swift */; };
 		7F6024502DEA078A007AB8FC /* RephraseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244F2DEA078A007AB8FC /* RephraseButton.swift */; };
-		7F6BED692DF6FE2F006B9E6E /* ProjectSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */; };
-		7F6BED6B2DF6FF6D006B9E6E /* SmartSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */; };
-		7F6BED6D2DF6FFF5006B9E6E /* ChatSummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */; };
 		7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED6E2DF70151006B9E6E /* ProjectListView.swift */; };
 		7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */; };
 		7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */; };
-
 		7F6BED772DF70308006B9E6E /* MoveToProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */; };
 		7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */; };
 		7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */; };
@@ -218,17 +213,12 @@
 		4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaHandler.swift; sourceTree = "<group>"; };
 		7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryButton.swift; sourceTree = "<group>"; };
 		7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryView.swift; sourceTree = "<group>"; };
-		7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryCache.swift; sourceTree = "<group>"; };
 		7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizedCoreDataManager.swift; sourceTree = "<group>"; };
 		7F60244D2DEA0771007AB8FC /* RephraseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseService.swift; sourceTree = "<group>"; };
 		7F60244F2DEA078A007AB8FC /* RephraseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseButton.swift; sourceTree = "<group>"; };
-		7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummarizationService.swift; sourceTree = "<group>"; };
-		7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSummarizationService.swift; sourceTree = "<group>"; };
-		7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSummarizationService.swift; sourceTree = "<group>"; };
 		7F6BED6E2DF70151006B9E6E /* ProjectListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectListView.swift; sourceTree = "<group>"; };
 		7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProjectView.swift; sourceTree = "<group>"; };
 		7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsView.swift; sourceTree = "<group>"; };
-
 		7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveToProjectView.swift; sourceTree = "<group>"; };
 		7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredInputView.swift; sourceTree = "<group>"; };
 		7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSupportDeveloperView.swift; sourceTree = "<group>"; };
@@ -383,7 +373,6 @@
 				7F6BED702DF7019D006B9E6E /* CreateProjectView.swift */,
 				7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */,
 				7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */,
-
 				4A1F0A0929CEFB7F002A139A /* MessageCell.swift */,
 			);
 			path = ChatList;
@@ -436,12 +425,8 @@
 			children = (
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
-				7F6BED682DF6FE2F006B9E6E /* ProjectSummarizationService.swift */,
-				7F6BED6A2DF6FF6D006B9E6E /* SmartSummarizationService.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
-				7F5CD1E22DF7F281003248F9 /* ProjectSummaryCache.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
-				7F6BED6C2DF6FFF5006B9E6E /* ChatSummarizationService.swift */,
 				7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */,
 				7F60244D2DEA0771007AB8FC /* RephraseService.swift */,
 				7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */,
@@ -742,14 +727,12 @@
 				4A5F64BA29C64F9D000403F7 /* ChatView.swift in Sources */,
 				4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */,
 				4A885C542CEA3D960018BBED /* PreviewStateManager.swift in Sources */,
-
 				4AA6EF5B2C565FDF003B6D41 /* APIServiceFactory.swift in Sources */,
 				4AA681C72D3DAB40005C4E6E /* ChatBottomContainerView.swift in Sources */,
 				7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */,
 				4A1614132D46B9BA00A1EF8D /* SystemMessageBubbleView.swift in Sources */,
 				4AA6EF592C565F90003B6D41 /* APIServiceConfig.swift in Sources */,
 				4AADF71F2C9CE788001B7A26 /* ClaudeHandler.swift in Sources */,
-				7F5CD1E32DF7F281003248F9 /* ProjectSummaryCache.swift in Sources */,
 				4A27FF912DA1C43E0075D730 /* MessageInputView.swift in Sources */,
 				7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */,
 				4A49187A2D9F4186007EB4A2 /* ToolbarButton.swift in Sources */,
@@ -772,11 +755,9 @@
 				4A0E02852D0F571000D2FAF3 /* PerplexityHandler.swift in Sources */,
 				4AA6EF5D2C566009003B6D41 /* MessageManager.swift in Sources */,
 				4A254A6D2CEA69EB00F66935 /* HighlighterManager.swift in Sources */,
-				7F6BED692DF6FE2F006B9E6E /* ProjectSummarizationService.swift in Sources */,
 				4A272A7429F5DAA800F93D0D /* Models.swift in Sources */,
 				7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */,
 				7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */,
-				7F6BED6D2DF6FFF5006B9E6E /* ChatSummarizationService.swift in Sources */,
 				7F8D7CA32DE9CE66003E7BCA /* ChatShareMenu.swift in Sources */,
 				7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */,
 				4ABB86792CFBDBD3004EC7B1 /* HighlightedText.swift in Sources */,
@@ -784,7 +765,6 @@
 				4A8A78C82D4C41A00057A6CC /* TabGeneralSettingsView.swift in Sources */,
 				4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */,
 				4AE8691B2D5696A300E3B3AC /* GeminiHandler.swift in Sources */,
-				7F6BED6B2DF6FF6D006B9E6E /* SmartSummarizationService.swift in Sources */,
 			);
 		};
 		4A399CA229BC8FF200E98796 /* Sources */ = {

@@ -385,7 +385,7 @@ struct ProjectOptionRow: View {
 }
 
 #Preview {
-    if let sampleChats = PreviewStateManager.shared.sampleProject?.chatsArray {
+    if let sampleChats = PreviewStateManager.shared.sampleProject?.chats?.allObjects as? [ChatEntity] {
         MoveToProjectView(
             chats: Array(sampleChats.prefix(1)),
             onComplete: {}
