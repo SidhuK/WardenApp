@@ -1045,15 +1045,29 @@ class ChatStore: ObservableObject {
     
     /// Preload project data in background for better UI responsiveness
     func preloadProjectData(for projects: [ProjectEntity]) {
+        // Extract project IDs to safely pass to background context
+        let projectIds = projects.compactMap { $0.id }
+        
         Task.detached(priority: .background) {
             let backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
             backgroundContext.parent = self.viewContext
             
             await backgroundContext.perform {
-                for project in projects {
-                    // Access relationships to fault them in
-                    _ = project.chats?.count
-                    _ = project.chatsArray.compactMap { $0.messagesArray.count }
+                // Fetch projects in the background context using their IDs
+                let fetchRequest = ProjectEntity.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id IN %@", projectIds)
+                
+                do {
+                    let backgroundProjects = try backgroundContext.fetch(fetchRequest)
+                    for project in backgroundProjects {
+                        // Access relationships to fault them in
+                        _ = project.chats?.count
+                        if let chats = project.chats?.allObjects as? [ChatEntity] {
+                            _ = chats.compactMap { $0.messages.count }
+                        }
+                    }
+                } catch {
+                    print("Error preloading project data: \(error)")
                 }
             }
         }
