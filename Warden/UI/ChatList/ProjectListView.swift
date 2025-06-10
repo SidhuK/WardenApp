@@ -67,9 +67,6 @@ struct ProjectListView: View {
                             },
                             onNewChatInProject: {
                                 onNewChatInProject(project)
-                            },
-                            onGenerateSummary: {
-                                generateProjectSummary(project)
                             }
                         )
                         .onAppear {
@@ -181,9 +178,6 @@ struct ProjectListView: View {
                         onNewChatInProject: {
                             onNewChatInProject(project)
                         },
-                        onGenerateSummary: {
-                            generateProjectSummary(project)
-                        },
                         isArchived: true
                     )
                 }
@@ -210,17 +204,7 @@ struct ProjectListView: View {
         }
     }
     
-    private func generateProjectSummary(_ project: ProjectEntity) {
-        Task {
-            do {
-                                            await MainActor.run {
-                                store.generateProjectSummary(project)
-                            }
-            } catch {
-                print("Error generating summary for project \(project.name ?? "Unknown"): \(error)")
-            }
-        }
-    }
+
     
     // MARK: - Performance Optimization Methods
     
@@ -264,7 +248,6 @@ struct ProjectRow: View {
     let onEditProject: () -> Void
     let onDeleteProject: () -> Void
     let onNewChatInProject: () -> Void
-    let onGenerateSummary: () -> Void
     var isArchived: Bool = false
     
     private var projectChats: [ChatEntity] {
@@ -290,18 +273,20 @@ struct ProjectRow: View {
         VStack(spacing: 0) {
             // Project header
             Button(action: onToggleExpansion) {
-                HStack(spacing: 8) {
-                    // Expansion chevron
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .medium))
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                        .foregroundColor(.secondary)
-                    
-                    // Project color indicator
-                    Circle()
-                        .fill(projectColor)
-                        .frame(width: 8, height: 8)
+                HStack(spacing: 10) {
+                    // Colored folder icon
+                    Image(systemName: isExpanded ? "folder.fill" : "folder.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(projectColor)
+                        .overlay(
+                            // Expansion chevron on folder
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 6, weight: .bold))
+                                .foregroundColor(.white)
+                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                                .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                                .offset(x: 1, y: -1)
+                        )
                     
                     // Project name
                     Text(project.name ?? "Untitled Project")
@@ -312,22 +297,28 @@ struct ProjectRow: View {
                     
                     Spacer()
                     
-                    // Chat count and last activity
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text("\(projectChats.count)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        
-                        if let lastActivity = projectChats.first?.updatedDate {
-                            Text(lastActivity, style: .relative)
+                    // Chat count badge
+                    if projectChats.count > 0 {
+                        HStack(spacing: 4) {
+                            Text("\(projectChats.count)")
                                 .font(.caption2)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
                         }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(projectColor.opacity(0.8))
+                        )
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isExpanded ? projectColor.opacity(0.05) : Color.clear)
+                )
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
@@ -336,19 +327,9 @@ struct ProjectRow: View {
             }
             .opacity(isArchived ? 0.7 : 1.0)
             
-            // Project summary preview (when collapsed)
-            if !isExpanded && !isArchived {
-                projectSummaryPreview
-            }
-            
             // Project chats (when expanded)
             if isExpanded {
                 VStack(spacing: 0) {
-                    // Project summary (when expanded)
-                    if !isArchived {
-                        expandedProjectSummary
-                    }
-                    
                     // Chats in project
                     ForEach(projectChats, id: \.objectID) { chat in
                         ProjectChatRow(
@@ -379,12 +360,6 @@ struct ProjectRow: View {
                 onEditProject()
             }
             
-            if !isArchived && !(project.aiGeneratedSummary?.isEmpty ?? true) {
-                Button("Refresh Summary") {
-                    onGenerateSummary()
-                }
-            }
-            
             Divider()
             
             if isArchived {
@@ -403,76 +378,7 @@ struct ProjectRow: View {
         }
     }
     
-    private var projectSummaryPreview: some View {
-        Group {
-            if let summary = project.aiGeneratedSummary, !summary.isEmpty {
-                HStack {
-                    Text(summary)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 4)
-            }
-        }
-    }
-    
-    private var expandedProjectSummary: some View {
-        Group {
-            if let summary = project.aiGeneratedSummary, !summary.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Project Summary")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        Button(action: onGenerateSummary) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Refresh Summary")
-                    }
-                    
-                    Text(summary)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
-                        .padding(.bottom, 4)
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(projectColor.opacity(0.05))
-                        .padding(.horizontal, 24)
-                )
-            } else {
-                VStack(spacing: 4) {
-                    Text("No summary yet")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Button("Generate Summary") {
-                        onGenerateSummary()
-                    }
-                    .font(.caption)
-                    .foregroundColor(.accentColor)
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 8)
-            }
-        }
-    }
+
     
     private var emptyProjectState: some View {
         VStack(spacing: 4) {
@@ -506,15 +412,27 @@ struct ProjectChatRow: View {
             selectedChat = chat
         }) {
             HStack(spacing: 8) {
-                // Indent indicator
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(width: 16)
+                // Indent indicator with connecting line
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.3))
+                        .frame(width: 1, height: 24)
+                        .offset(x: 8)
+                    
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.3))
+                        .frame(width: 8, height: 1)
+                        .offset(x: 8, y: 0)
+                    
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 8)
+                }
                 
                 // Chat icon
                 Image(systemName: "message")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
                 
                 // Chat name
                 Text(chat.name)
@@ -533,7 +451,7 @@ struct ProjectChatRow: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)

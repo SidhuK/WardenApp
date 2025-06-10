@@ -150,6 +150,11 @@ struct ChatView: View {
             
             ToolbarItem(placement: .automatic) {
                 HStack(spacing: 8) {
+                    // Project summary button (only show if chat belongs to a project)
+                    if let project = chat.project {
+                        ProjectSummaryButton(project: project)
+                    }
+                    
                     // Multi-agent mode toggle with consistent styling (only show if enabled in settings)
                     if enableMultiAgentMode {
                         Button(action: {
