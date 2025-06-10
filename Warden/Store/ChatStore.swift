@@ -357,15 +357,203 @@ class ChatStore: ObservableObject {
     }
     
     func generateProjectSummary(_ project: ProjectEntity) {
-        // This will be implemented in Phase 2 when we add AI summarization
-        // For now, we just update the lastSummarizedAt timestamp
-        project.lastSummarizedAt = Date()
-        saveInCoreData()
+        Task { @MainActor in
+            do {
+                // Create API service manager for summarization
+                let apiServiceManager = APIServiceManager(viewContext: viewContext)
+                
+                // Build project analysis prompt
+                let prompt = buildProjectSummaryPrompt(for: project)
+                
+                #if DEBUG
+                print("🔍 Generating AI summary for project: \(project.name ?? "Unknown")")
+                #endif
+                
+                // Generate summary using AI service
+                let summary = try await apiServiceManager.generateSummary(
+                    prompt: prompt,
+                    maxTokens: 800,
+                    temperature: 0.3
+                )
+                
+                // Update project with new summary
+                project.aiGeneratedSummary = summary
+                project.lastSummarizedAt = Date()
+                project.updatedAt = Date()
+                
+                saveInCoreData()
+                
+                #if DEBUG
+                print("✅ Successfully generated project summary")
+                #endif
+                
+            } catch {
+                print("❌ Error generating project summary: \(error)")
+                // Set a basic fallback summary on error
+                project.aiGeneratedSummary = "Summary generation failed. This project contains \(project.chats?.count ?? 0) chats."
+                project.lastSummarizedAt = Date()
+                saveInCoreData()
+            }
+        }
     }
     
     func generateChatSummary(_ chat: ChatEntity) {
-        // This will be implemented in Phase 2 when we add AI summarization  
-        // For now, this is a placeholder method
+        Task { @MainActor in
+            do {
+                // Only generate summary for chats with substantial content
+                guard chat.messagesArray.count >= 3 else {
+                    chat.aiGeneratedSummary = "Brief conversation with \(chat.messagesArray.count) messages."
+                    saveInCoreData()
+                    return
+                }
+                
+                // Create API service manager for summarization
+                let apiServiceManager = APIServiceManager(viewContext: viewContext)
+                
+                // Build chat analysis prompt
+                let prompt = buildChatSummaryPrompt(for: chat)
+                
+                #if DEBUG
+                print("🔍 Generating AI summary for chat: \(chat.name ?? "Unknown")")
+                #endif
+                
+                // Generate summary using AI service
+                let summary = try await apiServiceManager.generateSummary(
+                    prompt: prompt,
+                    maxTokens: 300,
+                    temperature: 0.2
+                )
+                
+                // Update chat with new summary
+                chat.aiGeneratedSummary = summary
+                saveInCoreData()
+                
+                #if DEBUG
+                print("✅ Successfully generated chat summary")
+                #endif
+                
+            } catch {
+                print("❌ Error generating chat summary: \(error)")
+                // Set a basic fallback summary on error
+                let messageCount = chat.messagesArray.count
+                chat.aiGeneratedSummary = "Discussion with \(messageCount) messages. Summary generation unavailable."
+                saveInCoreData()
+            }
+        }
+    }
+    
+    // MARK: - Private Helper Methods for AI Summarization
+    
+    /// Builds a comprehensive prompt for project summarization
+    private func buildProjectSummaryPrompt(for project: ProjectEntity) -> String {
+        let chats = getChatsInProject(project)
+        
+        var prompt = """
+        Analyze this project and provide a comprehensive summary:
+        
+        PROJECT: \(project.name ?? "Untitled Project")
+        """
+        
+        if let description = project.projectDescription, !description.isEmpty {
+            prompt += "\nDESCRIPTION: \(description)"
+        }
+        
+        if let instructions = project.customInstructions, !instructions.isEmpty {
+            prompt += "\nCUSTOM INSTRUCTIONS: \(instructions)"
+        }
+        
+        prompt += """
+        
+        STATISTICS:
+        - Total Chats: \(chats.count)
+        - Created: \(formatDateForPrompt(project.createdAt ?? Date()))
+        """
+        
+        if let lastActivity = chats.first?.updatedDate {
+            prompt += "\n- Last Activity: \(formatDateForPrompt(lastActivity))"
+        }
+        
+        // Include sample chat content for context
+        if !chats.isEmpty {
+            prompt += "\n\nCHAT OVERVIEW:"
+            
+            for (index, chat) in chats.prefix(5).enumerated() {
+                let messageCount = chat.messagesArray.count
+                prompt += "\n\(index + 1). \(chat.name ?? "Untitled Chat") (\(messageCount) messages)"
+                
+                // Include brief content sample if chat has messages
+                if let lastMessage = chat.lastMessage {
+                    let snippet = String(lastMessage.body.prefix(100))
+                    prompt += "\n   Latest: \(snippet)..."
+                }
+            }
+            
+            if chats.count > 5 {
+                prompt += "\n... and \(chats.count - 5) more chats"
+            }
+        }
+        
+        prompt += """
+        
+        Please provide a structured summary that includes:
+        1. Project overview and main purpose
+        2. Key themes and topics discussed
+        3. Notable progress or achievements
+        4. Current status and activity level
+        """
+        
+        return prompt
+    }
+    
+    /// Builds a focused prompt for chat summarization
+    private func buildChatSummaryPrompt(for chat: ChatEntity) -> String {
+        let messages = chat.messagesArray.sorted { 
+            ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) 
+        }
+        
+        var prompt = """
+        Summarize this conversation concisely:
+        
+        CHAT: \(chat.name ?? "Untitled Chat")
+        MESSAGES: \(messages.count)
+        """
+        
+        if let persona = chat.persona {
+            prompt += "\nAI PERSONA: \(persona.name ?? "Default")"
+        }
+        
+        prompt += "\n\nCONVERSATION CONTENT:"
+        
+        // Include recent message content for analysis
+        let recentMessages = messages.suffix(10) // Last 10 messages
+        for message in recentMessages {
+            let role = message.own ? "User" : "Assistant"
+            let content = String(message.body.prefix(150)) // Limit content length
+            prompt += "\n[\(role)]: \(content)"
+            if message.body.count > 150 {
+                prompt += "..."
+            }
+        }
+        
+        prompt += """
+        
+        Provide a brief summary focusing on:
+        - Main topic and purpose of the conversation
+        - Key points discussed or problems solved
+        - Current status or outcome
+        
+        Keep it under 100 words.
+        """
+        
+        return prompt
+    }
+    
+    /// Formats date for inclusion in AI prompts
+    private func formatDateForPrompt(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
     
     func updateProjectSummary(_ project: ProjectEntity, summary: String) {

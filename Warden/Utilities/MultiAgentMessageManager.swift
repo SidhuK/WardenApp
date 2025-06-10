@@ -1,4 +1,3 @@
-
 import CoreData
 import Foundation
 
@@ -202,8 +201,8 @@ class MultiAgentMessageManager: ObservableObject {
     private func constructRequestMessages(chat: ChatEntity, forUserMessage userMessage: String?, contextSize: Int) -> [[String: String]] {
         var messages: [[String: String]] = []
         
-        // Use persona's system message if available, otherwise fall back to chat's system message
-        let systemMessage = chat.persona?.systemMessage ?? chat.systemMessage
+        // Build comprehensive system message with project context - same logic as MessageManager
+        let systemMessage = buildSystemMessageWithProjectContext(for: chat)
         
         if !AppConstants.openAiReasoningModels.contains(chat.gptModel) {
             messages.append([
@@ -239,5 +238,57 @@ class MultiAgentMessageManager: ObservableObject {
         }
         
         return messages
+    }
+    
+    /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
+    /// Handles instruction precedence: project instructions + persona instructions + chat-specific instructions
+    /// This mirrors the same method in MessageManager for consistency
+    private func buildSystemMessageWithProjectContext(for chat: ChatEntity) -> String {
+        var systemMessageComponents: [String] = []
+        
+        // 1. Start with base persona system message or chat system message
+        let baseSystemMessage = chat.persona?.systemMessage ?? chat.systemMessage
+        if !baseSystemMessage.isEmpty {
+            systemMessageComponents.append(baseSystemMessage)
+        }
+        
+        // 2. Add project context if available
+        if let project = chat.project {
+            // Add project summary as context if available
+            if let projectSummary = project.aiGeneratedSummary, !projectSummary.isEmpty {
+                let projectContext = """
+                
+                PROJECT CONTEXT:
+                You are working within the "\(project.name ?? "Untitled Project")" project. Here's a summary of this project:
+                \(projectSummary)
+                """
+                systemMessageComponents.append(projectContext)
+            } else {
+                // If no AI summary, provide basic project info
+                let projectInfo = """
+                
+                PROJECT CONTEXT:
+                You are working within the "\(project.name ?? "Untitled Project")" project.
+                """
+                if let description = project.projectDescription, !description.isEmpty {
+                    systemMessageComponents.append(projectInfo + " Project description: \(description)")
+                } else {
+                    systemMessageComponents.append(projectInfo)
+                }
+            }
+            
+            // 3. Add project-specific custom instructions
+            if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
+                let projectInstructions = """
+                
+                PROJECT-SPECIFIC INSTRUCTIONS:
+                \(customInstructions)
+                """
+                systemMessageComponents.append(projectInstructions)
+            }
+        }
+        
+        // 4. Combine all components into final system message
+        return systemMessageComponents.joined(separator: "\n")
     }
 } 
