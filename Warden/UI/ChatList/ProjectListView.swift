@@ -273,11 +273,12 @@ struct ProjectRow: View {
         VStack(spacing: 0) {
             // Project header
             Button(action: onToggleExpansion) {
-                HStack(spacing: 10) {
-                    // Colored folder icon
+                HStack(spacing: 2) {
+                    // Colored folder icon - aligned with AI logo (8pt from left edge)
                     Image(systemName: "folder.fill")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(projectColor)
+                        .padding(.leading, -8) // Offset container padding to align with AI logo
                     
                     // Project name
                     Text(project.name ?? "Untitled Project")
@@ -285,6 +286,7 @@ struct ProjectRow: View {
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(1)
+                        .padding(.leading, 8) // Add spacing between folder and name
                     
                     Spacer()
                     

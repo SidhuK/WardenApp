@@ -38,8 +38,11 @@ struct ProjectSummaryButton: View {
         .buttonStyle(.plain)
         .help("View project summary")
         .sheet(isPresented: $showingProjectSummary) {
-            ProjectSummarySheet(project: project, isRefreshingSummary: $isRefreshingSummary)
-                .frame(width: 700, height: 800)
+            ProjectSummarySheet(
+                project: project,
+                isRefreshingSummary: $isRefreshingSummary
+            )
+            .frame(width: 700, height: 800)
         }
     }
 }
@@ -124,10 +127,11 @@ struct ProjectSummarySheet: View {
     private var projectHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                // Folder icon with project color
+                // Folder icon with project color - aligned with AI logo (8 padding)
                 Image(systemName: "folder.fill")
                     .font(.title)
                     .foregroundColor(projectColor)
+                    .padding(.leading, 8)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.name ?? "Untitled Project")
@@ -311,37 +315,56 @@ struct ProjectSummarySheet: View {
             
             VStack(spacing: 8) {
                 ForEach(Array(projectChats.prefix(5)), id: \.objectID) { chat in
-                    HStack {
-                        Image(systemName: "message")
-                            .font(.caption)
-                            .foregroundColor(projectColor)
-                            .frame(width: 16)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(chat.name)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .lineLimit(1)
+                    Button(action: {
+                        // Post notification to select the chat
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("SelectChatFromProjectSummary"),
+                            object: chat
+                        )
+                        dismiss()
+                    }) {
+                        HStack {
+                            // AI Model Logo (same as regular chats) - aligned with proper padding
+                            Image("logo_\(chat.apiService?.type ?? "")")
+                                .resizable()
+                                .renderingMode(.template)
+                                .interpolation(.high)
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.primary)
+                                .padding(.leading, 8)
                             
-                            if let lastMessage = chat.lastMessage {
-                                Text(lastMessage.body)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(2)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(chat.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                                    .foregroundColor(.primary)
+                                
+                                if let lastMessage = chat.lastMessage {
+                                    Text(lastMessage.body)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(2)
+                                }
                             }
+                            
+                            Spacer()
+                            
+                            Text(chat.updatedDate, style: .date)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
                         }
-                        
-                        Spacer()
-                        
-                        Text(chat.updatedDate, style: .date)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(NSColor.controlBackgroundColor))
+                        )
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
+                    .buttonStyle(.plain)
+                    .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(NSColor.controlBackgroundColor))
+                            .stroke(Color.clear, lineWidth: 2)
                     )
                 }
             }

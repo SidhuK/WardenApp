@@ -119,6 +119,18 @@ struct ContentView: View {
                     showingSettings = false // Close settings if open
                 }
             }
+            
+            // Handle chat selection from project summary
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("SelectChatFromProjectSummary"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                if let chat = notification.object as? ChatEntity {
+                    selectedChat = chat
+                    showingSettings = false // Close settings if open
+                }
+            }
         }
         .navigationTitle("")
         .onChange(of: scenePhase) { phase in
