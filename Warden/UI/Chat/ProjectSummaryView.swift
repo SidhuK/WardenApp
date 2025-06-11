@@ -7,6 +7,10 @@ struct ProjectSummaryView: View {
     
     @ObservedObject var project: ProjectEntity
     
+    // State for sheet presentations
+    @State private var showingMoveToProject = false
+    @State private var selectedChatForMove: ChatEntity?
+    
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
     }
@@ -38,6 +42,17 @@ struct ProjectSummaryView: View {
                 Text(project.name ?? "Project Summary")
                     .font(.title2)
                     .fontWeight(.semibold)
+            }
+        }
+        .sheet(isPresented: $showingMoveToProject) {
+            if let chatToMove = selectedChatForMove {
+                MoveToProjectView(
+                    chats: [chatToMove],
+                    onComplete: {
+                        // Refresh or update as needed
+                        selectedChatForMove = nil
+                    }
+                )
             }
         }
     }
@@ -286,6 +301,9 @@ struct ProjectSummaryView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.clear, lineWidth: 2)
                         )
+                        .contextMenu {
+                            chatContextMenu(for: chat)
+                        }
                     }
                 }
             }
@@ -356,6 +374,136 @@ struct ProjectSummaryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+    
+    // MARK: - Context Menu
+    
+    private func chatContextMenu(for chat: ChatEntity) -> some View {
+        Group {
+            Button(action: { 
+                togglePinChat(chat) 
+            }) {
+                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
+            }
+            
+            Button(action: { renameChat(chat) }) {
+                Label("Rename", systemImage: "pencil")
+            }
+            
+            if chat.apiService?.generateChatNames ?? false {
+                Button(action: {
+                    regenerateChatName(chat)
+                }) {
+                    Label("Regenerate Name", systemImage: "arrow.clockwise")
+                }
+            }
+            
+            Button(action: { clearChat(chat) }) {
+                Label("Clear Chat", systemImage: "eraser")
+            }
+            
+            Divider()
+            
+            Button(action: { 
+                selectedChatForMove = chat
+                showingMoveToProject = true 
+            }) {
+                Label("Move to Project", systemImage: "folder.badge.plus")
+            }
+            
+            Divider()
+            
+            Button(action: { deleteChat(chat) }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+    
+    // MARK: - Context Menu Actions
+    
+    private func togglePinChat(_ chat: ChatEntity) {
+        chat.isPinned.toggle()
+        do {
+            try viewContext.save()
+        } catch {
+            print("Error toggling pin status: \(error.localizedDescription)")
+        }
+    }
+    
+    private func renameChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Rename Chat"
+        alert.informativeText = "Enter a new name for this chat:"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        textField.stringValue = chat.name
+        alert.accessoryView = textField
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !newName.isEmpty {
+                    chat.name = newName
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error renaming chat: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    }
+    
+    private func regenerateChatName(_ chat: ChatEntity) {
+        // Create a ChatViewModel for this specific chat to use the regenerate functionality
+        let chatViewModel = ChatViewModel(chat: chat, viewContext: viewContext)
+        chatViewModel.regenerateChatName()
+    }
+    
+    private func clearChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Clear Chat?"
+        alert.informativeText = "Are you sure you want to delete all messages from \"\(chat.name)\"? Chat parameters will not be deleted. This action cannot be undone."
+        alert.addButton(withTitle: "Clear")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                chat.clearMessages()
+                do {
+                    try viewContext.save()
+                } catch {
+                    print("Error clearing chat: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func deleteChat(_ chat: ChatEntity) {
+        let alert = NSAlert()
+        alert.messageText = "Delete Chat?"
+        alert.informativeText = "Are you sure you want to delete \"\(chat.name)\"? This action cannot be undone."
+        alert.alertStyle = .warning
+        
+        alert.addButton(withTitle: "Delete")
+        alert.addButton(withTitle: "Cancel")
+        
+        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+            if response == .alertFirstButtonReturn {
+                // Remove from Spotlight index before deleting
+                store.removeChatFromSpotlight(chatId: chat.id)
+                
+                viewContext.delete(chat)
+                do {
+                    try viewContext.save()
+                } catch {
+                    print("Error deleting chat: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 
