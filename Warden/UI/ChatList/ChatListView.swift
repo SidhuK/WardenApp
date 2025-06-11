@@ -71,9 +71,13 @@ struct ChatListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar with search and action buttons
-            topBarSection
+            // New Chat button at the top
+            newChatButtonSection
                 .padding(.top, 12)
+                .padding(.bottom, 8)
+            
+            // Search bar
+            searchBarSection
                 .padding(.bottom, 8)
 
             // Selection toolbar (only shown when chats are selected)
@@ -93,6 +97,10 @@ struct ChatListView: View {
                 }
             }
             .listStyle(.sidebar)
+            
+            // Settings button at the bottom
+            bottomSettingsSection
+                .padding(.bottom, 12)
         }
         .background(
             Button("") {
@@ -121,6 +129,63 @@ struct ChatListView: View {
         .onChange(of: selectedChat) { _, _ in
             isSearchFocused = false
         }
+    }
+
+    private var newChatButtonSection: some View {
+        VStack(spacing: 0) {
+            newChatButton
+        }
+        .padding(.horizontal)
+    }
+
+    private var searchBarSection: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+
+            TextField("Search chats...", text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(.body))
+                .focused($isSearchFocused)
+                .onExitCommand {
+                    searchText = ""
+                    isSearchFocused = false
+                }
+
+            if !searchText.isEmpty {
+                Button(action: {
+                    searchText = ""
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(8)
+        .background(
+            Group {
+                if isSearchFocused {
+                    Color(NSColor.controlBackgroundColor).opacity(0.6)
+                } else {
+                    // Light mode: slightly darker background, Dark mode: slightly lighter background
+                    Color.primary.opacity(0.05)
+                }
+            }
+        )
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+        )
+        .padding(.horizontal)
+    }
+
+    private var bottomSettingsSection: some View {
+        VStack(spacing: 0) {
+            settingsButton
+        }
+        .padding(.horizontal)
     }
 
     private var topBarSection: some View {
@@ -175,113 +240,60 @@ struct ChatListView: View {
         .padding(.horizontal)
     }
 
-    private var searchField: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
-
-            TextField("Search chats...", text: $searchText)
-                .textFieldStyle(PlainTextFieldStyle())
-                .font(.system(.body))
-                .focused($isSearchFocused)
-                .onExitCommand {
-                    searchText = ""
-                    isSearchFocused = false
-                }
-
-            if !searchText.isEmpty {
-                Button(action: {
-                    searchText = ""
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(8)
-        .padding(.top, 0)
-        .background(
-            Group {
-                if isSearchFocused {
-                    Color(NSColor.controlBackgroundColor).opacity(0.6)
-                } else {
-                    // Light mode: slightly darker background, Dark mode: slightly lighter background
-                    Color.primary.opacity(0.05)
-                }
-            }
-        )
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-        )
-        .padding(.horizontal)
-    }
-    
     private var newChatButton: some View {
-        // New Thread button with subtle blue style, sized to match search bar height
+        // New Thread button with text, slightly bigger and styled
         Button(action: {
             newChatButtonTapped.toggle()
             onNewChat()
         }) {
-            Image(systemName: "square.and.pencil")
-                .font(.system(size: 16, weight: .medium))
-                .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
-                .foregroundColor(.white)
-                .frame(width: 32, height: 32)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.accentColor.opacity(0.85),
-                            Color.accentColor.opacity(0.75)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 16, weight: .medium))
+                Text("New Thread")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 40)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.accentColor.opacity(0.85),
+                        Color.accentColor.opacity(0.75)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.accentColor.opacity(0.2), lineWidth: 0.5)
-                )
-                .shadow(color: Color.accentColor.opacity(0.15), radius: 1, x: 0, y: 1)
+            )
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor.opacity(0.2), lineWidth: 0.5)
+            )
+            .shadow(color: Color.accentColor.opacity(0.15), radius: 1, x: 0, y: 1)
         }
         .buttonStyle(PlainButtonStyle())
     }
     
     private var settingsButton: some View {
-        // Settings button that toggles showingSettings state, sized to match search bar height
+        // Simplified settings button at bottom with text and icon, smaller size
         Button(action: {
             settingsButtonTapped.toggle()
             showingSettings.toggle()
         }) {
-            Image(systemName: "gear")
-                .font(.system(size: 16, weight: .medium))
-                .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: settingsButtonTapped)
-                .foregroundColor(showingSettings ? .accentColor : .secondary)
-                .frame(width: 32, height: 32)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(showingSettings ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.08))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-                        )
-                )
+            HStack(spacing: 6) {
+                Image(systemName: "gear")
+                    .font(.system(size: 12, weight: .medium))
+                Text("Settings")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: settingsButtonTapped)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 28)
         }
         .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var bottomButtonsSection: some View {
-        HStack(spacing: 8) {
-            newChatButton
-            settingsButton
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
     }
 
     private var selectionToolbar: some View {
@@ -362,8 +374,6 @@ struct ChatListView: View {
         .cornerRadius(8)
     }
 
-
-    
     private func deleteSelectedChats() {
         guard !selectedChatIDs.isEmpty else { return }
         
