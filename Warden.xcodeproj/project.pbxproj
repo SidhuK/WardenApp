@@ -85,6 +85,8 @@
 		4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */; };
 		7F298E1A2DF8166C00326DBB /* ProjectSummaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */; };
 		7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */; };
+		7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */; };
+		7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5A91C92DF937E500A18860 /* ModelSelectionView.swift */; };
 		7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */; };
 		7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244D2DEA0771007AB8FC /* RephraseService.swift */; };
 		7F6024502DEA078A007AB8FC /* RephraseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F60244F2DEA078A007AB8FC /* RephraseButton.swift */; };
@@ -213,6 +215,8 @@
 		4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaHandler.swift; sourceTree = "<group>"; };
 		7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryButton.swift; sourceTree = "<group>"; };
 		7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryView.swift; sourceTree = "<group>"; };
+		7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedModelsManager.swift; sourceTree = "<group>"; };
+		7F5A91C92DF937E500A18860 /* ModelSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectionView.swift; sourceTree = "<group>"; };
 		7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizedCoreDataManager.swift; sourceTree = "<group>"; };
 		7F60244D2DEA0771007AB8FC /* RephraseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseService.swift; sourceTree = "<group>"; };
 		7F60244F2DEA078A007AB8FC /* RephraseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RephraseButton.swift; sourceTree = "<group>"; };
@@ -288,6 +292,7 @@
 			isa = PBXGroup;
 			children = (
 				4ADCA45A2C9B74E8005664A6 /* APIServiceDetailViewModel.swift */,
+				7F5A91C92DF937E500A18860 /* ModelSelectionView.swift */,
 				4AE3CEB82C93AEA200A9CF4C /* APIServiceDetailView.swift */,
 				4A7AFF172B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift */,
 			);
@@ -419,6 +424,7 @@
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
+				7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
 				7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */,
 				7F60244D2DEA0771007AB8FC /* RephraseService.swift */,
@@ -700,6 +706,7 @@
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,
 				4A4918782D9F3C54007EB4A2 /* MessageContentView.swift in Sources */,
+				7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */,
 				7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */,
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
@@ -756,6 +763,7 @@
 				7FB022A32DE9639000CE4CC8 /* SpotlightIndexManager.swift in Sources */,
 				4A8A78C82D4C41A00057A6CC /* TabGeneralSettingsView.swift in Sources */,
 				4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */,
+				7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */,
 				4AE8691B2D5696A300E3B3AC /* GeminiHandler.swift in Sources */,
 			);
 		};

@@ -25,6 +25,8 @@ class APIServiceDetailViewModel: ObservableObject {
     @Published var fetchedModels: [AIModel] = []
     @Published var isLoadingModels: Bool = false
     @Published var modelFetchError: String? = nil
+    
+    private let selectedModelsManager = SelectedModelsManager.shared
 
     init(viewContext: NSManagedObjectContext, apiService: APIServiceEntity?) {
         self.viewContext = viewContext
@@ -158,6 +160,9 @@ class APIServiceDetailViewModel: ObservableObject {
             }
         }
 
+        // Save selected models configuration
+        selectedModelsManager.saveToService(serviceToSave, context: viewContext)
+
         do {
             try viewContext.save()
         }
@@ -201,5 +206,9 @@ class APIServiceDetailViewModel: ObservableObject {
 
     var supportsImageUploads: Bool {
         return AppConstants.defaultApiConfigurations[type]?.imageUploadsSupported ?? false
+    }
+    
+    func updateSelectedModels(_ selectedIds: Set<String>) {
+        selectedModelsManager.setSelectedModels(for: type, modelIds: selectedIds)
     }
 }

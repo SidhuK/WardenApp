@@ -176,6 +176,9 @@ struct WardenApp: App {
         do {
             let apiServices = try persistenceController.container.viewContext.fetch(fetchRequest)
             
+            // Initialize selected models manager with existing configurations
+            SelectedModelsManager.shared.loadSelections(from: apiServices)
+            
             // Initialize model cache with all configured services
             // This will fetch models in the background for better performance
             DispatchQueue.global(qos: .userInitiated).async {

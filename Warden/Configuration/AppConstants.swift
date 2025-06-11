@@ -788,6 +788,14 @@ Remember that true productivity serves your overall life satisfaction and well-b
 
     /// A list of available API types.
     static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral"]
+    
+    /// Feature: Custom Model Selection
+    /// Users can configure which models appear in the chat model selector for each API service.
+    /// The model selector now ONLY shows:
+    /// - Selected models (configured in Preferences > API Services)
+    /// - Favorite models (regardless of selection)
+    /// This prevents overwhelming dropdown menus when services have hundreds of models available.
+    /// Configuration is stored in Core Data (APIServiceEntity.selectedModels) and managed by SelectedModelsManager.
     /// Notification name for indicating a new chat.
     static let newChatNotification = Notification.Name("newChatNotification")
     /// Notification name for opening inline settings.

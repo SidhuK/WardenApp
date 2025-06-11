@@ -19,11 +19,25 @@ class ModelCacheManager: ObservableObject {
     private init() {}
     
     /// Get all models across all providers, sorted by favorites first, then provider/model
+    /// Only shows selected models and favorites, not all available models
     var allModels: [(provider: String, model: AIModel)] {
+        let selectedModelsManager = SelectedModelsManager.shared
         var result: [(provider: String, model: AIModel)] = []
         
         for (providerType, models) in cachedModels {
-            for model in models {
+            // Get custom selected models
+            let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
+            
+            // Filter to only show selected models + favorites
+            let filteredModels = models.filter { model in
+                let isFavorite = favoriteManager.isFavorite(provider: providerType, model: model.id)
+                let isSelected = selectedModelIds.contains(model.id)
+                
+                // Show if it's a favorite OR if it's in the selected list
+                return isFavorite || isSelected
+            }
+            
+            for model in filteredModels {
                 result.append((provider: providerType, model: model))
             }
         }
@@ -72,10 +86,24 @@ class ModelCacheManager: ObservableObject {
     }
     
     /// Get models for a specific provider, sorted with favorites first
+    /// Only shows selected models and favorites, not all available models
     func getModelsSorted(for providerType: String) -> [AIModel] {
-        let models = getModels(for: providerType)
+        let allModels = getModels(for: providerType)
+        let selectedModelsManager = SelectedModelsManager.shared
         
-        return models.sorted { first, second in
+        // Get custom selected models
+        let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
+        
+        // Filter to only show selected models + favorites
+        let filteredModels = allModels.filter { model in
+            let isFavorite = favoriteManager.isFavorite(provider: providerType, model: model.id)
+            let isSelected = selectedModelIds.contains(model.id)
+            
+            // Show if it's a favorite OR if it's in the selected list
+            return isFavorite || isSelected
+        }
+        
+        return filteredModels.sorted { first, second in
             let firstIsFavorite = favoriteManager.isFavorite(provider: providerType, model: first.id)
             let secondIsFavorite = favoriteManager.isFavorite(provider: providerType, model: second.id)
             
