@@ -10,6 +10,7 @@ struct ProjectSummaryView: View {
     // State for sheet presentations
     @State private var showingMoveToProject = false
     @State private var selectedChatForMove: ChatEntity?
+    @State private var newChatButtonTapped = false
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -95,6 +96,12 @@ struct ProjectSummaryView: View {
                                 .fill(Color.orange.opacity(0.1))
                         )
                 }
+            }
+            
+            // New Thread button
+            if !project.isArchived {
+                newChatButton
+                    .padding(.top, 8)
             }
         }
     }
@@ -367,6 +374,45 @@ struct ProjectSummaryView: View {
         return "General"
     }
     
+    // MARK: - UI Components
+    
+    private var newChatButton: some View {
+        Button(action: {
+            newChatButtonTapped.toggle()
+            createNewChatInProject()
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 16, weight: .medium))
+                Text("New Thread")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 40)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        projectColor.opacity(0.9),
+                        projectColor.opacity(0.8)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(projectColor.opacity(0.3), lineWidth: 0.5)
+            )
+            .shadow(color: projectColor.opacity(0.25), radius: 2, x: 0, y: 1)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: 240)
+        .padding(.horizontal, 20)
+    }
+    
     // MARK: - Helper Methods
     
     private func formatDateString(_ date: Date) -> String {
@@ -374,6 +420,39 @@ struct ProjectSummaryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+    
+    private func createNewChatInProject() {
+        let uuid = UUID()
+        let newChat = ChatEntity(context: viewContext)
+        
+        newChat.id = uuid
+        newChat.newChat = true
+        newChat.temperature = 0.8
+        newChat.top_p = 1.0
+        newChat.behavior = "default"
+        newChat.newMessage = ""
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+        newChat.systemMessage = AppConstants.chatGptSystemMessage
+        newChat.name = "New Chat"
+        
+        // Save the chat first to ensure it exists in the database
+        do {
+            try viewContext.save()
+        } catch {
+            print("Error saving new chat: \(error.localizedDescription)")
+            return
+        }
+        
+        // Then move it to the project
+        store.moveChatsToProject(project, chats: [newChat])
+        
+        // Post notification to select the new chat
+        NotificationCenter.default.post(
+            name: NSNotification.Name("SelectChatFromProjectSummary"),
+            object: newChat
+        )
     }
     
     // MARK: - Context Menu
