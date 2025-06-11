@@ -23,6 +23,7 @@ struct MessageCell: View, Equatable {
     let viewContext: NSManagedObjectContext
     @State private var isHovered = false
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
 
     var searchText: String = ""
     var isSelectionMode: Bool = false
@@ -61,14 +62,16 @@ struct MessageCell: View, Equatable {
                     .padding(.leading, 8)
                 }
                 
-                // AI Model Logo
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
-                    .padding(.leading, isSelectionMode ? 4 : 8)
+                // AI Model Logo (conditionally shown)
+                if showSidebarAIIcons {
+                    Image("logo_\(chat.apiService?.type ?? "")")
+                        .resizable()
+                        .renderingMode(.template)
+                        .interpolation(.high)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
+                        .padding(.leading, isSelectionMode ? 4 : 8)
+                }
                 
                 VStack(alignment: .leading) {
                     if !chat.name.isEmpty {
@@ -80,6 +83,7 @@ struct MessageCell: View, Equatable {
                 }
                 .padding(.vertical, 8)
                 .padding(.trailing, 8)
+                .padding(.leading, showSidebarAIIcons ? 0 : (isSelectionMode ? 4 : 8))
                 
                 Spacer()
                 
