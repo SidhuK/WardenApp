@@ -362,22 +362,6 @@ struct ProjectRow: View {
                 
                 Spacer()
                 
-                // Chat count badge
-                if projectChats.count > 0 {
-                    HStack(spacing: 4) {
-                        Text("\(projectChats.count)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(projectColor.opacity(0.8))
-                    )
-                }
-                
                 // Expansion arrow - now part of the same button
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .medium))
@@ -708,22 +692,6 @@ struct ProjectRowInList: View {
                         .padding(.leading, 8) // Add spacing between folder and name
                     
                     Spacer()
-                    
-                    // Chat count badge
-                    if projectChats.count > 0 {
-                        HStack(spacing: 4) {
-                            Text("\(projectChats.count)")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(projectColor.opacity(0.8))
-                        )
-                    }
                     
                     // Expansion arrow - now part of the same button
                     Image(systemName: "chevron.right")
