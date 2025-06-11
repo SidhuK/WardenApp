@@ -481,56 +481,61 @@ struct ProjectChatRow: View {
     }
     
     var body: some View {
-        Button(action: {
-            selectedChat = chat
-        }) {
-            HStack {
-                // AI Model Logo (same as regular chats)
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
-                    .padding(.leading, 8)
-                
-                VStack(alignment: .leading) {
-                    if !chat.name.isEmpty {
-                        HighlightedText(chat.name, highlight: searchText)
-                            .font(.body)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
-                .padding(.vertical, 8)
-                .padding(.trailing, 8)
-                
-                Spacer()
-                
-                if chat.isPinned {
-                    Image(systemName: "pin.fill")
-                        .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .gray)
-                        .font(.caption)
-                        .padding(.trailing, 8)
+        HStack(spacing: 12) {
+            // AI Model Logo (same as regular chats)
+            Image("logo_\(chat.apiService?.type ?? "")")
+                .resizable()
+                .renderingMode(.template)
+                .interpolation(.high)
+                .frame(width: 16, height: 16)
+                .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
+                .padding(.leading, 8)
+            
+            VStack(alignment: .leading) {
+                if !chat.name.isEmpty {
+                    HighlightedText(chat.name, highlight: searchText)
+                        .font(.body)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        isSelected
-                            ? (colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                            : isHovered
-                                ? (colorScheme == .dark ? Color(hex: "#666666")! : Color(hex: "#CCCCCC")!) : Color.clear
-                    )
-            )
-            .onHover { hovering in
-                isHovered = hovering
+            .padding(.vertical, 8)
+            .padding(.trailing, 8)
+            
+            Spacer()
+            
+            if chat.isPinned {
+                Image(systemName: "pin.fill")
+                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .gray)
+                    .font(.caption)
+                    .padding(.trailing, 8)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedChat = chat
+        }
         .contextMenu {
+            chatContextMenu
+        }
+        .sheet(isPresented: $showingMoveToProject) {
+            MoveToProjectView(
+                chats: [chat],
+                onComplete: {
+                    // Refresh or update as needed
+                }
+            )
+        }
+    }
+    
+    private var chatContextMenu: some View {
+        Group {
             Button(action: { 
                 togglePinChat() 
             }) {
@@ -559,66 +564,6 @@ struct ProjectChatRow: View {
             Button(action: { deleteChat() }) {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            // Delete action (destructive, red)
-            Button(role: .destructive) {
-                deleteChat()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            
-            // Pin/Unpin action
-            Button {
-                togglePinChat()
-            } label: {
-                Label(chat.isPinned ? "Unpin" : "Pin", 
-                      systemImage: chat.isPinned ? "pin.slash" : "pin")
-            }
-            .tint(chat.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            // Move to Project action
-            Button {
-                showingMoveToProject = true
-            } label: {
-                Label("Move to Project", systemImage: "folder")
-            }
-            .tint(Color(.systemGreen).opacity(0.7))
-            
-            // Rename action
-            Button {
-                renameChat()
-            } label: {
-                Label("Rename", systemImage: "pencil")
-            }
-            .tint(.green)
-            
-            // Share action
-            Button {
-                ChatSharingService.shared.shareChat(chat, format: .markdown)
-            } label: {
-                Label("Share", systemImage: "square.and.arrow.up")
-            }
-            .tint(Color(.systemBlue).opacity(0.7))
-            
-            // Regenerate name action (only if supported)
-            if chat.apiService?.generateChatNames ?? false {
-                Button {
-                    chatViewModel.regenerateChatName()
-                } label: {
-                    Label("Regenerate", systemImage: "arrow.clockwise")
-                }
-                .tint(Color(.systemPurple).opacity(0.6))
-            }
-        }
-        .sheet(isPresented: $showingMoveToProject) {
-            MoveToProjectView(
-                chats: [chat],
-                onComplete: {
-                    // Refresh or update as needed
-                }
-            )
         }
     }
     
@@ -984,101 +929,62 @@ struct ProjectChatRowInList: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Chat selection area
-            Button(action: {
-                selectedChat = chat
-            }) {
-                HStack(spacing: 12) {
-                    // Indentation to show hierarchy
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(width: 24) // Indent to show it's under a project
-                    
-                    // AI service logo
-                    if let apiServiceName = chat.apiService?.name,
-                       let image = getServiceLogo(for: apiServiceName) {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 16, height: 16)
-                    } else {
-                        Image(systemName: "message")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .frame(width: 16, height: 16)
-                    }
-                    
-                    // Chat info
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(getChatDisplayName())
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        if let lastMessage = getLastMessage() {
-                            Text(lastMessage)
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Pin indicator
-                    if chat.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.orange)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
-                )
-                .contentShape(Rectangle())
+        HStack(spacing: 12) {
+            // Indentation to show hierarchy
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: 24) // Indent to show it's under a project
+            
+            // AI service logo
+            if let apiServiceName = chat.apiService?.name,
+               let image = getServiceLogo(for: apiServiceName) {
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: "message")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 16, height: 16)
             }
-            .buttonStyle(PlainButtonStyle())
+            
+            // Chat info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(getChatDisplayName())
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                if let lastMessage = getLastMessage() {
+                    Text(lastMessage)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            // Pin indicator
+            if chat.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.orange)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedChat = chat
         }
         .contextMenu {
             chatContextMenu
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            // Delete action
-            Button(role: .destructive) {
-                deleteChat()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            
-            // Move to project action
-            Button {
-                showingMoveToProject = true
-            } label: {
-                Label("Move", systemImage: "folder")
-            }
-            .tint(.blue)
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            // Pin/Unpin action
-            Button {
-                togglePinChat()
-            } label: {
-                Label(chat.isPinned ? "Unpin" : "Pin", 
-                      systemImage: chat.isPinned ? "pin.slash" : "pin")
-            }
-            .tint(.orange)
-            
-            // Rename action
-            Button {
-                renameChat()
-            } label: {
-                Label("Rename", systemImage: "pencil")
-            }
-            .tint(.green)
         }
         .sheet(isPresented: $showingMoveToProject) {
             // Move to project sheet would go here
