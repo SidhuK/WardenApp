@@ -893,8 +893,11 @@ struct ProjectChatRowInList: View {
                let image = getServiceLogo(for: apiServiceName) {
                 image
                     .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
+                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
             } else {
                 Image(systemName: "message")
                     .font(.system(size: 14, weight: .medium))

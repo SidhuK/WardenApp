@@ -274,6 +274,7 @@ struct ChatListView: View {
             .shadow(color: Color.accentColor.opacity(0.15), radius: 1, x: 0, y: 1)
         }
         .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 16)
     }
     
     private var settingsButton: some View {
