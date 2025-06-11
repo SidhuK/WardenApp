@@ -335,72 +335,66 @@ struct ProjectRow: View {
     }
     
     private var projectHeaderRow: some View {
-        HStack(spacing: 0) {
-            // Project selection button (larger area)
-            Button(action: {
-                // Only select if not already selected, otherwise deselect
-                if isSelected {
-                    selectedProject = nil
-                } else {
-                    selectedProject = project
-                }
-            }) {
-                HStack(spacing: 2) {
-                    // Colored folder icon - aligned with AI logo (8pt from left edge)
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(projectColor)
-                        .padding(.leading, -8) // Offset container padding to align with AI logo
-                    
-                    // Project name
-                    Text(project.name ?? "Untitled Project")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                        .padding(.leading, 8) // Add spacing between folder and name
-                    
-                    Spacer()
-                    
-                    // Chat count badge
-                    if projectChats.count > 0 {
-                        HStack(spacing: 4) {
-                            Text("\(projectChats.count)")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(projectColor.opacity(0.8))
-                        )
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
-                )
-                .contentShape(Rectangle())
+        // Single button containing folder + name + arrow as one entity
+        Button(action: {
+            // Combined action: select project and toggle expansion
+            if isSelected {
+                selectedProject = nil
+            } else {
+                selectedProject = project
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Expansion toggle button (small area on the right)
-            Button(action: onToggleExpansion) {
+            onToggleExpansion()
+        }) {
+            HStack(spacing: 2) {
+                // Colored folder icon - aligned with AI logo (8pt from left edge)
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(projectColor)
+                    .padding(.leading, 8) // Align with AI logo
+                
+                // Project name
+                Text(project.name ?? "Untitled Project")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .padding(.leading, 8) // Add spacing between folder and name
+                
+                Spacer()
+                
+                // Chat count badge
+                if projectChats.count > 0 {
+                    HStack(spacing: 4) {
+                        Text("\(projectChats.count)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(projectColor.opacity(0.8))
+                    )
+                }
+                
+                // Expansion arrow - now part of the same button
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
                     .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                    .frame(width: 20, height: 20)
+                    .padding(.trailing, 8)
             }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.trailing, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.primary.opacity(0.08) : (isExpanded ? Color.primary.opacity(0.04) : Color.clear))
+            )
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle()) // Ensure entire row is tappable
+        .buttonStyle(PlainButtonStyle())
         .contextMenu {
             projectContextMenu
         }
@@ -686,77 +680,68 @@ struct ProjectRowInList: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Project header row
-            HStack(spacing: 0) {
-                // Project selection button (larger area)
-                Button(action: {
-                    // Only select if not already selected, otherwise deselect
-                    if isSelected {
-                        selectedProject = nil
-                    } else {
-                        selectedProject = project
-                    }
-                }) {
-                    HStack(spacing: 2) {
-                        // Colored folder icon - aligned with AI logo (8pt from left edge)
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(projectColor)
-                            .padding(.leading, -8) // Offset container padding to align with AI logo
-                        
-                        // Project name
-                        Text(project.name ?? "Untitled Project")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                            .padding(.leading, 8) // Add spacing between folder and name
-                        
-                        Spacer()
-                        
-                        // Chat count badge
-                        if projectChats.count > 0 {
-                            HStack(spacing: 4) {
-                                Text("\(projectChats.count)")
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(projectColor.opacity(0.8))
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(isSelected ? projectColor.opacity(0.15) : (isExpanded ? projectColor.opacity(0.05) : Color.clear))
-                    )
-                    .contentShape(Rectangle())
+            // Project header row - Single button containing folder + name + arrow as one entity
+            Button(action: {
+                // Combined action: select project and toggle expansion
+                if isSelected {
+                    selectedProject = nil
+                } else {
+                    selectedProject = project
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Expansion toggle button (small area on the right)
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isExpanded.toggle()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack(spacing: 2) {
+                    // Colored folder icon - aligned with AI logo (8pt from left edge)
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(projectColor)
+                        .padding(.leading, 8) // Align with AI logo
+                    
+                    // Project name
+                    Text(project.name ?? "Untitled Project")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .padding(.leading, 8) // Add spacing between folder and name
+                    
+                    Spacer()
+                    
+                    // Chat count badge
+                    if projectChats.count > 0 {
+                        HStack(spacing: 4) {
+                            Text("\(projectChats.count)")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(projectColor.opacity(0.8))
+                        )
                     }
-                }) {
+                    
+                    // Expansion arrow - now part of the same button
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                        .frame(width: 20, height: 20)
+                        .padding(.trailing, 8)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.trailing, 8)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.primary.opacity(0.08) : (isExpanded ? Color.primary.opacity(0.04) : Color.clear))
+                )
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle()) // Ensure entire row is tappable
+            .buttonStyle(PlainButtonStyle())
             .contextMenu {
                 projectContextMenu
             }
