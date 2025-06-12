@@ -1,4 +1,3 @@
-
 import CoreData
 import Foundation
 
@@ -207,11 +206,12 @@ class MessageManager: ObservableObject {
     {
         var messages: [[String: String]] = []
 
-        // Use persona's system message if available, otherwise fall back to chat's system message
-        let systemMessage = chat.persona?.systemMessage ?? chat.systemMessage
+        // Build comprehensive system message with project context
+        let systemMessage = buildSystemMessageWithProjectContext(for: chat)
         
         #if DEBUG
         print("🤖 Persona: \(chat.persona?.name ?? "None")")
+        print("🗂️ Project: \(chat.project?.name ?? "None")")
         print("📝 System Message: \(systemMessage)")
         #endif
 
@@ -253,5 +253,45 @@ class MessageManager: ObservableObject {
         }
 
         return messages
+    }
+    
+    /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
+    /// Handles instruction precedence: project instructions + persona instructions + chat-specific instructions
+    private func buildSystemMessageWithProjectContext(for chat: ChatEntity) -> String {
+        var systemMessageComponents: [String] = []
+        
+        // 1. Start with base persona system message or chat system message
+        let baseSystemMessage = chat.persona?.systemMessage ?? chat.systemMessage
+        if !baseSystemMessage.isEmpty {
+            systemMessageComponents.append(baseSystemMessage)
+        }
+        
+        // 2. Add project context if available
+        if let project = chat.project {
+            // Provide basic project info
+            let projectInfo = """
+            
+            PROJECT CONTEXT:
+            You are working within the "\(project.name ?? "Untitled Project")" project.
+            """
+            if let description = project.projectDescription, !description.isEmpty {
+                systemMessageComponents.append(projectInfo + " Project description: \(description)")
+            } else {
+                systemMessageComponents.append(projectInfo)
+            }
+            
+            // 3. Add project-specific custom instructions
+            if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
+                let projectInstructions = """
+                
+                PROJECT-SPECIFIC INSTRUCTIONS:
+                \(customInstructions)
+                """
+                systemMessageComponents.append(projectInstructions)
+            }
+        }
+        
+        // 4. Combine all components into final system message
+        return systemMessageComponents.joined(separator: "\n")
     }
 }

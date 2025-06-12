@@ -12,6 +12,7 @@ struct ModelSelectorDropdown: View {
     
     @StateObject private var modelCache = ModelCacheManager.shared
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
+    @StateObject private var selectedModelsManager = SelectedModelsManager.shared
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
     
@@ -81,6 +82,14 @@ struct ModelSelectorDropdown: View {
         return "\(providerName) • \(model)"
     }
     
+    private var hasCustomModelSelection: Bool {
+        // Check if any configured service has custom model selection
+        return Array(apiServices).contains { service in
+            guard let serviceType = service.type else { return false }
+            return selectedModelsManager.hasCustomSelection(for: serviceType)
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Trigger button
@@ -137,30 +146,49 @@ struct ModelSelectorDropdown: View {
     
     private var dropdownContent: some View {
         VStack(spacing: 0) {
-            // Search bar
+            // Search bar and custom selection indicator
             if !modelCache.allModels.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Search models...", text: $searchText)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(.system(size: 11))
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                VStack(spacing: 0) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Search models...", text: $searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 11))
+                        
+                        if !searchText.isEmpty {
+                            Button(action: {
+                                searchText = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    
+                    // Custom selection indicator
+                    if hasCustomModelSelection {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.green)
+                            
+                            Text("Custom model selection active")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
                 .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
                 
                 // Divider

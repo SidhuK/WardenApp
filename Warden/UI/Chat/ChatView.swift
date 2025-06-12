@@ -500,11 +500,27 @@ struct ChatTitleView: View {
                     .foregroundColor(isHovered ? .accentColor : .secondary)
             }
             
-            Text(displayTitle)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(isHovered ? .primary : .secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(displayTitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(isHovered ? .primary : .secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                
+                // Project indicator
+                if let project = chat.project {
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
+                            .frame(width: 6, height: 6)
+                                                  Text(project.name ?? "Project")
+                            .font(.system(size: 8, weight: .regular))
+                            .foregroundColor(isHovered ? .secondary : .secondary.opacity(0.8))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
+            }
         }
     }
     
@@ -573,11 +589,13 @@ struct ChatTitleView: View {
     }
     
     private var helpText: String {
+        let projectInfo = chat.project != nil ? " • Project: \(chat.project!.name ?? "Untitled")" : ""
+        
         if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
             let serviceNames = selectedMultiAgentServices.map { $0.name ?? "Unknown" }.sorted().joined(separator: ", ")
-            return "Multi-Agent Chat: \(displayTitle) • \(serviceNames) • Click arrow to share"
+            return "Multi-Agent Chat: \(displayTitle)\(projectInfo) • \(serviceNames) • Click arrow to share"
         } else {
-            return "Chat: \(displayTitle) • \(chat.apiService?.name ?? "No AI Service") • Click arrow to share"
+            return "Chat: \(displayTitle)\(projectInfo) • \(chat.apiService?.name ?? "No AI Service") • Click arrow to share"
         }
     }
     

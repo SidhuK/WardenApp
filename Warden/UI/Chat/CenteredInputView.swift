@@ -30,13 +30,20 @@ struct CenteredInputView: View {
                 VStack(spacing: 48) {
                     // Simple greeting section
                     VStack(spacing: 24) {
-                        // Minimal icon
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(.secondary.opacity(0.6))
+                        // Using Warden icon instead of sparkles
+                        Image("WelcomeIcon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .shadow(
+                                color: Color.accentColor.opacity(0.2),
+                                radius: 6,
+                                x: 0,
+                                y: 2
+                            )
                         
                         // Clean text hierarchy
-                        Text("How can I help you today?")
+                        Text("How can I help?")
                             .font(.system(size: 24, weight: .medium, design: .rounded))
                             .foregroundColor(.primary.opacity(0.9))
                             .multilineTextAlignment(.center)

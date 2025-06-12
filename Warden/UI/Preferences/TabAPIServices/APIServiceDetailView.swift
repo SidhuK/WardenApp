@@ -1,5 +1,6 @@
 
 import SwiftUI
+import CoreData
 
 struct APIServiceDetailView: View {
     @StateObject private var viewModel: APIServiceDetailViewModel
@@ -165,6 +166,17 @@ struct APIServiceDetailView: View {
                     }
                 }
                 .padding(8)
+            }
+
+            // Model Selection Configuration
+            if !viewModel.fetchedModels.isEmpty {
+                ModelSelectionView(
+                    serviceType: viewModel.type,
+                    availableModels: viewModel.fetchedModels,
+                    onSelectionChanged: { selectedIds in
+                        viewModel.updateSelectedModels(selectedIds)
+                    }
+                )
             }
 
             VStack {

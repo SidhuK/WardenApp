@@ -23,6 +23,7 @@ struct MessageCell: View, Equatable {
     let viewContext: NSManagedObjectContext
     @State private var isHovered = false
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
 
     var searchText: String = ""
     var isSelectionMode: Bool = false
@@ -61,14 +62,16 @@ struct MessageCell: View, Equatable {
                     .padding(.leading, 8)
                 }
                 
-                // AI Model Logo
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
-                    .padding(.leading, isSelectionMode ? 4 : 8)
+                // AI Model Logo (conditionally shown)
+                if showSidebarAIIcons {
+                    Image("logo_\(chat.apiService?.type ?? "")")
+                        .resizable()
+                        .renderingMode(.template)
+                        .interpolation(.high)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
+                        .padding(.leading, isSelectionMode ? 4 : 8)
+                }
                 
                 VStack(alignment: .leading) {
                     if !chat.name.isEmpty {
@@ -80,8 +83,23 @@ struct MessageCell: View, Equatable {
                 }
                 .padding(.vertical, 8)
                 .padding(.trailing, 8)
+                .padding(.leading, showSidebarAIIcons ? 0 : (isSelectionMode ? 4 : 8))
                 
                 Spacer()
+                
+                // Project indicator
+                if let project = chat.project {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
+                            .frame(width: 8, height: 8)
+                        Text(project.name ?? "Project")
+                            .font(.caption2)
+                            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .secondary)
+                            .lineLimit(1)
+                    }
+                    .padding(.trailing, 4)
+                }
                 
                 if chat.isPinned {
                     Image(systemName: "pin.fill")

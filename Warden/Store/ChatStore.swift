@@ -283,6 +283,342 @@ class ChatStore: ObservableObject {
 
     }
 
+    // MARK: - Project Management Methods
+    
+    func createProject(name: String, description: String? = nil, colorCode: String = "#007AFF", customInstructions: String? = nil) -> ProjectEntity {
+        let project = ProjectEntity(context: viewContext)
+        project.id = UUID()
+        project.name = name
+        project.projectDescription = description
+        project.colorCode = colorCode
+        project.customInstructions = customInstructions
+        project.createdAt = Date()
+        project.updatedAt = Date()
+        project.isArchived = false
+        project.sortOrder = getNextProjectSortOrder()
+        
+        saveInCoreData()
+        return project
+    }
+    
+    func updateProject(_ project: ProjectEntity, name: String? = nil, description: String? = nil, colorCode: String? = nil, customInstructions: String? = nil) {
+        if let name = name {
+            project.name = name
+        }
+        if let description = description {
+            project.projectDescription = description
+        }
+        if let colorCode = colorCode {
+            project.colorCode = colorCode
+        }
+        if let customInstructions = customInstructions {
+            project.customInstructions = customInstructions
+        }
+        project.updatedAt = Date()
+        
+        saveInCoreData()
+    }
+    
+    func deleteProject(_ project: ProjectEntity) {
+        // Remove project relationship from all chats in this project
+        if let chats = project.chats?.allObjects as? [ChatEntity] {
+            for chat in chats {
+                chat.project = nil
+            }
+        }
+        
+        viewContext.delete(project)
+        saveInCoreData()
+    }
+    
+    func moveChatsToProject(_ project: ProjectEntity?, chats: [ChatEntity]) {
+        for chat in chats {
+            chat.project = project
+            chat.updatedDate = Date()
+        }
+        
+        if let project = project {
+            project.updatedAt = Date()
+        }
+        
+        saveInCoreData()
+    }
+    
+    func removeChatFromProject(_ chat: ChatEntity) {
+        let oldProject = chat.project
+        chat.project = nil
+        chat.updatedDate = Date()
+        
+        if let project = oldProject {
+            project.updatedAt = Date()
+        }
+        
+        saveInCoreData()
+    }
+    
+    // Regenerate titles for all chats in a project
+    func regenerateChatTitlesInProject(_ project: ProjectEntity) {
+        guard let chats = project.chats?.allObjects as? [ChatEntity], !chats.isEmpty else { return }
+        
+        // Find a suitable API service for title generation
+        let apiServiceFetch = NSFetchRequest<APIServiceEntity>(entityName: "APIServiceEntity")
+        apiServiceFetch.fetchLimit = 1
+        
+        do {
+            guard let apiServiceEntity = try viewContext.fetch(apiServiceFetch).first else {
+                print("No API service available for title regeneration")
+                return
+            }
+            
+            // Create API service configuration from entity
+            guard let apiUrl = apiServiceEntity.url else {
+                print("API service URL is missing")
+                return
+            }
+            
+            let apiConfig = APIServiceConfig(
+                name: apiServiceEntity.name ?? "default",
+                apiUrl: apiUrl,
+                apiKey: "", // We'll use the stored API key
+                model: apiServiceEntity.model ?? AppConstants.chatGptDefaultModel
+            )
+            
+            // Create API service from config
+            let apiService = APIServiceFactory.createAPIService(config: apiConfig)
+            
+            // Create a message manager for title generation
+            let messageManager = MessageManager(
+                apiService: apiService,
+                viewContext: viewContext
+            )
+            
+            // Regenerate titles for each chat
+            for chat in chats {
+                if !chat.messagesArray.isEmpty {
+                    messageManager.generateChatNameIfNeeded(chat: chat, force: true)
+                }
+            }
+        } catch {
+            print("Error fetching API service for title regeneration: \(error)")
+        }
+    }
+    
+    // MARK: - Performance Optimized Project Queries
+    
+    /// Efficiently fetch all projects with optimized batch loading
+    func getAllProjects() -> [ProjectEntity] {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ProjectEntity.isArchived, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.createdAt, ascending: false)
+        ]
+        
+        // Performance optimizations
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.returnsObjectsAsFaults = true
+        fetchRequest.relationshipKeyPathsForPrefetching = []
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching projects: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently fetch active projects with lazy loading
+    func getActiveProjects() -> [ProjectEntity] {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "isArchived == %@", NSNumber(value: false))
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.createdAt, ascending: false)
+        ]
+        
+        // Performance optimizations
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.returnsObjectsAsFaults = true
+        fetchRequest.relationshipKeyPathsForPrefetching = []
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching active projects: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently fetch projects with pagination for large datasets
+    func getProjectsPaginated(limit: Int = 50, offset: Int = 0, includeArchived: Bool = false) -> [ProjectEntity] {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        
+        if !includeArchived {
+            fetchRequest.predicate = NSPredicate(format: "isArchived == %@", NSNumber(value: false))
+        }
+        
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ProjectEntity.isArchived, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: true),
+            NSSortDescriptor(keyPath: \ProjectEntity.createdAt, ascending: false)
+        ]
+        
+        // Pagination settings
+        fetchRequest.fetchLimit = limit
+        fetchRequest.fetchOffset = offset
+        fetchRequest.fetchBatchSize = min(limit, 50)
+        fetchRequest.returnsObjectsAsFaults = true
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching paginated projects: \(error)")
+            return []
+        }
+    }
+    
+    // MARK: - Performance Optimized Chat Queries
+    
+    /// Efficiently fetch chats in a specific project with lazy loading
+    func getChatsInProject(_ project: ProjectEntity) -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.predicate = NSPredicate(format: "project == %@", project)
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        // Performance optimizations
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.returnsObjectsAsFaults = true
+        fetchRequest.relationshipKeyPathsForPrefetching = []
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching chats in project: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently fetch chats without project assignment
+    func getChatsWithoutProject() -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.predicate = NSPredicate(format: "project == nil")
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        // Performance optimizations
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.returnsObjectsAsFaults = true
+        fetchRequest.relationshipKeyPathsForPrefetching = []
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching chats without project: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently fetch all chats with batch loading
+    func getAllChats() -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        // Performance optimizations
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.returnsObjectsAsFaults = true
+        fetchRequest.relationshipKeyPathsForPrefetching = []
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching all chats: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently fetch chats with pagination support
+    func getChatsPaginated(limit: Int = 50, offset: Int = 0, projectId: UUID? = nil) -> [ChatEntity] {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        
+        // Build predicate based on project filter
+        if let projectId = projectId {
+            fetchRequest.predicate = NSPredicate(format: "project.id == %@", projectId as CVarArg)
+        }
+        
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
+            NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
+        ]
+        
+        // Pagination settings
+        fetchRequest.fetchLimit = limit
+        fetchRequest.fetchOffset = offset
+        fetchRequest.fetchBatchSize = min(limit, 50)
+        fetchRequest.returnsObjectsAsFaults = true
+        
+        do {
+            return try viewContext.fetch(fetchRequest)
+        } catch {
+            print("Error fetching paginated chats: \(error)")
+            return []
+        }
+    }
+    
+    /// Efficiently count chats without loading them into memory
+    func countChats(projectId: UUID? = nil) -> Int {
+        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        
+        if let projectId = projectId {
+            fetchRequest.predicate = NSPredicate(format: "project.id == %@", projectId as CVarArg)
+        }
+        
+        fetchRequest.resultType = .countResultType
+        
+        do {
+            return try viewContext.count(for: fetchRequest)
+        } catch {
+            print("Error counting chats: \(error)")
+            return 0
+        }
+    }
+    
+    func archiveProject(_ project: ProjectEntity) {
+        project.isArchived = true
+        project.updatedAt = Date()
+        saveInCoreData()
+    }
+    
+    func unarchiveProject(_ project: ProjectEntity) {
+        project.isArchived = false
+        project.updatedAt = Date()
+        saveInCoreData()
+    }
+    
+    private func getNextProjectSortOrder() -> Int32 {
+        let fetchRequest = ProjectEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ProjectEntity.sortOrder, ascending: false)]
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let projects = try viewContext.fetch(fetchRequest)
+            if let lastProject = projects.first {
+                return lastProject.sortOrder + 1
+            }
+        } catch {
+            print("Error getting next sort order: \(error)")
+        }
+        
+        return 0
+    }
+
     // MARK: - Spotlight Integration Methods
     
     /// Index a specific chat for Spotlight search
@@ -339,6 +675,87 @@ class ChatStore: ObservableObject {
         let chatsToReindex = Set(affectedMessages.compactMap { $0.chat })
         for chat in chatsToReindex {
             spotlightManager.indexChat(chat)
+        }
+    }
+    
+    // MARK: - Performance Optimization Methods
+    
+    /// Save changes in background context for better performance
+    private func saveInBackground() async {
+        await Task.detached(priority: .background) {
+            let backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            backgroundContext.parent = self.viewContext
+            
+            await backgroundContext.perform {
+                do {
+                    if backgroundContext.hasChanges {
+                        try backgroundContext.save()
+                    }
+                } catch {
+                    print("Error saving in background: \(error)")
+                }
+            }
+        }.value
+    }
+    
+
+    
+    /// Preload project data in background for better UI responsiveness
+    func preloadProjectData(for projects: [ProjectEntity]) {
+        // Extract project IDs to safely pass to background context
+        let projectIds = projects.compactMap { $0.id }
+        
+        Task.detached(priority: .background) {
+            let backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+            backgroundContext.parent = self.viewContext
+            
+            await backgroundContext.perform {
+                // Fetch projects in the background context using their IDs
+                let fetchRequest = ProjectEntity.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id IN %@", projectIds)
+                
+                do {
+                    let backgroundProjects = try backgroundContext.fetch(fetchRequest)
+                    for project in backgroundProjects {
+                        // Access relationships to fault them in
+                        _ = project.chats?.count
+                        if let chats = project.chats?.allObjects as? [ChatEntity] {
+                            _ = chats.compactMap { $0.messages.count }
+                        }
+                    }
+                } catch {
+                    print("Error preloading project data: \(error)")
+                }
+            }
+        }
+    }
+    
+    /// Optimize Core Data performance by cleaning up faulted objects
+    func optimizeMemoryUsage() {
+        Task.detached(priority: .background) {
+            await MainActor.run {
+                // Reset the context to release faulted objects
+                self.viewContext.refreshAllObjects()
+            }
+        }
+    }
+    
+    /// Get performance statistics for monitoring
+    func getPerformanceStats() -> (chatCount: Int, projectCount: Int, registeredObjects: Int) {
+        let chatCount = countChats()
+        let projectCount = getAllProjects().count
+        let registeredObjects = viewContext.registeredObjects.count
+        
+        return (chatCount: chatCount, projectCount: projectCount, registeredObjects: registeredObjects)
+    }
+}
+
+// MARK: - Extensions for Performance
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
         }
     }
 }

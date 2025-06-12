@@ -20,6 +20,7 @@ struct TabGeneralSettingsView: View {
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("codeFont") private var codeFont: String = AppConstants.firaCode
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
+    @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
@@ -204,6 +205,28 @@ struct TabGeneralSettingsView: View {
                         .gridCellUnsizedAxes([.horizontal])
                     
                     GridRow {
+                        Text("Sidebar Icons")
+                            .fontWeight(.medium)
+                            .frame(width: 120, alignment: .leading)
+                            .gridCellAnchor(.top)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
+                                Spacer()
+                            }
+                            
+                            Text("Display AI service logos next to chat names in the sidebar")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    Divider()
+                        .gridCellUnsizedAxes([.horizontal])
+                    
+                    GridRow {
                         Text("Spotlight Search")
                             .fontWeight(.medium)
                             .frame(width: 120, alignment: .leading)
@@ -333,6 +356,7 @@ struct InlineTabGeneralSettingsView: View {
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("codeFont") private var codeFont: String = AppConstants.firaCode
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
+    @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
@@ -514,6 +538,28 @@ struct InlineTabGeneralSettingsView: View {
                                         .fontWeight(.medium)
                                 }
                             }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    Divider()
+                        .gridCellUnsizedAxes([.horizontal])
+                    
+                    GridRow {
+                        Text("Sidebar Icons")
+                            .fontWeight(.medium)
+                            .frame(width: 120, alignment: .leading)
+                            .gridCellAnchor(.top)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
+                                Spacer()
+                            }
+                            
+                            Text("Display AI service logos next to chat names in the sidebar")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
