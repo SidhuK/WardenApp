@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Per-Chat Actions Inside Projects**: Delete, edit, regenerate, and rename actions now available for each chat directly inside its project.
 - **Regeneration & Rename Fixes**: Selection logic fixed so the correct chat is regenerated/renamed every time.
+- **Individual Chat Controls**: Full chat management (delete, edit, regenerate) available for chats within projects.
 - **Bulk Selection Improvements**: Selection state remains consistent when switching between projects.
 
 ### 🎨 User Interface & Experience
@@ -35,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Project Selection**: Creating or editing a project no longer auto-selects the first project in the list.
 - **Consistent Edit Behaviour**: Editing an existing project reliably pre-selects the project being edited.
+- **Create Project UI**: Removed empty details pane in project creation sheet for cleaner layout.
+- **Chat Selection Logic**: Fixed selection state for chat operations (regenerate, rename, delete) within projects.
 
 ---
 
@@ -43,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Manual Download
 
 Download the latest version from [GitHub Releases](https://github.com/SidhuK/WardenApp/releases)
+
+or download for the gumroad page [here](hhttps://karatsidhu.gumroad.com/l/warden) (pay what you want!)
 
 ## Support the Project
 

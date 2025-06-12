@@ -145,7 +145,16 @@ enum APIError: LocalizedError {
 Defined in [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld):
 - Chat ↔ Message (one-to-many)
 - Chat ↔ Persona (many-to-one)
+- Chat ↔ Project (many-to-one, optional for backwards compatibility)
+- Project ↔ Chat (one-to-many)
 - Message ↔ Attachment (one-to-many)
+
+### Project Management Patterns
+- **Backwards Compatibility**: Existing chats work without being assigned to projects
+- **Hierarchical Organization**: Projects contain multiple chats with shared context
+- **AI Summarization**: Background processing for project summaries using configured AI service
+- **Custom Instructions**: Project-level system prompts that cascade to contained chats
+- **Bulk Operations**: Efficient handling of multi-chat operations within projects
 
 ## UI Patterns
 
@@ -158,8 +167,15 @@ Defined in [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatam
 ### Component Reusability
 Create reusable components in [Warden/UI/Components/](mdc:Warden/UI/Components):
 - [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states
-- [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display
+- [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display for projects and chats
 - [ToolbarButton.swift](mdc:Warden/UI/Components/ToolbarButton.swift) - Consistent toolbar styling
+
+### Project UI Patterns
+- **Subtle Visual Hierarchy**: Projects use minimal color coding (folder icons only)
+- **Swipe Gestures**: Native swipe actions for delete, rename, and move operations
+- **Context Menus**: Right-click actions for project and chat management
+- **Empty States**: Informative placeholders for projects without chats
+- **Expandable Sections**: Collapsible project views for better space utilization
 
 ### Navigation Patterns
 - Sidebar navigation for primary content
