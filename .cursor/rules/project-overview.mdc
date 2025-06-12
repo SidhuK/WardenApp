@@ -5,42 +5,76 @@ alwaysApply: true
 ---
 # Warden Project Overview
 
-Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that supports multiple AI providers including ChatGPT, Claude, xAI (Grok), Google Gemini, Perplexity, Ollama, OpenRouter, and OpenAI-compatible APIs.
+Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that supports multiple AI providers including OpenAI (ChatGPT), Anthropic (Claude), xAI (Grok), Google (Gemini), Perplexity, DeepSeek, Groq, OpenRouter, Mistral, Ollama, and any OpenAI-compatible APIs.
 
 ## Project Structure
 
 ### Core Application
-- **Entry Point**:  - [WardenApp.swift](mdc:Warden/WardenApp.swift) Main app file with SwiftUI App protocol, Sparkle updater integration, and Core Data setup
-- **Main View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift) - Primary application interface
-- **App Configuration**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Central configuration and constants
+- **Entry Point**: [WardenApp.swift](mdc:Warden/WardenApp.swift) - Main app file with SwiftUI App protocol, Sparkle updater integration, and Core Data setup
+- **Main View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift) - Primary application interface with sidebar and content area
+- **App Configuration**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Central configuration, constants, and supported AI models
 
 ### Data Layer
 - **Models**: [Models.swift](mdc:Warden/Models/Models.swift) - Core data models for chats, messages, and AI services
 - **Message Content**: [MessageContent.swift](mdc:Warden/Models/MessageContent.swift) - Message content handling and formatting
 - **Image Attachments**: [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) - Image upload and attachment support
-- **Data Store**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data persistence and chat management
-- **Core Data Model**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld) - Core Data schema
+- **Data Store**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data persistence and chat management (single source of truth)
+- **Core Data Model**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld) - Core Data schema definition
+
+### API Handlers Architecture
+- **Protocol Definition**: [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift) - Unified interface for all AI providers
+- **Service Factory**: [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift) - Creates appropriate handler instances
+- **Handlers**: Individual handlers for each AI provider (ChatGPT, Claude, Gemini, Deepseek, etc.)
+- **Reasoning Support**: Special handling for thinking-capable models (o1, o3, deepseek-reasoner)
 
 ### UI Components
-- **Chat Interface**: Located in [Warden/UI/Chat/](mdc:Warden/UI/Chat) - Chat view components and message handling
-- **Chat List**: Located in [Warden/UI/ChatList/](mdc:Warden/UI/ChatList) - Sidebar chat list and navigation
-- **Preferences**: Located in [Warden/UI/Preferences/](mdc:Warden/UI/Preferences) - Settings and configuration UI
-- **Welcome Screen**: Located in [Warden/UI/WelcomeScreen/](mdc:Warden/UI/WelcomeScreen) - Initial user experience
-- **Reusable Components**: Located in [Warden/UI/Components/](mdc:Warden/UI/Components) - Shared UI components
+- **Chat Interface**: [Warden/UI/Chat/](mdc:Warden/UI/Chat) - Chat view components and message handling
+  - [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main conversation interface
+  - [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift) - Chat state management
+  - [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - Collapsible reasoning display
+- **Chat List**: [Warden/UI/ChatList/](mdc:Warden/UI/ChatList) - Sidebar chat list and navigation
+- **Preferences**: [Warden/UI/Preferences/](mdc:Warden/UI/Preferences) - Settings and configuration UI
+- **Welcome Screen**: [Warden/UI/WelcomeScreen/](mdc:Warden/UI/WelcomeScreen) - Initial user experience
+- **Reusable Components**: [Warden/UI/Components/](mdc:Warden/UI/Components) - Shared UI components
 
-### Key Features
-- Multi-LLM support with API key management
-- AI Personas with customizable system instructions
-- Image upload support for compatible models
-- Real-time streaming responses
-- Local data storage with backup/restore
-- Syntax highlighting and code preview
-- LaTeX equation rendering
-- Native macOS integration with light/dark themes
+### Utilities
+- **Message Manager**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) - Formats messages for API calls
+- **Message Parser**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) - Processes AI responses
+- **API Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination
+- **Spotlight Integration**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) - macOS Spotlight search support
+
+## Key Features
+- **Multi-AI Provider Support**: 10+ AI services with unified interface
+- **Reasoning Models**: Special support for thinking-capable models (o1, o3, deepseek-reasoner)
+- **AI Personas**: Customizable system instructions and model preferences
+- **Multimodal Support**: Image upload for compatible vision models
+- **Real-time Streaming**: Progressive response generation with cancellation
+- **Local Data Storage**: All data stored locally with backup/restore
+- **Syntax Highlighting**: Code block detection and formatting
+- **Interactive Previews**: HTML/CSS/JavaScript execution
+- **LaTeX Equations**: Mathematical equation rendering
+- **Spotlight Search**: Native macOS search integration
+- **Local LLM Support**: Ollama integration for privacy-focused usage
+
+## Architecture Patterns
+- **MVVM**: Model-View-ViewModel pattern with SwiftUI
+- **Protocol-Oriented**: Unified API abstraction for all AI providers
+- **Streaming**: Real-time response processing with proper cancellation
+- **Core Data**: Local persistence with background context operations
+- **Environment Objects**: Shared state management via SwiftUI environment
 
 ## Development Guidelines
-- Built with SwiftUI for macOS 13.0+
-- Uses Core Data for persistence
-- Follows MVVM architecture pattern
-- Supports both Intel and Apple Silicon Macs
-- Includes Sparkle framework for automatic updates
+- **Platform**: macOS 13.0+ (Intel and Apple Silicon)
+- **Framework**: SwiftUI with AppKit integration where needed
+- **Data**: Core Data for persistence, no cloud synchronization
+- **Privacy**: Local-only storage, no telemetry or data collection
+- **Testing**: Unit tests in [WardenTests](mdc:WardenTests), UI tests in [WardenUITests](mdc:WardenUITests)
+- **Updates**: Sparkle framework for automatic updates
+- **Distribution**: GitHub releases, Homebrew cask, open source (Apache-2.0)
+
+## Special Considerations
+- **Reasoning Models**: Handle system message conversion and dual content streams
+- **API Keys**: Secure storage without logging or exposure
+- **Streaming**: Proper resource cleanup and cancellation support
+- **Performance**: Optimized for Apple Silicon with background processing
+- **Accessibility**: VoiceOver support and keyboard navigation

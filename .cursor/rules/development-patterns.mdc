@@ -1,0 +1,256 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Development Patterns and Best Practices
+
+This guide covers coding standards, architecture patterns, and best practices for developing Warden.
+
+## Code Organization
+
+### File Structure Conventions
+- **Models**: Data structures and Core Data entities in [Warden/Models/](mdc:Warden/Models)
+- **Views**: SwiftUI views organized by feature in [Warden/UI/](mdc:Warden/UI)
+- **Utilities**: Helper classes and extensions in [Warden/Utilities/](mdc:Warden/Utilities)
+- **Store**: Data persistence layer in [Warden/Store/](mdc:Warden/Store)
+- **Configuration**: App constants and settings in [Warden/Configuration/](mdc:Warden/Configuration)
+
+### Naming Conventions
+- **Views**: PascalCase ending with "View" (e.g., `ChatListView`, `PreferencesView`)
+- **ViewModels**: PascalCase ending with "ViewModel" or "Store" (e.g., `ChatViewModel`, `ChatStore`)
+- **Handlers**: PascalCase ending with "Handler" (e.g., `ChatGPTHandler`, `ClaudeHandler`)
+- **Protocols**: PascalCase describing capability (e.g., `APIProtocol`, `MessageParsable`)
+- **Properties**: camelCase with descriptive names
+- **Methods**: camelCase starting with verbs
+
+## Architecture Patterns
+
+### MVVM Implementation
+- **Models**: Defined in [Models.swift](mdc:Warden/Models/Models.swift) and Core Data entities
+- **Views**: SwiftUI views that observe ViewModels
+- **ViewModels**: ObservableObject classes that manage view state
+- **Single Source of Truth**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) manages all chat-related state
+
+Example ViewModel:
+```swift
+@MainActor
+class ChatViewModel: ObservableObject {
+    @Published var messages: [Message] = []
+    @Published var isLoading = false
+    
+    private let chatStore: ChatStore
+    
+    init(chatStore: ChatStore) {
+        self.chatStore = chatStore
+    }
+}
+```
+
+### Protocol-Oriented Design
+All API handlers conform to [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift):
+
+```swift
+protocol APIProtocol {
+    func sendMessage(
+        chatId: UUID,
+        messageContent: String,
+        conversation: [Message],
+        modelName: String,
+        systemPrompt: String?
+    ) async throws -> AsyncThrowingStream<String, Error>
+}
+```
+
+### State Management
+- **@AppStorage**: User preferences and settings
+- **@StateObject**: View model lifecycle management
+- **@ObservedObject**: Shared view models passed between views
+- **@State**: Local view state only
+- **@EnvironmentObject**: App-wide shared state like [ChatStore.swift](mdc:Warden/Store/ChatStore.swift)
+
+## API Integration Patterns
+
+### Handler Factory Pattern
+Use [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift) to create handlers:
+
+```swift
+static func createHandler(for service: String) -> APIProtocol? {
+    switch service {
+    case "openai": return ChatGPTHandler()
+    case "anthropic": return ClaudeHandler()
+    // ... other services
+    default: return nil
+    }
+}
+```
+
+### Streaming Response Handling
+All handlers implement async streaming:
+
+```swift
+func sendMessage(...) async throws -> AsyncThrowingStream<String, Error> {
+    return AsyncThrowingStream { continuation in
+        // Implementation with proper error handling and cancellation
+    }
+}
+```
+
+### Reasoning Model Support
+Check for reasoning capability in [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift):
+
+```swift
+let isReasoningModel = AppConstants.openAiReasoningModels.contains(modelId)
+
+if isReasoningModel {
+    // Convert system message to user message
+    // Handle dual content streams (reasoning + response)
+}
+```
+
+## Error Handling
+
+### Graceful Degradation
+- Always provide fallback behavior for API failures
+- Show user-friendly error messages
+- Implement retry logic where appropriate
+- Log errors without exposing sensitive data
+
+### Error Message Patterns
+```swift
+enum APIError: LocalizedError {
+    case networkError
+    case invalidResponse
+    case rateLimited
+    
+    var errorDescription: String? {
+        switch self {
+        case .networkError: return "Network connection failed"
+        case .invalidResponse: return "Invalid response from AI service"
+        case .rateLimited: return "Rate limit exceeded, please try again later"
+        }
+    }
+}
+```
+
+## Data Persistence
+
+### Core Data Best Practices
+- All operations go through [ChatStore.swift](mdc:Warden/Store/ChatStore.swift)
+- Use background contexts for heavy operations
+- Implement proper cascade delete rules
+- Handle Core Data errors gracefully
+
+### Data Model Relationships
+Defined in [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld):
+- Chat ↔ Message (one-to-many)
+- Chat ↔ Persona (many-to-one)
+- Message ↔ Attachment (one-to-many)
+
+## UI Patterns
+
+### SwiftUI Best Practices
+- Keep views lightweight with business logic in ViewModels
+- Use environment objects for shared state
+- Implement proper accessibility support
+- Support both light and dark themes
+
+### Component Reusability
+Create reusable components in [Warden/UI/Components/](mdc:Warden/UI/Components):
+- [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states
+- [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display
+- [ToolbarButton.swift](mdc:Warden/UI/Components/ToolbarButton.swift) - Consistent toolbar styling
+
+### Navigation Patterns
+- Sidebar navigation for primary content
+- Sheet presentations for modal workflows
+- Tab-based organization in preferences
+- Proper back button and keyboard navigation
+
+## Testing Strategies
+
+### Unit Testing
+Located in [WardenTests](mdc:WardenTests):
+- Mock external dependencies
+- Test business logic in isolation
+- Use dependency injection for testability
+
+### UI Testing
+Located in [WardenUITests](mdc:WardenUITests):
+- Test complete user workflows
+- Verify accessibility compliance
+- Test keyboard navigation
+
+### Preview Support
+Use [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) for realistic preview data:
+
+```swift
+struct ChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChatView()
+            .environmentObject(PreviewStateManager.shared.chatStore)
+    }
+}
+```
+
+## Performance Optimization
+
+### Async Operations
+- Use structured concurrency (async/await)
+- Proper task cancellation
+- Background processing for heavy operations
+- Main actor isolation for UI updates
+
+### Memory Management
+- Proper cleanup of observers and timers
+- Efficient image loading and caching
+- Lazy loading for large lists
+- Resource cleanup in deinit
+
+### Core Data Performance
+- Batch operations for bulk updates
+- Lazy loading of relationships
+- Proper fetch request predicates
+- Background context for imports
+
+## Security Practices
+
+### API Key Management
+- Store API keys securely in user preferences
+- Never log or expose API keys in code
+- Clear sensitive data on app termination
+- Use secure network connections only
+
+### Data Privacy
+- All data stored locally only
+- No telemetry or usage tracking
+- Respect user privacy preferences
+- Implement proper sandboxing
+
+## Documentation Standards
+
+### Code Documentation
+- Use Swift documentation comments for public APIs
+- Include parameter descriptions and return values
+- Provide usage examples for complex functions
+- Document thread safety requirements
+
+### Architecture Documentation
+- Maintain up-to-date README files
+- Document design decisions and patterns
+- Include setup instructions for contributors
+- Keep changelog updated with releases
+
+## Accessibility Guidelines
+
+### VoiceOver Support
+- Provide meaningful accessibility labels
+- Use accessibility hints for complex interactions
+- Test with VoiceOver enabled
+- Support dynamic type sizing
+
+### Keyboard Navigation
+- Full keyboard accessibility throughout app
+- Proper focus management
+- Custom keyboard shortcuts defined in [WardenApp.swift](mdc:Warden/WardenApp.swift)
+- Escape key handling for modal dismissal

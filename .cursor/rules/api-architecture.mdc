@@ -16,87 +16,190 @@ Warden implements a modular API architecture that supports multiple AI providers
 - **Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination
 
 ### Handler Implementations
-- **ChatGPT**: [ChatGPTHandler.swift](mdc:Warden/Utilities/APIHandlers/ChatGPTHandler.swift) - OpenAI API integration
-- **Claude**: [ClaudeHandler.swift](mdc:Warden/Utilities/APIHandlers/ClaudeHandler.swift) - Anthropic API integration
-- **Gemini**: [GeminiHandler.swift](mdc:Warden/Utilities/APIHandlers/GeminiHandler.swift) - Google AI integration
-- **Ollama**: [OllamaHandler.swift](mdc:Warden/Utilities/APIHandlers/OllamaHandler.swift) - Local LLM integration
+- **OpenAI (ChatGPT)**: [ChatGPTHandler.swift](mdc:Warden/Utilities/APIHandlers/ChatGPTHandler.swift) - OpenAI API integration with reasoning model support
+- **Anthropic (Claude)**: [ClaudeHandler.swift](mdc:Warden/Utilities/APIHandlers/ClaudeHandler.swift) - Anthropic API integration
+- **Google (Gemini)**: [GeminiHandler.swift](mdc:Warden/Utilities/APIHandlers/GeminiHandler.swift) - Google AI integration
+- **DeepSeek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - DeepSeek API with reasoning content support
+- **xAI (Grok)**: [XAIHandler.swift](mdc:Warden/Utilities/APIHandlers/XAIHandler.swift) - xAI Grok integration
+- **Perplexity**: [PerplexityHandler.swift](mdc:Warden/Utilities/APIHandlers/PerplexityHandler.swift) - Search-augmented AI with reasoning models
 - **OpenRouter**: [OpenRouterHandler.swift](mdc:Warden/Utilities/APIHandlers/OpenRouterHandler.swift) - Multi-model proxy service
-- **Perplexity**: [PerplexityHandler.swift](mdc:Warden/Utilities/APIHandlers/PerplexityHandler.swift) - Search-augmented AI
-- **Deepseek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - Deepseek API integration with reasoning support
-- **Groq**: Inherits from ChatGPTHandler for high-speed inference
+- **Ollama**: [OllamaHandler.swift](mdc:Warden/Utilities/APIHandlers/OllamaHandler.swift) - Local LLM integration
 - **Mistral**: [MistralHandler.swift](mdc:Warden/Utilities/APIHandlers/MistralHandler.swift) - Mistral AI integration
+- **Groq**: Inherits from ChatGPTHandler for high-speed inference
 
 ## Implementation Patterns
 
 ### Protocol Conformance
 All handlers implement the `APIProtocol` which defines:
-- `sendMessage()` - Primary communication method
-- Streaming response handling
-- Error management
-- Authentication handling
+```swift
+protocol APIProtocol {
+    func sendMessage(
+        chatId: UUID,
+        messageContent: String,
+        conversation: [Message],
+        modelName: String,
+        systemPrompt: String?
+    ) async throws -> AsyncThrowingStream<String, Error>
+}
+```
 
 ### Reasoning Model Support
-Special handling patterns for reasoning-capable models:
-- **System Message Conversion**: Convert system role to user message for reasoning models
-- **Reasoning Content Parsing**: Extract and format thinking process content
-- **Dual Stream Handling**: Separate reasoning and content streams in real-time
-- **UI Integration**: Connect to [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) for display
+Special handling patterns for reasoning-capable models (o1, o3, deepseek-reasoner):
+
+#### System Message Conversion
+```swift
+// Reasoning models don't support system role
+if AppConstants.openAiReasoningModels.contains(modelName) {
+    // Convert system message to user message
+    messages.append([
+        "role": "user", 
+        "content": "Take this message as the system message: \(systemPrompt)"
+    ])
+} else {
+    messages.append(["role": "system", "content": systemPrompt])
+}
+```
+
+#### Reasoning Content Parsing
+```swift
+// DeepSeek pattern
+if let reasoningContent = message["reasoning_content"] as? String {
+    finalContent = "<think>\n\(reasoningContent)\n</think>\n\n\(messageContent)"
+}
+
+// OpenRouter pattern  
+if let reasoningContent = message["reasoning"] as? String {
+    finalContent = "<think>\n\(reasoningContent)\n</think>\n\n\(messageContent)"
+}
+```
+
+#### Dual Stream Handling
+```swift
+// Handle separate reasoning and content streams
+if let reasoningContent = delta["reasoning_content"] as? String {
+    return (finished, nil, reasoningContent, "reasoning")
+} else if let content = delta["content"] as? String {
+    return (finished, nil, content, defaultRole)
+}
+```
 
 ### Request/Response Flow
-1. **Message Preparation**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) formats messages
-2. **Reasoning Check**: Detect reasoning models and adjust message format
-3. **API Call**: Handler-specific implementation sends request
-4. **Streaming**: Real-time response processing with reasoning support
+1. **Message Preparation**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) formats messages for API calls
+2. **Reasoning Detection**: Check if model supports reasoning and adjust message format
+3. **API Call**: Handler-specific implementation sends request with proper authentication
+4. **Streaming**: Real-time response processing with reasoning content separation
 5. **Parsing**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) processes AI responses
 6. **Storage**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) persists conversation data
+7. **UI Update**: [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) displays reasoning content
 
 ### Configuration Management
-- **App Constants**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Service definitions and defaults
-- **Reasoning Model List**: Centralized list of reasoning-capable models
+- **App Constants**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift) - Service definitions and model lists
+- **Reasoning Model Registry**: Centralized list of reasoning-capable models
 - **User Preferences**: API keys and model preferences stored securely
 - **Dynamic Configuration**: Runtime service discovery and configuration
 
 ## Service-Specific Features
 
 ### Streaming Support
-- **Real-time Updates**: Progressive message building
+- **Real-time Updates**: Progressive message building with AsyncThrowingStream
 - **Reasoning Streams**: Separate handling for thinking process content
-- **Cancellation**: User can stop generation mid-stream
+- **Cancellation**: User can stop generation mid-stream with proper cleanup
 - **Error Recovery**: Graceful handling of stream interruptions
 
 ### Multimodal Support
 - **Image Uploads**: [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) handles image processing
 - **Vision Models**: Automatic detection of vision-capable models
-- **Content Formatting**: Proper multipart request construction
+- **Content Formatting**: Proper multipart request construction for images
+- **Base64 Encoding**: Efficient image encoding for API transmission
 
 ### Local Integration (Ollama)
-- **Service Discovery**: Automatic detection of local Ollama instance
-- **Model Management**: Download and manage local models
+- **Service Discovery**: Automatic detection of local Ollama instance on port 11434
+- **Model Management**: Download and manage local models through Ollama API
 - **Performance Optimization**: Apple Silicon specific optimizations
+- **Privacy Focus**: Complete local processing without external API calls
 
-### Reasoning Integration
-- **Model Detection**: Check [AppConstants.openAiReasoningModels](mdc:Warden/Configuration/AppConstants.swift) for reasoning capability
-- **Content Processing**: Handle `<think>` tags and reasoning content
-- **UI Coordination**: Automatic integration with thinking process display
+### Authentication Patterns
+- **API Key Storage**: Secure storage in UserDefaults with obfuscation
+- **Header Management**: Proper authentication headers per service
+- **Token Validation**: Pre-flight checks for API key validity
+- **Error Handling**: Graceful handling of authentication failures
 
 ## Error Handling Strategy
-- **Network Errors**: Retry logic and user feedback
-- **API Errors**: Service-specific error interpretation
-- **Rate Limiting**: Respect provider limits and quotas
-- **Graceful Degradation**: Fallback options for service failures
-- **Reasoning Errors**: Handle incomplete reasoning streams gracefully
+
+### Network Errors
+- **Retry Logic**: Exponential backoff for transient failures
+- **Timeout Handling**: Proper timeout configuration per service
+- **Connection Monitoring**: Network reachability checks
+- **User Feedback**: Clear error messages with actionable advice
+
+### API Errors
+- **Status Code Interpretation**: Service-specific error code handling
+- **Rate Limiting**: Respect provider limits with proper backoff
+- **Quota Management**: Track usage and warn users of limits
+- **Service-Specific Errors**: Tailored error messages per provider
+
+### Reasoning Model Errors
+- **Incomplete Streams**: Handle cases where reasoning content is cut off
+- **Format Validation**: Ensure proper reasoning content structure
+- **Fallback Behavior**: Graceful degradation when reasoning fails
+- **UI State Management**: Proper cleanup of reasoning display state
 
 ## Testing and Development
-- **Mock Handlers**: Test implementations for development
-- **API Key Validation**: Secure testing without exposing credentials
+
+### Mock Handlers
+- **Test Implementations**: Mock handlers for development and testing
 - **Response Simulation**: Predictable responses for UI testing
 - **Reasoning Testing**: Mock reasoning content for UI development
+- **Error Simulation**: Test error handling paths
+
+### API Key Validation
+- **Secure Testing**: Test without exposing real API keys
+- **Validation Flow**: Pre-flight API key validation
+- **Error Scenarios**: Test various authentication failure cases
+- **Development Keys**: Use development/test API keys when available
+
+### Performance Testing
+- **Latency Measurement**: Track API response times
+- **Throughput Testing**: Test streaming performance
+- **Memory Usage**: Monitor memory usage during long conversations
+- **Concurrent Requests**: Test multiple simultaneous API calls
+
+## Security Considerations
+
+### API Key Protection
+- **Storage Security**: Never log or expose API keys in code or logs
+- **Memory Management**: Clear sensitive data from memory promptly
+- **Transport Security**: Use HTTPS for all API communications
+- **Key Rotation**: Support for updating API keys without restart
+
+### Data Privacy
+- **Local Processing**: Process sensitive data locally when possible
+- **Request Filtering**: Strip sensitive information from API requests
+- **Response Sanitization**: Clean responses before storage
+- **Audit Trail**: Log API usage without exposing content
 
 ## Best Practices
-- **Handler Independence**: Each handler is self-contained
-- **Configuration Consistency**: Unified configuration across all services
-- **Resource Management**: Proper cleanup of network resources
-- **Security**: Never log or expose API keys in any handler
-- **Performance**: Efficient request/response processing
-- **Reasoning Support**: Always check for reasoning capability before special processing
-- **Stream Management**: Proper handling of dual content streams for reasoning models
+
+### Handler Implementation
+- **Stateless Design**: Handlers should be stateless and thread-safe
+- **Resource Cleanup**: Proper cleanup of network resources and streams
+- **Error Propagation**: Consistent error handling across all handlers
+- **Configuration Consistency**: Unified configuration structure
+
+### Performance Optimization
+- **Connection Pooling**: Reuse HTTP connections where possible
+- **Request Batching**: Batch multiple operations when supported
+- **Caching Strategy**: Cache API responses where appropriate
+- **Memory Efficiency**: Minimize memory usage during streaming
+
+### Reasoning Model Integration
+- **Capability Detection**: Always check for reasoning support before special handling
+- **Content Separation**: Properly separate reasoning and response content
+- **UI Coordination**: Integrate with [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) for display
+- **Stream Management**: Handle dual content streams efficiently
+
+### Maintenance
+- **API Version Tracking**: Track API versions and update as needed
+- **Deprecation Handling**: Handle deprecated endpoints gracefully
+- **Feature Detection**: Dynamically detect service capabilities
+- **Documentation Updates**: Keep API documentation current with implementation
