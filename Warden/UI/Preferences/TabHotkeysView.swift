@@ -1,15 +1,14 @@
 import SwiftUI
+import AppKit
 
 struct TabHotkeysView: View {
     @StateObject private var hotkeyManager = HotkeyManager.shared
-    @State private var editingAction: HotkeyAction?
-    @State private var showingKeyRecorder = false
+    @State private var editingActionId: String?
     @State private var showingResetConfirmation = false
+    @State private var isRecording = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "keyboard", title: "Keyboard Shortcuts")
-            
             settingGroup {
                 VStack(spacing: 0) {
                     ForEach(HotkeyAction.HotkeyCategory.allCases, id: \.self) { category in
@@ -49,23 +48,6 @@ struct TabHotkeysView: View {
             }
         } message: {
             Text("This will restore all keyboard shortcuts to their default values. This action cannot be undone.")
-        }
-        .sheet(isPresented: $showingKeyRecorder) {
-            if let action = editingAction {
-                KeyRecorderView(
-                    action: action,
-                    currentShortcut: hotkeyManager.getShortcut(for: action.id),
-                    onSave: { shortcut in
-                        hotkeyManager.updateShortcut(for: action.id, shortcut: shortcut)
-                        editingAction = nil
-                        showingKeyRecorder = false
-                    },
-                    onCancel: {
-                        editingAction = nil
-                        showingKeyRecorder = false
-                    }
-                )
-            }
         }
     }
     
@@ -116,20 +98,19 @@ struct TabHotkeysView: View {
             Spacer()
             
             HStack(spacing: 8) {
-                // Current shortcut display
-                shortcutDisplay(hotkeyManager.getDisplayString(for: action.id))
-                
-                // Edit button
-                Button("Edit") {
-                    editingAction = action
-                    showingKeyRecorder = true
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                // Current shortcut display - clickable for editing
+                shortcutDisplay(
+                    formatShortcutWithPlus(hotkeyManager.getDisplayString(for: action.id)),
+                    isEditing: editingActionId == action.id,
+                    action: action
+                )
                 
                 // Reset to default button
                 Button("Reset") {
                     hotkeyManager.resetToDefault(for: action.id)
+                    if editingActionId == action.id {
+                        editingActionId = nil
+                    }
                 }
                 .buttonStyle(.borderless)
                 .controlSize(.small)
@@ -138,36 +119,91 @@ struct TabHotkeysView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-    }
-    
-    private func shortcutDisplay(_ shortcutString: String) -> some View {
-        Text(shortcutString.isEmpty ? "Not Set" : shortcutString)
-            .font(.system(.body, design: .monospaced))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(NSColor.separatorColor), lineWidth: 1)
-                    )
+        .background(
+            // Invisible view to capture key events when editing
+            InvisibleKeyCapture(
+                isActive: editingActionId == action.id,
+                onKeyPressed: { key, modifiers in
+                    handleKeyPress(key: key, modifiers: modifiers, for: action.id)
+                }
             )
-            .foregroundColor(shortcutString.isEmpty ? .secondary : .primary)
+        )
     }
     
-    private func sectionHeader(icon: String, title: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(.accentColor)
-            
-            Text(title)
-                .font(.title2)
-                .fontWeight(.semibold)
+    private func shortcutDisplay(_ shortcutString: String, isEditing: Bool, action: HotkeyAction) -> some View {
+        Button(action: {
+            if editingActionId == action.id {
+                // Stop editing
+                editingActionId = nil
+            } else {
+                // Start editing
+                editingActionId = action.id
+            }
+        }) {
+            Text(isEditing ? "Press keys..." : (shortcutString.isEmpty ? "Click to set" : shortcutString))
+                .font(.system(.body, design: .monospaced))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isEditing ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(
+                                    isEditing ? Color.accentColor : Color(NSColor.separatorColor), 
+                                    lineWidth: isEditing ? 2 : 1
+                                )
+                        )
+                )
+                .foregroundColor(
+                    isEditing ? .accentColor : 
+                    (shortcutString.isEmpty ? .secondary : .primary)
+                )
         }
-        .padding(.horizontal, 24)
+        .buttonStyle(.plain)
+        .help(isEditing ? "Press Escape to cancel" : "Click to edit shortcut")
     }
+    
+    private func formatShortcutWithPlus(_ shortcut: String) -> String {
+        guard !shortcut.isEmpty else { return shortcut }
+        
+        // Convert ⌘⇧C to ⌘ + ⇧ + C
+        var result = ""
+        for char in shortcut {
+            if ["⌘", "⇧", "⌥", "⌃"].contains(String(char)) {
+                if !result.isEmpty {
+                    result += " + "
+                }
+                result += String(char)
+            } else {
+                if !result.isEmpty {
+                    result += " + "
+                }
+                result += String(char)
+            }
+        }
+        return result
+    }
+    
+    private func handleKeyPress(key: String, modifiers: [String], for actionId: String) {
+        // Don't allow just modifier keys
+        guard !key.isEmpty && !["cmd", "shift", "option", "control"].contains(key.lowercased()) else {
+            return
+        }
+        
+        // Handle escape to cancel
+        if key.lowercased() == "escape" {
+            editingActionId = nil
+            return
+        }
+        
+        // Create new shortcut
+        let newShortcut = KeyboardShortcut(key: key.lowercased(), modifiers: modifiers)
+        hotkeyManager.updateShortcut(for: actionId, shortcut: newShortcut)
+        editingActionId = nil
+    }
+    
+    
     
     private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
@@ -183,156 +219,70 @@ struct TabHotkeysView: View {
     }
 }
 
-struct KeyRecorderView: View {
-    let action: HotkeyAction
-    let currentShortcut: KeyboardShortcut?
-    let onSave: (KeyboardShortcut) -> Void
-    let onCancel: () -> Void
+struct InvisibleKeyCapture: NSViewRepresentable {
+    let isActive: Bool
+    let onKeyPressed: (String, [String]) -> Void
     
-    @State private var recordedShortcut: KeyboardShortcut?
-    @State private var isRecording = false
-    @State private var recordingText = "Press a key combination..."
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Text("Edit Shortcut")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Button("Cancel") {
-                    onCancel()
-                }
-                .buttonStyle(.borderless)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(action.name)
-                        .font(.headline)
-                    
-                    Text(action.description)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack(spacing: 12) {
-                    Text("Current: ")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    + Text(currentShortcut?.displayString ?? "Not Set")
-                        .font(.system(.subheadline, design: .monospaced))
-                        .fontWeight(.medium)
-                    
-                    Rectangle()
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .frame(height: 60)
-                        .overlay(
-                            Text(recordedShortcut?.displayString ?? recordingText)
-                                .font(.system(.title3, design: .monospaced))
-                                .foregroundColor(isRecording ? .accentColor : .primary)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(isRecording ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: 2)
-                        )
-                        .cornerRadius(8)
-                        .onTapGesture {
-                            startRecording()
-                        }
-                    
-                    Text(isRecording ? "Recording... Press Escape to cancel" : "Click above to record a new shortcut")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            Spacer()
-            
-            HStack(spacing: 12) {
-                Button("Use Default") {
-                    if let defaultShortcut = KeyboardShortcut.from(displayString: action.defaultShortcut) {
-                        recordedShortcut = defaultShortcut
-                    }
-                }
-                .buttonStyle(.bordered)
-                
-                Spacer()
-                
-                Button("Clear") {
-                    recordedShortcut = nil
-                }
-                .buttonStyle(.bordered)
-                
-                Button("Save") {
-                    if let shortcut = recordedShortcut {
-                        onSave(shortcut)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(recordedShortcut == nil)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
-        }
-        .frame(width: 400, height: 300)
-        .background(Color(NSColor.windowBackgroundColor))
-        .onAppear {
-            recordedShortcut = currentShortcut
-        }
+    func makeNSView(context: Context) -> NSView {
+        let view = KeyCaptureView()
+        view.onKeyPressed = onKeyPressed
+        return view
     }
     
-    private func startRecording() {
-        isRecording = true
-        recordingText = "Press a key combination..."
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let keyView = nsView as? KeyCaptureView {
+            keyView.isActive = isActive
+            if isActive {
+                DispatchQueue.main.async {
+                    keyView.window?.makeFirstResponder(keyView)
+                }
+            }
+        }
+    }
+}
+
+class KeyCaptureView: NSView {
+    var isActive = false
+    var onKeyPressed: ((String, [String]) -> Void)?
+    
+    override var acceptsFirstResponder: Bool { return isActive }
+    override var canBecomeKeyView: Bool { return isActive }
+    
+    override func keyDown(with event: NSEvent) {
+        guard isActive else {
+            super.keyDown(with: event)
+            return
+        }
         
-        // Set up key monitoring here
-        // For now, we'll simulate it with a simple interface
-        // In a production app, you'd use NSEvent.addGlobalMonitorForEvents
+        let key = event.charactersIgnoringModifiers ?? ""
+        var modifiers: [String] = []
+        
+        if event.modifierFlags.contains(.command) {
+            modifiers.append("cmd")
+        }
+        if event.modifierFlags.contains(.shift) {
+            modifiers.append("shift")
+        }
+        if event.modifierFlags.contains(.option) {
+            modifiers.append("option")
+        }
+        if event.modifierFlags.contains(.control) {
+            modifiers.append("control")
+        }
+        
+        onKeyPressed?(key, modifiers)
+    }
+    
+    override func flagsChanged(with event: NSEvent) {
+        // Handle modifier-only key events if needed
+        super.flagsChanged(with: event)
     }
 }
 
 // MARK: - Inline Version
 struct InlineTabHotkeysView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            inlineSectionHeader(icon: "keyboard", title: "Keyboard Shortcuts")
-            
-            inlineSettingGroup {
-                TabHotkeysView()
-            }
-        }
-    }
-    
-    private func inlineSectionHeader(icon: String, title: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.accentColor)
-            
-            Text(title)
-                .font(.title3)
-                .fontWeight(.semibold)
-        }
-        .padding(.horizontal, 24)
-    }
-    
-    private func inlineSettingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) {
-            content()
-        }
-        .background(Color(NSColor.controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(NSColor.separatorColor).opacity(0.3), lineWidth: 1)
-        )
-        .padding(.horizontal, 24)
+        TabHotkeysView()
     }
 }
 
