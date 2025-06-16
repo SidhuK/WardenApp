@@ -38,6 +38,12 @@ struct PreferencesView: View {
                 Divider()
                     .padding(.horizontal)
                 
+                // MARK: - Keyboard Shortcuts
+                TabHotkeysView()
+                
+                Divider()
+                    .padding(.horizontal)
+                
                 // MARK: - Backup & Restore
                 TabBackupRestoreView()
                 
@@ -105,6 +111,9 @@ struct InlinePreferencesView: View {
                 
                 // MARK: - AI Assistants
                 InlineTabAIPersonasView()
+                
+                // MARK: - Keyboard Shortcuts
+                InlineTabHotkeysView()
                 
                 // MARK: - Backup & Restore
                 InlineTabBackupRestoreView()
