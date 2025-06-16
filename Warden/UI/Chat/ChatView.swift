@@ -438,6 +438,19 @@ struct ChatView: View {
                         }
                     }
                 }
+                // MARK: - Hotkey Notification Handlers
+                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastResponseNotification)) { _ in
+                    copyLastAIResponse()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyChatNotification)) { _ in
+                    copyEntireChat()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: AppConstants.exportChatNotification)) { _ in
+                    exportChat()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastUserMessageNotification)) { _ in
+                    copyLastUserMessage()
+                }
             }
             .id("chatContainer")
         }
@@ -875,6 +888,61 @@ extension ChatView {
             apiUrl: apiServiceUrl,
             apiKey: apiKey,
             model: service.model ?? AppConstants.chatGptDefaultModel
+        )
+    }
+    
+    // MARK: - Hotkey Action Methods
+    
+    private func copyLastAIResponse() {
+        // Find the most recent AI (non-user) message
+        let aiMessages = chatViewModel.sortedMessages.filter { !$0.own }
+        guard let lastAIMessage = aiMessages.last else {
+            // Show visual feedback that there's no AI response to copy
+            showTemporaryFeedback("No AI response to copy", icon: "exclamationmark.circle")
+            return
+        }
+        
+        // Copy to clipboard
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(lastAIMessage.body, forType: .string)
+        
+        // Show visual feedback
+        showTemporaryFeedback("AI response copied", icon: "doc.on.clipboard")
+    }
+    
+    private func copyEntireChat() {
+        ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
+        showTemporaryFeedback("Chat copied", icon: "doc.on.clipboard")
+    }
+    
+    private func exportChat() {
+        ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
+        // Note: No toast for export since the save dialog provides its own feedback
+    }
+    
+    private func copyLastUserMessage() {
+        // Find the most recent user message
+        let userMessages = chatViewModel.sortedMessages.filter { $0.own }
+        guard let lastUserMessage = userMessages.last else {
+            showTemporaryFeedback("No user message to copy", icon: "exclamationmark.circle")
+            return
+        }
+        
+        // Copy to clipboard
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(lastUserMessage.body, forType: .string)
+        
+        // Show visual feedback
+        showTemporaryFeedback("User message copied", icon: "doc.on.clipboard")
+    }
+    
+    private func showTemporaryFeedback(_ message: String, icon: String = "checkmark.circle.fill") {
+        NotificationCenter.default.post(
+            name: .showToast,
+            object: nil,
+            userInfo: ["message": message, "icon": icon]
         )
     }
 }

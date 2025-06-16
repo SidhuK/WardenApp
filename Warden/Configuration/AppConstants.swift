@@ -804,6 +804,37 @@ Remember that true productivity serves your overall life satisfaction and well-b
     static let largeMessageSymbolsThreshold = 25000
     /// The default size for thumbnail images.
     static let thumbnailSize: CGFloat = 300
+
+    // MARK: - Hotkey Notifications
+    /// Notification name for copying the last AI response to clipboard
+    static let copyLastResponseNotification = Notification.Name("copyLastResponseNotification")
+    /// Notification name for copying the entire chat to clipboard
+    static let copyChatNotification = Notification.Name("copyChatNotification")
+    /// Notification name for exporting the current chat
+    static let exportChatNotification = Notification.Name("exportChatNotification")
+    /// Notification name for copying the last user message
+    static let copyLastUserMessageNotification = Notification.Name("copyLastUserMessageNotification")
+    /// Notification name for starting a new chat
+    static let newChatHotkeyNotification = Notification.Name("newChatHotkeyNotification")
+    
+    // MARK: - Hotkey Settings
+    /// User defaults keys for hotkey configurations
+    struct HotkeyKeys {
+        static let copyLastResponse = "hotkey_copy_last_response"
+        static let copyChat = "hotkey_copy_chat"
+        static let exportChat = "hotkey_export_chat"
+        static let copyLastUserMessage = "hotkey_copy_last_user_message"
+        static let newChat = "hotkey_new_chat"
+    }
+    
+    /// Default hotkey configurations
+    struct DefaultHotkeys {
+        static let copyLastResponse = "⌘⇧C"
+        static let copyChat = "⌘⇧A"
+        static let exportChat = "⌘⇧E"
+        static let copyLastUserMessage = "⌘⇧U"
+        static let newChat = "⌘N"
+    }
 }
 
 /// Returns the current date formatted as "yyyy-MM-dd".

@@ -85,6 +85,9 @@
 		4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */; };
 		7F298E1A2DF8166C00326DBB /* ProjectSummaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */; };
 		7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */; };
+		7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */; };
+		7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */; };
+		7F4B74C42DFFC83100C844A2 /* ToastNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */; };
 		7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */; };
 		7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5A91C92DF937E500A18860 /* ModelSelectionView.swift */; };
 		7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */; };
@@ -215,6 +218,9 @@
 		4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaHandler.swift; sourceTree = "<group>"; };
 		7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryButton.swift; sourceTree = "<group>"; };
 		7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryView.swift; sourceTree = "<group>"; };
+		7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyModels.swift; sourceTree = "<group>"; };
+		7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabHotkeysView.swift; sourceTree = "<group>"; };
+		7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastNotification.swift; sourceTree = "<group>"; };
 		7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedModelsManager.swift; sourceTree = "<group>"; };
 		7F5A91C92DF937E500A18860 /* ModelSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectionView.swift; sourceTree = "<group>"; };
 		7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizedCoreDataManager.swift; sourceTree = "<group>"; };
@@ -306,6 +312,7 @@
 				4A4918792D9F4186007EB4A2 /* ToolbarButton.swift */,
 				7F60244F2DEA078A007AB8FC /* RephraseButton.swift */,
 				7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */,
+				7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */,
 				4A2D3CEA2D5794B00082A262 /* ThemeMode.swift */,
 				4A0BCBBB2D5199140033AB96 /* ButtonWithStatusIndicator.swift */,
 				4ABB86782CFBDBD3004EC7B1 /* HighlightedText.swift */,
@@ -350,6 +357,7 @@
 				4A8A78C72D4C41980057A6CC /* TabGeneralSettingsView.swift */,
 				4A164BB82C95CC450060ECFE /* TabAPIServices */,
 				4AE3CEB62C93A86F00A9CF4C /* TabAPIServicesView.swift */,
+				7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */,
 				4A399CC329BCE67800E98796 /* PreferencesView.swift */,
 				4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */,
 				7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */,
@@ -412,6 +420,7 @@
 			children = (
 				4A27FF922DA1C4640075D730 /* ImageAttachment.swift */,
 				4A27FF932DA1C4640075D730 /* MessageContent.swift */,
+				7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */,
 				4A2B9E942CE1272E00C8042F /* RequestMessagesTransformer.swift */,
 				4A272A7329F5DAA800F93D0D /* Models.swift */,
 			);
@@ -705,11 +714,13 @@
 				4A885C582CEA3F7B0018BBED /* ChatListRow.swift in Sources */,
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,
+				7F4B74C42DFFC83100C844A2 /* ToastNotification.swift in Sources */,
 				4A4918782D9F3C54007EB4A2 /* MessageContentView.swift in Sources */,
 				7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */,
 				7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */,
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
+				7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */,
 				4A885C562CEA3F6C0018BBED /* ChatListView.swift in Sources */,
 				4AADD98C2C924FBA00242D20 /* APIServiceManager.swift in Sources */,
 				7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */,
@@ -748,6 +759,7 @@
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,
+				7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */,
 				4A471B882C29CD3D00C66926 /* AdaptiveMathView.swift in Sources */,
 				7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */,
 				7F8D7CA12DE9CE2C003E7BCA /* ChatSharingService.swift in Sources */,

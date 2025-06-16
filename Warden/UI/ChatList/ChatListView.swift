@@ -129,6 +129,9 @@ struct ChatListView: View {
         .onChange(of: selectedChat) { _, _ in
             isSearchFocused = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppConstants.newChatHotkeyNotification)) { _ in
+            onNewChat()
+        }
     }
 
     private var newChatButtonSection: some View {

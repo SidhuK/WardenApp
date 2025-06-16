@@ -200,6 +200,9 @@ struct ContentView: View {
             }
         }
         .environmentObject(previewStateManager)
+        .overlay(alignment: .top) {
+            ToastManager()
+        }
     }
 
     func newChat() {

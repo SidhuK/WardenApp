@@ -132,6 +132,41 @@ struct WardenApp: App {
                 
                 Divider()
                 
+                // Hotkey Actions
+                Button("Copy Last AI Response") {
+                    NotificationCenter.default.post(
+                        name: AppConstants.copyLastResponseNotification,
+                        object: nil
+                    )
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+                
+                Button("Copy Entire Chat") {
+                    NotificationCenter.default.post(
+                        name: AppConstants.copyChatNotification,
+                        object: nil
+                    )
+                }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                
+                Button("Export Chat") {
+                    NotificationCenter.default.post(
+                        name: AppConstants.exportChatNotification,
+                        object: nil
+                    )
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                
+                Button("Copy Last User Message") {
+                    NotificationCenter.default.post(
+                        name: AppConstants.copyLastUserMessageNotification,
+                        object: nil
+                    )
+                }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
+                
+                Divider()
+                
                 Button("Send Feedback...") {
                     if let url = URL(string: "https://github.com/SidhuK/WardenApp/issues/new") {
                         NSWorkspace.shared.open(url)
