@@ -104,14 +104,7 @@ struct ProjectSummaryView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // New Thread button after the created date
-                if !project.isArchived {
-                    HStack {
-                        Spacer()
-                        newChatButton
-                    }
-                    .padding(.top, 8)
-                }
+
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -210,6 +203,15 @@ struct ProjectSummaryView: View {
     
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // New Thread button above Recent Activity heading
+            if !project.isArchived {
+                HStack {
+                    newChatButton
+                    Spacer()
+                }
+                .padding(.bottom, 8)
+            }
+            
             Text("Recent Activity")
                 .font(.title2)
                 .fontWeight(.semibold)
@@ -371,7 +373,6 @@ struct ProjectSummaryView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .frame(maxWidth: 240)
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Helper Methods
