@@ -19,6 +19,11 @@ struct MessageInputView: View {
     @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
+    @State private var showingPlusMenu = false
+    @StateObject private var rephraseService = RephraseService()
+    @State private var originalText = ""
+    @State private var showingRephraseError = false
+    @State private var rephraseErrorMessage = ""
     private let maxInputHeight = 160.0
     private let initialInputSize = 16.0
     private let inputPadding = 8.0
@@ -35,6 +40,12 @@ struct MessageInputView: View {
     private var canSend: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+    
+    private var canRephrase: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+        chat?.apiService != nil && 
+        !rephraseService.isRephrasing
+    }
 
     enum Focus {
         case focused, notFocused
@@ -43,7 +54,18 @@ struct MessageInputView: View {
     var body: some View {
         VStack(spacing: 0) {
             imagePreviewsSection
-            mainInputContainer
+            
+            // New layout: Plus button, Input box, Send button
+            HStack(spacing: 8) {
+                // Plus button on the left
+                plusButtonMenu
+                
+                // Main input container (without action buttons inside)
+                mainInputContainer
+                
+                // Send button on the right
+                sendButton
+            }
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
             guard imageUploadsAllowed else { return false }
@@ -53,6 +75,11 @@ struct MessageInputView: View {
             DispatchQueue.main.async {
                 isFocused = .focused
             }
+        }
+        .alert("Rephrase Error", isPresented: $showingRephraseError) {
+            Button("OK") { }
+        } message: {
+            Text(rephraseErrorMessage)
         }
     }
 
@@ -73,6 +100,149 @@ struct MessageInputView: View {
             .padding(.bottom, 8)
         }
         .frame(height: attachedImages.isEmpty ? 0 : 100)
+    }
+    
+    private var plusButtonMenu: some View {
+        Button(action: {
+            showingPlusMenu.toggle()
+        }) {
+            Image(systemName: "plus.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(.accentColor)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help("More options")
+        .popover(isPresented: $showingPlusMenu, arrowEdge: .top) {
+            VStack(spacing: 8) {
+                // Rephrase option
+                Button(action: {
+                    showingPlusMenu = false
+                    rephraseText()
+                }) {
+                    HStack {
+                        if rephraseService.isRephrasing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .frame(width: 14, height: 14)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 14))
+                        }
+                        Text("Rephrase")
+                        Spacer()
+                    }
+                    .foregroundColor(canRephrase ? .primary : .secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(!canRephrase)
+                
+                // Add Image option (if allowed)
+                if imageUploadsAllowed {
+                    Button(action: {
+                        showingPlusMenu = false
+                        onAddImage()
+                    }) {
+                        HStack {
+                            Image(systemName: "photo.badge.plus")
+                                .font(.system(size: 14))
+                            Text("Add Image")
+                            Spacer()
+                        }
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Add Assistant option (if available)
+                if let onAddAssistant = onAddAssistant {
+                    Button(action: {
+                        showingPlusMenu = false
+                        onAddAssistant()
+                    }) {
+                        HStack {
+                            Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.badge.plus")
+                                .font(.system(size: 14))
+                            Text(chat?.persona != nil ? "Edit Assistant" : "Add Assistant")
+                            Spacer()
+                        }
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.vertical, 8)
+            .frame(minWidth: 150)
+        }
+    }
+    
+    private var sendButton: some View {
+        Button(action: onEnter) {
+            Image(systemName: "paperplane.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(canSend ? .accentColor : .secondary)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(!canSend)
+        .help("Send message")
+    }
+    
+    private func rephraseText() {
+        guard let apiService = chat?.apiService else {
+            showRephraseError("No AI service selected. Please select an AI service first.")
+            return
+        }
+        
+        // Store original text if this is the first rephrase
+        if originalText.isEmpty {
+            originalText = text
+        }
+        
+        rephraseService.rephraseText(text, using: apiService) { [self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let rephrasedText):
+                    // Animate the text change
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        text = rephrasedText
+                    }
+                    
+                case .failure(let error):
+                    var errorText = "Failed to rephrase text"
+                    
+                    switch error {
+                    case .unauthorized:
+                        errorText = "Invalid API key. Please check your API settings."
+                    case .rateLimited:
+                        errorText = "Rate limit exceeded. Please try again later."
+                    case .serverError(let message):
+                        errorText = "Server error: \(message)"
+                    case .noApiService(let message):
+                        errorText = message
+                    case .unknown(let message):
+                        errorText = "Error: \(message)"
+                    case .requestFailed(let underlyingError):
+                        errorText = "Request failed: \(underlyingError.localizedDescription)"
+                    case .invalidResponse:
+                        errorText = "Invalid response from AI service"
+                    case .decodingFailed(let message):
+                        errorText = "Response parsing failed: \(message)"
+                    }
+                    
+                    showRephraseError(errorText)
+                }
+            }
+        }
+    }
+    
+    private func showRephraseError(_ message: String) {
+        rephraseErrorMessage = message
+        showingRephraseError = true
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
@@ -127,32 +297,25 @@ struct MessageInputView: View {
         ZStack {
             textSizingBackground
             
-            // Single line container with text input and horizontal action buttons
-            HStack(spacing: 8) {
-                // Text input area
-                textInputArea
-                
-                // Action buttons horizontally inline with text
-                actionButtons(chat: chat)
-                    .padding(.trailing, 8)
-            }
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(NSColor.controlBackgroundColor))
-            )
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        isHoveringDropZone
-                            ? Color.green.opacity(0.8)
-                            : (isFocused == .focused ? lineColorOnFocus : lineColorOnBlur),
-                        lineWidth: isHoveringDropZone
-                            ? 3 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
-                    )
-            )
-            .onTapGesture {
-                isFocused = .focused
-            }
+            // Text input area without action buttons
+            textInputArea
+                .background(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                )
+                .background(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            isHoveringDropZone
+                                ? Color.green.opacity(0.8)
+                                : (isFocused == .focused ? lineColorOnFocus : lineColorOnBlur),
+                            lineWidth: isHoveringDropZone
+                                ? 3 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
+                        )
+                )
+                .onTapGesture {
+                    isFocused = .focused
+                }
         }
     }
     
@@ -193,56 +356,6 @@ struct MessageInputView: View {
         .padding(inputPadding)
         .frame(height: dynamicHeight)
     }
-    
-    private func actionButtons(chat: ChatEntity?) -> some View {
-        HStack(spacing: 8) {
-            // Rephrase button
-            RephraseButton(
-                text: $text,
-                chat: chat,
-                onRephraseStart: {
-                    // Optionally disable other UI elements during rephrasing
-                },
-                onRephraseComplete: {
-                    // Re-enable UI elements after rephrasing
-                }
-            )
-            
-            // Add Image button (if image uploads are allowed)
-            if imageUploadsAllowed {
-                Button(action: onAddImage) {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 14))
-                        .foregroundColor(.accentColor)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Add Image")
-            }
-            
-            // Add Assistant button (if onAddAssistant is provided)
-            if let onAddAssistant = onAddAssistant {
-                Button(action: onAddAssistant) {
-                    Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.badge.plus")
-                        .font(.system(size: 14))
-                        .foregroundColor(.accentColor)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help(chat?.persona != nil ? "Edit Assistant" : "Add Assistant")
-            }
-            
-            // Send button
-            Button(action: onEnter) {
-                Image(systemName: "paperplane.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(canSend ? .accentColor : .secondary)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(!canSend)
-            .help("Send message")
-        }
-    }
-    
-
 }
 
 struct ImagePreviewView: View {

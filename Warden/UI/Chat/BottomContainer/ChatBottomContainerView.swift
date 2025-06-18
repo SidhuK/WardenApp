@@ -51,25 +51,22 @@ struct ChatBottomContainerView: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                MessageInputView(
-                    text: $newMessage,
-                    attachedImages: $attachedImages,
-                    chat: chat,
-                    imageUploadsAllowed: imageUploadsAllowed,
-                    onEnter: onSendMessage,
-                    onAddImage: onAddImage,
-                    onAddAssistant: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded.toggle()
-                            onExpandedStateChange?(isExpanded)
-                        }
+            MessageInputView(
+                text: $newMessage,
+                attachedImages: $attachedImages,
+                chat: chat,
+                imageUploadsAllowed: imageUploadsAllowed,
+                onEnter: onSendMessage,
+                onAddImage: onAddImage,
+                onAddAssistant: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                        onExpandedStateChange?(isExpanded)
                     }
-                )
-                .padding(.vertical)
-                .padding(.leading)
-                .padding(.trailing)
-            }
+                }
+            )
+            .padding(.vertical)
+            .padding(.horizontal)
         }
     }
 }
