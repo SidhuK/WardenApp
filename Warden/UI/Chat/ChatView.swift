@@ -73,6 +73,7 @@ struct ChatView: View {
                     attachedImages: $attachedImages,
                     chat: chat,
                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                    isStreaming: isStreaming,
                     onSendMessage: {
                         if editSystemMessage {
                             chat.systemMessage = newMessage
@@ -95,6 +96,9 @@ struct ChatView: View {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             isBottomContainerExpanded.toggle()
                         }
+                    },
+                    onStopStreaming: {
+                        self.stopStreaming()
                     }
                 )
                 .background(backgroundColor)
@@ -118,6 +122,7 @@ struct ChatView: View {
                             isExpanded: $isBottomContainerExpanded,
                             attachedImages: $attachedImages,
                             imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                            isStreaming: isStreaming,
                             onSendMessage: {
                                 if editSystemMessage {
                                     chat.systemMessage = newMessage
@@ -138,6 +143,9 @@ struct ChatView: View {
                             },
                             onAddImage: {
                                 selectAndAddImages()
+                            },
+                            onStopStreaming: {
+                                self.stopStreaming()
                             },
                             onExpandedStateChange: { isExpanded in
                                 // Handle expanded state change if needed
@@ -787,6 +795,21 @@ extension ChatView {
         self.isStreaming = false
         chat.waitingForResponse = false
         userIsScrolling = false
+        
+        // Ensure multi-agent processing state is also cleared
+        if multiAgentManager.isProcessing {
+            multiAgentManager.isProcessing = false
+        }
+    }
+    
+    private func stopStreaming() {
+        // Stop regular chat streaming
+        chatViewModel.stopStreaming()
+        
+        // Stop multi-agent streaming if active
+        multiAgentManager.stopStreaming()
+        
+        handleResponseFinished()
     }
 
     private func resetError() {
@@ -840,6 +863,9 @@ extension ChatView {
         
         // Save user message
         saveNewMessageInStore(with: messageText)
+        
+        // Set streaming state for multi-agent mode
+        self.isStreaming = true
         
         // Send to multiple agents (limited to 3)
         multiAgentManager.sendMessageToMultipleServices(

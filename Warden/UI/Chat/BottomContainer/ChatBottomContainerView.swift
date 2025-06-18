@@ -7,9 +7,11 @@ struct ChatBottomContainerView: View {
     @Binding var isExpanded: Bool
     @Binding var attachedImages: [ImageAttachment]
     var imageUploadsAllowed: Bool
+    var isStreaming: Bool
     var onSendMessage: () -> Void
     var onExpandToggle: () -> Void
     var onAddImage: () -> Void
+    var onStopStreaming: (() -> Void)?
     var onExpandedStateChange: ((Bool) -> Void)?
     @State private var showingActionMenu = false
 
@@ -19,9 +21,11 @@ struct ChatBottomContainerView: View {
         isExpanded: Binding<Bool>,
         attachedImages: Binding<[ImageAttachment]> = .constant([]),
         imageUploadsAllowed: Bool = false,
+        isStreaming: Bool = false,
         onSendMessage: @escaping () -> Void,
         onExpandToggle: @escaping () -> Void = {},
         onAddImage: @escaping () -> Void = {},
+        onStopStreaming: (() -> Void)? = nil,
         onExpandedStateChange: ((Bool) -> Void)? = nil
     ) {
         self.chat = chat
@@ -29,9 +33,11 @@ struct ChatBottomContainerView: View {
         self._isExpanded = isExpanded
         self._attachedImages = attachedImages
         self.imageUploadsAllowed = imageUploadsAllowed
+        self.isStreaming = isStreaming
         self.onSendMessage = onSendMessage
         self.onExpandToggle = onExpandToggle
         self.onAddImage = onAddImage
+        self.onStopStreaming = onStopStreaming
         self.onExpandedStateChange = onExpandedStateChange
 
         // Remove automatic expansion for new chats since personas are now optional
@@ -56,6 +62,7 @@ struct ChatBottomContainerView: View {
                 attachedImages: $attachedImages,
                 chat: chat,
                 imageUploadsAllowed: imageUploadsAllowed,
+                isStreaming: isStreaming,
                 onEnter: onSendMessage,
                 onAddImage: onAddImage,
                 onAddAssistant: {
@@ -63,7 +70,8 @@ struct ChatBottomContainerView: View {
                         isExpanded.toggle()
                         onExpandedStateChange?(isExpanded)
                     }
-                }
+                },
+                onStopStreaming: onStopStreaming
             )
             .padding(.vertical)
             .padding(.horizontal)

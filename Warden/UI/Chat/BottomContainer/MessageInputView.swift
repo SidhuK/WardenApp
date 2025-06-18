@@ -8,9 +8,11 @@ struct MessageInputView: View {
     @Binding var attachedImages: [ImageAttachment]
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
+    var isStreaming: Bool = false
     var onEnter: () -> Void
     var onAddImage: () -> Void
     var onAddAssistant: (() -> Void)?
+    var onStopStreaming: (() -> Void)?
     var inputPlaceholderText: String = "Type your text here to start a conversation with your favorite AI"
     var cornerRadius: Double = 10.0
 
@@ -39,7 +41,7 @@ struct MessageInputView: View {
     }
     
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming
     }
     
     private var canRephrase: Bool {
@@ -183,14 +185,20 @@ struct MessageInputView: View {
     }
     
     private var sendButton: some View {
-        Button(action: onEnter) {
-            Image(systemName: "paperplane.circle.fill")
+        Button(action: {
+            if isStreaming {
+                onStopStreaming?()
+            } else {
+                onEnter()
+            }
+        }) {
+            Image(systemName: isStreaming ? "stop.circle.fill" : "paperplane.circle.fill")
                 .font(.system(size: 20))
-                .foregroundColor(canSend ? .accentColor : .secondary)
+                .foregroundColor(isStreaming ? .red : (canSend ? .accentColor : .secondary))
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(!canSend)
-        .help("Send message")
+        .disabled(!isStreaming && !canSend)
+        .help(isStreaming ? "Stop generating" : "Send message")
     }
     
     private func rephraseText() {

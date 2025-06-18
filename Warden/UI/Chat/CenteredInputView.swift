@@ -6,9 +6,11 @@ struct CenteredInputView: View {
     @Binding var attachedImages: [ImageAttachment]
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
+    let isStreaming: Bool
     let onSendMessage: () -> Void
     let onAddImage: () -> Void
     let onAddAssistant: (() -> Void)?
+    let onStopStreaming: (() -> Void)?
     
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
@@ -74,9 +76,11 @@ struct CenteredInputView: View {
                             attachedImages: $attachedImages,
                             chat: chat,
                             imageUploadsAllowed: imageUploadsAllowed,
+                            isStreaming: isStreaming,
                             onEnter: onSendMessage,
                             onAddImage: onAddImage,
                             onAddAssistant: onAddAssistant,
+                            onStopStreaming: onStopStreaming,
                             inputPlaceholderText: "Ask me anything...",
                             cornerRadius: 12.0
                         )
@@ -221,9 +225,11 @@ struct MinimalSuggestionButton: View {
         attachedImages: .constant([]),
         chat: mockChat,
         imageUploadsAllowed: true,
+        isStreaming: false,
         onSendMessage: {},
         onAddImage: {},
-        onAddAssistant: {}
+        onAddAssistant: {},
+        onStopStreaming: {}
     )
     .environmentObject(PreviewStateManager())
 } 
