@@ -64,8 +64,6 @@ struct TabGeneralSettingsView: View {
     var body: some View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "gearshape", title: "General")
-                
                 settingGroup {
                     Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 24) {
                         GridRow {

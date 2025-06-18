@@ -4,8 +4,6 @@ struct TabSupportDeveloperView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "heart.fill", title: "Support the Developer", iconColor: .pink)
-                
                 settingGroup {
                     VStack(alignment: .leading, spacing: 20) {
                         Text("Warden is built with ❤️ by an independent developer. Your support helps keep development active and makes new features possible.")

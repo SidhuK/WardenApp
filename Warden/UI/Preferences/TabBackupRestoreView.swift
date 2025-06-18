@@ -6,8 +6,6 @@ struct TabBackupRestoreView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "arrow.clockwise.icloud", title: "Backup & Restore")
-                
                 settingGroup {
                     VStack(alignment: .leading, spacing: 20) {
                         Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")

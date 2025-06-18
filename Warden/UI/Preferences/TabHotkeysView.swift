@@ -10,8 +10,6 @@ struct TabHotkeysView: View {
     var body: some View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "keyboard", title: "Keyboard Shortcuts")
-                
                 settingGroup {
                     VStack(spacing: 0) {
                         ForEach(Array(HotkeyAction.HotkeyCategory.allCases.enumerated()), id: \.element) { index, category in

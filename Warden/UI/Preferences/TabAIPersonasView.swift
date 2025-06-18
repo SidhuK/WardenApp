@@ -20,8 +20,6 @@ struct TabAIPersonasView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "person.2", title: "AI Assistants")
-                
                 settingGroup {
                     VStack(spacing: 16) {
                         entityListView

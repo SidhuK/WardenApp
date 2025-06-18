@@ -22,8 +22,6 @@ struct TabAPIServicesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "network", title: "API Services")
-                
                 settingGroup {
                     VStack(spacing: 16) {
                         entityListView

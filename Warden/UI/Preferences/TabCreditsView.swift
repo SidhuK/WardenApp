@@ -4,8 +4,6 @@ struct TabCreditsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                sectionHeader(icon: "star.fill", title: "Credits", iconColor: .yellow)
-                
                 settingGroup {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 12) {
