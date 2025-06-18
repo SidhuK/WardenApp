@@ -7,9 +7,11 @@ struct StandaloneModelSelector: View {
     
     @StateObject private var modelCache = ModelCacheManager.shared
     @StateObject private var selectedModelsManager = SelectedModelsManager.shared
+    @StateObject private var favoriteManager = FavoriteModelsManager.shared
     @State private var isExpanded = false
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
+    @State private var showOnlyFavorites = false
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -26,7 +28,7 @@ struct StandaloneModelSelector: View {
     }
     
     private var currentModel: String {
-        chat.gptModel ?? "No Model"
+        chat.gptModel.isEmpty ? "No Model" : chat.gptModel
     }
     
     private var availableModels: [(provider: String, models: [String])] {
@@ -57,30 +59,61 @@ struct StandaloneModelSelector: View {
     }
     
     private var filteredModels: [(provider: String, models: [String])] {
-        if searchText.isEmpty {
-            return availableModels
+        var modelsToFilter = availableModels
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            modelsToFilter = modelsToFilter.compactMap { provider, models in
+                let filteredModels = models.filter { model in
+                    model.lowercased().contains(searchText.lowercased()) ||
+                    provider.lowercased().contains(searchText.lowercased())
+                }
+                return filteredModels.isEmpty ? nil : (provider: provider, models: filteredModels)
+            }
         }
         
-        return availableModels.compactMap { provider, models in
-            let filteredModels = models.filter { model in
-                model.lowercased().contains(searchText.lowercased()) ||
-                provider.lowercased().contains(searchText.lowercased())
+        // Apply favorites filter
+        if showOnlyFavorites {
+            modelsToFilter = modelsToFilter.compactMap { provider, models in
+                let favoriteModels = models.filter { model in
+                    favoriteManager.isFavorite(provider: provider, model: model)
+                }
+                return favoriteModels.isEmpty ? nil : (provider: provider, models: favoriteModels)
             }
-            return filteredModels.isEmpty ? nil : (provider: provider, models: filteredModels)
+        }
+        
+        // Sort models within each provider: favorites first, then alphabetically
+        return modelsToFilter.map { provider, models in
+            let sortedModels = models.sorted { model1, model2 in
+                let isFav1 = favoriteManager.isFavorite(provider: provider, model: model1)
+                let isFav2 = favoriteManager.isFavorite(provider: provider, model: model2)
+                
+                if isFav1 != isFav2 {
+                    return isFav1 // Favorites first
+                }
+                return model1 < model2 // Then alphabetically
+            }
+            return (provider: provider, models: sortedModels)
         }
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            selectorButton
+        HStack {
+            Spacer()
             
-            if isExpanded {
-                dropdownContent
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .scale(scale: 0.98).combined(with: .opacity)
-                    ))
+            VStack(spacing: 0) {
+                selectorButton
+                
+                if isExpanded {
+                    dropdownContent
+                        .transition(.opacity)
+                        .zIndex(1000) // Ensure it appears above other content
+                }
             }
+            .frame(maxWidth: 400) // Approximately 45% of typical chat width
+            .background(Color.clear)
+            
+            Spacer()
         }
         .onAppear {
             modelCache.fetchAllModels(from: Array(apiServices))
@@ -92,7 +125,8 @@ struct StandaloneModelSelector: View {
     
     private var selectorButton: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            // Instantaneous animation
+            withAnimation(.easeInOut(duration: 0.05)) {
                 isExpanded.toggle()
             }
         }) {
@@ -139,9 +173,13 @@ struct StandaloneModelSelector: View {
     
     private var dropdownContent: some View {
         VStack(spacing: 0) {
-            searchBar
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
+            // Header with search and favorites toggle
+            VStack(spacing: 8) {
+                searchBar
+                favoritesToggle
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 8)
             
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -150,7 +188,7 @@ struct StandaloneModelSelector: View {
                     }
                 }
             }
-            .frame(maxHeight: 280)
+            .frame(maxHeight: 400) // Increased height to show more models
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
@@ -162,6 +200,7 @@ struct StandaloneModelSelector: View {
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
         )
         .padding(.top, 4)
+        .fixedSize(horizontal: false, vertical: true) // Allow content to determine height
     }
     
     private var searchBar: some View {
@@ -197,6 +236,37 @@ struct StandaloneModelSelector: View {
         )
     }
     
+    private var favoritesToggle: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.05)) {
+                showOnlyFavorites.toggle()
+            }
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: showOnlyFavorites ? "heart.fill" : "heart")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(showOnlyFavorites ? .red : .secondary)
+                
+                Text(showOnlyFavorites ? "Show All Models" : "Show Favorites Only")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(showOnlyFavorites ? .primary : .secondary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(showOnlyFavorites ? Color.red.opacity(0.1) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(showOnlyFavorites ? Color.red.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 0.5)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
     private func providerSection(provider: String, models: [String]) -> some View {
         VStack(spacing: 0) {
             // Provider header
@@ -228,7 +298,7 @@ struct StandaloneModelSelector: View {
     private func modelRow(provider: String, model: String) -> some View {
         Button(action: {
             handleModelChange(providerType: provider, model: model)
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.easeInOut(duration: 0.05)) {
                 isExpanded = false
             }
         }) {
@@ -250,17 +320,32 @@ struct StandaloneModelSelector: View {
                 
                 Spacer()
                 
-                // Model type indicators
-                if isReasoningModel(model) {
-                    Image(systemName: "brain")
-                        .font(.system(size: 9))
-                        .foregroundColor(.orange)
-                }
-                
-                if isVisionModel(provider: provider, model: model) {
-                    Image(systemName: "eye")
-                        .font(.system(size: 9))
-                        .foregroundColor(.blue)
+                HStack(spacing: 6) {
+                    // Favorite star
+                    Button(action: {
+                        favoriteManager.toggleFavorite(provider: provider, model: model)
+                    }) {
+                        Image(systemName: favoriteManager.isFavorite(provider: provider, model: model) ? "star.fill" : "star")
+                            .font(.system(size: 9))
+                            .foregroundColor(favoriteManager.isFavorite(provider: provider, model: model) ? .yellow : .secondary.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Toggle favorite")
+                    
+                    // Model type indicators
+                    if isReasoningModel(model) {
+                        Image(systemName: "brain")
+                            .font(.system(size: 9))
+                            .foregroundColor(.orange)
+                            .help("Reasoning model")
+                    }
+                    
+                    if isVisionModel(provider: provider, model: model) {
+                        Image(systemName: "eye")
+                            .font(.system(size: 9))
+                            .foregroundColor(.blue)
+                            .help("Vision model")
+                    }
                 }
             }
             .padding(.horizontal, 12)
