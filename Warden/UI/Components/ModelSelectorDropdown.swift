@@ -139,15 +139,18 @@ struct StandaloneModelSelector: View {
                     .frame(width: 16, height: 16)
                     .foregroundColor(.secondary)
                 
-                VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 8) {
                     Text(currentProviderName)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.primary)
+                    
+                    Spacer()
                     
                     Text(currentModel)
                         .font(.system(size: 10, weight: .regular))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                 }
                 
                 Spacer()
@@ -158,13 +161,29 @@ struct StandaloneModelSelector: View {
                     .rotationEffect(.degrees(isExpanded ? 0 : 0))
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.primary.opacity(0.04), Color.clear],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
+                    )
+                    .shadow(
+                        color: Color.black.opacity(0.05),
+                        radius: 2,
+                        x: 0,
+                        y: 1
                     )
             )
         }
@@ -181,19 +200,21 @@ struct StandaloneModelSelector: View {
             .padding(.horizontal, 8)
             .padding(.top, 8)
             
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0) {
                     ForEach(filteredModels, id: \.provider) { providerData in
                         providerSection(provider: providerData.provider, models: providerData.models)
                     }
                 }
+                .padding(.bottom, 4) // Add some bottom padding for smoother scrolling
             }
-            .frame(maxHeight: 400) // Increased height to show more models
+            .frame(maxHeight: 280) // Reduced height for better proportion
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
+                .fill(Color(NSColor.controlBackgroundColor).opacity(0.85))
+                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -226,14 +247,14 @@ struct StandaloneModelSelector: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color(NSColor.textBackgroundColor))
-                .overlay(
+                        .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                        .fill(Color(NSColor.textBackgroundColor).opacity(0.8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        )
                 )
-        )
     }
     
     private var favoritesToggle: some View {
