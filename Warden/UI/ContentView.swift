@@ -32,7 +32,6 @@ struct ContentView: View {
     @State private var windowRef: NSWindow?
     @State private var openedChatId: String? = nil
     @State private var columnVisibility = NavigationSplitViewVisibility.all
-    @State private var showingSettings = false
     
     // New state variables for inline project views
     @State private var showingCreateProject = false
@@ -44,7 +43,6 @@ struct ContentView: View {
             ChatListView(
                 selectedChat: $selectedChat,
                 selectedProject: $selectedProject,
-                showingSettings: $showingSettings,
                 showingCreateProject: $showingCreateProject,
                 showingEditProject: $showingEditProject,
                 projectToEdit: $projectToEdit,
@@ -58,11 +56,7 @@ struct ContentView: View {
                 )
         } detail: {
             HSplitView {
-                if showingSettings {
-                    // Show settings in main content area
-                    InlinePreferencesView()
-                        .frame(minWidth: 400)
-                } else if showingCreateProject {
+                if showingCreateProject {
                     // Show create project view inline
                     CreateProjectView(
                         onProjectCreated: { project in
@@ -100,7 +94,7 @@ struct ContentView: View {
                     )
                 }
 
-                if previewStateManager.isPreviewVisible && !showingSettings && selectedProject == nil {
+                if previewStateManager.isPreviewVisible && selectedProject == nil {
                     PreviewPane(stateManager: previewStateManager)
                 }
             }
@@ -127,18 +121,7 @@ struct ContentView: View {
                 }
             }
             
-            NotificationCenter.default.addObserver(
-                forName: AppConstants.openInlineSettingsNotification,
-                object: nil,
-                queue: .main
-            ) { notification in
-                let windowId = window?.windowNumber
-                if let sourceWindowId = notification.userInfo?["windowId"] as? Int,
-                    sourceWindowId == windowId
-                {
-                    openPreferencesView()
-                }
-            }
+
             
             // Handle Spotlight search result selection
             NotificationCenter.default.addObserver(
@@ -148,7 +131,6 @@ struct ContentView: View {
             ) { notification in
                 if let chat = notification.object as? ChatEntity {
                     selectedChat = chat
-                    showingSettings = false // Close settings if open
                 }
             }
             
@@ -160,7 +142,6 @@ struct ContentView: View {
             ) { notification in
                 if let chat = notification.object as? ChatEntity {
                     selectedChat = chat
-                    showingSettings = false // Close settings if open
                 }
             }
         }
@@ -176,29 +157,19 @@ struct ContentView: View {
                 self.openedChatId = newValue?.id.uuidString
                 previewStateManager.hidePreview()
             }
-            // Close settings and clear project selection when selecting a chat
+            // Clear project selection when selecting a chat
             if newValue != nil {
-                showingSettings = false
                 selectedProject = nil
             }
         }
         .onChange(of: selectedProject) { oldValue, newValue in
-            // Clear chat selection and close settings when selecting a project
+            // Clear chat selection when selecting a project
             if newValue != nil {
                 selectedChat = nil
-                showingSettings = false
                 previewStateManager.hidePreview()
             }
         }
-        .onChange(of: showingSettings) { oldValue, newValue in
-            // Hide preview when showing settings
-            if newValue {
-                previewStateManager.hidePreview()
-                // Clear both selections when opening settings
-                selectedChat = nil
-                selectedProject = nil
-            }
-        }
+
         .environmentObject(previewStateManager)
         .overlay(alignment: .top) {
             ToastManager()
@@ -256,8 +227,7 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 self.selectedChat?.objectWillChange.send()
                 self.selectedChat = newChat
-                // Close settings when creating new chat
-                self.showingSettings = false
+
             }
         }
         catch {
@@ -267,9 +237,7 @@ struct ContentView: View {
     }
 
     func openPreferencesView() {
-        showingSettings = true
-        // Deselect current chat when opening settings
-        selectedChat = nil
+        SettingsWindowManager.shared.openSettingsWindow()
     }
 
     private func getIndex(for chat: ChatEntity) -> Int {
@@ -864,3 +832,4 @@ struct WindowAccessor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
+

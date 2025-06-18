@@ -26,7 +26,6 @@ struct ChatListView: View {
 
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
-    @Binding var showingSettings: Bool
     @Binding var showingCreateProject: Bool
     @Binding var showingEditProject: Bool
     @Binding var projectToEdit: ProjectEntity?
@@ -316,7 +315,7 @@ struct ChatListView: View {
         // Simplified settings button at bottom with text and icon, smaller size
         Button(action: {
             settingsButtonTapped.toggle()
-            showingSettings.toggle()
+            SettingsWindowManager.shared.openSettingsWindow()
         }) {
             HStack(spacing: 6) {
                 Image(systemName: "gear")

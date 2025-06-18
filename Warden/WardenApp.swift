@@ -112,11 +112,7 @@ struct WardenApp: App {
             
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
-                    NotificationCenter.default.post(
-                        name: AppConstants.openInlineSettingsNotification,
-                        object: nil,
-                        userInfo: ["windowId": NSApp.keyWindow?.windowNumber ?? 0]
-                    )
+                    SettingsWindowManager.shared.openSettingsWindow()
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }

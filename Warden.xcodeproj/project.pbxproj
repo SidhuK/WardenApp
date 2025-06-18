@@ -100,6 +100,7 @@
 		7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */; };
 		7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */; };
 		7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */; };
+		7F8C678B2E02908F00147487 /* SettingsWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */; };
 		7F8D7CA12DE9CE2C003E7BCA /* ChatSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */; };
 		7F8D7CA32DE9CE66003E7BCA /* ChatShareMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */; };
 		7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA52DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift */; };
@@ -233,6 +234,7 @@
 		7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredInputView.swift; sourceTree = "<group>"; };
 		7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSupportDeveloperView.swift; sourceTree = "<group>"; };
 		7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabCreditsView.swift; sourceTree = "<group>"; };
+		7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowManager.swift; sourceTree = "<group>"; };
 		7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSharingService.swift; sourceTree = "<group>"; };
 		7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatShareMenu.swift; sourceTree = "<group>"; };
 		7F8D7CA42DE9DAF4003E7BCA /* MultiAgentResponseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentResponseView.swift; sourceTree = "<group>"; };
@@ -433,6 +435,7 @@
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
+				7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */,
 				7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
 				7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */,
@@ -776,6 +779,7 @@
 				4A8A78C82D4C41A00057A6CC /* TabGeneralSettingsView.swift in Sources */,
 				4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */,
 				7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */,
+				7F8C678B2E02908F00147487 /* SettingsWindowManager.swift in Sources */,
 				4AE8691B2D5696A300E3B3AC /* GeminiHandler.swift in Sources */,
 			);
 		};

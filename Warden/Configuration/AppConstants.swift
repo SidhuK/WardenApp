@@ -800,6 +800,8 @@ Remember that true productivity serves your overall life satisfaction and well-b
     static let newChatNotification = Notification.Name("newChatNotification")
     /// Notification name for opening inline settings.
     static let openInlineSettingsNotification = Notification.Name("openInlineSettingsNotification")
+    /// Notification name for opening the settings window.
+    static let openSettingsWindowNotification = Notification.Name("openSettingsWindowNotification")
     /// The threshold for considering a message large based on the number of symbols.
     static let largeMessageSymbolsThreshold = 25000
     /// The default size for thumbnail images.
