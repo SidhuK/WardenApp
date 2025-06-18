@@ -37,6 +37,9 @@ struct ContentView: View {
     @State private var showingCreateProject = false
     @State private var showingEditProject = false
     @State private var projectToEdit: ProjectEntity?
+    
+    // New state variable for inline settings
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationSplitView {
@@ -47,7 +50,7 @@ struct ContentView: View {
                 showingEditProject: $showingEditProject,
                 projectToEdit: $projectToEdit,
                 onNewChat: newChat,
-                onOpenPreferences: openPreferencesView
+                onOpenPreferences: openInlineSettings
             )
                 .navigationSplitViewColumnWidth(
                     min: 180,
@@ -56,7 +59,13 @@ struct ContentView: View {
                 )
         } detail: {
             HSplitView {
-                if showingCreateProject {
+                if showingSettings {
+                    // Show settings inline in the main content area
+                    InlineSettingsView(onDismiss: {
+                        showingSettings = false
+                    })
+                    .frame(minWidth: 400)
+                } else if showingCreateProject {
                     // Show create project view inline
                     CreateProjectView(
                         onProjectCreated: { project in
@@ -89,12 +98,12 @@ struct ContentView: View {
                         chatsCount: chats.count,
                         apiServiceIsPresent: apiServices.count > 0,
                         customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
-                        openPreferencesView: openPreferencesView,
+                        openPreferencesView: openInlineSettings,
                         newChat: newChat
                     )
                 }
 
-                if previewStateManager.isPreviewVisible && selectedProject == nil {
+                if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
                     PreviewPane(stateManager: previewStateManager)
                 }
             }
@@ -144,6 +153,15 @@ struct ContentView: View {
                     selectedChat = chat
                 }
             }
+            
+            // Handle inline settings keyboard shortcut
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("OpenInlineSettings"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                showingSettings = true
+            }
         }
         .navigationTitle("")
         .onChange(of: scenePhase) { phase in
@@ -157,15 +175,25 @@ struct ContentView: View {
                 self.openedChatId = newValue?.id.uuidString
                 previewStateManager.hidePreview()
             }
-            // Clear project selection when selecting a chat
+            // Clear project selection and settings when selecting a chat
             if newValue != nil {
                 selectedProject = nil
+                showingSettings = false
             }
         }
         .onChange(of: selectedProject) { oldValue, newValue in
-            // Clear chat selection when selecting a project
+            // Clear chat selection and settings when selecting a project
             if newValue != nil {
                 selectedChat = nil
+                showingSettings = false
+                previewStateManager.hidePreview()
+            }
+        }
+        .onChange(of: showingSettings) { oldValue, newValue in
+            // Clear selections when showing settings
+            if newValue {
+                selectedChat = nil
+                selectedProject = nil
                 previewStateManager.hidePreview()
             }
         }
@@ -236,8 +264,8 @@ struct ContentView: View {
         }
     }
 
-    func openPreferencesView() {
-        SettingsWindowManager.shared.openSettingsWindow()
+    func openInlineSettings() {
+        showingSettings = true
     }
 
     private func getIndex(for chat: ChatEntity) -> Int {

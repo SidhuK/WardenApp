@@ -315,7 +315,7 @@ struct ChatListView: View {
         // Simplified settings button at bottom with text and icon, smaller size
         Button(action: {
             settingsButtonTapped.toggle()
-            SettingsWindowManager.shared.openSettingsWindow()
+            onOpenPreferences()
         }) {
             HStack(spacing: 6) {
                 Image(systemName: "gear")
