@@ -357,7 +357,6 @@ struct ProjectRow: View {
                 VStack(alignment: .leading) {
                     Text(project.name ?? "Untitled Project")
                         .font(.body)
-                        .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(1)
                 }
