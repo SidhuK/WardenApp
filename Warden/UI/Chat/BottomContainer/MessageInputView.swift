@@ -134,6 +134,7 @@ struct MessageInputView: View {
                 
                 // Action buttons horizontally inline with text
                 actionButtons(chat: chat)
+                    .padding(.trailing, 8)
             }
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)

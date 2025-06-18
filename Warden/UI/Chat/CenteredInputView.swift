@@ -50,7 +50,7 @@ struct CenteredInputView: View {
                     }
                     
                     // Clean input field with model selector
-                    VStack(spacing: 12) {
+                    VStack(spacing: 6) {
                         // Model selector above input
                         HStack {
                             StandaloneModelSelector(chat: chat)

@@ -103,7 +103,7 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     mainChatContent
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         // Model Selector - placed above the input area
                         HStack {
                             StandaloneModelSelector(chat: chat)
