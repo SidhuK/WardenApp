@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import CoreData
+import AppKit
 
 class SettingsWindowManager: ObservableObject {
     static let shared = SettingsWindowManager()
@@ -25,32 +26,30 @@ class SettingsWindowManager: ObservableObject {
         // Create and configure the window
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 680, height: 720),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         
-        window.title = "Warden Settings"
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
+        window.setFrameAutosaveName("SettingsWindow")
         window.isReleasedWhenClosed = false
         
-        // Set minimum and maximum size
-        window.minSize = NSSize(width: 600, height: 600)
-        window.maxSize = NSSize(width: 800, height: 900)
+        // Create and set delegate
+        let delegate = SettingsWindowDelegate { [weak self] in
+            self?.settingsWindow = nil
+            self?.windowDelegate = nil
+        }
         
-        // Configure window appearance
-        window.titlebarAppearsTransparent = false
-        window.titleVisibility = .visible
+        window.delegate = delegate
         
-        // Store reference and show window
-        settingsWindow = window
+        // Store references
+        self.settingsWindow = window
+        self.windowDelegate = delegate
+        
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        
-        // Handle window close
-        windowDelegate = SettingsWindowDelegate(manager: self)
-        window.delegate = windowDelegate
     }
     
     func closeSettingsWindow() {
@@ -67,13 +66,13 @@ class SettingsWindowManager: ObservableObject {
 
 // MARK: - Window Delegate
 private class SettingsWindowDelegate: NSObject, NSWindowDelegate {
-    private weak var manager: SettingsWindowManager?
+    private let onWindowClose: () -> Void
     
-    init(manager: SettingsWindowManager) {
-        self.manager = manager
+    init(onWindowClose: @escaping () -> Void) {
+        self.onWindowClose = onWindowClose
     }
     
-    func windowWillClose(_ notification: Notification) {
-        manager?.windowWillClose()
+    public func windowWillClose(_ notification: Notification) {
+        onWindowClose()
     }
 } 

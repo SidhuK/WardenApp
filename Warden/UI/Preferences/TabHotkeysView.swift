@@ -8,46 +8,59 @@ struct TabHotkeysView: View {
     @State private var isRecording = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            settingGroup {
-                VStack(spacing: 0) {
-                    ForEach(HotkeyAction.HotkeyCategory.allCases, id: \.self) { category in
-                        categorySection(category)
-                    }
-                    
-                    Divider()
-                        .padding(.vertical, 16)
-                    
-                    // Reset section
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                sectionHeader(icon: "keyboard", title: "Keyboard Shortcuts")
+                
+                settingGroup {
+                    VStack(spacing: 0) {
+                        ForEach(Array(HotkeyAction.HotkeyCategory.allCases.enumerated()), id: \.element) { index, category in
+                            if index > 0 {
+                                Divider()
+                                    .padding(.vertical, 16)
+                            }
+                            categorySection(category)
+                        }
+                        
+                        Divider()
+                            .padding(.vertical, 16)
+                        
+                        HStack {
                             Text("Reset All Shortcuts")
-                                .font(.headline)
-                            Text("Restore all shortcuts to their default values")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Reset All") {
+                                showingResetConfirmation = true
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                            .foregroundColor(.red)
                         }
-                        
-                        Spacer()
-                        
-                        Button("Reset All") {
-                            showingResetConfirmation = true
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Material.ultraThinMaterial)
+                                .opacity(0.3)
+                        )
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .alert("Reset All Shortcuts", isPresented: $showingResetConfirmation) {
             Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
-                hotkeyManager.resetAllToDefaults()
+            Button("Reset All", role: .destructive) {
+                // Reset all hotkeys to default
+                for action in HotkeyManager.shared.availableActions {
+                    if let defaultShortcut = KeyboardShortcut.from(displayString: action.defaultShortcut) {
+                        HotkeyManager.shared.updateShortcut(for: action.id, shortcut: defaultShortcut)
+                    }
+                }
             }
         } message: {
-            Text("This will restore all keyboard shortcuts to their default values. This action cannot be undone.")
+            Text("This will reset all keyboard shortcuts to their default values. This action cannot be undone.")
         }
     }
     
@@ -205,6 +218,24 @@ struct TabHotkeysView: View {
     
     
     
+    // MARK: - Section Header Style
+    private func sectionHeader(icon: String, title: String, iconColor: Color = .accentColor) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundColor(iconColor)
+                .font(.system(size: 16, weight: .medium))
+                .frame(width: 20)
+            
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+                
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
     private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             content()
@@ -215,7 +246,6 @@ struct TabHotkeysView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 1)
         )
-        .padding(.horizontal, 24)
     }
 }
 

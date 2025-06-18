@@ -20,54 +20,58 @@ struct TabAPIServicesView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "network", title: "API Services")
-            
-            settingGroup {
-                VStack(spacing: 16) {
-                    entityListView
-                        .id(refreshID)
-                        .frame(minHeight: 260)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                sectionHeader(icon: "network", title: "API Services")
+                
+                settingGroup {
+                    VStack(spacing: 16) {
+                        entityListView
+                            .id(refreshID)
+                            .frame(minHeight: 260)
 
-                    Divider()
+                        Divider()
 
-                    HStack(spacing: 20) {
-                        if selectedServiceID != nil {
-                            Button(action: onEdit) {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .keyboardShortcut(.defaultAction)
-
-                            Button(action: onDuplicate) {
-                                Label("Duplicate", systemImage: "plus.square.on.square")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-
-                            if !isSelectedServiceDefault {
-                                Button(action: {
-                                    defaultApiServiceID = selectedServiceID?.uriRepresentation().absoluteString
-                                }) {
-                                    Label("Set as Default", systemImage: "star")
+                        HStack(spacing: 20) {
+                            if selectedServiceID != nil {
+                                Button(action: onEdit) {
+                                    Label("Edit", systemImage: "pencil")
                                 }
                                 .buttonStyle(.bordered)
                                 .controlSize(.regular)
+                                .keyboardShortcut(.defaultAction)
+
+                                Button(action: onDuplicate) {
+                                    Label("Duplicate", systemImage: "plus.square.on.square")
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+
+                                if !isSelectedServiceDefault {
+                                    Button(action: {
+                                        defaultApiServiceID = selectedServiceID?.uriRepresentation().absoluteString
+                                    }) {
+                                        Label("Set as Default", systemImage: "star")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.regular)
+                                }
+                                Spacer()
                             }
-                            Spacer()
+                            else {
+                                Spacer()
+                            }
+                            Button(action: onAdd) {
+                                Label("Add New Service", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.regular)
                         }
-                        else {
-                            Spacer()
-                        }
-                        Button(action: onAdd) {
-                            Label("Add New Service", systemImage: "plus")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
                     }
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .sheet(isPresented: $isShowingAddOrEditService) {
             let selectedApiService = apiServices.first(where: { $0.objectID == selectedServiceID }) ?? nil

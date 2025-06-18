@@ -18,50 +18,54 @@ struct TabAIPersonasView: View {
     @State private var personaToDelete: PersonaEntity?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "person.2", title: "AI Assistants")
-            
-            settingGroup {
-                VStack(spacing: 16) {
-                    entityListView
-                        .id(refreshID)
-                        .frame(minHeight: 260)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                sectionHeader(icon: "person.2", title: "AI Assistants")
+                
+                settingGroup {
+                    VStack(spacing: 16) {
+                        entityListView
+                            .id(refreshID)
+                            .frame(minHeight: 260)
 
-                    Divider()
+                        Divider()
 
-                    HStack(spacing: 20) {
-                        if selectedPersonaID != nil {
-                            Button(action: onEdit) {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .keyboardShortcut(.defaultAction)
-
-                            Button(action: {
-                                if let persona = personas.first(where: { $0.objectID == selectedPersonaID }) {
-                                    personaToDelete = persona
-                                    showingDeleteConfirmation = true
+                        HStack(spacing: 20) {
+                            if selectedPersonaID != nil {
+                                Button(action: onEdit) {
+                                    Label("Edit", systemImage: "pencil")
                                 }
-                            }) {
-                                Label("Delete", systemImage: "trash")
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+                                .keyboardShortcut(.defaultAction)
+
+                                Button(action: {
+                                    if let persona = personas.first(where: { $0.objectID == selectedPersonaID }) {
+                                        personaToDelete = persona
+                                        showingDeleteConfirmation = true
+                                    }
+                                }) {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+                                .foregroundColor(Color.red)
                             }
-                            .buttonStyle(.bordered)
+                            Spacer()
+                            if personas.isEmpty {
+                                addPresetsButton
+                            }
+                            Button(action: onAdd) {
+                                Label("Add New Assistant", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
                             .controlSize(.regular)
-                            .foregroundColor(Color.red)
                         }
-                        Spacer()
-                        if personas.isEmpty {
-                            addPresetsButton
-                        }
-                        Button(action: onAdd) {
-                            Label("Add New Assistant", systemImage: "plus")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
                     }
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
         .onChange(of: selectedPersonaID) { _, id in
             selectedPersona = personas.first(where: { $0.objectID == id })

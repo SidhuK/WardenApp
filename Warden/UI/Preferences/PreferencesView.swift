@@ -17,53 +17,98 @@ struct PreferencesView: View {
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
     @Environment(\.managedObjectContext) private var viewContext
     
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
-                // MARK: - General Settings
-                TabGeneralSettingsView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - API Services
-                TabAPIServicesView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - AI Assistants
-                TabAIPersonasView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - Keyboard Shortcuts
-                TabHotkeysView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - Backup & Restore
-                TabBackupRestoreView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - Support the Developer
-                TabSupportDeveloperView()
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                // MARK: - Credits
-                TabCreditsView()
+    private enum PreferencesTabs: String, CaseIterable {
+        case general = "General"
+        case apiServices = "API Services"
+        case aiPersonas = "AI Assistants"
+        case keyboardShortcuts = "Keyboard Shortcuts"
+        case backupRestore = "Backup & Restore"
+        case supportDeveloper = "Support Developer"
+        case credits = "Credits"
+        
+        var icon: String {
+            switch self {
+            case .general: return "gearshape"
+            case .apiServices: return "network"
+            case .aiPersonas: return "person.2"
+            case .keyboardShortcuts: return "keyboard"
+            case .backupRestore: return "arrow.clockwise.icloud"
+            case .supportDeveloper: return "heart.fill"
+            case .credits: return "star.fill"
             }
-            .padding(.horizontal, 80) // Increased padding to prevent wide spread
-            .padding(.vertical, 28)
-            .frame(maxWidth: 800) // Maximum width constraint
         }
-        .frame(width: 680, height: 720)
+    }
+    
+    @State private var selectedTab: PreferencesTabs = .general
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Custom Tab Bar with larger icons and bold titles
+            HStack(spacing: 8) {
+                ForEach(PreferencesTabs.allCases, id: \.self) { tab in
+                    Button(action: {
+                        selectedTab = tab
+                    }) {
+                        VStack(spacing: 6) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(selectedTab == tab ? .accentColor : .secondary)
+                            
+                            Text(tab.rawValue)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(selectedTab == tab ? .primary : .secondary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selectedTab == tab ? Color.accentColor.opacity(0.1) : Color.clear)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(selectedTab == tab ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.controlBackgroundColor))
+            .overlay(
+                Rectangle()
+                    .fill(Color(NSColor.separatorColor))
+                    .frame(height: 1),
+                alignment: .bottom
+            )
+            
+            // Content Area
+            Group {
+                switch selectedTab {
+                case .general:
+                    TabGeneralSettingsView()
+                case .apiServices:
+                    TabAPIServicesView()
+                case .aiPersonas:
+                    TabAIPersonasView()
+                        .environmentObject(store)
+                        .environment(\.managedObjectContext, viewContext)
+                case .keyboardShortcuts:
+                    TabHotkeysView()
+                case .backupRestore:
+                    TabBackupRestoreView()
+                        .environmentObject(store)
+                case .supportDeveloper:
+                    TabSupportDeveloperView()
+                case .credits:
+                    TabCreditsView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             store.saveInCoreData()
 
@@ -104,25 +149,28 @@ struct InlinePreferencesView: View {
                 .padding(.top, 24)
                 
                 // MARK: - General Settings
-                InlineTabGeneralSettingsView()
+                TabGeneralSettingsView()
                 
                 // MARK: - API Services
-                InlineTabAPIServicesView()
+                TabAPIServicesView()
                 
                 // MARK: - AI Assistants
-                InlineTabAIPersonasView()
+                TabAIPersonasView()
+                    .environmentObject(store)
+                    .environment(\.managedObjectContext, viewContext)
                 
                 // MARK: - Keyboard Shortcuts
-                InlineTabHotkeysView()
+                TabHotkeysView()
                 
                 // MARK: - Backup & Restore
-                InlineTabBackupRestoreView()
+                TabBackupRestoreView()
+                    .environmentObject(store)
                 
                 // MARK: - Support the Developer
-                InlineTabSupportDeveloperView()
+                TabSupportDeveloperView()
                 
                 // MARK: - Credits
-                InlineTabCreditsView()
+                TabCreditsView()
                 
                 // Bottom spacing
                 Spacer(minLength: 24)
@@ -136,3 +184,17 @@ struct InlinePreferencesView: View {
         }
     }
 }
+
+#if DEBUG
+struct PreferencesView_Previews: PreviewProvider {
+    static var previews: some View {
+        PreferencesView()
+            .frame(width: 680, height: 720)
+            .previewDisplayName("Tab-based Preferences")
+        
+        InlinePreferencesView()
+            .frame(width: 800, height: 900)
+            .previewDisplayName("Inline Preferences")
+    }
+}
+#endif
