@@ -60,14 +60,6 @@ struct ProjectSummaryView: View {
     
     private var horizontalProjectHeader: some View {
         HStack(alignment: .top, spacing: 24) {
-            // Left side - New Thread button
-            VStack(alignment: .leading) {
-                if !project.isArchived {
-                    newChatButton
-                }
-                Spacer()
-            }
-            
             Spacer()
             
             // Right side - Project info
@@ -111,23 +103,27 @@ struct ProjectSummaryView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+                
+                // New Thread button after the created date
+                if !project.isArchived {
+                    HStack {
+                        Spacer()
+                        newChatButton
+                    }
+                    .padding(.top, 8)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private var bottomCompactSection: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Stats Card
-            compactStatsCard
-            
-            // Insights Card
-            compactInsightsCard
-        }
+        // Stats Card only
+        compactStatsCard
     }
     
     private var compactStatsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .font(.title3)
@@ -138,47 +134,67 @@ struct ProjectSummaryView: View {
                 Spacer()
             }
             
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Chats:")
+            // 2x2 Grid Layout
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 12) {
+                // Row 1, Column 1
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Chats")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(projectChats.count)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                HStack {
-                    Text("Messages:")
+                // Row 1, Column 2
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Messages")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(totalMessages)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                HStack {
-                    Text("Days Active:")
+                // Row 2, Column 1
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Days Active")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(daysActive)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
+                // Row 2, Column 2
                 if let lastActivity = projectChats.first?.updatedDate {
-                    HStack {
-                        Text("Last Activity:")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Last Activity")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Spacer()
                         Text(formatDateString(lastActivity))
                             .font(.caption)
                             .fontWeight(.medium)
+                            .lineLimit(2)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Last Activity")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("No activity")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -190,67 +206,7 @@ struct ProjectSummaryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
-    private var compactInsightsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .font(.title3)
-                    .foregroundColor(.orange)
-                Text("Key Insights")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Style:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(conversationStyle)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Focus:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(projectFocus)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Activity:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(mostActivePeriod)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Avg. Length:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("\(averageMessageLength) chars")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.clear)
-        )
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+
     
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -343,46 +299,9 @@ struct ProjectSummaryView: View {
         return Calendar.current.dateComponents([.day], from: firstActivity, to: lastActivity).day ?? 0
     }
     
-    private var mostActivePeriod: String {
-        if daysActive < 7 {
-            return "This week"
-        } else if daysActive < 30 {
-            return "Recent weeks"
-        } else {
-            return "Over time"
-        }
-    }
+
     
-    private var averageMessageLength: Int {
-        let totalChars = projectChats.flatMap { $0.messagesArray }.reduce(0) { total, message in
-            total + message.body.count
-        }
-        return totalMessages > 0 ? totalChars / totalMessages : 0
-    }
-    
-    private var conversationStyle: String {
-        let avgLength = averageMessageLength
-        if avgLength < 50 {
-            return "Brief & Direct"
-        } else if avgLength < 200 {
-            return "Conversational"
-        } else {
-            return "Detailed"
-        }
-    }
-    
-    private var projectFocus: String {
-        if let instructions = project.customInstructions, !instructions.isEmpty {
-            if instructions.lowercased().contains("code") {
-                return "Development"
-            } else if instructions.lowercased().contains("research") {
-                return "Research"
-            } else if instructions.lowercased().contains("writing") {
-                return "Writing"
-            }
-        }
-        return "General"
-    }
+
     
     // MARK: - UI Components
     
