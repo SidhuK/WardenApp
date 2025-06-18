@@ -1020,6 +1020,8 @@ struct ProjectChatRowInList: View {
             return Image("logo_mistral")
         case "xai", "grok":
             return Image("logo_xai")
+        case "lm studio", "lmstudio":
+            return Image("logo_lmstudio")
         default:
             return nil
         }

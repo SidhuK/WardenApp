@@ -1,0 +1,11 @@
+<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<title>LM Studio</title>
+<rect x="1" y="1" width="3" height="1" rx="0.5" fill="currentColor"/>
+<rect x="1" y="3" width="5" height="1" rx="0.5" fill="currentColor"/>
+<rect x="1" y="5" width="4" height="1" rx="0.5" fill="currentColor"/>
+<rect x="1" y="7" width="6" height="1" rx="0.5" fill="currentColor"/>
+<rect x="1" y="9" width="3.5" height="1" rx="0.5" fill="currentColor"/>
+<circle cx="9" cy="3" r="1.5" fill="currentColor"/>
+<circle cx="8.5" cy="7" r="1" fill="currentColor"/>
+<circle cx="9.5" cy="10" r="0.8" fill="currentColor"/>
+</svg>

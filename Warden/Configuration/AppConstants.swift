@@ -784,10 +784,21 @@ Remember that true productivity serves your overall life satisfaction and well-b
             ],
             inherits: "chatgpt"
         ),
+        "lmstudio": defaultApiConfiguration(
+            name: "LM Studio",
+            url: "http://localhost:1234/v1/chat/completions",
+            apiKeyRef: "https://lmstudio.ai/docs/api/openai-api",
+            apiModelRef: "https://lmstudio.ai/docs/local-server",
+            defaultModel: "local-model",
+            models: [
+                "local-model"
+            ],
+            inherits: "chatgpt"
+        ),
     ]
 
     /// A list of available API types.
-    static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral"]
+    static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral", "lmstudio"]
     
     /// Feature: Custom Model Selection
     /// Users can configure which models appear in the chat model selector for each API service.

@@ -112,6 +112,7 @@
 		7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */; };
 		7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */; };
 		7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */; };
+		7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -246,6 +247,7 @@
 		7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCacheManager.swift; sourceTree = "<group>"; };
 		7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectorDropdown.swift; sourceTree = "<group>"; };
 		7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteModelsManager.swift; sourceTree = "<group>"; };
+		7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMStudioHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -539,6 +541,7 @@
 				4AB4B08C2D75099E00CA41B6 /* DeepseekHandler.swift */,
 				4AE8691A2D56969700E3B3AC /* GeminiHandler.swift */,
 				4A0E02842D0F571000D2FAF3 /* PerplexityHandler.swift */,
+				7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */,
 				4AADF71E2C9CE780001B7A26 /* ClaudeHandler.swift */,
 				4AFEE7202C472F53006F99FB /* APIProtocol.swift */,
 				4AFEE7222C472FA1006F99FB /* ChatGPTHandler.swift */,
@@ -714,6 +717,7 @@
 				4A28424B2C87018C00E5C920 /* TokenManager.swift in Sources */,
 				4ACE2FB82D61656000DEEA6D /* SwipeModifier.swift in Sources */,
 				4A0BCBBC2D5199140033AB96 /* ButtonWithStatusIndicator.swift in Sources */,
+				7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */,
 				4A885C582CEA3F7B0018BBED /* ChatListRow.swift in Sources */,
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,
