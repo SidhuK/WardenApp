@@ -20,8 +20,6 @@ struct MessageInputView: View {
     @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
-    @State private var isModelSelectorVisible = false
-
     private let maxInputHeight = 160.0
     private let initialInputSize = 16.0
     private let inputPadding = 8.0
@@ -31,22 +29,12 @@ struct MessageInputView: View {
     private let lineColorOnFocus = Color.gray.opacity(0.6)
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
-        animation: .default
-    )
-    private var apiServices: FetchedResults<APIServiceEntity>
-
     private var effectiveFontSize: Double {
         chatFontSize
     }
     
     private var canSend: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-    
-    private var showModelSelector: Bool {
-        chat != nil
     }
 
     enum Focus {
@@ -204,16 +192,6 @@ struct MessageInputView: View {
     }
     
     private var bottomActionBar: some View {
-        Group {
-            if showModelSelector, let chat = chat {
-                modelSelectorSection(chat: chat)
-            } else {
-                simpleActionSection
-            }
-        }
-    }
-    
-    private func modelSelectorSection(chat: ChatEntity) -> some View {
         VStack(spacing: 0) {
             // Divider line
             Rectangle()
@@ -221,35 +199,8 @@ struct MessageInputView: View {
                 .frame(height: 0.5)
             
             HStack(spacing: 8) {
-                ModelSelectorDropdown(
-                    selectedProvider: .constant(chat.apiService?.type),
-                    selectedModel: .constant(chat.gptModel.isEmpty ? nil : chat.gptModel),
-                    isVisible: $isModelSelectorVisible,
-                    chat: chat,
-                    onModelChange: { providerType, model in
-                        handleModelChange(providerType: providerType, model: model)
-                    }
-                )
-                
                 Spacer()
                 actionButtons(chat: chat)
-            }
-            .padding(.horizontal, inputPadding)
-            .padding(.vertical, 4)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-        }
-    }
-    
-    private var simpleActionSection: some View {
-        VStack(spacing: 0) {
-            // Divider line
-            Rectangle()
-                .fill(Color.primary.opacity(0.1))
-                .frame(height: 0.5)
-            
-            HStack(spacing: 8) {
-                Spacer()
-                actionButtons(chat: nil)
             }
             .padding(.horizontal, inputPadding)
             .padding(.vertical, 4)
@@ -305,44 +256,7 @@ struct MessageInputView: View {
         }
     }
     
-    private func handleModelChange(providerType: String, model: String) {
-        guard let chat = chat else { return }
-        
-        // Find the API service for this provider type
-        guard let service = apiServices.first(where: { $0.type == providerType }) else {
-            print("⚠️ No API service found for provider type: \(providerType)")
-            return
-        }
-        
-        // Validate that the service has required configuration
-        guard let serviceUrl = service.url, !serviceUrl.absoluteString.isEmpty else {
-            print("⚠️ API service \(service.name ?? "Unknown") has invalid URL")
-            return
-        }
-        
-        // Update chat configuration
-        chat.apiService = service
-        chat.gptModel = model
-        
-        print("🔄 Model changed to \(providerType)/\(model) for chat \(chat.id)")
-        
-        do {
-            try viewContext.save()
-            
-            // Only recreate message manager after successful save
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("RecreateMessageManager"),
-                    object: nil,
-                    userInfo: ["chatId": chat.id]
-                )
-            }
-        } catch {
-            print("❌ Error saving model change: \(error)")
-            // Revert changes on save failure
-            viewContext.rollback()
-        }
-    }
+
 }
 
 struct ImagePreviewView: View {

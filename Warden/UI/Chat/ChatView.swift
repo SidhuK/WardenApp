@@ -103,37 +103,47 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     mainChatContent
                     
-                    ChatBottomContainerView(
-                        chat: chat,
-                        newMessage: $newMessage,
-                        isExpanded: $isBottomContainerExpanded,
-                        attachedImages: $attachedImages,
-                        imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
-                        onSendMessage: {
-                            if editSystemMessage {
-                                chat.systemMessage = newMessage
-                                newMessage = ""
-                                editSystemMessage = false
-                                store.saveInCoreData()
-                            }
-                            else if newMessage != "" && newMessage != " " {
-                                if enableMultiAgentMode && isMultiAgentMode {
-                                    self.sendMultiAgentMessage()
-                                } else {
-                                    self.sendMessage()
-                                }
-                            }
-                        },
-                        onExpandToggle: {
-                            // Handle expand toggle if needed
-                        },
-                        onAddImage: {
-                            selectAndAddImages()
-                        },
-                        onExpandedStateChange: { isExpanded in
-                            // Handle expanded state change if needed
+                    VStack(spacing: 8) {
+                        // Model Selector - placed above the input area
+                        HStack {
+                            StandaloneModelSelector(chat: chat)
+                            Spacer()
                         }
-                    )
+                        .padding(.horizontal, 16)
+                        
+                        // Chat input container
+                        ChatBottomContainerView(
+                            chat: chat,
+                            newMessage: $newMessage,
+                            isExpanded: $isBottomContainerExpanded,
+                            attachedImages: $attachedImages,
+                            imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                            onSendMessage: {
+                                if editSystemMessage {
+                                    chat.systemMessage = newMessage
+                                    newMessage = ""
+                                    editSystemMessage = false
+                                    store.saveInCoreData()
+                                }
+                                else if newMessage != "" && newMessage != " " {
+                                    if enableMultiAgentMode && isMultiAgentMode {
+                                        self.sendMultiAgentMessage()
+                                    } else {
+                                        self.sendMessage()
+                                    }
+                                }
+                            },
+                            onExpandToggle: {
+                                // Handle expand toggle if needed
+                            },
+                            onAddImage: {
+                                selectAndAddImages()
+                            },
+                            onExpandedStateChange: { isExpanded in
+                                // Handle expanded state change if needed
+                            }
+                        )
+                    }
                 }
                 .background(backgroundColor)
             }

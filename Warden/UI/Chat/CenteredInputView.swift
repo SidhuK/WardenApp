@@ -49,8 +49,15 @@ struct CenteredInputView: View {
                             .multilineTextAlignment(.center)
                     }
                     
-                    // Clean input field
-                    VStack(spacing: 20) {
+                    // Clean input field with model selector
+                    VStack(spacing: 12) {
+                        // Model selector above input
+                        HStack {
+                            StandaloneModelSelector(chat: chat)
+                            Spacer()
+                        }
+                        .frame(maxWidth: 580)
+                        
                         MessageInputView(
                             text: $newMessage,
                             attachedImages: $attachedImages,
