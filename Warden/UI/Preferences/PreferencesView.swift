@@ -43,39 +43,35 @@ struct PreferencesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Custom Tab Bar with larger icons and bold titles
-            HStack(spacing: 8) {
+            // Native macOS-style tab bar
+            HStack(spacing: 2) {
                 ForEach(PreferencesTabs.allCases, id: \.self) { tab in
                     Button(action: {
                         selectedTab = tab
                     }) {
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             Image(systemName: tab.icon)
-                                .font(.system(size: 24, weight: .medium))
+                                .font(.system(size: 24, weight: selectedTab == tab ? .medium : .regular))
                                 .foregroundColor(selectedTab == tab ? .accentColor : .secondary)
+                                .frame(height: 28)
                             
                             Text(tab.rawValue)
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(selectedTab == tab ? .primary : .secondary)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .frame(height: 65)
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTab == tab ? Color.accentColor.opacity(0.1) : Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(selectedTab == tab ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                            Rectangle()
+                                .fill(selectedTab == tab ? Color(NSColor.selectedControlColor) : Color.clear)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
             .background(Color(NSColor.controlBackgroundColor))
             .overlay(
                 Rectangle()
@@ -84,7 +80,7 @@ struct PreferencesView: View {
                 alignment: .bottom
             )
             
-            // Content Area
+            // Content Area with proper background
             Group {
                 switch selectedTab {
                 case .general:
@@ -107,14 +103,10 @@ struct PreferencesView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             store.saveInCoreData()
-
-            if let window = NSApp.mainWindow {
-                window.standardWindowButton(.zoomButton)?.isEnabled = false
-            }
         }
     }
 }

@@ -62,210 +62,186 @@ struct TabGeneralSettingsView: View {
     }
 
     var body: some View {
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                settingGroup {
-                    Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 24) {
-                        GridRow {
-                            Text("Chat Font Size")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
-                                .gridCellAnchor(.top)
-
-                            VStack(spacing: 8) {
-                                HStack {
-                                    Text("A")
-                                        .foregroundColor(.secondary)
-                                        .font(.system(size: 12))
-                                        .scaleEffect(0.8)
-
-                                    Slider(value: $chatFontSize, in: 10...24, step: 1)
-                                        .frame(width: 240)
-                                        .tint(.accentColor)
-
-                                    Text("A")
-                                        .foregroundColor(.secondary)
-                                        .font(.system(size: 20))
-                                        .scaleEffect(1.2)
-                                }
-                                Text("Example \\(Int(chatFontSize))pt")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // Native macOS form layout
+                Form {
+                    // Chat Font Size
+                    LabeledContent("Chat Font Size:") {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Text("A")
                                     .foregroundColor(.secondary)
-                                    .font(.system(size: chatFontSize))
-                                    .animation(.bouncy, value: chatFontSize)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        
-                        Divider()
-                            .gridCellUnsizedAxes([.horizontal])
-                        
-                        GridRow {
-                            Text("Code Font")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
-                                .gridCellAnchor(.top)
-                                
-                            VStack(alignment: .leading, spacing: 12) {
-                                ScrollView {
-                                    if let highlighted = HighlighterManager.shared.highlight(
-                                        code: previewCode,
-                                        language: "swift",
-                                        theme: systemColorScheme == .dark ? "monokai-sublime" : "code-brewer",
-                                        fontSize: chatFontSize
-                                    ) {
-                                        AttributedText(highlighted)
-                                    } else {
-                                        Text(previewCode)
-                                            .font(.custom(codeFont, size: chatFontSize))
-                                    }
-                                }
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(systemColorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(red: 0.96, green: 0.96, blue: 0.96))
-                                )
-                                
-                                Picker("", selection: $codeFont) {
-                                    Text("Fira Code").tag(AppConstants.firaCode)
-                                    Text("PT Mono").tag(AppConstants.ptMono)
-                                }
-                                .pickerStyle(.segmented)
-                                .labelsHidden()
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 150)
-                        }
-                        
-                        Divider()
-                            .gridCellUnsizedAxes([.horizontal])
-                        
-                        GridRow {
-                            Text("Theme")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
+                                    .font(.system(size: 12))
+                                    .scaleEffect(0.8)
 
-                            Picker("", selection: $selectedColorSchemeRaw) {
-                                Text("System").tag(0)
-                                Text("Light").tag(1)
-                                Text("Dark").tag(2)
+                                Slider(value: $chatFontSize, in: 10...24, step: 1)
+                                    .frame(width: 240)
+
+                                Text("A")
+                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 20))
+                                    .scaleEffect(1.2)
+                            }
+                            Text("Example \\(Int(chatFontSize))pt")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: chatFontSize))
+                                .animation(.bouncy, value: chatFontSize)
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Code Font
+                    LabeledContent("Code Font:") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ScrollView {
+                                if let highlighted = HighlighterManager.shared.highlight(
+                                    code: previewCode,
+                                    language: "swift",
+                                    theme: systemColorScheme == .dark ? "monokai-sublime" : "code-brewer",
+                                    fontSize: chatFontSize
+                                ) {
+                                    AttributedText(highlighted)
+                                } else {
+                                    Text(previewCode)
+                                        .font(.custom(codeFont, size: chatFontSize))
+                                }
+                            }
+                            .frame(height: 120)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(systemColorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(red: 0.96, green: 0.96, blue: 0.96))
+                            )
+                            
+                            Picker("", selection: $codeFont) {
+                                Text("Fira Code").tag(AppConstants.firaCode)
+                                Text("PT Mono").tag(AppConstants.ptMono)
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
-                            .frame(width: 240)
-                            .onChange(of: selectedColorSchemeRaw) { _, newValue in
-                                switch newValue {
-                                case 0:
-                                    preferredColorScheme.wrappedValue = nil
-                                case 1:
-                                    preferredColorScheme.wrappedValue = .light
-                                case 2:
-                                    preferredColorScheme.wrappedValue = .dark
-                                default:
-                                    preferredColorScheme.wrappedValue = nil
-                                }
-                            }
-                        }
-                        
-                        Divider()
-                            .gridCellUnsizedAxes([.horizontal])
-                        
-                        GridRow {
-                            Text("Multi-Agent Mode")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
-                                .gridCellAnchor(.top)
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Toggle("Enable multi-agent chat functionality", isOn: $enableMultiAgentMode)
-                                    Spacer()
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
-                                        .foregroundColor(.secondary)
-                                        .font(.caption)
-                                    
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "exclamationmark.triangle")
-                                            .foregroundColor(.orange)
-                                            .font(.caption)
-                                        Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved.")
-                                            .foregroundColor(.orange)
-                                            .font(.caption)
-                                            .fontWeight(.medium)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        
-                        Divider()
-                            .gridCellUnsizedAxes([.horizontal])
-                        
-                        GridRow {
-                            Text("Sidebar Icons")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
-                                .gridCellAnchor(.top)
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
-                                    Spacer()
-                                }
-                                
-                                Text("Display AI service logos next to chat names in the sidebar")
-                                    .foregroundColor(.secondary)
-                                    .font(.caption)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        
-                        Divider()
-                            .gridCellUnsizedAxes([.horizontal])
-                        
-                        GridRow {
-                            Text("Spotlight Search")
-                                .fontWeight(.medium)
-                                .frame(width: 120, alignment: .leading)
-                                .gridCellAnchor(.top)
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Enable chat content to be searchable from macOS Spotlight")
-                                    .foregroundColor(.secondary)
-                                    .font(.caption)
-                                
-                                HStack(spacing: 12) {
-                                    Button(action: rebuildSpotlightIndex) {
-                                        HStack(spacing: 4) {
-                                            if isRebuildingIndex {
-                                                ProgressView()
-                                                    .scaleEffect(0.8)
-                                            } else {
-                                                Image(systemName: "arrow.clockwise")
-                                            }
-                                            Text(isRebuildingIndex ? "Rebuilding..." : "Rebuild Index")
-                                        }
-                                    }
-                                    .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
-                                    
-                                    Button(action: clearSpotlightIndex) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "trash")
-                                            Text("Clear Index")
-                                        }
-                                    }
-                                    .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(width: 200)
                         }
                     }
+                    
+                    Divider()
+                    
+                    // Theme
+                    LabeledContent("Theme:") {
+                        Picker("", selection: $selectedColorSchemeRaw) {
+                            Text("System").tag(0)
+                            Text("Light").tag(1)
+                            Text("Dark").tag(2)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(width: 200)
+                        .onChange(of: selectedColorSchemeRaw) { _, newValue in
+                            switch newValue {
+                            case 0:
+                                preferredColorScheme.wrappedValue = nil
+                            case 1:
+                                preferredColorScheme.wrappedValue = .light
+                            case 2:
+                                preferredColorScheme.wrappedValue = .dark
+                            default:
+                                preferredColorScheme.wrappedValue = nil
+                            }
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Multi-Agent Mode
+                    VStack(alignment: .leading, spacing: 8) {
+                        LabeledContent("Multi-Agent Mode:") {
+                            Toggle("Enable multi-agent chat functionality", isOn: $enableMultiAgentMode)
+                                .toggleStyle(.checkbox)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                                .padding(.leading, 140)
+                            
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                                Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved.")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .padding(.leading, 140)
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Sidebar Icons
+                    VStack(alignment: .leading, spacing: 8) {
+                        LabeledContent("Sidebar Icons:") {
+                            Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
+                                .toggleStyle(.checkbox)
+                        }
+                        
+                        Text("Display AI service logos next to chat names in the sidebar")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                            .padding(.leading, 140)
+                    }
+                    
+                    Divider()
+                    
+                    // Spotlight Search
+                    VStack(alignment: .leading, spacing: 8) {
+                        LabeledContent("Spotlight Search:") {
+                            EmptyView()
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Enable chat content to be searchable from macOS Spotlight")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                            
+                            HStack(spacing: 12) {
+                                Button(action: rebuildSpotlightIndex) {
+                                    HStack(spacing: 4) {
+                                        if isRebuildingIndex {
+                                            ProgressView()
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "arrow.clockwise")
+                                        }
+                                        Text(isRebuildingIndex ? "Rebuilding..." : "Rebuild Index")
+                                    }
+                                }
+                                .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
+                                
+                                Button(action: clearSpotlightIndex) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "trash")
+                                        Text("Clear Index")
+                                    }
+                                }
+                                .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
+                            }
+                            
+                            if !SpotlightIndexManager.isSpotlightAvailable {
+                                Text("Spotlight indexing is not available on this system")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                            }
+                        }
+                        .padding(.leading, 140)
+                    }
                 }
+                .formStyle(.grouped)
+                .padding()
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
         }
         .onAppear {
             self.selectedColorSchemeRaw = self.preferredColorSchemeRaw
@@ -294,42 +270,7 @@ struct TabGeneralSettingsView: View {
         store.clearSpotlightIndexes()
     }
     
-    // MARK: - Section Header Style
-    private func sectionHeader(icon: String, title: String, iconColor: Color = .accentColor, animate: Bool = true) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundColor(iconColor)
-                .font(.title2.weight(.semibold))
-                .symbolEffect(.pulse, options: animate ? .repeating : .nonRepeating, value: animate)
-                .frame(width: 30)
-            
-            Text(title)
-                .font(.title2)
-                .fontWeight(.semibold)
-                
-            Spacer()
-        }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Material.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        )
-    }
-    
-    // MARK: - Setting Group Style
-    private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content()
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
-        )
-    }
+
 }
 
 // MARK: - Inline Version for Main Window
@@ -360,9 +301,6 @@ struct InlineTabGeneralSettingsView: View {
 
     // Colors matching the chat app theme
     private let primaryBlue = Color(red: 0.0, green: 0.48, blue: 1.0)
-    private var cardBackgroundColor: Color {
-        Color(NSColor.controlBackgroundColor)
-    }
 
     private var preferredColorScheme: Binding<ColorScheme?> {
         Binding(
@@ -402,213 +340,181 @@ struct InlineTabGeneralSettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader(icon: "slider.horizontal.3", title: "General")
             
-            settingGroup {
-                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 24) {
-                    GridRow {
-                        Text("Chat Font Size")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
-                            .gridCellAnchor(.top)
-
-                        VStack(spacing: 8) {
-                            HStack {
-                                Text("A")
-                                    .foregroundColor(.secondary)
-                                    .font(.system(size: 12))
-                                    .scaleEffect(0.8)
-
-                                Slider(value: $chatFontSize, in: 10...24, step: 1)
-                                    .frame(width: 240)
-                                    .tint(.accentColor)
-
-                                Text("A")
-                                    .foregroundColor(.secondary)
-                                    .font(.system(size: 20))
-                                    .scaleEffect(1.2)
-                            }
-                            Text("Example \(Int(chatFontSize))pt")
+            Form {
+                // Chat Font Size
+                LabeledContent("Chat Font Size:") {
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("A")
                                 .foregroundColor(.secondary)
-                                .font(.system(size: chatFontSize))
-                                .animation(.bouncy, value: chatFontSize)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    Divider()
-                        .gridCellUnsizedAxes([.horizontal])
-                    
-                    GridRow {
-                        Text("Code Font")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
-                            .gridCellAnchor(.top)
-                            
-                        VStack(alignment: .leading, spacing: 12) {
-                            ScrollView {
-                                if let highlighted = HighlighterManager.shared.highlight(
-                                    code: previewCode,
-                                    language: "swift",
-                                    theme: systemColorScheme == .dark ? "monokai-sublime" : "code-brewer",
-                                    fontSize: chatFontSize
-                                ) {
-                                    AttributedText(highlighted)
-                                } else {
-                                    Text(previewCode)
-                                        .font(.custom(codeFont, size: chatFontSize))
-                                }
-                            }
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(systemColorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(red: 0.96, green: 0.96, blue: 0.96))
-                            )
-                            
-                            Picker("", selection: $codeFont) {
-                                Text("Fira Code").tag(AppConstants.firaCode)
-                                Text("PT Mono").tag(AppConstants.ptMono)
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 150)
-                    }
-                    
-                    Divider()
-                        .gridCellUnsizedAxes([.horizontal])
-                    
-                    GridRow {
-                        Text("Theme")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
+                                .font(.system(size: 12))
+                                .scaleEffect(0.8)
 
-                        Picker("", selection: $selectedColorSchemeRaw) {
-                            Text("System").tag(0)
-                            Text("Light").tag(1)
-                            Text("Dark").tag(2)
+                            Slider(value: $chatFontSize, in: 10...24, step: 1)
+                                .frame(width: 240)
+
+                            Text("A")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 20))
+                                .scaleEffect(1.2)
+                        }
+                        Text("Example \(Int(chatFontSize))pt")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: chatFontSize))
+                            .animation(.bouncy, value: chatFontSize)
+                    }
+                }
+                
+                Divider()
+                
+                // Code Font
+                LabeledContent("Code Font:") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ScrollView {
+                            if let highlighted = HighlighterManager.shared.highlight(
+                                code: previewCode,
+                                language: "swift",
+                                theme: systemColorScheme == .dark ? "monokai-sublime" : "code-brewer",
+                                fontSize: chatFontSize
+                            ) {
+                                AttributedText(highlighted)
+                            } else {
+                                Text(previewCode)
+                                    .font(.custom(codeFont, size: chatFontSize))
+                            }
+                        }
+                        .frame(height: 120)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(systemColorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(red: 0.96, green: 0.96, blue: 0.96))
+                        )
+                        
+                        Picker("", selection: $codeFont) {
+                            Text("Fira Code").tag(AppConstants.firaCode)
+                            Text("PT Mono").tag(AppConstants.ptMono)
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        .frame(width: 240)
-                        .onChange(of: selectedColorSchemeRaw) { _, newValue in
-                            switch newValue {
-                            case 0:
-                                preferredColorScheme.wrappedValue = nil
-                            case 1:
-                                preferredColorScheme.wrappedValue = .light
-                            case 2:
-                                preferredColorScheme.wrappedValue = .dark
-                            default:
-                                preferredColorScheme.wrappedValue = nil
-                            }
-                        }
-                    }
-                    
-                    Divider()
-                        .gridCellUnsizedAxes([.horizontal])
-                    
-                    GridRow {
-                        Text("Multi-Agent Mode")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
-                            .gridCellAnchor(.top)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Toggle("Enable multi-agent chat functionality", isOn: $enableMultiAgentMode)
-                                Spacer()
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
-                                    .foregroundColor(.secondary)
-                                    .font(.caption)
-                                
-                                HStack(spacing: 4) {
-                                    Image(systemName: "exclamationmark.triangle")
-                                        .foregroundColor(.orange)
-                                        .font(.caption)
-                                    Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved. May cause crashes in some cases.")
-                                        .foregroundColor(.orange)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    Divider()
-                        .gridCellUnsizedAxes([.horizontal])
-                    
-                    GridRow {
-                        Text("Sidebar Icons")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
-                            .gridCellAnchor(.top)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
-                                Spacer()
-                            }
-                            
-                            Text("Display AI service logos next to chat names in the sidebar")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    Divider()
-                        .gridCellUnsizedAxes([.horizontal])
-                    
-                    GridRow {
-                        Text("Spotlight Search")
-                            .fontWeight(.medium)
-                            .frame(width: 120, alignment: .leading)
-                            .gridCellAnchor(.top)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Enable chat content to be searchable from macOS Spotlight")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                            
-                            HStack(spacing: 12) {
-                                Button(action: rebuildSpotlightIndex) {
-                                    HStack(spacing: 4) {
-                                        if isRebuildingIndex {
-                                            ProgressView()
-                                                .scaleEffect(0.8)
-                                        } else {
-                                            Image(systemName: "arrow.clockwise")
-                                        }
-                                        Text(isRebuildingIndex ? "Rebuilding..." : "Rebuild Index")
-                                    }
-                                }
-                                .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
-                                
-                                Button(action: clearSpotlightIndex) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "trash")
-                                        Text("Clear Index")
-                                    }
-                                }
-                                .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
-                            }
-                            
-                            if !SpotlightIndexManager.isSpotlightAvailable {
-                                Text("Spotlight indexing is not available on this system")
-                                    .foregroundColor(.orange)
-                                    .font(.caption)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(width: 200)
                     }
                 }
+                
+                Divider()
+                
+                // Theme
+                LabeledContent("Theme:") {
+                    Picker("", selection: $selectedColorSchemeRaw) {
+                        Text("System").tag(0)
+                        Text("Light").tag(1)
+                        Text("Dark").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 200)
+                    .onChange(of: selectedColorSchemeRaw) { _, newValue in
+                        switch newValue {
+                        case 0:
+                            preferredColorScheme.wrappedValue = nil
+                        case 1:
+                            preferredColorScheme.wrappedValue = .light
+                        case 2:
+                            preferredColorScheme.wrappedValue = .dark
+                        default:
+                            preferredColorScheme.wrappedValue = nil
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                // Multi-Agent Mode
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent("Multi-Agent Mode:") {
+                        Toggle("Enable multi-agent chat functionality", isOn: $enableMultiAgentMode)
+                            .toggleStyle(.checkbox)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                            .padding(.leading, 140)
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                            Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved.")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.leading, 140)
+                    }
+                }
+                
+                Divider()
+                
+                // Sidebar Icons
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent("Sidebar Icons:") {
+                        Toggle("Show AI provider icons in sidebar", isOn: $showSidebarAIIcons)
+                            .toggleStyle(.checkbox)
+                    }
+                    
+                    Text("Display AI service logos next to chat names in the sidebar")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                        .padding(.leading, 140)
+                }
+                
+                Divider()
+                
+                // Spotlight Search
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent("Spotlight Search:") {
+                        EmptyView()
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Enable chat content to be searchable from macOS Spotlight")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                        
+                        HStack(spacing: 12) {
+                            Button(action: rebuildSpotlightIndex) {
+                                HStack(spacing: 4) {
+                                    if isRebuildingIndex {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                    } else {
+                                        Image(systemName: "arrow.clockwise")
+                                    }
+                                    Text(isRebuildingIndex ? "Rebuilding..." : "Rebuild Index")
+                                }
+                            }
+                            .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
+                            
+                            Button(action: clearSpotlightIndex) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "trash")
+                                    Text("Clear Index")
+                                }
+                            }
+                            .disabled(isRebuildingIndex || !SpotlightIndexManager.isSpotlightAvailable)
+                        }
+                        
+                        if !SpotlightIndexManager.isSpotlightAvailable {
+                            Text("Spotlight indexing is not available on this system")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                        }
+                    }
+                    .padding(.leading, 140)
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .formStyle(.grouped)
         }
         .onAppear {
             self.selectedColorSchemeRaw = self.preferredColorSchemeRaw
@@ -655,19 +561,5 @@ struct InlineTabGeneralSettingsView: View {
         .padding(.vertical, 12)
     }
     
-    // MARK: - Setting Group Style
-    private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content()
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(cardBackgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-        )
-    }
+
 }
