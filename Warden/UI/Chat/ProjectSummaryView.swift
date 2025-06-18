@@ -23,9 +23,9 @@ struct ProjectSummaryView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 32) {
-                // Centered project header
-                centeredProjectHeader
+            VStack(alignment: .leading, spacing: 32) {
+                // Horizontal project header layout
+                horizontalProjectHeader
                 
                 // Recent activity
                 recentActivitySection
@@ -58,52 +58,62 @@ struct ProjectSummaryView: View {
         }
     }
     
-    private var centeredProjectHeader: some View {
-        VStack(alignment: .center, spacing: 16) {
-            // Project icon centered
-            Image(systemName: "folder.fill")
-                .font(.system(size: 48))
-                .foregroundColor(projectColor)
-            
-            VStack(alignment: .center, spacing: 8) {
-                Text(project.name ?? "Untitled Project")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                
-                if let description = project.projectDescription, !description.isEmpty {
-                    Text(description)
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+    private var horizontalProjectHeader: some View {
+        HStack(alignment: .top, spacing: 24) {
+            // Left side - New Thread button
+            VStack(alignment: .leading) {
+                if !project.isArchived {
+                    newChatButton
                 }
+                Spacer()
             }
             
-            HStack(spacing: 20) {
-                Label("Created \(project.createdAt ?? Date(), style: .date)", systemImage: "calendar")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            Spacer()
+            
+            // Right side - Project info
+            VStack(alignment: .trailing, spacing: 16) {
+                // Project icon aligned to the right
+                HStack {
+                    Spacer()
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(projectColor)
+                }
                 
-                if project.isArchived {
-                    Label("Archived", systemImage: "archivebox")
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(project.name ?? "Untitled Project")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.trailing)
+                    
+                    if let description = project.projectDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                
+                HStack(spacing: 20) {
+                    if project.isArchived {
+                        Label("Archived", systemImage: "archivebox")
+                            .font(.subheadline)
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.orange.opacity(0.1))
+                            )
+                    }
+                    
+                    Label("Created \(project.createdAt ?? Date(), style: .date)", systemImage: "calendar")
                         .font(.subheadline)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.orange.opacity(0.1))
-                        )
+                        .foregroundColor(.secondary)
                 }
-            }
-            
-            // New Thread button
-            if !project.isArchived {
-                newChatButton
-                    .padding(.top, 8)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private var bottomCompactSection: some View {
@@ -175,7 +185,7 @@ struct ProjectSummaryView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(Color.clear)
         )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -237,7 +247,7 @@ struct ProjectSummaryView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(Color.clear)
         )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -300,7 +310,7 @@ struct ProjectSummaryView: View {
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .fill(Color.clear)
                             )
                         }
                         .buttonStyle(.plain)
