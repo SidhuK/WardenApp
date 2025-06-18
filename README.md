@@ -27,7 +27,7 @@
 
 Warden is a **completely native macOS AI chat app** built with SwiftUI that supports multiple AI providers. No Electron bloat, no web wrappers - just a proper, native Mac experience that feels like something Apple would create.
 
-### 🎯 Core Philosophy
+### Core Philosophy
 
 - **Native First**: Built entirely with SwiftUI for true macOS integration
 - **Privacy Focused**: Zero telemetry, all data stays on your Mac
@@ -39,7 +39,7 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ## 🚀 Features
 
-### 🤖 AI Provider Support
+### AI Provider Support
 
 - **OpenAI** (ChatGPT, including o1 reasoning models)
 - **Anthropic** (Claude)
@@ -48,86 +48,96 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 - **Perplexity**
 - **Groq**
 - **Mistral AI**
+- **LM Studio** (Local model hosting)
 - **Ollama** (Local LLMs)
 - **OpenRouter** (50+ models)
 - **Deepseek**
 - **Any OpenAI-compatible API**
 
-### 🔥 New in v0.3: Projects & Organization
+### New in v0.4: Enhanced User Experience
 
 ![](/assets/New%20in%20v0.3%20Projects.png)
 
-- **📁 Projects/Folders Support**: Organize your chats into logical groups for better workflow management
-- **🎯 Project-Scoped New Chat**: Create new chats directly within specific projects
-- **💎 Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
-- **👆 Native Swipe Actions**: Intuitive swipe gestures for quick delete, rename, and move operations
-- **🎛️ Model Visibility Control**: Choose exactly which models appear in your selector via multi-select interface
-- **🎨 Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
+- **Stop Streaming/Stop Generating**: Cancel ongoing AI responses instantly with dynamic send/stop button functionality
+- **Enhanced Model Selector**: Moved to the top of chat interface as a faster popover for better accessibility
+- **Searchable Model Selector**: Find models quickly with the new search functionality in API settings
+- **LM Studio Integration**: Full support for LM Studio as a local AI provider
+- **Tabbed Settings UI**: Complete redesign of settings interface with organized tabs for better navigation
+- **Improved Visual Design**: Big Sur glassy look with ultraThinMaterial effects and smooth transitions
 
-### 🗂️ Enhanced Chat Management
+### Projects & Organization
 
 ![](/assets/Project%20View.png)
 
-- **📋 Bulk Chat Operations**: Select and delete multiple chats with native macOS selection patterns (⌘+Click, ⇧+Click)
-- **🛠️ Smart Selection Toolbar**: Auto-appearing controls with Select All/None, Delete, and Clear actions
-- **⌨️ Keyboard Shortcuts**: Full keyboard support including ⌘+Delete for bulk operations
-- **🔄 Individual Chat Controls**: Delete, edit, regenerate, and rename actions available within projects
+- **Projects/Folders Support**: Organize your chats into logical groups for better workflow management
+- **Project-Scoped New Chat**: Create new chats directly within specific projects
+- **Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
+- **Native Swipe Actions**: Intuitive swipe gestures for quick delete, rename, and move operations
+- **Model Visibility Control**: Choose exactly which models appear in your selector via multi-select interface
+- **Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
 
-### 🤖 Multi-Agent Chat System
+### Enhanced Chat Management
+
+- **Bulk Chat Operations**: Select and delete multiple chats with native macOS selection patterns (⌘+Click, ⇧+Click)
+- **Smart Selection Toolbar**: Auto-appearing controls with Select All/None, Delete, and Clear actions
+- **Keyboard Shortcuts**: Full keyboard support including ⌘+Delete for bulk operations
+- **Individual Chat Controls**: Delete, edit, regenerate, and rename actions available within projects
+
+### Multi-Agent Chat System
 
 ![](/assets/multi_agent.png)
 
-- **🤖 Multiple Models Simultaneously**: Chat with multiple AI models at the same time for diverse perspectives and enhanced productivity
-- **🎯 Default AI per Assistant**: Each AI persona now has a default model assignment, making it easier to work with specific use cases
-- **🧠 Thinking Models Support**: Visual indicators show which models support reasoning/thinking capabilities (automatically detected)
+- **Multiple Models Simultaneously**: Chat with multiple AI models at the same time for diverse perspectives and enhanced productivity
+- **Default AI per Assistant**: Each AI persona now has a default model assignment, making it easier to work with specific use cases
+- **Thinking Models Support**: Visual indicators show which models support reasoning/thinking capabilities (automatically detected)
 
-### 💎 Enhanced User Experience
+### Enhanced User Experience
 
 ![](/assets/Welcome%20Page.png)
 
-- ✅ **Beautiful Onboarding** - Clean welcome screen with Warden logo branding
-- ✅ **ChatGPT-Style Centered Input** - New chat interface with centered input field and welcome message
-- ✅ **Custom Chat Assistants** - Create assistants with custom system prompts and temperature
-- ✅ **Context Control** - Manage context windows on a per-message basis
-- ✅ **Syntax Highlighting** - Beautiful code blocks for most programming languages
-- ✅ **Image Attachments** - Attach images to your prompts
-- ✅ **Artifacts** - Run simple HTML/CSS code directly in the app
-- ✅ **Light/Dark Mode** - Seamless theme switching with system accent color support
-- ✅ **Rephrase Button** - AI-powered button to improve and rephrase your questions before sending
-- ✅ **Auto-updating Chat Titles** - Chat titles now update automatically based on conversation content
-- ✅ **Chat Timestamps** - All chats display creation and last modified timestamps
-- ✅ **Enhanced Export** - Export conversations in JSON, Markdown, and plain text formats
+- **Beautiful Onboarding**: Clean welcome screen with Warden logo branding
+- **ChatGPT-Style Centered Input**: New chat interface with centered input field and welcome message
+- **Custom Chat Assistants**: Create assistants with custom system prompts and temperature
+- **Context Control**: Manage context windows on a per-message basis
+- **Syntax Highlighting**: Beautiful code blocks for most programming languages
+- **Image Attachments**: Attach images to your prompts
+- **Artifacts**: Run simple HTML/CSS code directly in the app
+- **Light/Dark Mode**: Seamless theme switching with system accent color support
+- **Rephrase Button**: AI-powered button to improve and rephrase your questions before sending
+- **Auto-updating Chat Titles**: Chat titles now update automatically based on conversation content
+- **Chat Timestamps**: All chats display creation and last modified timestamps
+- **Enhanced Export**: Export conversations in JSON, Markdown, and plain text formats
 
-### 🎨 Advanced Model Management
+### Advanced Model Management
 
 ![](/assets/New%20in%200.3%20select%20models.png)
 
-- ⭐ **Favorite Models** - Mark your most-used models as favorites for quick access
-- 🔍 **Searchable Model Selector** - Find models quickly with the new search functionality
-- 🧠 **Thinking Models Filter** - Dedicated buttons to easily find and select reasoning-capable models
-- 🎯 **Model Visibility Picker** - Choose exactly which models appear in the selector via multi-select interface
-- 🎨 **Improved Model Selector UI** - Better positioning and enhanced user experience
+- **Favorite Models**: Mark your most-used models as favorites for quick access
+- **Searchable Model Selector**: Find models quickly with the new search functionality
+- **Thinking Models Filter**: Dedicated buttons to easily find and select reasoning-capable models
+- **Model Visibility Picker**: Choose exactly which models appear in the selector via multi-select interface
+- **Improved Model Selector UI**: Better positioning and enhanced user experience
 
-### 🛠️ Enhanced Interface
+### Enhanced Interface
 
 ![](/assets/New%20Chat.png)
 
-- 🎨 **Simplified Logo Animation** - Clean, performance-optimized animations with essential hover interactions
-- 📱 **Reorganized Sidebar** - New chat button above search bar, settings moved to bottom for better accessibility
-- 💫 **Native Selection Patterns** - Follows standard macOS conventions used in Finder and system apps
-- 🔧 **Enhanced Spotlight Integration** - Improved macOS Spotlight search with proper index cleanup
-- 📝 **Feedback Integration** - Added "Send Feedback" buttons in top menu bar and preferences
-- 🔗 **Source Code Access** - Added "View on GitHub" button in preferences
+- **Simplified Logo Animation**: Clean, performance-optimized animations with essential hover interactions
+- **Reorganized Sidebar**: New chat button above search bar, settings moved to bottom for better accessibility
+- **Native Selection Patterns**: Follows standard macOS conventions used in Finder and system apps
+- **Enhanced Spotlight Integration**: Improved macOS Spotlight search with proper index cleanup
+- **Feedback Integration**: Added "Send Feedback" buttons in top menu bar and preferences
+- **Source Code Access**: Added "View on GitHub" button in preferences
 
 ![](/assets/settings_screen.png)
 
-### 🔒 Privacy & Performance
+### Privacy & Performance
 
-- 🛡️ **Zero Telemetry** - No data collection, everything stays local
-- ⚡ **Fast Responses** - Optimized for quick chat responses across all APIs
-- 🪶 **Lightweight** - Minimal resource usage compared to Electron alternatives
-- 📱 **Native UI** - Follows macOS design language perfectly
-- 🔍 **Spotlight Search** - Search your chats directly from macOS Spotlight
+- **Zero Telemetry**: No data collection, everything stays local
+- **Fast Responses**: Optimized for quick chat responses across all APIs
+- **Lightweight**: Minimal resource usage compared to Electron alternatives
+- **Native UI**: Follows macOS design language perfectly
+- **Spotlight Search**: Search your chats directly from macOS Spotlight
 
 ---
 
@@ -216,79 +226,122 @@ Currently, the app doesn't auto-update. Check this GitHub repository for new rel
 
 ### Future Features Planned
 
-#### 🎯 High Priority
+#### High Priority
 
-- 🔐 **Private Chat** - Enhanced privacy mode for sensitive conversations, chats marked as private will not be indexed by Spotlight or saved to disk
-- 🔌 **Model Context Protocol (MCP)** - Extended protocol support for enhanced AI capabilities
-- ⏹️ **Stop Streaming** - Ability to stop message generation mid-stream within chats
-- 🍺 **Homebrew Distribution** - Official Homebrew cask support for easier installation
+- **Private Chat**: Enhanced privacy mode for sensitive conversations, chats marked as private will not be indexed by Spotlight or saved to disk
+- **Model Context Protocol (MCP)**: Extended protocol support for enhanced AI capabilities
+- **Homebrew Distribution**: Official Homebrew cask support for easier installation
 
-#### 💰 Usage Analytics & Cost Tracking
+#### Usage Analytics & Cost Tracking
 
-- 💵 **Per-Generation Cost Tracking** - Display approximate cost for each AI response
-- 🧮 **Token Usage Statistics** - Track total tokens used per chat and across all conversations
-- 📊 **API Cost Breakdown** - Detailed cost analysis per AI provider with running totals
-- 💰 **Chat-Level Cost Display** - Show estimated cost next to time, retry, copy, delete actions
+- **Per-Generation Cost Tracking**: Display approximate cost for each AI response
+- **Token Usage Statistics**: Track total tokens used per chat and across all conversations
+- **API Cost Breakdown**: Detailed cost analysis per AI provider with running totals
+- **Chat-Level Cost Display**: Show estimated cost next to time, retry, copy, delete actions
 
-#### 🛠️ Enhanced Functionality
+#### Enhanced Functionality
 
-- 📎 **Extended Attachment Support** - Support for additional file types beyond images, csv, pdf, etc.
-- ✨ **Sparkle Framework Integration** - Ability to automatically update the app
-- 🍎 **Apple Shortcuts Integration** - Siri and Shortcuts app support
-- 🌐 **Web Search Capabilities** (currently available via Perplexity)
-- 🎨 **Image Generation** - AI-powered image creation
-- 📊 **Advanced Analytics** - Local conversation insights
+- **Extended Attachment Support**: Support for additional file types beyond images, csv, pdf, etc.
+- **Sparkle Framework Integration**: Ability to automatically update the app
+- **Apple Shortcuts Integration**: Siri and Shortcuts app support
+- **Web Search Capabilities** (currently available via Perplexity)
+- **Image Generation**: AI-powered image creation
+- **Advanced Analytics**: Local conversation insights
 
-#### ✅ Completed Features
+#### Completed Features
 
-- ~~📁 **Folder Support** - Organize your chats into folders~~ ✅ **Completed in v0.3**
+- **Projects/Folders Support**: Organize your chats into folders (Completed in v0.3)
+- **Stop Streaming/Stop Generating**: Cancel ongoing AI responses (Completed in v0.4)
+- **LM Studio Integration**: Local model hosting support (Completed in v0.4)
 
 _Development varies based on available time and community feedback, this is a free weekends project for me, so please be patient with me._
 
 ---
 
+## 📋 What's New in v0.4
+
+### Major Features
+
+- **LM Studio Integration**: Added support for LM Studio as a new AI provider for local model hosting
+- **Stop Streaming/Stop Generating Button**: Users can now cancel ongoing AI responses instantly with dynamic send/stop button functionality
+  - Task Management: Streaming tasks are now tracked for both single and multi-agent chats
+  - Cancellation Support: New `stopStreaming()` methods in message managers with proper state cleanup
+  - Input Control: Text input is disabled during streaming to prevent conflicts
+  - Visual Feedback: UI responds instantly to streaming state changes
+  - Uses Swift's structured concurrency (`Task`, `Task.checkCancellation()`) for reliable cancellation
+
+### Enhanced Interface
+
+- **Enhanced Model Selector**: Moved model selector to the top of chat interface as a faster popover
+- **Searchable Model Selector**: Model selector in API settings is now searchable by model names
+- **Select All/None Controls**: Improved model selection interface in settings with bulk selection options
+- **Tabbed Settings UI**: Complete redesign of settings interface with organized tabs for better navigation
+
+### UI Layout Improvements
+
+- Moved model selector to top of interface for better accessibility
+- Repositioned "Add assistants" button outside message input area
+- Moved Send button outside input box for cleaner layout
+- Redesigned message input box for improved visual appeal
+- Increased size and weight of "How can I help?" text (SF Pro Display Semibold)
+- Added subtle gray microcopy below main help text for better guidance
+- Added extra padding between model selector, input box, and quick action buttons
+
+### Visual Effects
+
+- Applied Big Sur glassy look to New Thread button with minimal gradient
+- Added subtle pulse animation to input cursor and "How can I help?" text when idle
+- Implemented ultraThinMaterial (SwiftUI) for input fields and buttons
+- Added smooth transitions with matchedGeometryEffect for expanding input on focus
+
+### Bug Fixes
+
+- **API Error Handling**: Improved crash error handling for more robust API interactions
+- **Projects Sidebar**: Fixed padding issues affecting sidebar layout and chat alignment
+- **UI Responsiveness**: Enhanced overall UI responsiveness and interaction feedback
+
 ## 📋 What's New in v0.3
 
-### 📁 Major Features: Projects & Organization
+### Major Features: Projects & Organization
 
-- **Projects/Folders Support** - Organize chats into logical groups with custom instructions and context
-- **Project-Scoped New Chat** - Create new chats directly within specific projects with inherited settings
-- **Subtle Visual Design** - Clean folder highlighting with only folder icons tinted for minimal distraction
-- **Native Swipe Actions** - Intuitive swipe gestures for projects and chats (delete, rename, move)
+- **Projects/Folders Support**: Organize chats into logical groups with custom instructions and context
+- **Project-Scoped New Chat**: Create new chats directly within specific projects with inherited settings
+- **Subtle Visual Design**: Clean folder highlighting with only folder icons tinted for minimal distraction
+- **Native Swipe Actions**: Intuitive swipe gestures for projects and chats (delete, rename, move)
 
-### 🎛️ Enhanced Model Management
+### Enhanced Model Management
 
-- **Model Visibility Picker** - Choose exactly which models appear in the selector via multi-select interface
-- **Optional Sidebar Icons** - Toggle AI provider logos on/off for a cleaner sidebar appearance
-- **Warden Logo Branding** - New chat welcome screen features Warden logo instead of AI provider logos
+- **Model Visibility Picker**: Choose exactly which models appear in the selector via multi-select interface
+- **Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
+- **Warden Logo Branding**: New chat welcome screen features Warden logo instead of AI provider logos
 
-### 💬 Improved Chat Management
+### Improved Chat Management
 
-- **Per-Chat Actions in Projects** - Full chat management (delete, edit, regenerate, rename) within project views
-- **Bulk Selection Improvements** - Consistent selection state when switching between projects
-- **Enhanced Navigation** - New chat button moved above search bar, settings relocated to sidebar bottom
+- **Per-Chat Actions in Projects**: Full chat management (delete, edit, regenerate, rename) within project views
+- **Bulk Selection Improvements**: Consistent selection state when switching between projects
+- **Enhanced Navigation**: New chat button moved above search bar, settings relocated to sidebar bottom
 
-### 🐛 Bug Fixes & Polish
+### Bug Fixes & Polish
 
-- **Fixed Project Selection** - Creating or editing projects no longer auto-selects the first project
-- **Consistent Edit Behavior** - Project editing reliably pre-selects the correct project
-- **Chat Operation Logic** - Fixed selection state for regenerate, rename, and delete operations
-- **UI Polish** - Removed empty details pane in project creation for cleaner layout
+- **Fixed Project Selection**: Creating or editing projects no longer auto-selects the first project
+- **Consistent Edit Behavior**: Project editing reliably pre-selects the correct project
+- **Chat Operation Logic**: Fixed selection state for regenerate, rename, and delete operations
+- **UI Polish**: Removed empty details pane in project creation for cleaner layout
 
 ## 📋 What's New in v0.2.1
 
-### 📋 Bulk Chat Management
+### Bulk Chat Management
 
-- **Bulk Delete Chats** - Select multiple chats and delete them at once with native macOS selection patterns
-- **Smart Selection Toolbar** - Auto-appearing toolbar with Select All/None, Delete, and Clear actions
-- **Keyboard Shortcuts** - Support for ⌘+Click (toggle), ⇧+Click (range), and ⌘+Delete (bulk delete)
+- **Bulk Delete Chats**: Select multiple chats and delete them at once with native macOS selection patterns
+- **Smart Selection Toolbar**: Auto-appearing toolbar with Select All/None, Delete, and Clear actions
+- **Keyboard Shortcuts**: Support for ⌘+Click (toggle), ⇧+Click (range), and ⌘+Delete (bulk delete)
 
-### 🎨 Performance & UX Improvements
+### Performance & UX Improvements
 
-- **Simplified Animations** - Removed complex floating, pulse, shimmer effects for better performance
-- **Native Selection Patterns** - Follows standard macOS conventions used in Finder and system apps
-- **Enhanced Spotlight Support** - Proper cleanup of search indexes when chats are deleted
-- **Accessibility Improvements** - Better VoiceOver support and keyboard navigation
+- **Simplified Animations**: Removed complex floating, pulse, shimmer effects for better performance
+- **Native Selection Patterns**: Follows standard macOS conventions used in Finder and system apps
+- **Enhanced Spotlight Support**: Proper cleanup of search indexes when chats are deleted
+- **Accessibility Improvements**: Better VoiceOver support and keyboard navigation
 
 ---
 
@@ -296,12 +349,12 @@ _Development varies based on available time and community feedback, this is a fr
 
 Warden is **completely free and open source** and always will be! However, if you'd like to support further development:
 
-- ☕ [Buy Me A Coffee](https://www.buymeacoffee.com/karatsidhu)
-- 💰 [Support on Gumroad](https://karatsidhu.gumroad.com/l/warden) (pay what you want)
-- ⭐ Star this repository
-- 🐛 Report bugs and suggest features
-- 📢 Share with friends and colleagues
-- 🛠️ **Contribute Code** - Submit pull requests and help improve Warden!
+- [Buy Me A Coffee](https://www.buymeacoffee.com/karatsidhu)
+- [Support on Gumroad](https://karatsidhu.gumroad.com/l/warden) (pay what you want)
+- Star this repository
+- Report bugs and suggest features
+- Share with friends and colleagues
+- **Contribute Code**: Submit pull requests and help improve Warden!
 
 ---
 
@@ -309,13 +362,13 @@ Warden is **completely free and open source** and always will be! However, if yo
 
 Warden is **100% open source** and welcomes contributions! Here's how you can help:
 
-### 🐛 Bug Reports & Feature Requests
+### Bug Reports & Feature Requests
 
 - Check [existing issues](https://github.com/SidhuK/WardenApp/issues) first
 - Create detailed bug reports with steps to reproduce
 - Suggest new features with clear use cases
 
-### 💻 Code Contributions
+### Code Contributions
 
 - Fork the repository
 - Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -323,13 +376,13 @@ Warden is **100% open source** and welcomes contributions! Here's how you can he
 - Test your changes thoroughly
 - Submit a pull request with a clear description
 
-### 📝 Documentation
+### Documentation
 
 - Improve README documentation
 - Add code comments and documentation
 - Create tutorials and guides
 
-### 🌍 Translations
+### Translations
 
 - Help translate Warden into other languages
 - Improve existing translations
@@ -356,12 +409,12 @@ This project is **100% open source** and licensed under the Apache License 2.0 -
 
 **Key License Points:**
 
-- ✅ Commercial use allowed
-- ✅ Modification allowed
-- ✅ Distribution allowed
-- ✅ Private use allowed
-- ❗ Must include copyright notice
-- ❗ Must include license text
+- Commercial use allowed
+- Modification allowed
+- Distribution allowed
+- Private use allowed
+- Must include copyright notice
+- Must include license text
 
 ---
 
