@@ -101,17 +101,70 @@ struct StandaloneModelSelector: View {
         HStack {
             Spacer()
             
-            VStack(spacing: 0) {
-                selectorButton
-                
-                if isExpanded {
-                    dropdownContent
-                        .transition(.opacity)
-                        .zIndex(1000) // Ensure it appears above other content
+            Button(action: {
+                isExpanded.toggle()
+            }) {
+                HStack(spacing: 8) {
+                    // Provider logo
+                    Image("logo_\(currentProvider)")
+                        .resizable()
+                        .renderingMode(.template)
+                        .interpolation(.high)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 8) {
+                        Text(currentProviderName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text(currentModel)
+                            .font(.system(size: 10, weight: .regular))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.primary.opacity(0.04), Color.clear],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
+                        )
+                        .shadow(
+                            color: Color.black.opacity(0.05),
+                            radius: 2,
+                            x: 0,
+                            y: 1
+                        )
+                )
             }
+            .buttonStyle(.plain)
             .frame(maxWidth: 400) // Approximately 45% of typical chat width
-            .background(Color.clear)
+            .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+                popoverContent
+            }
             
             Spacer()
         }
@@ -123,74 +176,7 @@ struct StandaloneModelSelector: View {
         }
     }
     
-    private var selectorButton: some View {
-        Button(action: {
-            // Instantaneous animation
-            withAnimation(.easeInOut(duration: 0.05)) {
-                isExpanded.toggle()
-            }
-        }) {
-            HStack(spacing: 8) {
-                // Provider logo
-                Image("logo_\(currentProvider)")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(.secondary)
-                
-                HStack(spacing: 8) {
-                    Text(currentProviderName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Text(currentModel)
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                
-                Spacer()
-                
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .rotationEffect(.degrees(isExpanded ? 0 : 0))
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.primary.opacity(0.04), Color.clear],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
-                    )
-                    .shadow(
-                        color: Color.black.opacity(0.05),
-                        radius: 2,
-                        x: 0,
-                        y: 1
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private var dropdownContent: some View {
+    private var popoverContent: some View {
         VStack(spacing: 0) {
             // Header with search and favorites toggle
             VStack(spacing: 8) {
@@ -209,19 +195,9 @@ struct StandaloneModelSelector: View {
                 .padding(.bottom, 4) // Add some bottom padding for smoother scrolling
             }
             .frame(maxHeight: 280) // Reduced height for better proportion
-            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.controlBackgroundColor).opacity(0.85))
-                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-        )
-        .padding(.top, 4)
-        .fixedSize(horizontal: false, vertical: true) // Allow content to determine height
+        .frame(minWidth: 350, maxWidth: 400)
+        .padding(.vertical, 8)
     }
     
     private var searchBar: some View {
