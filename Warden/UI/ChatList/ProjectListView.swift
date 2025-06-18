@@ -884,12 +884,7 @@ struct ProjectChatRowInList: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Indentation to show hierarchy
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: 24) // Indent to show it's under a project
-            
-            // AI service logo (conditionally shown)
+            // AI service logo (conditionally shown) - aligned with project folder icons
             if showSidebarAIIcons {
                 if let apiServiceName = chat.apiService?.name,
                    let image = getServiceLogo(for: apiServiceName) {
@@ -900,11 +895,13 @@ struct ProjectChatRowInList: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 16, height: 16)
                         .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
+                        .padding(.leading, 8) // Align with project folder and regular chat icons
                 } else {
                     Image(systemName: "message")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 16, height: 16)
+                        .padding(.leading, 8) // Align with project folder and regular chat icons
                 }
             }
             
