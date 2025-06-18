@@ -24,6 +24,7 @@ struct MessageInputView: View {
     @State private var originalText = ""
     @State private var showingRephraseError = false
     @State private var rephraseErrorMessage = ""
+    @State private var inputPulseAnimation = false
     private let maxInputHeight = 160.0
     private let initialInputSize = 16.0
     private let inputPadding = 8.0
@@ -312,9 +313,44 @@ struct MessageInputView: View {
                             lineWidth: isHoveringDropZone
                                 ? 3 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
                         )
+                        .overlay(
+                            // Subtle pulse animation when idle
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .stroke(
+                                    Color.accentColor.opacity(inputPulseAnimation ? 0.3 : 0.1),
+                                    lineWidth: inputPulseAnimation ? 1.5 : 0.5
+                                )
+                                .opacity(text.isEmpty && isFocused != .focused ? 1 : 0)
+                                .animation(
+                                    .easeInOut(duration: 2.0)
+                                    .repeatForever(autoreverses: true),
+                                    value: inputPulseAnimation
+                                )
+                        )
                 )
                 .onTapGesture {
                     isFocused = .focused
+                }
+                .onAppear {
+                    // Start pulse animation when idle
+                    if text.isEmpty && isFocused != .focused {
+                        inputPulseAnimation = true
+                    }
+                }
+                .onChange(of: text) { oldValue, newValue in
+                    // Stop animation when user starts typing
+                    if !newValue.isEmpty {
+                        inputPulseAnimation = false
+                    } else if isFocused != .focused {
+                        inputPulseAnimation = true
+                    }
+                }
+                .onChange(of: isFocused) { oldValue, newValue in
+                    if newValue == .focused {
+                        inputPulseAnimation = false
+                    } else if text.isEmpty {
+                        inputPulseAnimation = true
+                    }
                 }
         }
     }

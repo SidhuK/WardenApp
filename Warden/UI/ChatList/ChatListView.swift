@@ -244,7 +244,7 @@ struct ChatListView: View {
     }
 
     private var newChatButton: some View {
-        // New Thread button with text, slightly bigger and styled
+        // New Thread button with subtle angled glassy effect
         Button(action: {
             newChatButtonTapped.toggle()
             onNewChat()
@@ -260,21 +260,53 @@ struct ChatListView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 40)
             .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.accentColor.opacity(0.85),
-                        Color.accentColor.opacity(0.75)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                ZStack {
+                    // Base gradient background
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.accentColor.opacity(0.85),
+                            Color.accentColor.opacity(0.75)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    // Subtle angled glassy overlay effect
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .white.opacity(0.15), location: 0.0),
+                            .init(color: .white.opacity(0.05), location: 0.4),
+                            .init(color: .clear, location: 0.6),
+                            .init(color: .black.opacity(0.03), location: 1.0)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    
+                    // Very subtle material texture
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.05)
+                        .blendMode(.overlay)
+                }
             )
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.accentColor.opacity(0.2), lineWidth: 0.5)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.2),
+                                Color.accentColor.opacity(0.15)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.5
+                    )
             )
-            .shadow(color: Color.accentColor.opacity(0.15), radius: 1, x: 0, y: 1)
+            .shadow(color: Color.accentColor.opacity(0.2), radius: 1.5, x: 0, y: 1)
+            .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 16)

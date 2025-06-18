@@ -392,21 +392,53 @@ struct ProjectSummaryView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 40)
             .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        projectColor.opacity(0.9),
-                        projectColor.opacity(0.8)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                ZStack {
+                    // Base gradient background with project color
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            projectColor.opacity(0.85),
+                            projectColor.opacity(0.75)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    // Subtle angled glassy overlay effect
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .white.opacity(0.15), location: 0.0),
+                            .init(color: .white.opacity(0.05), location: 0.4),
+                            .init(color: .clear, location: 0.6),
+                            .init(color: .black.opacity(0.03), location: 1.0)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    
+                    // Very subtle material texture
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.05)
+                        .blendMode(.overlay)
+                }
             )
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(projectColor.opacity(0.3), lineWidth: 0.5)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.2),
+                                projectColor.opacity(0.2)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.5
+                    )
             )
             .shadow(color: projectColor.opacity(0.25), radius: 2, x: 0, y: 1)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
         .frame(maxWidth: 240)

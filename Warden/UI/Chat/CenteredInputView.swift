@@ -12,6 +12,7 @@ struct CenteredInputView: View {
     
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
+    @State private var isInputFocused = false
     
     private var effectiveFontSize: Double {
         chatFontSize
@@ -26,11 +27,11 @@ struct CenteredInputView: View {
             VStack(spacing: 0) {
                 Spacer()
                 
-                // Minimal welcome content
-                VStack(spacing: 48) {
-                    // Simple greeting section
-                    VStack(spacing: 24) {
-                        // Using Warden icon instead of sparkles
+                // Enhanced welcome content with better typography hierarchy
+                VStack(spacing: 56) { // Increased from 48
+                    // Improved greeting section
+                    VStack(spacing: 32) { // Increased spacing
+                        // Warden icon (removed pulse animation)
                         Image("WelcomeIcon")
                             .resizable()
                             .scaledToFit()
@@ -42,22 +43,32 @@ struct CenteredInputView: View {
                                 y: 2
                             )
                         
-                        // Clean text hierarchy
-                        Text("How can I help?")
-                            .font(.system(size: 24, weight: .medium, design: .rounded))
-                            .foregroundColor(.primary.opacity(0.9))
-                            .multilineTextAlignment(.center)
+                        // Enhanced text hierarchy
+                        VStack(spacing: 16) { // Increased spacing
+                            // Main title with improved typography (removed pulse animation)
+                            Text("How can I help?")
+                                .font(.system(size: 28, weight: .semibold, design: .default)) // Increased size and weight, using SF Pro Display
+                                .foregroundColor(.primary.opacity(0.95)) // Slightly more opaque
+                                .multilineTextAlignment(.center)
+                            
+                            // Added microcopy guidance
+                            Text("Type a question or choose an action below")
+                                .font(.system(size: 15, weight: .regular, design: .default))
+                                .foregroundColor(.secondary.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                        }
                     }
                     
-                    // Clean input field with model selector
-                    VStack(spacing: 6) {
-                        // Model selector above input
+                    // Input section with increased spacing and material effects
+                    VStack(spacing: 24) { // Increased from 6 to 24
+                        // Model selector with more spacing
                         HStack {
                             StandaloneModelSelector(chat: chat)
                             Spacer()
                         }
                         .frame(maxWidth: 580)
                         
+                        // Enhanced input field with material background
                         MessageInputView(
                             text: $newMessage,
                             attachedImages: $attachedImages,
@@ -70,16 +81,34 @@ struct CenteredInputView: View {
                             cornerRadius: 12.0
                         )
                         .frame(maxWidth: 580)
-                        .shadow(
-                            color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08),
-                            radius: 8,
-                            x: 0,
-                            y: 2
+                        .background(
+                            // Material background effect
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.ultraThinMaterial)
+                                .opacity(0.6)
                         )
+                        .shadow(
+                            color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1),
+                            radius: isInputFocused ? 12 : 8,
+                            x: 0,
+                            y: isInputFocused ? 4 : 2
+                        )
+                        .scaleEffect(isInputFocused ? 1.02 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
+                        .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidBeginEditingNotification)) { _ in
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isInputFocused = true
+                            }
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidEndEditingNotification)) { _ in
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isInputFocused = false
+                            }
+                        }
                         
-                        // Minimal quick suggestions
+                        // Quick suggestions with more spacing
                         if attachedImages.isEmpty && newMessage.isEmpty {
-                            HStack(spacing: 16) {
+                            HStack(spacing: 20) { // Increased from 16
                                 MinimalSuggestionButton(
                                     icon: "lightbulb",
                                     text: "Ideas",
@@ -138,20 +167,42 @@ struct MinimalSuggestionButton: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(isHovered ? .primary : .secondary.opacity(0.8))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16) // Increased padding
+            .padding(.vertical, 10) // Increased padding
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.primary.opacity(isHovered ? 0.04 : 0.02))
+                RoundedRectangle(cornerRadius: 10) // Increased corner radius
+                    .fill(.ultraThinMaterial) // Material background
+                    .opacity(0.8)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.primary.opacity(isHovered ? 0.1 : 0.06), lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: isHovered ? 
+                                        [Color.accentColor.opacity(0.1), Color.accentColor.opacity(0.05)] :
+                                        [Color.primary.opacity(0.04), Color.clear],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(
+                                isHovered ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08),
+                                lineWidth: isHovered ? 1.0 : 0.5
+                            )
                     )
             )
         }
         .buttonStyle(.plain)
-        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .scaleEffect(isHovered ? 1.05 : 1.0) // Increased scale effect
         .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isHovered)
+        .shadow(
+            color: isHovered ? Color.accentColor.opacity(0.2) : Color.black.opacity(0.05),
+            radius: isHovered ? 6 : 2,
+            x: 0,
+            y: isHovered ? 3 : 1
+        )
         .onHover { hovering in
             isHovered = hovering
         }
