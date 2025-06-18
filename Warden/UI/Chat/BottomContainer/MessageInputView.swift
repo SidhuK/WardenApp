@@ -1,4 +1,3 @@
-
 import OmenTextField
 import SwiftUI
 import UniformTypeIdentifiers
@@ -128,10 +127,13 @@ struct MessageInputView: View {
         ZStack {
             textSizingBackground
             
-            // Main input container with inline model selector at bottom
-            VStack(spacing: 0) {
+            // Single line container with text input and horizontal action buttons
+            HStack(spacing: 8) {
+                // Text input area
                 textInputArea
-                bottomActionBar
+                
+                // Action buttons horizontally inline with text
+                actionButtons(chat: chat)
             }
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
@@ -191,25 +193,8 @@ struct MessageInputView: View {
         .frame(height: dynamicHeight)
     }
     
-    private var bottomActionBar: some View {
-        VStack(spacing: 0) {
-            // Divider line
-            Rectangle()
-                .fill(Color.primary.opacity(0.1))
-                .frame(height: 0.5)
-            
-            HStack(spacing: 8) {
-                Spacer()
-                actionButtons(chat: chat)
-            }
-            .padding(.horizontal, inputPadding)
-            .padding(.vertical, 4)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-        }
-    }
-    
     private func actionButtons(chat: ChatEntity?) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             // Rephrase button
             RephraseButton(
                 text: $text,

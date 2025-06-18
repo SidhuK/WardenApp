@@ -1,4 +1,3 @@
-
 import SwiftUI
 import CoreData
 
@@ -71,7 +70,6 @@ struct ChatBottomContainerView: View {
                 .padding(.leading)
                 .padding(.trailing)
             }
-            .border(width: 1, edges: [.top], color: Color(NSColor.windowBackgroundColor).opacity(0.8))
         }
     }
 }
