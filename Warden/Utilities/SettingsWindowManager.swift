@@ -25,8 +25,8 @@ class SettingsWindowManager: ObservableObject {
         
         // Create and configure the window
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 680, height: 720),
-            styleMask: [.closable, .miniaturizable, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 800),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -35,6 +35,7 @@ class SettingsWindowManager: ObservableObject {
         window.center()
         window.setFrameAutosaveName("SettingsWindow")
         window.isReleasedWhenClosed = false
+        window.title = "Warden Settings"
         
         // Create and set delegate
         let delegate = SettingsWindowDelegate { [weak self] in
