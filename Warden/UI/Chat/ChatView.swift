@@ -159,6 +159,7 @@ struct ChatView: View {
                     
                     // Model Selector next to chat title
                     StandaloneModelSelector(chat: chat)
+                        .padding(.top, 6) // Match ChatTitleView top padding
                 }
             }
             
@@ -513,7 +514,7 @@ struct ChatTitleView: View {
                             .resizable()
                             .renderingMode(.template)
                             .interpolation(.high)
-                            .frame(width: 9, height: 9)
+                            .frame(width: 12, height: 12)
                             .foregroundColor(isHovered ? .accentColor : .secondary)
                     }
                 }
@@ -523,13 +524,13 @@ struct ChatTitleView: View {
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
-                    .frame(width: 11, height: 11)
+                    .frame(width: 16, height: 16)
                     .foregroundColor(isHovered ? .accentColor : .secondary)
             }
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(displayTitle)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(isHovered ? .primary : .secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -540,8 +541,8 @@ struct ChatTitleView: View {
                         Circle()
                             .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
                             .frame(width: 6, height: 6)
-                                                  Text(project.name ?? "Project")
-                            .font(.system(size: 8, weight: .regular))
+                        Text(project.name ?? "Project")
+                            .font(.system(size: 10, weight: .regular))
                             .foregroundColor(isHovered ? .secondary : .secondary.opacity(0.8))
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -598,7 +599,7 @@ struct ChatTitleView: View {
         HStack(spacing: 8) {
             titleText
         }
-        .padding(.horizontal, 9)
+        .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(backgroundStyle)
         .opacity(isHovered ? 0.95 : 0.85)
