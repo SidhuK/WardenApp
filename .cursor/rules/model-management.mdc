@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Model Management and Selection System
+
+Warden provides sophisticated model management capabilities allowing users to control which models appear in the interface and mark models as favorites for quick access.
+
+## Core Model Management Components
+
+### Selected Models Manager
+- **File**: [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift)
+- **Purpose**: Controls which models appear in the model selector dropdown per API service
+- **Pattern**: Singleton with ObservableObject for reactive UI updates
+- **Storage**: Core Data (preferred) with UserDefaults fallback for legacy support
+
+#### Key Features
+- **Per-Service Selection**: Custom model visibility per API provider
+- **Persistent Storage**: Selections saved to Core Data and UserDefaults
+- **Real-time Updates**: Published properties for SwiftUI reactivity
+- **Legacy Support**: Backwards compatibility with UserDefaults storage
+
+#### Usage Patterns
+```swift
+// Check if service has custom model selection
+SelectedModelsManager.shared.hasCustomSelection(for: "openai")
+
+// Get selected model IDs for a service
+let selectedModels = SelectedModelsManager.shared.getSelectedModelIds(for: "openai")
+
+// Set custom selection for a service
+SelectedModelsManager.shared.setSelectedModels(for: "openai", modelIds: Set(["gpt-4", "gpt-3.5-turbo"]))
+```
+
+### Favorite Models Manager
+- **File**: [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift)
+- **Purpose**: Manages user's favorite models across all providers
+- **Pattern**: Singleton with ObservableObject and @AppStorage integration
+- **Storage**: UserDefaults with automatic persistence
+
+#### Key Features
+- **Cross-Provider Favorites**: Track favorites across all AI services
+- **Unique Identification**: Uses provider:model format for unique keys
+- **Reactive Updates**: Published properties for UI synchronization
+- **Persistent Storage**: Automatic saving to UserDefaults via @AppStorage
+
+#### Usage Patterns
+```swift
+// Check if model is favorited
+FavoriteModelsManager.shared.isFavorite(provider: "openai", model: "gpt-4")
+
+// Toggle favorite status
+FavoriteModelsManager.shared.toggleFavorite(provider: "openai", model: "gpt-4")
+
+// Get all favorites for a provider
+let openAiFavorites = FavoriteModelsManager.shared.getFavorites(for: "openai")
+```
+
+## Model Selection UI Components
+
+### Model Selector Dropdown
+- **File**: [ModelSelectorDropdown.swift](mdc:Warden/UI/Components/ModelSelectorDropdown.swift)
+- **Integration**: Uses both SelectedModelsManager and FavoriteModelsManager
+- **Features**: 
+  - Filtered model list based on user selection
+  - Favorite indicators and quick access
+  - Per-service customization
+
+### Model Selection View
+- **File**: [ModelSelectionView.swift](mdc:Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift)
+- **Purpose**: Multi-select interface for choosing visible models
+- **Features**:
+  - Checkbox interface for model selection
+  - Service-specific filtering
+  - Real-time preview of selection changes
+
+## Integration with Preferences
+
+### API Services Configuration
+- **File**: [TabAPIServicesView.swift](mdc:Warden/UI/Preferences/TabAPIServicesView.swift)
+- **Features**:
+  - Model visibility picker integration
+  - Per-service configuration
+  - Bulk selection controls
+
+### Core Data Integration
+- **Entity**: APIServiceEntity with selectedModels property
+- **Storage**: JSON-encoded Set<String> for selected model IDs
+- **Migration**: Automatic migration from UserDefaults to Core Data
+
+## Best Practices
+
+### Model Manager Usage
+- **Singleton Access**: Always use shared instances for consistency
+- **Reactive Updates**: Observe published properties in SwiftUI views
+- **Error Handling**: Graceful handling of encoding/decoding failures
+- **Performance**: Efficient Set operations for model checking
+
+### Storage Patterns
+- **Primary Storage**: Core Data for selected models (integrated with APIServiceEntity)
+- **Fallback Storage**: UserDefaults for legacy support and favorites
+- **Synchronization**: Automatic sync between storage systems
+- **Data Integrity**: Validation and error recovery
+
+### UI Integration
+- **Reactive Design**: Use @ObservedObject for automatic UI updates
+- **State Management**: Integrate with existing preference flows
+- **User Experience**: Immediate feedback for selection changes
+- **Accessibility**: Proper accessibility labels for model selection
+
+## Architecture Patterns
+
+### Observer Pattern
+Both managers use ObservableObject to notify UI components of changes:
+```swift
+@StateObject private var selectedModelsManager = SelectedModelsManager.shared
+@StateObject private var favoriteModelsManager = FavoriteModelsManager.shared
+```
+
+### Persistence Strategy
+- **Selected Models**: Core Data (primary) + UserDefaults (legacy)
+- **Favorite Models**: UserDefaults via @AppStorage
+- **Migration**: Seamless transition from old to new storage
+
+### Service Integration
+Model managers integrate with existing API service configuration:
+- Respect service-specific model availability
+- Handle dynamic model lists from APIs
+- Maintain consistency with service capabilities
+
+## Testing and Development
+
+### Unit Testing
+- **File**: [FavoriteModelsManagerTest.swift](mdc:Warden/Utilities/FavoriteModelsManagerTest.swift)
+- **Coverage**: Core functionality and edge cases
+- **Mocking**: Mock storage for predictable tests
+
+### Preview Support
+Integration with [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) for realistic preview data:
+- Sample selected models per service
+- Mock favorite models for UI development
+- Realistic data for preference views
+
+## Error Handling
+
+### Storage Errors
+- **Encoding Failures**: Graceful fallback to default selection
+- **Decoding Errors**: Clear invalid data and log errors
+- **Core Data Errors**: Fallback to UserDefaults when needed
+
+### UI Error States
+- **Invalid Selections**: Reset to safe defaults
+- **Service Unavailable**: Disable selection for unavailable services
+- **Migration Issues**: Clear problematic data and restart fresh
+
+## Performance Considerations
+
+### Memory Management
+- **Singleton Pattern**: Shared instances prevent duplicate state
+- **Efficient Sets**: Use Set<String> for O(1) model checking
+- **Lazy Loading**: Load data only when needed
+
+### Storage Optimization
+- **Minimal Data**: Store only essential model identifiers
+- **Batch Operations**: Group storage operations when possible
+- **Background Processing**: Handle heavy operations off main thread
+
+## Future Enhancements
+
+### Planned Features
+- **Model Categories**: Group models by capability (reasoning, vision, etc.)
+- **Usage Statistics**: Track which models are used most frequently
+- **Smart Recommendations**: Suggest models based on usage patterns
+- **Export/Import**: Backup and restore model preferences

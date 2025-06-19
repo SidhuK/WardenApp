@@ -44,6 +44,9 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 - **Message Parser**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) - Processes AI responses
 - **API Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination
 - **Spotlight Integration**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) - macOS Spotlight search support
+- **Model Management**: 
+  - [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift) - Controls model visibility per service
+  - [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift) - Manages user's favorite models
 
 ## Key Features
 - **Multi-AI Provider Support**: 10+ AI services with unified interface

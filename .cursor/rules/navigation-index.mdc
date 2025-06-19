@@ -1,0 +1,143 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Warden Documentation Navigation Index
+
+This guide serves as a navigation index to help developers quickly find the appropriate documentation for different aspects of the Warden project.
+
+## Quick Reference by Component Type
+
+### 🏗️ Architecture & Overview
+- **[Project Overview](mdc:.cursor/rules/project-overview.mdc)** - High-level project structure and key components
+- **[Development Patterns](mdc:.cursor/rules/development-patterns.mdc)** - Coding standards and architectural patterns
+- **[UI Architecture](mdc:.cursor/rules/ui-architecture.mdc)** - SwiftUI component structure and design patterns
+
+### 🔌 API Integration
+- **[API Architecture](mdc:.cursor/rules/api-architecture.mdc)** - API handler patterns and integration strategies
+- **[AI Integration](mdc:.cursor/rules/ai-integration.mdc)** - AI service integration and best practices
+- **[Reasoning Models](mdc:.cursor/rules/reasoning-models.mdc)** - Special handling for thinking-capable models
+
+### 🎛️ Model Management
+- **[Model Management](mdc:.cursor/rules/model-management.mdc)** - Model selection and favorite management systems
+- **[Model Support Guide](mdc:.cursor/rules/model-support-guide.mdc)** - Comprehensive model support and capabilities
+
+### 🛠️ Utilities & Services
+- **[Utilities Guide](mdc:.cursor/rules/utilities-guide.mdc)** - Helper components and service utilities
+
+### 🔍 Search & Discovery
+- **[Spotlight Integration](mdc:.cursor/rules/spotlight-integration.mdc)** - macOS Spotlight search implementation
+
+### 🤖 Advanced Features
+- **[Multi-Agent Support](mdc:.cursor/rules/multi-agent-support.mdc)** - Multiple AI service querying and comparison
+
+### 🧪 Testing & Development
+- **[Testing & Debugging](mdc:.cursor/rules/testing-debugging.mdc)** - Testing strategies and debugging tools
+- **[Warden Development](mdc:.cursor/rules/warden-development.mdc)** - Development environment and practices
+
+## Quick Reference by Task
+
+### Adding New AI Providers
+1. Review **[API Architecture](mdc:.cursor/rules/api-architecture.mdc)** for handler patterns
+2. Check **[AI Integration](mdc:.cursor/rules/ai-integration.mdc)** for service setup
+3. See **[Reasoning Models](mdc:.cursor/rules/reasoning-models.mdc)** if provider supports thinking
+
+### UI Component Development
+1. Start with **[UI Architecture](mdc:.cursor/rules/ui-architecture.mdc)** for component structure
+2. Follow **[Development Patterns](mdc:.cursor/rules/development-patterns.mdc)** for coding standards
+3. Reference **[Project Overview](mdc:.cursor/rules/project-overview.mdc)** for file organization
+
+### Model Management Features
+1. Review **[Model Management](mdc:.cursor/rules/model-management.mdc)** for existing systems
+2. Check **[Model Support Guide](mdc:.cursor/rules/model-support-guide.mdc)** for capabilities
+3. See **[Utilities Guide](mdc:.cursor/rules/utilities-guide.mdc)** for related utilities
+
+### Search and Indexing
+1. Reference **[Spotlight Integration](mdc:.cursor/rules/spotlight-integration.mdc)** for search features
+2. Check **[Utilities Guide](mdc:.cursor/rules/utilities-guide.mdc)** for supporting utilities
+
+### Testing New Features
+1. Review **[Testing & Debugging](mdc:.cursor/rules/testing-debugging.mdc)** for testing strategies
+2. Check **[Warden Development](mdc:.cursor/rules/warden-development.mdc)** for environment setup
+
+### Multi-Agent Development
+1. Start with **[Multi-Agent Support](mdc:.cursor/rules/multi-agent-support.mdc)** for implementation details
+2. Reference **[API Architecture](mdc:.cursor/rules/api-architecture.mdc)** for service coordination
+
+## File Location Quick Reference
+
+### Core Application Files
+- **Main App**: [WardenApp.swift](mdc:Warden/WardenApp.swift)
+- **Content View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift)
+- **Constants**: [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift)
+
+### Data Layer
+- **Chat Store**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Single source of truth
+- **Models**: [Models.swift](mdc:Warden/Models/Models.swift)
+- **Core Data**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld)
+
+### API Handlers Directory
+- **Location**: [Warden/Utilities/APIHandlers/](mdc:Warden/Utilities/APIHandlers)
+- **Protocol**: [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift)
+- **Factory**: [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift)
+
+### UI Components
+- **Chat Interface**: [Warden/UI/Chat/](mdc:Warden/UI/Chat)
+- **Chat List**: [Warden/UI/ChatList/](mdc:Warden/UI/ChatList)
+- **Preferences**: [Warden/UI/Preferences/](mdc:Warden/UI/Preferences)
+- **Components**: [Warden/UI/Components/](mdc:Warden/UI/Components)
+
+### Utilities
+- **Directory**: [Warden/Utilities/](mdc:Warden/Utilities)
+- **Model Management**: 
+  - [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift)
+  - [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift)
+- **Search**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift)
+
+## Common Development Scenarios
+
+### Implementing New Features
+1. **Planning**: Review [Project Overview](mdc:.cursor/rules/project-overview.mdc) for architecture
+2. **UI Components**: Follow [UI Architecture](mdc:.cursor/rules/ui-architecture.mdc) patterns
+3. **Data Management**: Use [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) for persistence
+4. **Testing**: Apply [Testing & Debugging](mdc:.cursor/rules/testing-debugging.mdc) strategies
+
+### Debugging Issues
+1. **API Problems**: Check [API Architecture](mdc:.cursor/rules/api-architecture.mdc)
+2. **UI Issues**: Reference [UI Architecture](mdc:.cursor/rules/ui-architecture.mdc)
+3. **Model Problems**: See [Model Management](mdc:.cursor/rules/model-management.mdc)
+4. **Search Issues**: Review [Spotlight Integration](mdc:.cursor/rules/spotlight-integration.mdc)
+
+### Code Reviews
+1. **Standards**: Verify against [Development Patterns](mdc:.cursor/rules/development-patterns.mdc)
+2. **Architecture**: Check alignment with [Project Overview](mdc:.cursor/rules/project-overview.mdc)
+3. **API Integration**: Validate with [AI Integration](mdc:.cursor/rules/ai-integration.mdc)
+
+### Performance Optimization
+1. **General Patterns**: [Development Patterns](mdc:.cursor/rules/development-patterns.mdc)
+2. **API Efficiency**: [API Architecture](mdc:.cursor/rules/api-architecture.mdc)
+3. **UI Performance**: [UI Architecture](mdc:.cursor/rules/ui-architecture.mdc)
+4. **Search Optimization**: [Spotlight Integration](mdc:.cursor/rules/spotlight-integration.mdc)
+
+## Rule Maintenance
+
+### When to Update Rules
+- **New Features**: Add documentation when implementing major features
+- **API Changes**: Update when adding new AI providers or changing integrations
+- **Architecture Changes**: Update when modifying core patterns or structures
+- **Bug Fixes**: Update if fixes reveal missing documentation
+
+### Rule Organization
+- **Single Responsibility**: Each rule covers a specific aspect of the system
+- **Cross-References**: Rules reference related files and other rules
+- **Examples**: Include code examples for complex patterns
+- **Best Practices**: Document recommended approaches and common pitfalls
+
+### Finding Information
+1. **Start Here**: This navigation index for quick direction
+2. **Project Overview**: For general architecture understanding
+3. **Specific Rules**: For detailed implementation guidance
+4. **File References**: Direct links to relevant source code
+
+This index should be your starting point for navigating Warden's documentation. Each rule contains detailed information about its specific domain, with cross-references to related components and files.

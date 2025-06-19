@@ -20,11 +20,11 @@ Warden implements a modular API architecture that supports multiple AI providers
 - **Anthropic (Claude)**: [ClaudeHandler.swift](mdc:Warden/Utilities/APIHandlers/ClaudeHandler.swift) - Anthropic API integration
 - **Google (Gemini)**: [GeminiHandler.swift](mdc:Warden/Utilities/APIHandlers/GeminiHandler.swift) - Google AI integration
 - **DeepSeek**: [DeepseekHandler.swift](mdc:Warden/Utilities/APIHandlers/DeepseekHandler.swift) - DeepSeek API with reasoning content support
-- **xAI (Grok)**: [XAIHandler.swift](mdc:Warden/Utilities/APIHandlers/XAIHandler.swift) - xAI Grok integration
 - **Perplexity**: [PerplexityHandler.swift](mdc:Warden/Utilities/APIHandlers/PerplexityHandler.swift) - Search-augmented AI with reasoning models
 - **OpenRouter**: [OpenRouterHandler.swift](mdc:Warden/Utilities/APIHandlers/OpenRouterHandler.swift) - Multi-model proxy service
 - **Ollama**: [OllamaHandler.swift](mdc:Warden/Utilities/APIHandlers/OllamaHandler.swift) - Local LLM integration
 - **Mistral**: [MistralHandler.swift](mdc:Warden/Utilities/APIHandlers/MistralHandler.swift) - Mistral AI integration
+- **LM Studio**: [LMStudioHandler.swift](mdc:Warden/Utilities/APIHandlers/LMStudioHandler.swift) - Local model server integration
 - **Groq**: Inherits from ChatGPTHandler for high-speed inference
 
 ## Implementation Patterns

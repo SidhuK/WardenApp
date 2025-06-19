@@ -1,0 +1,261 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Warden Utilities and Helper Components
+
+This guide covers the utility classes, managers, and helper components that provide core functionality across the Warden application.
+
+## Core Utilities
+
+### Message Management
+- **Message Manager**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) - Formats messages for API calls, handles conversation context
+- **Multi-Agent Message Manager**: [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) - Manages multiple AI agent conversations
+- **Message Parser**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) - Processes AI responses, syntax highlighting, content formatting
+
+### API and Service Management
+- **API Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination and service management
+- **Chat Service**: [ChatService.swift](mdc:Warden/Utilities/ChatService.swift) - Core chat functionality and operations
+- **Rephrase Service**: [RephraseService.swift](mdc:Warden/Utilities/RephraseService.swift) - AI-powered message rephrasing capabilities
+
+### Model Management
+- **Selected Models Manager**: [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift) - Controls model visibility per API service
+- **Favorite Models Manager**: [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift) - Manages user's favorite models across providers
+- **Model Cache Manager**: [ModelCacheManager.swift](mdc:Warden/Utilities/ModelCacheManager.swift) - Caches model information for performance
+
+### Data Management
+- **Optimized Core Data Manager**: [OptimizedCoreDataManager.swift](mdc:Warden/Utilities/OptimizedCoreDataManager.swift) - Performance-optimized Core Data operations
+- **Database Patcher**: [DatabasePatcher.swift](mdc:Warden/Utilities/DatabasePatcher.swift) - Handles database migrations and patches
+- **Chat Sharing Service**: [ChatSharingService.swift](mdc:Warden/Utilities/ChatSharingService.swift) - Export and sharing functionality for chats
+
+### System Integration
+- **Spotlight Index Manager**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) - macOS Spotlight search integration
+- **Settings Window Manager**: [SettingsWindowManager.swift](mdc:Warden/Utilities/SettingsWindowManager.swift) - Manages preferences window lifecycle
+- **Token Manager**: [TokenManager.swift](mdc:Warden/Utilities/TokenManager.swift) - Handles token counting and management
+
+### UI Helpers
+- **Swipe Modifier**: [SwipeModifier.swift](mdc:Warden/Utilities/SwipeModifier.swift) - SwiftUI swipe gesture implementation
+- **Extensions**: [Extensions.swift](mdc:Warden/Utilities/Extensions.swift) - Common extensions for Swift types
+
+## Message Management Details
+
+### Message Manager
+**Purpose**: Central hub for message formatting and conversation management
+**Key Features**:
+- Conversation context management
+- Message formatting for different API providers
+- System prompt integration
+- Message history handling
+
+**Usage Pattern**:
+```swift
+let formattedMessages = MessageManager.formatMessagesForAPI(
+    conversation: messages,
+    systemPrompt: prompt,
+    apiService: service
+)
+```
+
+### Multi-Agent Message Manager
+**Purpose**: Handles conversations involving multiple AI agents
+**Key Features**:
+- Multi-agent conversation coordination
+- Agent-specific message routing
+- Response aggregation and formatting
+- Cross-agent context management
+
+### Message Parser
+**Purpose**: Processes and formats AI responses for display
+**Key Features**:
+- Syntax highlighting for code blocks
+- LaTeX equation rendering
+- Table formatting and display
+- Interactive HTML preview
+- Thinking process extraction for reasoning models
+
+## Model Management Details
+
+### Model Cache Manager
+**Purpose**: Optimizes model information retrieval and storage
+**Key Features**:
+- Caches model lists per API service
+- Handles model capability detection
+- Provides fallback for offline scenarios
+- Optimizes repeated model queries
+
+**Architecture Pattern**:
+```swift
+// Cache model information
+ModelCacheManager.shared.cacheModels(for: service, models: modelList)
+
+// Retrieve cached models
+let cachedModels = ModelCacheManager.shared.getCachedModels(for: service)
+```
+
+## Data Management Details
+
+### Optimized Core Data Manager
+**Purpose**: High-performance Core Data operations
+**Key Features**:
+- Background context operations
+- Batch processing for large datasets
+- Memory-efficient queries
+- Optimized fetch requests
+
+**Performance Patterns**:
+- Uses background contexts for heavy operations
+- Implements proper parent-child context relationships
+- Batches operations to minimize Core Data overhead
+- Provides efficient predicate-based queries
+
+### Database Patcher
+**Purpose**: Handles database schema migrations and data patches
+**Key Features**:
+- Version-aware migration system
+- Data integrity validation
+- Rollback capabilities for failed migrations
+- Progressive update system
+
+**Migration Strategy**:
+- Incremental patches for version updates
+- Data validation before and after migrations
+- Backup creation before major changes
+- Graceful error handling and recovery
+
+## System Integration Details
+
+### Spotlight Index Manager
+**Purpose**: Integrates chat content with macOS Spotlight search
+**Key Features**:
+- Automatic indexing of new messages
+- Project-aware search functionality
+- Content filtering for privacy
+- Background indexing for performance
+
+**Implementation Pattern**:
+```swift
+// Index new message
+SpotlightIndexManager.shared.indexMessage(message, in: chat)
+
+// Update project index
+SpotlightIndexManager.shared.updateProjectIndex(project)
+```
+
+### Settings Window Manager
+**Purpose**: Manages the lifecycle of preference windows
+**Key Features**:
+- Single window instance management
+- State preservation across sessions
+- Proper window positioning and sizing
+- Integration with macOS window management
+
+## Service Layer Details
+
+### Chat Service
+**Purpose**: Core chat functionality and business logic
+**Key Features**:
+- Chat creation and management
+- Message sending and receiving
+- Project integration
+- State management
+
+### Chat Sharing Service
+**Purpose**: Export and sharing capabilities
+**Key Features**:
+- Multiple export formats (Markdown, JSON, PDF)
+- Privacy-aware content filtering
+- Batch export for projects
+- Custom formatting options
+
+### Rephrase Service
+**Purpose**: AI-powered message enhancement
+**Key Features**:
+- Multiple rephrasing styles
+- Context-aware suggestions
+- Integration with current AI service
+- Async processing with cancellation
+
+## UI Utility Details
+
+### Swipe Modifier
+**Purpose**: Provides native-style swipe gestures for SwiftUI
+**Key Features**:
+- Configurable swipe actions
+- Visual feedback during gestures
+- Integration with list views
+- Accessibility support
+
+**Usage in Chat Lists**:
+```swift
+.swipeActions(edge: .trailing) {
+    Button("Delete", role: .destructive) { deleteChat() }
+    Button("Rename") { renameChat() }
+}
+```
+
+## Testing and Development
+
+### Test Coverage
+- **Unit Tests**: Core business logic testing
+- **Integration Tests**: Service interaction testing
+- **Performance Tests**: Core Data and caching optimization
+- **Mock Implementations**: Test-friendly service mocks
+
+### Development Patterns
+- **Dependency Injection**: Services accept dependencies for testability
+- **Protocol Conformance**: Utilities implement protocols for mocking
+- **Error Handling**: Comprehensive error types and handling
+- **Async Support**: Modern concurrency patterns throughout
+
+## Performance Considerations
+
+### Memory Management
+- **Weak References**: Prevent retain cycles in observers
+- **Lazy Loading**: Load utilities only when needed
+- **Resource Cleanup**: Proper cleanup in deinit methods
+- **Background Processing**: Heavy operations on background queues
+
+### Caching Strategies
+- **Model Caching**: Cache frequently accessed model information
+- **Message Caching**: Cache formatted messages for display
+- **Search Indexing**: Efficient Spotlight index management
+- **Core Data Optimization**: Minimize fetch requests and memory usage
+
+## Error Handling Patterns
+
+### Utility Error Types
+```swift
+enum UtilityError: LocalizedError {
+    case cacheFailure(String)
+    case parsingError(String)
+    case serviceUnavailable
+    case invalidConfiguration
+}
+```
+
+### Error Recovery
+- **Graceful Degradation**: Fallback to basic functionality
+- **User Notification**: Clear error messages for user-facing issues
+- **Logging**: Comprehensive error logging for debugging
+- **Retry Logic**: Automatic retry for transient failures
+
+## Best Practices
+
+### Service Design
+- **Single Responsibility**: Each utility has a focused purpose
+- **Stateless When Possible**: Minimize shared state
+- **Thread Safety**: Use appropriate synchronization
+- **Resource Management**: Proper cleanup and memory management
+
+### Integration Patterns
+- **Environment Objects**: Share utilities via SwiftUI environment
+- **Dependency Injection**: Pass utilities as dependencies
+- **Observer Pattern**: Use Combine for reactive updates
+- **Protocol Abstractions**: Define clear interfaces for utilities
+
+### Configuration Management
+- **User Defaults Integration**: Persist utility preferences
+- **Dynamic Configuration**: Runtime configuration updates
+- **Validation**: Input validation and error checking
+- **Documentation**: Clear documentation for utility APIs
