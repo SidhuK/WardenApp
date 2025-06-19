@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![](/assets/256-mac.png)
+![](/assets/Logo.png)
 
 ![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
@@ -15,7 +15,7 @@
 
 ![](/assets/New%20Chat.png)
 
-[![](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://x.com/karat_sidhu) [![](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/SidhuK) [![](https://img.shields.io/badge/Gumroad-000000?style=for-the-badge&logo=gumroad&logoColor=white)](https://karatsidhu.gumroad.com/l/warden) [![](https://img.shields.io/badge/BuyMeACoffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/karat)
+[![](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://x.com/karat_sidhu) [![](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/SidhuK) [![](https://img.shields.io/badge/Gumroad-000000?style=for-the-badge&logo=gumroad&logoColor=white)](https://karatsidhu.gumroad.com/l/warden) [![](https://img.shields.io/badge/BuyMeACoffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/karatsidhu)
 
 [Download Latest Release](https://github.com/SidhuK/WardenApp/releases) • [Gumroad Page](https://karatsidhu.gumroad.com/l/warden) • [Report Issues](https://github.com/SidhuK/WardenApp/issues) • [View Source Code](https://github.com/SidhuK/WardenApp)
 
@@ -48,15 +48,13 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 - **Perplexity**
 - **Groq**
 - **Mistral AI**
-- **LM Studio** (Local model hosting)
+- **LM Studio** (Local model hosting) - **NEW**
 - **Ollama** (Local LLMs)
 - **OpenRouter** (50+ models)
 - **Deepseek**
 - **Any OpenAI-compatible API**
 
 ### New in v0.4: Enhanced User Experience
-
-![](/assets/New%20in%20v0.3%20Projects.png)
 
 - **Stop Streaming/Stop Generating**: Cancel ongoing AI responses instantly with dynamic send/stop button functionality
 - **Enhanced Model Selector**: Moved to the top of chat interface as a faster popover for better accessibility
@@ -67,7 +65,7 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ### Projects & Organization
 
-![](/assets/Project%20View.png)
+![](/assets/Projects.png)
 
 - **Projects/Folders Support**: Organize your chats into logical groups for better workflow management
 - **Project-Scoped New Chat**: Create new chats directly within specific projects
@@ -85,7 +83,7 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ### Multi-Agent Chat System
 
-![](/assets/multi_agent.png)
+![](/assets/Multi%20Models.png)
 
 - **Multiple Models Simultaneously**: Chat with multiple AI models at the same time for diverse perspectives and enhanced productivity
 - **Default AI per Assistant**: Each AI persona now has a default model assignment, making it easier to work with specific use cases
@@ -110,7 +108,7 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ### Advanced Model Management
 
-![](/assets/New%20in%200.3%20select%20models.png)
+![](/assets/Model%20Selector.png)
 
 - **Favorite Models**: Mark your most-used models as favorites for quick access
 - **Searchable Model Selector**: Find models quickly with the new search functionality
@@ -129,7 +127,7 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 - **Feedback Integration**: Added "Send Feedback" buttons in top menu bar and preferences
 - **Source Code Access**: Added "View on GitHub" button in preferences
 
-![](/assets/settings_screen.png)
+![](/assets/API%20Settings.png)
 
 ### Privacy & Performance
 
@@ -186,15 +184,15 @@ Currently, the app doesn't auto-update. Check this GitHub repository for new rel
 
 ### Projects & Organization
 
-![Organize chats into logical projects](/assets/New%20in%20v0.3%20Projects.png)
+![Organize chats into logical projects](/assets/Projects.png)
 
 ### Project Creation Interface
 
-![Create and manage projects easily](/assets/Create%20New%20projects.png)
+![Create and manage projects easily](/assets/Projects.png)
 
 ### Enhanced Project View
 
-![Detailed project management interface](/assets/Project%20View.png)
+![Detailed project management interface](/assets/Projects.png)
 
 ### Main Chat Interface
 
@@ -206,11 +204,11 @@ Currently, the app doesn't auto-update. Check this GitHub repository for new rel
 
 ### Multi-Agent Chat System
 
-![Chat with multiple AI models simultaneously](/assets/multi_agent.png)
+![Chat with multiple AI models simultaneously](/assets/Multi%20Models.png)
 
 ### Advanced Model Selector
 
-![Enhanced model selection with visibility controls](/assets/New%20in%200.3%20select%20models.png)
+![Enhanced model selection with visibility controls](/assets/Model%20Selector.png)
 
 ### Dark Mode Support
 
@@ -218,7 +216,7 @@ Currently, the app doesn't auto-update. Check this GitHub repository for new rel
 
 ### Settings & Preferences
 
-![Comprehensive settings panel](/assets/settings_screen.png)
+![Comprehensive settings panel](/assets/API%20Settings.png)
 
 ---
 
