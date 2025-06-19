@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added subtle gray microcopy below main help text for better guidance
   - Added extra padding between model selector, input box, and quick action buttons
   - Removed Share button from chat view
+  - Removed Chat Title View from chat view, moved model selector to toolbar
 - **Visual Effects**:
   - Applied Big Sur glassy look to New Thread button with minimal gradient
   - Added subtle pulse animation to input cursor and "How can I help?" text when idle
