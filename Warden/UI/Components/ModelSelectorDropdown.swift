@@ -12,6 +12,7 @@ struct StandaloneModelSelector: View {
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
     @State private var showOnlyFavorites = false
+    @State private var isHovered = false
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -111,18 +112,18 @@ struct StandaloneModelSelector: View {
                         .renderingMode(.template)
                         .interpolation(.high)
                         .frame(width: 16, height: 16)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isHovered ? .accentColor : .secondary)
                     
-                    HStack(spacing: 8) {
-                        Text(currentProviderName)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
+                    HStack(spacing: 4) {
                         Text(currentModel)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(isHovered ? .primary : .primary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        
+                        Text("(\(currentProviderName))")
                             .font(.system(size: 10, weight: .regular))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(isHovered ? .secondary : .secondary)
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
@@ -131,37 +132,49 @@ struct StandaloneModelSelector: View {
                     
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isHovered ? .accentColor : .secondary)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 6)
                         .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: 6)
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color.primary.opacity(0.04), Color.clear],
+                                        colors: isHovered ? 
+                                            [Color.accentColor.opacity(0.08), Color.accentColor.opacity(0.03)] :
+                                            [Color.primary.opacity(0.04), Color.clear],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(
+                                    isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.08),
+                                    lineWidth: isHovered ? 1.2 : 0.6
+                                )
                         )
                         .shadow(
-                            color: Color.black.opacity(0.05),
-                            radius: 2,
+                            color: isHovered ? Color.accentColor.opacity(0.12) : Color.black.opacity(0.05),
+                            radius: isHovered ? 4 : 2,
                             x: 0,
-                            y: 1
+                            y: isHovered ? 2 : 1
                         )
                 )
             }
             .buttonStyle(.plain)
+            .opacity(isHovered ? 0.95 : 0.85)
             .frame(maxWidth: 400) // Approximately 45% of typical chat width
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isHovered = hovering
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0), value: isHovered)
             .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
                 popoverContent
             }
