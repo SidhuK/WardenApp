@@ -191,8 +191,8 @@ struct StandaloneModelSelector: View {
     
     private var popoverContent: some View {
         VStack(spacing: 0) {
-            // Header with search and favorites toggle
-            VStack(spacing: 8) {
+            // Header with search and favorites toggle inline
+            HStack(spacing: 8) {
                 searchBar
                 favoritesToggle
             }
@@ -247,34 +247,53 @@ struct StandaloneModelSelector: View {
     }
     
     private var favoritesToggle: some View {
-        Button(action: {
-            withAnimation(.easeInOut(duration: 0.05)) {
-                showOnlyFavorites.toggle()
-            }
-        }) {
-            HStack(spacing: 6) {
-                Image(systemName: showOnlyFavorites ? "heart.fill" : "heart")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(showOnlyFavorites ? .red : .secondary)
-                
-                Text(showOnlyFavorites ? "Show All Models" : "Show Favorites Only")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(showOnlyFavorites ? .primary : .secondary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(showOnlyFavorites ? Color.red.opacity(0.1) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(showOnlyFavorites ? Color.red.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 0.5)
+        HStack(spacing: 0) {
+            // All button
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    showOnlyFavorites = false
+                }
+            }) {
+                Text("All")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(!showOnlyFavorites ? .primary : .secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(!showOnlyFavorites ? Color.accentColor.opacity(0.1) : Color.clear)
                     )
-            )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            // Favorites button
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    showOnlyFavorites = true
+                }
+            }) {
+                Text("Favorites")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(showOnlyFavorites ? .primary : .secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(showOnlyFavorites ? Color.accentColor.opacity(0.1) : Color.clear)
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                )
+        )
     }
     
     private func providerSection(provider: String, models: [String]) -> some View {
