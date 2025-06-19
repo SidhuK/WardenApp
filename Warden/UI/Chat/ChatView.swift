@@ -107,51 +107,42 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     mainChatContent
                     
-                    VStack(spacing: 4) {
-                        // Model Selector - placed above the input area
-                        HStack {
-                            StandaloneModelSelector(chat: chat)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        
-                        // Chat input container
-                        ChatBottomContainerView(
-                            chat: chat,
-                            newMessage: $newMessage,
-                            isExpanded: $isBottomContainerExpanded,
-                            attachedImages: $attachedImages,
-                            imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
-                            isStreaming: isStreaming,
-                            onSendMessage: {
-                                if editSystemMessage {
-                                    chat.systemMessage = newMessage
-                                    newMessage = ""
-                                    editSystemMessage = false
-                                    store.saveInCoreData()
-                                }
-                                else if newMessage != "" && newMessage != " " {
-                                    if enableMultiAgentMode && isMultiAgentMode {
-                                        self.sendMultiAgentMessage()
-                                    } else {
-                                        self.sendMessage()
-                                    }
-                                }
-                            },
-                            onExpandToggle: {
-                                // Handle expand toggle if needed
-                            },
-                            onAddImage: {
-                                selectAndAddImages()
-                            },
-                            onStopStreaming: {
-                                self.stopStreaming()
-                            },
-                            onExpandedStateChange: { isExpanded in
-                                // Handle expanded state change if needed
+                                        // Chat input container
+                    ChatBottomContainerView(
+                        chat: chat,
+                        newMessage: $newMessage,
+                        isExpanded: $isBottomContainerExpanded,
+                        attachedImages: $attachedImages,
+                        imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                        isStreaming: isStreaming,
+                        onSendMessage: {
+                            if editSystemMessage {
+                                chat.systemMessage = newMessage
+                                newMessage = ""
+                                editSystemMessage = false
+                                store.saveInCoreData()
                             }
-                        )
-                    }
+                            else if newMessage != "" && newMessage != " " {
+                                if enableMultiAgentMode && isMultiAgentMode {
+                                    self.sendMultiAgentMessage()
+                                } else {
+                                    self.sendMessage()
+                                }
+                            }
+                        },
+                        onExpandToggle: {
+                            // Handle expand toggle if needed
+                        },
+                        onAddImage: {
+                            selectAndAddImages()
+                        },
+                        onStopStreaming: {
+                            self.stopStreaming()
+                        },
+                        onExpandedStateChange: { isExpanded in
+                            // Handle expanded state change if needed
+                        }
+                    )
                 }
                 .background(backgroundColor)
             }
@@ -159,11 +150,16 @@ struct ChatView: View {
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                ChatTitleView(
-                    chat: chat, 
-                    isMultiAgentMode: enableMultiAgentMode && isMultiAgentMode, 
-                    selectedMultiAgentServices: selectedMultiAgentServices
-                )
+                HStack(spacing: 12) {
+                    ChatTitleView(
+                        chat: chat, 
+                        isMultiAgentMode: enableMultiAgentMode && isMultiAgentMode, 
+                        selectedMultiAgentServices: selectedMultiAgentServices
+                    )
+                    
+                    // Model Selector next to chat title
+                    StandaloneModelSelector(chat: chat)
+                }
             }
             
             ToolbarItem(placement: .automatic) {

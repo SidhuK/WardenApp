@@ -63,13 +63,6 @@ struct CenteredInputView: View {
                     
                     // Input section with increased spacing and material effects
                     VStack(spacing: 24) { // Increased from 6 to 24
-                        // Model selector with more spacing
-                        HStack {
-                            StandaloneModelSelector(chat: chat)
-                            Spacer()
-                        }
-                        .frame(maxWidth: 580)
-                        
                         // Enhanced input field with material background
                         MessageInputView(
                             text: $newMessage,
