@@ -555,39 +555,7 @@ struct ChatTitleView: View {
         }
     }
     
-    private var shareMenu: some View {
-        Menu {
-            Button {
-                ChatSharingService.shared.shareChat(chat, format: .markdown)
-            } label: {
-                Label("Share as Markdown", systemImage: "doc.richtext")
-            }
-            
-            Button {
-                ChatSharingService.shared.shareChat(chat, format: .plainText)
-            } label: {
-                Label("Share as Plain Text", systemImage: "doc.plaintext")
-            }
-            
-            Button {
-                ChatSharingService.shared.exportChatToFile(chat, format: .json)
-            } label: {
-                Label("Export as JSON", systemImage: "doc.badge.gearshape")
-            }
-            
-            Button {
-                ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
-            } label: {
-                Label("Copy to Clipboard", systemImage: "doc.on.clipboard")
-            }
-        } label: {
-            Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(isHovered ? .accentColor : .secondary.opacity(0.8))
-                .scaleEffect(isHovered ? 1.1 : 1.0)
-        }
-        .buttonStyle(.borderless)
-    }
+
     
     private var backgroundStyle: some View {
         RoundedRectangle(cornerRadius: 6)
@@ -624,22 +592,15 @@ struct ChatTitleView: View {
         
         if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
             let serviceNames = selectedMultiAgentServices.map { $0.name ?? "Unknown" }.sorted().joined(separator: ", ")
-            return "Multi-Agent Chat: \(displayTitle)\(projectInfo) • \(serviceNames) • Click arrow to share"
+            return "Multi-Agent Chat: \(displayTitle)\(projectInfo) • \(serviceNames)"
         } else {
-            return "Chat: \(displayTitle)\(projectInfo) • \(chat.apiService?.name ?? "No AI Service") • Click arrow to share"
+            return "Chat: \(displayTitle)\(projectInfo) • \(chat.apiService?.name ?? "No AI Service")"
         }
     }
     
     var body: some View {
         HStack(spacing: 8) {
             titleText
-            
-            // Subtle divider
-            Rectangle()
-                .fill(Color.primary.opacity(0.12))
-                .frame(width: 0.6, height: 12)
-            
-            shareMenu
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
