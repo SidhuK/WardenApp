@@ -150,17 +150,9 @@ struct ChatView: View {
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 12) {
-                    ChatTitleView(
-                        chat: chat, 
-                        isMultiAgentMode: enableMultiAgentMode && isMultiAgentMode, 
-                        selectedMultiAgentServices: selectedMultiAgentServices
-                    )
-                    
-                    // Model Selector next to chat title
-                    StandaloneModelSelector(chat: chat)
-                        .padding(.top, 6) // Match ChatTitleView top padding
-                }
+                // Model Selector centered in toolbar
+                StandaloneModelSelector(chat: chat)
+                    .padding(.top, 6)
             }
             
             ToolbarItem(placement: .automatic) {
@@ -490,129 +482,7 @@ struct ChatView: View {
     }
 }
 
-struct ChatTitleView: View {
-    @ObservedObject var chat: ChatEntity
-    let isMultiAgentMode: Bool
-    let selectedMultiAgentServices: Set<APIServiceEntity>
-    @State private var isHovered = false
-    
-    private var displayTitle: String {
-        if chat.name.isEmpty {
-            return "New Chat"
-        }
-        return chat.name
-    }
-    
-    private var titleText: some View {
-        HStack(spacing: 6) {
-            // Show either multi-agent logos or single service logo
-            if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
-                // Multi-agent mode: show all selected service logos
-                HStack(spacing: 4) {
-                    ForEach(Array(selectedMultiAgentServices).sorted(by: { $0.name ?? "" < $1.name ?? "" }), id: \.id) { service in
-                        Image("logo_\(service.type ?? "")")
-                            .resizable()
-                            .renderingMode(.template)
-                            .interpolation(.high)
-                            .frame(width: 12, height: 12)
-                            .foregroundColor(isHovered ? .accentColor : .secondary)
-                    }
-                }
-            } else {
-                // Single agent mode: show chat's service logo
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(isHovered ? .accentColor : .secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(displayTitle)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(isHovered ? .primary : .secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                
-                // Project indicator
-                if let project = chat.project {
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
-                            .frame(width: 6, height: 6)
-                        Text(project.name ?? "Project")
-                            .font(.system(size: 10, weight: .regular))
-                            .foregroundColor(isHovered ? .secondary : .secondary.opacity(0.8))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
-            }
-        }
-    }
-    
 
-    
-    private var backgroundStyle: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(
-                        LinearGradient(
-                            colors: isHovered ? 
-                                [Color.accentColor.opacity(0.08), Color.accentColor.opacity(0.03)] :
-                                [Color.primary.opacity(0.04), Color.clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(
-                        isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.08),
-                        lineWidth: isHovered ? 1.2 : 0.6
-                    )
-            )
-            .shadow(
-                color: isHovered ? Color.accentColor.opacity(0.12) : Color.black.opacity(0.05),
-                radius: isHovered ? 4 : 2,
-                x: 0,
-                y: isHovered ? 2 : 1
-            )
-    }
-    
-    private var helpText: String {
-        let projectInfo = chat.project != nil ? " • Project: \(chat.project!.name ?? "Untitled")" : ""
-        
-        if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
-            let serviceNames = selectedMultiAgentServices.map { $0.name ?? "Unknown" }.sorted().joined(separator: ", ")
-            return "Multi-Agent Chat: \(displayTitle)\(projectInfo) • \(serviceNames)"
-        } else {
-            return "Chat: \(displayTitle)\(projectInfo) • \(chat.apiService?.name ?? "No AI Service")"
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            titleText
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(backgroundStyle)
-        .opacity(isHovered ? 0.95 : 0.85)
-        .padding(.top, 6) // Reduced top padding for smaller floating effect
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.25)) {
-                isHovered = hovering
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0), value: isHovered)
-        .help(helpText)
-    }
-}
 
 extension ChatView {
     func sendMessage(ignoreMessageInput: Bool = false) {
