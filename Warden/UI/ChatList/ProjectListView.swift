@@ -345,24 +345,27 @@ struct ProjectRow: View {
             }
             onToggleExpansion()
         }) {
-            HStack(spacing: 2) {
-                // Colored folder icon - aligned with AI logo (8pt from left edge)
+            HStack(spacing: 12) {
+                // Colored folder icon - aligned exactly with AI logos
                 Image(systemName: "folder.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(projectColor)
-                    .padding(.leading, 8) // Align with AI logo
+                    .frame(width: 16, height: 16)
+                    .padding(.leading, 8) // Same as AI logo alignment
                 
                 // Project name
-                Text(project.name ?? "Untitled Project")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .padding(.leading, 8) // Add spacing between folder and name
+                VStack(alignment: .leading) {
+                    Text(project.name ?? "Untitled Project")
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                }
+                .padding(.vertical, 8)
+                .padding(.trailing, 8)
                 
                 Spacer()
                 
-                // Expansion arrow - now part of the same button
+                // Expansion arrow
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
@@ -370,8 +373,7 @@ struct ProjectRow: View {
                     .animation(.easeInOut(duration: 0.2), value: isExpanded)
                     .padding(.trailing, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.primary.opacity(0.08) : (isExpanded ? Color.primary.opacity(0.04) : Color.clear))
@@ -884,12 +886,7 @@ struct ProjectChatRowInList: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Indentation to show hierarchy
-            Rectangle()
-                .fill(Color.clear)
-                .frame(width: 24) // Indent to show it's under a project
-            
-            // AI service logo (conditionally shown)
+            // AI service logo (conditionally shown) - aligned with project folder icons
             if showSidebarAIIcons {
                 if let apiServiceName = chat.apiService?.name,
                    let image = getServiceLogo(for: apiServiceName) {
@@ -900,11 +897,13 @@ struct ProjectChatRowInList: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 16, height: 16)
                         .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
+                        .padding(.leading, 8) // Align with project folder and regular chat icons
                 } else {
                     Image(systemName: "message")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(width: 16, height: 16)
+                        .padding(.leading, 8) // Align with project folder and regular chat icons
                 }
             }
             
@@ -1021,6 +1020,8 @@ struct ProjectChatRowInList: View {
             return Image("logo_mistral")
         case "xai", "grok":
             return Image("logo_xai")
+        case "lm studio", "lmstudio":
+            return Image("logo_lmstudio")
         default:
             return nil
         }

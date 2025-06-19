@@ -54,6 +54,11 @@ class SelectedModelsManager: ObservableObject {
         return !selection.isEmpty
     }
     
+    /// Check if a service has any custom selection defined (even if empty)
+    func hasAnyCustomSelection(for serviceType: String) -> Bool {
+        return customSelections[serviceType] != nil
+    }
+    
     /// Load selections from UserDefaults and Core Data
     func loadSelections(from apiServices: [APIServiceEntity]) {
         // First, load from UserDefaults (legacy support)

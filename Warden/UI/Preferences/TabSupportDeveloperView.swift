@@ -2,79 +2,81 @@ import SwiftUI
 
 struct TabSupportDeveloperView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "heart.fill", title: "Support the Developer", iconColor: .pink)
-            
-            settingGroup {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Warden is built with ❤️ by an independent developer. Your support helps keep development active and makes new features possible.")
-                        .foregroundColor(.secondary)
-                        .font(.callout)
-                        .padding(.bottom, 4)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                settingGroup {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Warden is built with ❤️ by an independent developer. Your support helps keep development active and makes new features possible.")
+                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .padding(.bottom, 4)
 
-                    VStack(spacing: 16) {
-                        HStack {
-                            Text("Support Development")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Buy Me a Coffee ☕") {
-                                if let url = URL(string: "https://buymeacoffee.com/karatsidhu") {
-                                    NSWorkspace.shared.open(url)
+                        VStack(spacing: 16) {
+                            HStack {
+                                Text("Support Development")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Button("Buy Me a Coffee ☕") {
+                                    if let url = URL(string: "https://buymeacoffee.com/karatsidhu") {
+                                        NSWorkspace.shared.open(url)
+                                    }
                                 }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.regular)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.regular)
-                        }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Material.ultraThinMaterial)
+                                    .opacity(0.3)
+                            )
 
-                        HStack {
-                            Text("Send Feedback")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Share Your Thoughts 💭") {
-                                if let url = URL(string: "https://github.com/SidhuK/WardenApp/issues/new") {
-                                    NSWorkspace.shared.open(url)
+                            HStack {
+                                Text("Send Feedback")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Button("Share Your Thoughts 💭") {
+                                    if let url = URL(string: "https://github.com/SidhuK/WardenApp/issues/new") {
+                                        NSWorkspace.shared.open(url)
+                                    }
                                 }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                        }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Material.ultraThinMaterial)
+                                    .opacity(0.3)
+                            )
 
-                        HStack {
-                            Text("Source Code")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("View on GitHub") {
-                                if let url = URL(string: "https://github.com/SidhuK/WardenApp") {
-                                    NSWorkspace.shared.open(url)
+                            HStack {
+                                Text("Source Code")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Button("View on GitHub") {
+                                    if let url = URL(string: "https://github.com/SidhuK/WardenApp") {
+                                        NSWorkspace.shared.open(url)
+                                    }
                                 }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Material.ultraThinMaterial)
+                                    .opacity(0.3)
+                            )
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
                     }
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
     }
     
@@ -234,4 +236,4 @@ struct InlineTabSupportDeveloperView: View {
                 )
         )
     }
-} 
+}

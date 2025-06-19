@@ -4,96 +4,98 @@ struct TabBackupRestoreView: View {
     @EnvironmentObject private var store: ChatStore
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "arrow.clockwise.icloud", title: "Backup & Restore")
-            
-            settingGroup {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
-                        .foregroundColor(Color.secondary)
-                        .font(.callout)
-                        .padding(.bottom, 4)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                settingGroup {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
+                            .foregroundColor(Color.secondary)
+                            .font(.callout)
+                            .padding(.bottom, 4)
 
-                    HStack {
-                        Text("Export chats history")
-                            .fontWeight(.medium)
-                        Spacer()
-                        Button("Export to file...") {
-                            store.loadFromCoreData { result in
-                                switch result {
-                                case .failure(let error):
-                                    fatalError(error.localizedDescription)
-                                case .success(let chats):
-                                    let encoder = JSONEncoder()
-                                    encoder.outputFormatting = .prettyPrinted
-                                    let data = try! encoder.encode(chats)
-                                    let savePanel = NSSavePanel()
-                                    savePanel.allowedContentTypes = [.json]
-                                    savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
-                                    savePanel.begin { (result) in
-                                        if result == .OK {
-                                            do {
-                                                try data.write(to: savePanel.url!)
-                                            }
-                                            catch {
-                                                print(error)
+                        HStack {
+                            Text("Export chats history")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Export to file...") {
+                                store.loadFromCoreData { result in
+                                    switch result {
+                                    case .failure(let error):
+                                        fatalError(error.localizedDescription)
+                                    case .success(let chats):
+                                        let encoder = JSONEncoder()
+                                        encoder.outputFormatting = .prettyPrinted
+                                        let data = try! encoder.encode(chats)
+                                        let savePanel = NSSavePanel()
+                                        savePanel.allowedContentTypes = [.json]
+                                        savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
+                                        savePanel.begin { (result) in
+                                            if result == .OK {
+                                                do {
+                                                    try data.write(to: savePanel.url!)
+                                                }
+                                                catch {
+                                                    print(error)
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Material.ultraThinMaterial)
-                            .opacity(0.3)
-                    )
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Material.ultraThinMaterial)
+                                .opacity(0.3)
+                        )
 
-                    HStack {
-                        Text("Import chats history")
-                            .fontWeight(.medium)
-                        Spacer()
-                        Button("Import from file...") {
-                            let openPanel = NSOpenPanel()
-                            openPanel.allowedContentTypes = [.json]
-                            openPanel.begin { (result) in
-                                if result == .OK {
-                                    do {
-                                        let data = try Data(contentsOf: openPanel.url!)
-                                        let decoder = JSONDecoder()
-                                        let chats = try decoder.decode([Chat].self, from: data)
+                        HStack {
+                            Text("Import chats history")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Import from file...") {
+                                let openPanel = NSOpenPanel()
+                                openPanel.allowedContentTypes = [.json]
+                                openPanel.begin { (result) in
+                                    if result == .OK {
+                                        do {
+                                            let data = try Data(contentsOf: openPanel.url!)
+                                            let decoder = JSONDecoder()
+                                            let chats = try decoder.decode([Chat].self, from: data)
 
-                                        store.saveToCoreData(chats: chats) { result in
-                                            print("State saved")
-                                            if case .failure(let error) = result {
-                                                fatalError(error.localizedDescription)
+                                            store.saveToCoreData(chats: chats) { result in
+                                                print("State saved")
+                                                if case .failure(let error) = result {
+                                                    fatalError(error.localizedDescription)
+                                                }
                                             }
-                                        }
 
-                                    }
-                                    catch {
-                                        print(error)
+                                        }
+                                        catch {
+                                            print(error)
+                                        }
                                     }
                                 }
                             }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Material.ultraThinMaterial)
+                                .opacity(0.3)
+                        )
                     }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Material.ultraThinMaterial)
-                            .opacity(0.3)
-                    )
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
     }
     

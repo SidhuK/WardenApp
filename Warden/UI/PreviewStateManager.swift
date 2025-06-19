@@ -56,6 +56,32 @@ class PreviewStateManager: ObservableObject {
         return try? context.fetch(request).first
     }
     
+    var sampleChat: ChatEntity {
+        let context = persistenceController.container.viewContext
+        let request = ChatEntity.fetchRequest()
+        if let existingChat = try? context.fetch(request).first {
+            return existingChat as! ChatEntity
+        }
+        
+        // Create a new sample chat if none exists
+        let sampleChat = ChatEntity(context: context)
+        sampleChat.id = UUID()
+        sampleChat.name = "Sample Chat"
+        sampleChat.createdDate = Date()
+        sampleChat.updatedDate = Date()
+        sampleChat.gptModel = AppConstants.chatGptDefaultModel
+        sampleChat.project = sampleProject
+        
+        // Create sample persona
+        let persona = PersonaEntity(context: context)
+        persona.name = "Assistant"
+        persona.color = "person.circle"
+        sampleChat.persona = persona
+        
+        try? context.save()
+        return sampleChat
+    }
+    
     func showPreview(content: String) {
         previewContent = content
         isPreviewVisible = true

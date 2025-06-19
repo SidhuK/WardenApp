@@ -23,9 +23,9 @@ struct ProjectSummaryView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 32) {
-                // Centered project header
-                centeredProjectHeader
+            VStack(alignment: .leading, spacing: 32) {
+                // Horizontal project header layout
+                horizontalProjectHeader
                 
                 // Recent activity
                 recentActivitySection
@@ -58,66 +58,65 @@ struct ProjectSummaryView: View {
         }
     }
     
-    private var centeredProjectHeader: some View {
-        VStack(alignment: .center, spacing: 16) {
-            // Project icon centered
-            Image(systemName: "folder.fill")
-                .font(.system(size: 48))
-                .foregroundColor(projectColor)
+    private var horizontalProjectHeader: some View {
+        HStack(alignment: .top, spacing: 24) {
+            Spacer()
             
-            VStack(alignment: .center, spacing: 8) {
-                Text(project.name ?? "Untitled Project")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                
-                if let description = project.projectDescription, !description.isEmpty {
-                    Text(description)
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+            // Right side - Project info
+            VStack(alignment: .trailing, spacing: 16) {
+                // Project icon aligned to the right
+                HStack {
+                    Spacer()
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(projectColor)
                 }
-            }
-            
-            HStack(spacing: 20) {
-                Label("Created \(project.createdAt ?? Date(), style: .date)", systemImage: "calendar")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
                 
-                if project.isArchived {
-                    Label("Archived", systemImage: "archivebox")
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(project.name ?? "Untitled Project")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.trailing)
+                    
+                    if let description = project.projectDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                
+                HStack(spacing: 20) {
+                    if project.isArchived {
+                        Label("Archived", systemImage: "archivebox")
+                            .font(.subheadline)
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.orange.opacity(0.1))
+                            )
+                    }
+                    
+                    Label("Created \(project.createdAt ?? Date(), style: .date)", systemImage: "calendar")
                         .font(.subheadline)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.orange.opacity(0.1))
-                        )
+                        .foregroundColor(.secondary)
                 }
-            }
-            
-            // New Thread button
-            if !project.isArchived {
-                newChatButton
-                    .padding(.top, 8)
+                
+
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     private var bottomCompactSection: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Stats Card
-            compactStatsCard
-            
-            // Insights Card
-            compactInsightsCard
-        }
+        // Stats Card only
+        compactStatsCard
     }
     
     private var compactStatsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .font(.title3)
@@ -128,122 +127,91 @@ struct ProjectSummaryView: View {
                 Spacer()
             }
             
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Chats:")
+            // 2x2 Grid Layout
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 12) {
+                // Row 1, Column 1
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Chats")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(projectChats.count)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                HStack {
-                    Text("Messages:")
+                // Row 1, Column 2
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Messages")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(totalMessages)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                HStack {
-                    Text("Days Active:")
+                // Row 2, Column 1
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Days Active")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Spacer()
                     Text("\(daysActive)")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.semibold)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
+                // Row 2, Column 2
                 if let lastActivity = projectChats.first?.updatedDate {
-                    HStack {
-                        Text("Last Activity:")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Last Activity")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Spacer()
                         Text(formatDateString(lastActivity))
                             .font(.caption)
                             .fontWeight(.medium)
+                            .lineLimit(2)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Last Activity")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("No activity")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(Color.clear)
         )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
-    private var compactInsightsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .font(.title3)
-                    .foregroundColor(.orange)
-                Text("Key Insights")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-            
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Style:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(conversationStyle)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Focus:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(projectFocus)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Activity:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(mostActivePeriod)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                
-                HStack {
-                    Text("Avg. Length:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text("\(averageMessageLength) chars")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+
     
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // New Thread button above Recent Activity heading
+            if !project.isArchived {
+                HStack {
+                    newChatButton
+                    Spacer()
+                }
+                .padding(.bottom, 8)
+            }
+            
             Text("Recent Activity")
                 .font(.title2)
                 .fontWeight(.semibold)
@@ -300,7 +268,7 @@ struct ProjectSummaryView: View {
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .fill(Color.clear)
                             )
                         }
                         .buttonStyle(.plain)
@@ -333,46 +301,9 @@ struct ProjectSummaryView: View {
         return Calendar.current.dateComponents([.day], from: firstActivity, to: lastActivity).day ?? 0
     }
     
-    private var mostActivePeriod: String {
-        if daysActive < 7 {
-            return "This week"
-        } else if daysActive < 30 {
-            return "Recent weeks"
-        } else {
-            return "Over time"
-        }
-    }
+
     
-    private var averageMessageLength: Int {
-        let totalChars = projectChats.flatMap { $0.messagesArray }.reduce(0) { total, message in
-            total + message.body.count
-        }
-        return totalMessages > 0 ? totalChars / totalMessages : 0
-    }
-    
-    private var conversationStyle: String {
-        let avgLength = averageMessageLength
-        if avgLength < 50 {
-            return "Brief & Direct"
-        } else if avgLength < 200 {
-            return "Conversational"
-        } else {
-            return "Detailed"
-        }
-    }
-    
-    private var projectFocus: String {
-        if let instructions = project.customInstructions, !instructions.isEmpty {
-            if instructions.lowercased().contains("code") {
-                return "Development"
-            } else if instructions.lowercased().contains("research") {
-                return "Research"
-            } else if instructions.lowercased().contains("writing") {
-                return "Writing"
-            }
-        }
-        return "General"
-    }
+
     
     // MARK: - UI Components
     
@@ -392,25 +323,56 @@ struct ProjectSummaryView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 40)
             .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        projectColor.opacity(0.9),
-                        projectColor.opacity(0.8)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                ZStack {
+                    // Base gradient background with project color
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            projectColor.opacity(0.85),
+                            projectColor.opacity(0.75)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    // Subtle angled glassy overlay effect
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .white.opacity(0.15), location: 0.0),
+                            .init(color: .white.opacity(0.05), location: 0.4),
+                            .init(color: .clear, location: 0.6),
+                            .init(color: .black.opacity(0.03), location: 1.0)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    
+                    // Very subtle material texture
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.05)
+                        .blendMode(.overlay)
+                }
             )
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(projectColor.opacity(0.3), lineWidth: 0.5)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.2),
+                                projectColor.opacity(0.2)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.5
+                    )
             )
             .shadow(color: projectColor.opacity(0.25), radius: 2, x: 0, y: 1)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
         .frame(maxWidth: 240)
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Helper Methods

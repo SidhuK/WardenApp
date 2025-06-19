@@ -32,24 +32,25 @@ struct ContentView: View {
     @State private var windowRef: NSWindow?
     @State private var openedChatId: String? = nil
     @State private var columnVisibility = NavigationSplitViewVisibility.all
-    @State private var showingSettings = false
     
     // New state variables for inline project views
     @State private var showingCreateProject = false
     @State private var showingEditProject = false
     @State private var projectToEdit: ProjectEntity?
+    
+    // New state variable for inline settings
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationSplitView {
             ChatListView(
                 selectedChat: $selectedChat,
                 selectedProject: $selectedProject,
-                showingSettings: $showingSettings,
                 showingCreateProject: $showingCreateProject,
                 showingEditProject: $showingEditProject,
                 projectToEdit: $projectToEdit,
                 onNewChat: newChat,
-                onOpenPreferences: openPreferencesView
+                onOpenPreferences: openInlineSettings
             )
                 .navigationSplitViewColumnWidth(
                     min: 180,
@@ -59,9 +60,11 @@ struct ContentView: View {
         } detail: {
             HSplitView {
                 if showingSettings {
-                    // Show settings in main content area
-                    InlinePreferencesView()
-                        .frame(minWidth: 400)
+                    // Show settings inline in the main content area
+                    InlineSettingsView(onDismiss: {
+                        showingSettings = false
+                    })
+                    .frame(minWidth: 400)
                 } else if showingCreateProject {
                     // Show create project view inline
                     CreateProjectView(
@@ -95,12 +98,12 @@ struct ContentView: View {
                         chatsCount: chats.count,
                         apiServiceIsPresent: apiServices.count > 0,
                         customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
-                        openPreferencesView: openPreferencesView,
+                        openPreferencesView: openInlineSettings,
                         newChat: newChat
                     )
                 }
 
-                if previewStateManager.isPreviewVisible && !showingSettings && selectedProject == nil {
+                if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
                     PreviewPane(stateManager: previewStateManager)
                 }
             }
@@ -127,18 +130,7 @@ struct ContentView: View {
                 }
             }
             
-            NotificationCenter.default.addObserver(
-                forName: AppConstants.openInlineSettingsNotification,
-                object: nil,
-                queue: .main
-            ) { notification in
-                let windowId = window?.windowNumber
-                if let sourceWindowId = notification.userInfo?["windowId"] as? Int,
-                    sourceWindowId == windowId
-                {
-                    openPreferencesView()
-                }
-            }
+
             
             // Handle Spotlight search result selection
             NotificationCenter.default.addObserver(
@@ -148,7 +140,6 @@ struct ContentView: View {
             ) { notification in
                 if let chat = notification.object as? ChatEntity {
                     selectedChat = chat
-                    showingSettings = false // Close settings if open
                 }
             }
             
@@ -160,8 +151,16 @@ struct ContentView: View {
             ) { notification in
                 if let chat = notification.object as? ChatEntity {
                     selectedChat = chat
-                    showingSettings = false // Close settings if open
                 }
+            }
+            
+            // Handle inline settings keyboard shortcut
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("OpenInlineSettings"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                showingSettings = true
             }
         }
         .navigationTitle("")
@@ -176,14 +175,14 @@ struct ContentView: View {
                 self.openedChatId = newValue?.id.uuidString
                 previewStateManager.hidePreview()
             }
-            // Close settings and clear project selection when selecting a chat
+            // Clear project selection and settings when selecting a chat
             if newValue != nil {
-                showingSettings = false
                 selectedProject = nil
+                showingSettings = false
             }
         }
         .onChange(of: selectedProject) { oldValue, newValue in
-            // Clear chat selection and close settings when selecting a project
+            // Clear chat selection and settings when selecting a project
             if newValue != nil {
                 selectedChat = nil
                 showingSettings = false
@@ -191,14 +190,14 @@ struct ContentView: View {
             }
         }
         .onChange(of: showingSettings) { oldValue, newValue in
-            // Hide preview when showing settings
+            // Clear selections when showing settings
             if newValue {
-                previewStateManager.hidePreview()
-                // Clear both selections when opening settings
                 selectedChat = nil
                 selectedProject = nil
+                previewStateManager.hidePreview()
             }
         }
+
         .environmentObject(previewStateManager)
         .overlay(alignment: .top) {
             ToastManager()
@@ -256,8 +255,7 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 self.selectedChat?.objectWillChange.send()
                 self.selectedChat = newChat
-                // Close settings when creating new chat
-                self.showingSettings = false
+
             }
         }
         catch {
@@ -266,10 +264,8 @@ struct ContentView: View {
         }
     }
 
-    func openPreferencesView() {
+    func openInlineSettings() {
         showingSettings = true
-        // Deselect current chat when opening settings
-        selectedChat = nil
     }
 
     private func getIndex(for chat: ChatEntity) -> Int {
@@ -864,3 +860,4 @@ struct WindowAccessor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
+

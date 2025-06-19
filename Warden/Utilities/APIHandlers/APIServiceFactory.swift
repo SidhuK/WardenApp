@@ -30,6 +30,8 @@ class APIServiceFactory {
             return OpenRouterHandler(config: config, session: session)
         case "mistral":
             return MistralHandler(config: config, session: session)
+        case "lmstudio":
+            return LMStudioHandler(config: config, session: session)
         default:
             fatalError("Unsupported API service: \(config.name)")
         }

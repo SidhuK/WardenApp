@@ -137,4 +137,8 @@ class ChatViewModel: ObservableObject {
     func regenerateChatName() {
         messageManager?.generateChatNameIfNeeded(chat: chat, force: true)
     }
+    
+    func stopStreaming() {
+        messageManager?.stopStreaming()
+    }
 }

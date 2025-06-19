@@ -6,12 +6,30 @@ class MultiAgentMessageManager: ObservableObject {
     private var viewContext: NSManagedObjectContext
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
+    private var activeTasks: [Task<Void, Never>] = []
     
     @Published var activeAgents: [AgentResponse] = []
     @Published var isProcessing = false
     
     init(viewContext: NSManagedObjectContext) {
         self.viewContext = viewContext
+    }
+    
+    func stopStreaming() {
+        // Cancel all active tasks
+        activeTasks.forEach { $0.cancel() }
+        activeTasks.removeAll()
+        
+        // Update state
+        isProcessing = false
+        
+        // Mark incomplete agents as cancelled
+        for index in activeAgents.indices {
+            if !activeAgents[index].isComplete {
+                activeAgents[index].isComplete = true
+                activeAgents[index].error = APIError.unknown("Request cancelled by user")
+            }
+        }
     }
     
     /// Represents a response from a single agent/service
@@ -48,6 +66,7 @@ class MultiAgentMessageManager: ObservableObject {
         
         isProcessing = true
         activeAgents = []
+        activeTasks.removeAll() // Clear any previous tasks
         
         let requestMessages = constructRequestMessages(chat: chat, forUserMessage: message, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
@@ -100,6 +119,7 @@ class MultiAgentMessageManager: ObservableObject {
         // Wait for all requests to complete
         dispatchGroup.notify(queue: .main) {
             self.isProcessing = false
+            self.activeTasks.removeAll() // Clear completed tasks
             completion(.success(self.activeAgents))
         }
     }
@@ -111,12 +131,15 @@ class MultiAgentMessageManager: ObservableObject {
         agentIndex: Int,
         dispatchGroup: DispatchGroup
     ) {
-        Task {
+        let task = Task {
             do {
                 let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
                 var accumulatedResponse = ""
                 
                 for try await chunk in stream {
+                    // Check for cancellation
+                    try Task.checkCancellation()
+                    
                     accumulatedResponse += chunk
                     
                     await MainActor.run {
@@ -127,14 +150,25 @@ class MultiAgentMessageManager: ObservableObject {
                     }
                 }
                 
-                await MainActor.run {
-                    if agentIndex < self.activeAgents.count {
-                        self.activeAgents[agentIndex].response = accumulatedResponse
-                        self.activeAgents[agentIndex].isComplete = true
-                        self.activeAgents[agentIndex].timestamp = Date()
+                // Only complete if not cancelled
+                if !Task.isCancelled {
+                    await MainActor.run {
+                        if agentIndex < self.activeAgents.count {
+                            self.activeAgents[agentIndex].response = accumulatedResponse
+                            self.activeAgents[agentIndex].isComplete = true
+                            self.activeAgents[agentIndex].timestamp = Date()
+                        }
                     }
                 }
                 
+                dispatchGroup.leave()
+            } catch is CancellationError {
+                await MainActor.run {
+                    if agentIndex < self.activeAgents.count {
+                        self.activeAgents[agentIndex].error = APIError.unknown("Request cancelled")
+                        self.activeAgents[agentIndex].isComplete = true
+                    }
+                }
                 dispatchGroup.leave()
             } catch {
                 await MainActor.run {
@@ -146,6 +180,9 @@ class MultiAgentMessageManager: ObservableObject {
                 dispatchGroup.leave()
             }
         }
+        
+        // Track the task for potential cancellation
+        activeTasks.append(task)
     }
     
     private func sendRegularRequest(

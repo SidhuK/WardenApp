@@ -6,6 +6,7 @@ class MessageManager: ObservableObject {
     private var viewContext: NSManagedObjectContext
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
+    private var currentStreamingTask: Task<Void, Never>?
 
     init(apiService: APIService, viewContext: NSManagedObjectContext) {
         self.apiService = apiService
@@ -15,6 +16,11 @@ class MessageManager: ObservableObject {
     func update(apiService: APIService, viewContext: NSManagedObjectContext) {
         self.apiService = apiService
         self.viewContext = viewContext
+    }
+    
+    func stopStreaming() {
+        currentStreamingTask?.cancel()
+        currentStreamingTask = nil
     }
 
     func sendMessage(
@@ -54,14 +60,16 @@ class MessageManager: ObservableObject {
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
 
-        Task {
+        currentStreamingTask = Task {
             do {
-
                 let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
                 var accumulatedResponse = ""
                 chat.waitingForResponse = true
 
                 for try await chunk in stream {
+                    // Check for cancellation
+                    try Task.checkCancellation()
+                    
                     accumulatedResponse += chunk
                     if let lastMessage = chat.lastMessage {
                         if lastMessage.own {
@@ -80,12 +88,23 @@ class MessageManager: ObservableObject {
                         }
                     }
                 }
-                updateLastMessage(chat: chat, lastMessage: chat.lastMessage!, accumulatedResponse: accumulatedResponse)
-                addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
-                completion(.success(()))
+                
+                // Only complete if not cancelled
+                if !Task.isCancelled {
+                    updateLastMessage(chat: chat, lastMessage: chat.lastMessage!, accumulatedResponse: accumulatedResponse)
+                    addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                    completion(.success(()))
+                }
+            }
+            catch is CancellationError {
+                print("Streaming cancelled by user")
+                // Clean up streaming state
+                chat.waitingForResponse = false
+                completion(.failure(CancellationError()))
             }
             catch {
                 print("Streaming error: \(error)")
+                chat.waitingForResponse = false
                 completion(.failure(error))
             }
         }

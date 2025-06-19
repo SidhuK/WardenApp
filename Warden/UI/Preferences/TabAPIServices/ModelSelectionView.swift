@@ -11,25 +11,38 @@ struct ModelSelectionView: View {
     
     @State private var searchText = ""
     @State private var showAllModels = false
+    @State private var showFavoritesOnly = false
     
     private var selectedModelIds: Set<String> {
         selectedModelsManager.getSelectedModelIds(for: serviceType)
     }
     
     private var hasCustomSelection: Bool {
-        selectedModelsManager.hasCustomSelection(for: serviceType)
+        selectedModelsManager.hasAnyCustomSelection(for: serviceType)
     }
     
     private var filteredModels: [AIModel] {
-        let models = showAllModels ? availableModels : defaultAndFavoriteModels
+        var models = availableModels
         
-        if searchText.isEmpty {
-            return models.sorted { $0.id < $1.id }
+        // Filter by show all vs default+favorites
+        if !showAllModels {
+            models = defaultAndFavoriteModels
         }
         
-        return models.filter { model in
-            model.id.localizedCaseInsensitiveContains(searchText)
-        }.sorted { $0.id < $1.id }
+        // Filter by favorites only
+        if showFavoritesOnly {
+            let favoriteModelIds = Set(favoriteManager.getFavorites(for: serviceType))
+            models = models.filter { favoriteModelIds.contains($0.id) }
+        }
+        
+        // Filter by search text
+        if !searchText.isEmpty {
+            models = models.filter { model in
+                model.id.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        return models.sorted { $0.id < $1.id }
     }
     
     private var defaultAndFavoriteModels: [AIModel] {
@@ -52,6 +65,7 @@ struct ModelSelectionView: View {
             
             if !availableModels.isEmpty {
                 searchAndControls
+                selectionControls
                 modelsList
             } else {
                 emptyState
@@ -123,9 +137,13 @@ struct ModelSelectionView: View {
             .background(Color(NSColor.textBackgroundColor))
             .cornerRadius(6)
             
-            HStack {
+            HStack(spacing: 12) {
                 Toggle("Show all models", isOn: $showAllModels)
                     .font(.caption)
+                
+                Toggle("Favorites only", isOn: $showFavoritesOnly)
+                    .font(.caption)
+                    .disabled(!showAllModels && favoriteManager.getFavorites(for: serviceType).isEmpty)
                 
                 Spacer()
                 
@@ -142,9 +160,33 @@ struct ModelSelectionView: View {
         }
     }
     
+    private var selectionControls: some View {
+        HStack(spacing: 8) {
+            Button("Select All") {
+                selectAllVisibleModels()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(filteredModels.isEmpty)
+            
+            Button("Select None") {
+                selectNoModels()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(filteredModels.isEmpty)
+            
+            Spacer()
+            
+            Text("\(filteredModels.count) models shown")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+    }
+    
     private var modelsList: some View {
         ScrollView {
-            LazyVStack(spacing: 4) {
+            LazyVStack(spacing: 2) {
                 ForEach(filteredModels, id: \.id) { model in
                     ModelSelectionRow(
                         model: model,
@@ -152,13 +194,16 @@ struct ModelSelectionView: View {
                         isSelected: isModelSelected(model),
                         onToggle: { isSelected in
                             toggleModel(model, isSelected: isSelected)
+                        },
+                        onFavoriteToggle: {
+                            favoriteManager.toggleFavorite(provider: serviceType, model: model.id)
                         }
                     )
                 }
             }
             .padding(.vertical, 4)
         }
-        .frame(maxHeight: 200)
+        .frame(maxHeight: 350) // Increased from 200 to show 7-8 models
         .background(Color(NSColor.textBackgroundColor))
         .cornerRadius(6)
     }
@@ -205,6 +250,44 @@ struct ModelSelectionView: View {
         onSelectionChanged(newSelection)
     }
     
+    private func selectAllVisibleModels() {
+        var newSelection: Set<String>
+        
+        // If no custom selection exists, start with all available models
+        if !hasCustomSelection {
+            newSelection = Set(availableModels.map { $0.id })
+        } else {
+            newSelection = selectedModelIds
+        }
+        
+        // Add all filtered models to selection
+        for model in filteredModels {
+            newSelection.insert(model.id)
+        }
+        
+        selectedModelsManager.setSelectedModels(for: serviceType, modelIds: newSelection)
+        onSelectionChanged(newSelection)
+    }
+    
+    private func selectNoModels() {
+        var newSelection: Set<String>
+        
+        // If no custom selection exists, start with all available models
+        if !hasCustomSelection {
+            newSelection = Set(availableModels.map { $0.id })
+        } else {
+            newSelection = selectedModelIds
+        }
+        
+        // Remove all filtered models from selection
+        for model in filteredModels {
+            newSelection.remove(model.id)
+        }
+        
+        selectedModelsManager.setSelectedModels(for: serviceType, modelIds: newSelection)
+        onSelectionChanged(newSelection)
+    }
+    
     private func resetToAllModels() {
         selectedModelsManager.clearCustomSelection(for: serviceType)
         onSelectionChanged(Set())
@@ -216,6 +299,7 @@ struct ModelSelectionRow: View {
     let serviceType: String
     let isSelected: Bool
     let onToggle: (Bool) -> Void
+    let onFavoriteToggle: () -> Void
     
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
     
@@ -231,25 +315,21 @@ struct ModelSelectionRow: View {
     
     var body: some View {
         HStack(spacing: 8) {
+            // Selection checkbox
             Button(action: {
                 onToggle(!isSelected)
             }) {
                 Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                     .foregroundColor(isSelected ? .accentColor : .secondary)
-                    .font(.caption)
+                    .font(.system(size: 14))
             }
             .buttonStyle(.plain)
             
+            // Model info
             HStack(spacing: 6) {
                 Text(model.id)
-                    .font(.caption)
+                    .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.primary)
-                
-                if isFavorite {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                        .font(.caption2)
-                }
                 
                 if isReasoningModel {
                     Text("thinking")
@@ -264,10 +344,19 @@ struct ModelSelectionRow: View {
                 }
                 
                 Spacer()
+                
+                // Favorite button
+                Button(action: onFavoriteToggle) {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .foregroundColor(isFavorite ? .yellow : .secondary)
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.plain)
+                .help(isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
         .contentShape(Rectangle())
         .onTapGesture {
             onToggle(!isSelected)
@@ -276,6 +365,10 @@ struct ModelSelectionRow: View {
             isSelected ? Color.accentColor.opacity(0.1) : Color.clear
         )
         .cornerRadius(4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(isFavorite ? Color.yellow.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
     }
 }
 
@@ -287,8 +380,12 @@ struct ModelSelectionRow: View {
             AIModel(id: "gpt-4o-mini"),
             AIModel(id: "o1-preview"),
             AIModel(id: "claude-3-5-sonnet-latest"),
+            AIModel(id: "gpt-3.5-turbo"),
+            AIModel(id: "gpt-4"),
+            AIModel(id: "gpt-4-turbo"),
+            AIModel(id: "dall-e-3"),
         ],
         onSelectionChanged: { _ in }
     )
-    .frame(width: 400, height: 500)
+    .frame(width: 500, height: 600)
 } 

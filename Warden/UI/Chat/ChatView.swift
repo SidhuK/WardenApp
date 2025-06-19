@@ -73,6 +73,7 @@ struct ChatView: View {
                     attachedImages: $attachedImages,
                     chat: chat,
                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                    isStreaming: isStreaming,
                     onSendMessage: {
                         if editSystemMessage {
                             chat.systemMessage = newMessage
@@ -95,6 +96,9 @@ struct ChatView: View {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             isBottomContainerExpanded.toggle()
                         }
+                    },
+                    onStopStreaming: {
+                        self.stopStreaming()
                     }
                 )
                 .background(backgroundColor)
@@ -103,12 +107,14 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     mainChatContent
                     
+                                        // Chat input container
                     ChatBottomContainerView(
                         chat: chat,
                         newMessage: $newMessage,
                         isExpanded: $isBottomContainerExpanded,
                         attachedImages: $attachedImages,
                         imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                        isStreaming: isStreaming,
                         onSendMessage: {
                             if editSystemMessage {
                                 chat.systemMessage = newMessage
@@ -130,6 +136,9 @@ struct ChatView: View {
                         onAddImage: {
                             selectAndAddImages()
                         },
+                        onStopStreaming: {
+                            self.stopStreaming()
+                        },
                         onExpandedStateChange: { isExpanded in
                             // Handle expanded state change if needed
                         }
@@ -141,11 +150,9 @@ struct ChatView: View {
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                ChatTitleView(
-                    chat: chat, 
-                    isMultiAgentMode: enableMultiAgentMode && isMultiAgentMode, 
-                    selectedMultiAgentServices: selectedMultiAgentServices
-                )
+                // Model Selector centered in toolbar
+                StandaloneModelSelector(chat: chat)
+                    .padding(.top, 6)
             }
             
             ToolbarItem(placement: .automatic) {
@@ -475,168 +482,7 @@ struct ChatView: View {
     }
 }
 
-struct ChatTitleView: View {
-    @ObservedObject var chat: ChatEntity
-    let isMultiAgentMode: Bool
-    let selectedMultiAgentServices: Set<APIServiceEntity>
-    @State private var isHovered = false
-    
-    private var displayTitle: String {
-        if chat.name.isEmpty {
-            return "New Chat"
-        }
-        return chat.name
-    }
-    
-    private var titleText: some View {
-        HStack(spacing: 6) {
-            // Show either multi-agent logos or single service logo
-            if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
-                // Multi-agent mode: show all selected service logos
-                HStack(spacing: 4) {
-                    ForEach(Array(selectedMultiAgentServices).sorted(by: { $0.name ?? "" < $1.name ?? "" }), id: \.id) { service in
-                        Image("logo_\(service.type ?? "")")
-                            .resizable()
-                            .renderingMode(.template)
-                            .interpolation(.high)
-                            .frame(width: 9, height: 9)
-                            .foregroundColor(isHovered ? .accentColor : .secondary)
-                    }
-                }
-            } else {
-                // Single agent mode: show chat's service logo
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 11, height: 11)
-                    .foregroundColor(isHovered ? .accentColor : .secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(displayTitle)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(isHovered ? .primary : .secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                
-                // Project indicator
-                if let project = chat.project {
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor)
-                            .frame(width: 6, height: 6)
-                                                  Text(project.name ?? "Project")
-                            .font(.system(size: 8, weight: .regular))
-                            .foregroundColor(isHovered ? .secondary : .secondary.opacity(0.8))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
-            }
-        }
-    }
-    
-    private var shareMenu: some View {
-        Menu {
-            Button {
-                ChatSharingService.shared.shareChat(chat, format: .markdown)
-            } label: {
-                Label("Share as Markdown", systemImage: "doc.richtext")
-            }
-            
-            Button {
-                ChatSharingService.shared.shareChat(chat, format: .plainText)
-            } label: {
-                Label("Share as Plain Text", systemImage: "doc.plaintext")
-            }
-            
-            Button {
-                ChatSharingService.shared.exportChatToFile(chat, format: .json)
-            } label: {
-                Label("Export as JSON", systemImage: "doc.badge.gearshape")
-            }
-            
-            Button {
-                ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
-            } label: {
-                Label("Copy to Clipboard", systemImage: "doc.on.clipboard")
-            }
-        } label: {
-            Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(isHovered ? .accentColor : .secondary.opacity(0.8))
-                .scaleEffect(isHovered ? 1.1 : 1.0)
-        }
-        .buttonStyle(.borderless)
-    }
-    
-    private var backgroundStyle: some View {
-        RoundedRectangle(cornerRadius: 6)
-            .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(
-                        LinearGradient(
-                            colors: isHovered ? 
-                                [Color.accentColor.opacity(0.08), Color.accentColor.opacity(0.03)] :
-                                [Color.primary.opacity(0.04), Color.clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(
-                        isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.08),
-                        lineWidth: isHovered ? 1.2 : 0.6
-                    )
-            )
-            .shadow(
-                color: isHovered ? Color.accentColor.opacity(0.12) : Color.black.opacity(0.05),
-                radius: isHovered ? 4 : 2,
-                x: 0,
-                y: isHovered ? 2 : 1
-            )
-    }
-    
-    private var helpText: String {
-        let projectInfo = chat.project != nil ? " • Project: \(chat.project!.name ?? "Untitled")" : ""
-        
-        if isMultiAgentMode && !selectedMultiAgentServices.isEmpty {
-            let serviceNames = selectedMultiAgentServices.map { $0.name ?? "Unknown" }.sorted().joined(separator: ", ")
-            return "Multi-Agent Chat: \(displayTitle)\(projectInfo) • \(serviceNames) • Click arrow to share"
-        } else {
-            return "Chat: \(displayTitle)\(projectInfo) • \(chat.apiService?.name ?? "No AI Service") • Click arrow to share"
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            titleText
-            
-            // Subtle divider
-            Rectangle()
-                .fill(Color.primary.opacity(0.12))
-                .frame(width: 0.6, height: 12)
-            
-            shareMenu
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
-        .background(backgroundStyle)
-        .opacity(isHovered ? 0.95 : 0.85)
-        .padding(.top, 6) // Reduced top padding for smaller floating effect
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.25)) {
-                isHovered = hovering
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0), value: isHovered)
-        .help(helpText)
-    }
-}
+
 
 extension ChatView {
     func sendMessage(ignoreMessageInput: Bool = false) {
@@ -705,7 +551,7 @@ extension ChatView {
                         break
                     case .failure(let error):
                         print("Error sending message: \(error)")
-                        currentError = ErrorMessage(type: error as! APIError, timestamp: Date())
+                        currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
                         handleResponseFinished()
                     }
                 }
@@ -725,7 +571,7 @@ extension ChatView {
                         break
                     case .failure(let error):
                         print("Error sending message: \(error)")
-                        currentError = ErrorMessage(type: error as! APIError, timestamp: Date())
+                        currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
                         handleResponseFinished()
                     }
                 }
@@ -777,10 +623,49 @@ extension ChatView {
         self.isStreaming = false
         chat.waitingForResponse = false
         userIsScrolling = false
+        
+        // Ensure multi-agent processing state is also cleared
+        if multiAgentManager.isProcessing {
+            multiAgentManager.isProcessing = false
+        }
+    }
+    
+    private func stopStreaming() {
+        // Stop regular chat streaming
+        chatViewModel.stopStreaming()
+        
+        // Stop multi-agent streaming if active
+        multiAgentManager.stopStreaming()
+        
+        handleResponseFinished()
     }
 
     private func resetError() {
         currentError = nil
+    }
+    
+    private func convertToAPIError(_ error: Error) -> APIError {
+        // If it's already an APIError, return it as-is
+        if let apiError = error as? APIError {
+            return apiError
+        }
+        
+        // Convert NSURLError to appropriate APIError
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut:
+                return .requestFailed(urlError)
+            case .badServerResponse:
+                return .invalidResponse
+            case .userAuthenticationRequired:
+                return .unauthorized
+            default:
+                return .requestFailed(urlError)
+            }
+        }
+        
+        // For any other error types, wrap them in .unknown
+        return .unknown(error.localizedDescription)
     }
 
     func sendMultiAgentMessage() {
@@ -807,6 +692,9 @@ extension ChatView {
         // Save user message
         saveNewMessageInStore(with: messageText)
         
+        // Set streaming state for multi-agent mode
+        self.isStreaming = true
+        
         // Send to multiple agents (limited to 3)
         multiAgentManager.sendMessageToMultipleServices(
             messageText,
@@ -827,7 +715,7 @@ extension ChatView {
                     
                 case .failure(let error):
                     print("Error in multi-agent message: \(error)")
-                    self.currentError = ErrorMessage(type: error as! APIError, timestamp: Date())
+                    self.currentError = ErrorMessage(type: self.convertToAPIError(error), timestamp: Date())
                 }
                 
                 self.handleResponseFinished()

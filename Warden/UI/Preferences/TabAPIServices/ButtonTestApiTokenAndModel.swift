@@ -45,8 +45,9 @@ struct ButtonTestApiTokenAndModel: View {
 
                 case .failure(let error):
                     lampColor = .red
+                    let apiError = convertToAPIError(error)
                     let errorMessage =
-                        switch error as! APIError {
+                        switch apiError {
                         case .requestFailed(let error): error.localizedDescription
                         case .invalidResponse: "Response is invalid"
                         case .decodingFailed(let message): message
@@ -60,6 +61,30 @@ struct ButtonTestApiTokenAndModel: View {
                 }
             }
         }
+    }
+
+    private func convertToAPIError(_ error: Error) -> APIError {
+        // If it's already an APIError, return it as-is
+        if let apiError = error as? APIError {
+            return apiError
+        }
+        
+        // Convert NSURLError to appropriate APIError
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut:
+                return .requestFailed(urlError)
+            case .badServerResponse:
+                return .invalidResponse
+            case .userAuthenticationRequired:
+                return .unauthorized
+            default:
+                return .requestFailed(urlError)
+            }
+        }
+        
+        // For any other error types, wrap them in .unknown
+        return .unknown(error.localizedDescription)
     }
 
     private func showErrorAlert(error: String) {
