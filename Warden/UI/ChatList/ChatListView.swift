@@ -33,6 +33,48 @@ struct ChatListView: View {
     let onNewChat: () -> Void
     let onOpenPreferences: () -> Void
 
+    // MARK: - Date Grouping Logic
+    
+    enum DateGroup: String, CaseIterable {
+        case today = "Today"
+        case yesterday = "Yesterday"
+        case thisWeek = "This Week"
+        case thisMonth = "This Month"
+        case older = "Older"
+    }
+    
+    private func dateGroup(for date: Date) -> DateGroup {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        if calendar.isDateInToday(date) {
+            return .today
+        } else if calendar.isDateInYesterday(date) {
+            return .yesterday
+        } else if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
+            return .thisWeek
+        } else if calendar.isDate(date, equalTo: now, toGranularity: .month) {
+            return .thisMonth
+        } else {
+            return .older
+        }
+    }
+    
+    private var groupedChatsWithoutProject: [DateGroup: [ChatEntity]] {
+        let chatsToGroup = chatsWithoutProject
+        var grouped: [DateGroup: [ChatEntity]] = [:]
+        
+        for chat in chatsToGroup {
+            let group = dateGroup(for: chat.updatedDate)
+            if grouped[group] == nil {
+                grouped[group] = []
+            }
+            grouped[group]?.append(chat)
+        }
+        
+        return grouped
+    }
+
     private var filteredChats: [ChatEntity] {
         guard !searchText.isEmpty else { return Array(chats) }
 
@@ -624,38 +666,61 @@ struct ChatListView: View {
     }
     
     private var chatsWithoutProjectSection: some View {
-        Section {
-            ForEach(chatsWithoutProject, id: \.objectID) { chat in
-                ChatListRow(
-                    chat: chat,
-                    selectedChat: $selectedChat,
-                    viewContext: viewContext,
-                    searchText: searchText,
-                    isSelectionMode: !selectedChatIDs.isEmpty,
-                    isSelected: selectedChatIDs.contains(chat.id),
-                    onSelectionToggle: { chatID, isSelected in
-                        if isSelected {
-                            selectedChatIDs.insert(chatID)
-                        } else {
-                            selectedChatIDs.remove(chatID)
-                        }
-                    },
-                    onKeyboardSelection: { chatID, isCmd, isShift in
-                        handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
+        Group {
+            // If there are projects, show "No Project" header first
+            if !store.getActiveProjects().isEmpty && !chatsWithoutProject.isEmpty {
+                Section {
+                    EmptyView()
+                } header: {
+                    HStack {
+                        Text("No Project")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                        Spacer()
                     }
-                )
-            }
-        } header: {
-            if !store.getActiveProjects().isEmpty {
-                HStack {
-                    Text("No Project")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                    Spacer()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+            }
+            
+            // Show date-grouped chats
+            ForEach(DateGroup.allCases, id: \.self) { dateGroup in
+                if let chatsInGroup = groupedChatsWithoutProject[dateGroup], !chatsInGroup.isEmpty {
+                    Section {
+                        ForEach(chatsInGroup, id: \.objectID) { chat in
+                            ChatListRow(
+                                chat: chat,
+                                selectedChat: $selectedChat,
+                                viewContext: viewContext,
+                                searchText: searchText,
+                                isSelectionMode: !selectedChatIDs.isEmpty,
+                                isSelected: selectedChatIDs.contains(chat.id),
+                                onSelectionToggle: { chatID, isSelected in
+                                    if isSelected {
+                                        selectedChatIDs.insert(chatID)
+                                    } else {
+                                        selectedChatIDs.remove(chatID)
+                                    }
+                                },
+                                onKeyboardSelection: { chatID, isCmd, isShift in
+                                    handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
+                                }
+                            )
+                        }
+                    } header: {
+                        HStack {
+                            Text(dateGroup.rawValue)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                    }
+                }
             }
         }
     }
