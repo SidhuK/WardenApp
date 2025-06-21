@@ -6,11 +6,13 @@ import CoreData
 struct MessageInputView: View {
     @Binding var text: String
     @Binding var attachedImages: [ImageAttachment]
+    @Binding var attachedFiles: [FileAttachment]
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
     var isStreaming: Bool = false
     var onEnter: () -> Void
     var onAddImage: () -> Void
+    var onAddFile: () -> Void
     var onAddAssistant: (() -> Void)?
     var onStopStreaming: (() -> Void)?
     var inputPlaceholderText: String = "Type your text here to start a conversation with your favorite AI"
@@ -56,7 +58,7 @@ struct MessageInputView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            imagePreviewsSection
+            attachmentPreviewsSection
             
             // New layout: Plus button, Input box, Send button
             HStack(spacing: 8) {
@@ -71,7 +73,6 @@ struct MessageInputView: View {
             }
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
-            guard imageUploadsAllowed else { return false }
             return handleDrop(providers: providers)
         }
         .onAppear {
@@ -86,9 +87,12 @@ struct MessageInputView: View {
         }
     }
 
-    private var imagePreviewsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+    private var attachmentPreviewsSection: some View {
+        let hasAttachments = !attachedImages.isEmpty || !attachedFiles.isEmpty
+        
+        return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                // Image previews
                 ForEach(attachedImages) { attachment in
                     ImagePreviewView(attachment: attachment) { index in
                         if let index = attachedImages.firstIndex(where: { $0.id == attachment.id }) {
@@ -98,11 +102,22 @@ struct MessageInputView: View {
                         }
                     }
                 }
+                
+                // File previews
+                ForEach(attachedFiles) { attachment in
+                    FilePreviewView(attachment: attachment) { index in
+                        if let index = attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
+                            withAnimation {
+                                attachedFiles.remove(at: index)
+                            }
+                        }
+                    }
+                }
             }
             .padding(.horizontal, 0)
             .padding(.bottom, 8)
         }
-        .frame(height: attachedImages.isEmpty ? 0 : 100)
+        .frame(height: hasAttachments ? 100 : 0)
     }
     
     private var plusButtonMenu: some View {
@@ -159,6 +174,23 @@ struct MessageInputView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
+                
+                // Add File option
+                Button(action: {
+                    showingPlusMenu = false
+                    onAddFile()
+                }) {
+                    HStack {
+                        Image(systemName: "doc.badge.plus")
+                            .font(.system(size: 14))
+                        Text("Add File")
+                        Spacer()
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(PlainButtonStyle())
                 
                 // Add Assistant option (if available)
                 if let onAddAssistant = onAddAssistant {
@@ -262,9 +294,17 @@ struct MessageInputView: View {
                 provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { (data, error) in
                     if let url = data as? URL {
                         DispatchQueue.main.async {
-                            let attachment = ImageAttachment(url: url)
-                            withAnimation {
-                                attachedImages.append(attachment)
+                            if imageUploadsAllowed && isValidImageFile(url: url) {
+                                let attachment = ImageAttachment(url: url)
+                                withAnimation {
+                                    attachedImages.append(attachment)
+                                }
+                            } else if !isValidImageFile(url: url) {
+                                // Treat as file attachment
+                                let attachment = FileAttachment(url: url)
+                                withAnimation {
+                                    attachedFiles.append(attachment)
+                                }
                             }
                         }
                         didHandleDrop = true
@@ -274,13 +314,20 @@ struct MessageInputView: View {
             else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { (data, error) in
                     if let urlData = data as? Data,
-                        let url = URL(dataRepresentation: urlData, relativeTo: nil),
-                        isValidImageFile(url: url)
+                        let url = URL(dataRepresentation: urlData, relativeTo: nil)
                     {
                         DispatchQueue.main.async {
-                            let attachment = ImageAttachment(url: url)
-                            withAnimation {
-                                attachedImages.append(attachment)
+                            if imageUploadsAllowed && isValidImageFile(url: url) {
+                                let attachment = ImageAttachment(url: url)
+                                withAnimation {
+                                    attachedImages.append(attachment)
+                                }
+                            } else {
+                                // Treat as file attachment
+                                let attachment = FileAttachment(url: url)
+                                withAnimation {
+                                    attachedFiles.append(attachment)
+                                }
                             }
                         }
                         didHandleDrop = true

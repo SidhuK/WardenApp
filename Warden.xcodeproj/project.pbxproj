@@ -85,6 +85,8 @@
 		4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */; };
 		7F298E1A2DF8166C00326DBB /* ProjectSummaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */; };
 		7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */; };
+		7F4955AA2E06FAFF00516E2D /* FileAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4955A92E06FAFF00516E2D /* FileAttachment.swift */; };
+		7F4955AC2E06FB1200516E2D /* FilePreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4955AB2E06FB1200516E2D /* FilePreviewView.swift */; };
 		7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */; };
 		7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */; };
 		7F4B74C42DFFC83100C844A2 /* ToastNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */; };
@@ -220,6 +222,8 @@
 		4AFEE7242C472FB1006F99FB /* OllamaHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaHandler.swift; sourceTree = "<group>"; };
 		7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryButton.swift; sourceTree = "<group>"; };
 		7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSummaryView.swift; sourceTree = "<group>"; };
+		7F4955A92E06FAFF00516E2D /* FileAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileAttachment.swift; sourceTree = "<group>"; };
+		7F4955AB2E06FB1200516E2D /* FilePreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewView.swift; sourceTree = "<group>"; };
 		7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyModels.swift; sourceTree = "<group>"; };
 		7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabHotkeysView.swift; sourceTree = "<group>"; };
 		7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastNotification.swift; sourceTree = "<group>"; };
@@ -313,6 +317,7 @@
 			isa = PBXGroup;
 			children = (
 				7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */,
+				7F4955AB2E06FB1200516E2D /* FilePreviewView.swift */,
 				4A4918792D9F4186007EB4A2 /* ToolbarButton.swift */,
 				7F60244F2DEA078A007AB8FC /* RephraseButton.swift */,
 				7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */,
@@ -423,6 +428,7 @@
 			isa = PBXGroup;
 			children = (
 				4A27FF922DA1C4640075D730 /* ImageAttachment.swift */,
+				7F4955A92E06FAFF00516E2D /* FileAttachment.swift */,
 				4A27FF932DA1C4640075D730 /* MessageContent.swift */,
 				7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */,
 				4A2B9E942CE1272E00C8042F /* RequestMessagesTransformer.swift */,
@@ -710,6 +716,7 @@
 				7FDDAED02DE8BA5C0072EA51 /* MistralHandler.swift in Sources */,
 				4AE3CEB72C93A88D00A9CF4C /* TabAPIServicesView.swift in Sources */,
 				4A8E2E0B2C56FCFD00F077F2 /* ChatViewModel.swift in Sources */,
+				7F4955AA2E06FAFF00516E2D /* FileAttachment.swift in Sources */,
 				4A399C9B29BC8FEF00E98796 /* ContentView.swift in Sources */,
 				4A885C522CEA3B130018BBED /* HTMLPreviewView.swift in Sources */,
 				7F6024502DEA078A007AB8FC /* RephraseButton.swift in Sources */,
@@ -773,6 +780,7 @@
 				4A0E02852D0F571000D2FAF3 /* PerplexityHandler.swift in Sources */,
 				4AA6EF5D2C566009003B6D41 /* MessageManager.swift in Sources */,
 				4A254A6D2CEA69EB00F66935 /* HighlighterManager.swift in Sources */,
+				7F4955AC2E06FB1200516E2D /* FilePreviewView.swift in Sources */,
 				4A272A7429F5DAA800F93D0D /* Models.swift in Sources */,
 				7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */,
 				7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */,

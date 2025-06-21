@@ -18,6 +18,7 @@ struct ChatView: View {
     @State private var isHovered = false
     @State private var currentStreamingMessage: String = ""
     @State private var attachedImages: [ImageAttachment] = []
+    @State private var attachedFiles: [FileAttachment] = []
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
     @AppStorage("useChatGptForNames") var useChatGptForNames: Bool = false
     @AppStorage("useStream") var useStream: Bool = true
@@ -71,6 +72,7 @@ struct ChatView: View {
                 CenteredInputView(
                     newMessage: $newMessage,
                     attachedImages: $attachedImages,
+                    attachedFiles: $attachedFiles,
                     chat: chat,
                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                     isStreaming: isStreaming,
@@ -91,6 +93,9 @@ struct ChatView: View {
                     },
                     onAddImage: {
                         selectAndAddImages()
+                    },
+                    onAddFile: {
+                        selectAndAddFiles()
                     },
                     onAddAssistant: {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -113,6 +118,7 @@ struct ChatView: View {
                         newMessage: $newMessage,
                         isExpanded: $isBottomContainerExpanded,
                         attachedImages: $attachedImages,
+                        attachedFiles: $attachedFiles,
                         imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                         isStreaming: isStreaming,
                         onSendMessage: {
@@ -135,6 +141,9 @@ struct ChatView: View {
                         },
                         onAddImage: {
                             selectAndAddImages()
+                        },
+                        onAddFile: {
+                            selectAndAddFiles()
                         },
                         onStopStreaming: {
                             self.stopStreaming()
@@ -510,11 +519,19 @@ extension ChatView {
 
             messageContents.append(MessageContent(imageAttachment: attachment))
         }
+        
+        for attachment in attachedFiles {
+            if attachment.fileEntity == nil {
+                attachment.saveToEntity(context: viewContext)
+            }
+
+            messageContents.append(MessageContent(fileAttachment: attachment))
+        }
 
         let messageBody: String
-        let hasImages = !attachedImages.isEmpty
+        let hasAttachments = !attachedImages.isEmpty || !attachedFiles.isEmpty
 
-        if hasImages {
+        if hasAttachments {
             messageBody = messageContents.toString()
         }
         else {
@@ -527,6 +544,7 @@ extension ChatView {
             saveNewMessageInStore(with: messageBody)
 
             attachedImages = []
+            attachedFiles = []
 
             if isFirstMessage {
                 withAnimation {
@@ -612,6 +630,33 @@ extension ChatView {
                     DispatchQueue.main.async {
                         withAnimation {
                             self.attachedImages.append(attachment)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func selectAndAddFiles() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [
+            .plainText, .commaSeparatedText, .json, .xml, .html, .rtf, .pdf,
+            UTType(filenameExtension: "md")!, UTType(filenameExtension: "log")!,
+            UTType(filenameExtension: "markdown")!
+        ].compactMap { $0 }
+        panel.title = "Select Files"
+        panel.message = "Choose text files, CSVs, PDFs, or other documents to upload"
+
+        panel.begin { response in
+            if response == .OK {
+                for url in panel.urls {
+                    let attachment = FileAttachment(url: url, context: self.viewContext)
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.attachedFiles.append(attachment)
                         }
                     }
                 }

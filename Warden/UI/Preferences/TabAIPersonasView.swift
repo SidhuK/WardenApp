@@ -598,10 +598,12 @@ struct PersonaDetailView: View {
                 MessageInputView(
                     text: $systemMessage,
                     attachedImages: .constant([]),
+                    attachedFiles: .constant([]),
                     chat: nil,
                     imageUploadsAllowed: false,
                     onEnter: {},
                     onAddImage: {},
+                    onAddFile: {},
                     inputPlaceholderText: "Enter system message here",
                     cornerRadius: 4
                 )
