@@ -67,7 +67,7 @@ struct APIServiceDetailView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
 
                         Button(action: {
-                            viewModel.url = viewModel.defaultApiConfiguration!.url
+                            viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
                         }) {
                             Text("Default")
                         }
@@ -87,16 +87,17 @@ struct APIServiceDetailView: View {
                                 }
                         }
 
-                        HStack {
-                            Spacer()
-                            Link(
-                                "How to get API Token",
-                                destination: URL(
-                                    string: viewModel.defaultApiConfiguration!.apiKeyRef
-                                )!
-                            )
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
+                        if let apiKeyRef = viewModel.defaultApiConfiguration?.apiKeyRef,
+                           let url = URL(string: apiKeyRef) {
+                            HStack {
+                                Spacer()
+                                Link(
+                                    "How to get API Token",
+                                    destination: url
+                                )
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                            }
                         }
                     }
 
@@ -144,16 +145,19 @@ struct APIServiceDetailView: View {
                         }
                     }
 
-                    HStack {
-                        Spacer()
-                        Link(
-                            "Models reference",
-                            destination: URL(string: viewModel.defaultApiConfiguration!.apiModelRef)!
-                        )
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
+                    if let apiModelRef = viewModel.defaultApiConfiguration?.apiModelRef,
+                       let url = URL(string: apiModelRef) {
+                        HStack {
+                            Spacer()
+                            Link(
+                                "Models reference",
+                                destination: url
+                            )
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                        }
+                        .padding(.bottom)
                     }
-                    .padding(.bottom)
 
                     HStack {
                         ButtonTestApiTokenAndModel(

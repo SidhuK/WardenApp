@@ -12,7 +12,7 @@ struct TabGeneralSettingsView: View {
 
     // Font size options for dropdown
     private let fontSizeOptions: [Double] = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
-    
+
     private var preferredColorScheme: Binding<ColorScheme?> {
         Binding(
             get: {
@@ -53,7 +53,7 @@ struct TabGeneralSettingsView: View {
                 // Native macOS form layout
                 VStack(spacing: 20) {
                     // Chat Font Size
-                    HStack {
+                            HStack {
                         Text("Chat Font Size:")
                             .frame(width: 140, alignment: .leading)
                         
@@ -61,7 +61,7 @@ struct TabGeneralSettingsView: View {
                             ForEach(fontSizeOptions, id: \.self) { size in
                                 Text("\(Int(size))pt").tag(size)
                             }
-                        }
+                            }
                         .pickerStyle(.menu)
                         .frame(width: 120)
                         .labelsHidden()
@@ -154,7 +154,7 @@ struct TabGeneralSettingsView: View {
                         Text("Display AI service logos next to chat names in the sidebar")
                             .foregroundColor(.secondary)
                             .font(.caption)
-                            .padding(.leading, 140)
+                        .padding(.leading, 140)
                     }
                 }
                 .padding()
@@ -222,7 +222,7 @@ struct InlineTabGeneralSettingsView: View {
             
             VStack(spacing: 20) {
                 // Chat Font Size
-                HStack {
+                        HStack {
                     Text("Chat Font Size:")
                         .frame(width: 140, alignment: .leading)
                     
@@ -230,7 +230,7 @@ struct InlineTabGeneralSettingsView: View {
                         ForEach(fontSizeOptions, id: \.self) { size in
                             Text("\(Int(size))pt").tag(size)
                         }
-                    }
+                        }
                     .pickerStyle(.menu)
                     .frame(width: 120)
                     .labelsHidden()
@@ -323,7 +323,7 @@ struct InlineTabGeneralSettingsView: View {
                     Text("Display AI service logos next to chat names in the sidebar")
                         .foregroundColor(.secondary)
                         .font(.caption)
-                        .padding(.leading, 140)
+                    .padding(.leading, 140)
                 }
             }
         }
