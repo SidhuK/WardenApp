@@ -16,10 +16,11 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 
 ### Data Layer
 - **Models**: [Models.swift](mdc:Warden/Models/Models.swift) - Core data models for chats, messages, AI services, and projects
-- **Message Content**: [MessageContent.swift](mdc:Warden/Models/MessageContent.swift) - Message content handling and formatting
+- **Message Content**: [MessageContent.swift](mdc:Warden/Models/MessageContent.swift) - Message content handling and formatting with file attachment support
 - **Image Attachments**: [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) - Image upload and attachment support
+- **File Attachments**: [FileAttachment.swift](mdc:Warden/Models/FileAttachment.swift) - Multi-format file upload support (PDF, CSV, JSON, XML, etc.)
 - **Data Store**: [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data persistence and chat management with project support (single source of truth)
-- **Core Data Model**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld) - Core Data schema definition including Project entities
+- **Core Data Model**: [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld) - Core Data schema definition including Project and FileEntity entities
 
 ### API Handlers Architecture
 - **Protocol Definition**: [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift) - Unified interface for all AI providers
@@ -29,20 +30,22 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 
 ### UI Components
 - **Chat Interface**: [Warden/UI/Chat/](mdc:Warden/UI/Chat) - Chat view components and message handling
-  - [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main conversation interface
+  - [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main conversation interface with multi-agent support
   - [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift) - Chat state management
   - [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - Collapsible reasoning display
+  - [MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift) - Multi-service response display
 - **Chat List & Projects**: [Warden/UI/ChatList/](mdc:Warden/UI/ChatList) - Sidebar navigation with project organization
   - [ProjectSettingsView.swift](mdc:Warden/UI/ChatList/ProjectSettingsView.swift) - Project configuration and management
   - [ProjectSummaryView.swift](mdc:Warden/UI/ChatList/ProjectSummaryView.swift) - AI-generated project summaries and insights
 - **Preferences**: [Warden/UI/Preferences/](mdc:Warden/UI/Preferences) - Settings and configuration UI with model visibility controls
 - **Welcome Screen**: [Warden/UI/WelcomeScreen/](mdc:Warden/UI/WelcomeScreen) - Initial user experience with Warden branding
-- **Reusable Components**: [Warden/UI/Components/](mdc:Warden/UI/Components) - Shared UI components
+- **Reusable Components**: [Warden/UI/Components/](mdc:Warden/UI/Components) - Shared UI components including file preview
 
 ### Utilities
 - **Message Manager**: [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift) - Formats messages for API calls
 - **Message Parser**: [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) - Processes AI responses
 - **API Service Manager**: [APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift) - High-level API coordination
+- **Multi-Agent Manager**: [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) - Concurrent AI service management
 - **Spotlight Integration**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) - macOS Spotlight search support
 - **Model Management**: 
   - [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift) - Controls model visibility per service
@@ -50,7 +53,9 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 
 ## Key Features
 - **Multi-AI Provider Support**: 10+ AI services with unified interface
+- **Multi-Agent Mode**: Query multiple AI services simultaneously for response comparison
 - **Projects/Folders Organization**: Organize chats into logical groups with custom instructions and AI-generated summaries
+- **File Attachments**: Support for PDF, CSV, JSON, XML, text, image, and other file types with intelligent content extraction
 - **Reasoning Models**: Special support for thinking-capable models (o1, o3, deepseek-reasoner)
 - **AI Personas**: Customizable system instructions and model preferences
 - **Model Visibility Control**: Choose which models appear in selector via multi-select interface
@@ -64,6 +69,7 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 - **LaTeX Equations**: Mathematical equation rendering
 - **Spotlight Search**: Native macOS search integration across projects and chats
 - **Local LLM Support**: Ollama integration for privacy-focused usage
+- **Chat Sharing**: Export chats in multiple formats (Markdown, PDF, etc.)
 
 ## Architecture Patterns
 - **MVVM**: Model-View-ViewModel pattern with SwiftUI
@@ -71,6 +77,7 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 - **Streaming**: Real-time response processing with proper cancellation
 - **Core Data**: Local persistence with background context operations and project support
 - **Environment Objects**: Shared state management via SwiftUI environment
+- **Concurrent Processing**: Multi-agent support with async/await and structured concurrency
 
 ## Development Guidelines
 - **Platform**: macOS 13.0+ (Intel and Apple Silicon)
@@ -83,6 +90,8 @@ Warden (macOS AI) is a native macOS AI chat client built with SwiftUI that suppo
 
 ## Special Considerations
 - **Reasoning Models**: Handle system message conversion and dual content streams
+- **File Processing**: Automatic content extraction and type detection for multiple file formats
+- **Multi-Agent Orchestration**: Concurrent API calls with proper resource management and user feedback
 - **API Keys**: Secure storage without logging or exposure
 - **Streaming**: Proper resource cleanup and cancellation support
 - **Performance**: Optimized for Apple Silicon with background processing
