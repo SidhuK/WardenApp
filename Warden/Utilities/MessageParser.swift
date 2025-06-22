@@ -14,6 +14,7 @@ struct MessageParser {
         case formulaLine
         case thinking
         case imageUUID
+        case fileUUID
     }
 
     func detectBlockType(line: String) -> BlockType {
@@ -36,6 +37,9 @@ struct MessageParser {
         }
         else if trimmedLine.hasPrefix("<image-uuid>") {
             return .imageUUID
+        }
+        else if trimmedLine.hasPrefix("<file-uuid>") {
+            return .fileUUID
         }
         else {
             return .text
@@ -193,6 +197,37 @@ struct MessageParser {
             return nil
         }
 
+        func extractFileUUID(_ line: String) -> UUID? {
+            let pattern = "<file-uuid>(.*?)</file-uuid>"
+            if let range = line.range(of: pattern, options: .regularExpression) {
+                let uuidString = String(line[range])
+                    .replacingOccurrences(of: "<file-uuid>", with: "")
+                    .replacingOccurrences(of: "</file-uuid>", with: "")
+                return UUID(uuidString: uuidString)
+            }
+            return nil
+        }
+
+        func loadFileFromCoreData(uuid: UUID) -> FileAttachment? {
+            let viewContext = PersistenceController.shared.container.viewContext
+
+            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+            fetchRequest.fetchLimit = 1
+
+            do {
+                let results = try viewContext.fetch(fetchRequest)
+                if let fileEntity = results.first {
+                    return FileAttachment(fileEntity: fileEntity)
+                }
+            }
+            catch {
+                print("Error fetching file from CoreData: \(error)")
+            }
+
+            return nil
+        }
+
         var thinkingLines: [String] = []
         var isThinkingBlockOpened = false
 
@@ -271,6 +306,15 @@ struct MessageParser {
                 if let uuid = extractImageUUID(line), let image = loadImageFromCoreData(uuid: uuid) {
                     combineTextLinesIfNeeded()
                     elements.append(.image(image))
+                }
+                else {
+                    textLines.append(line)
+                }
+
+            case .fileUUID:
+                if let uuid = extractFileUUID(line), let fileAttachment = loadFileFromCoreData(uuid: uuid) {
+                    combineTextLinesIfNeeded()
+                    elements.append(.file(fileAttachment))
                 }
                 else {
                     textLines.append(line)

@@ -1,4 +1,3 @@
-
 import AttributedText
 import SwiftUI
 
@@ -33,6 +32,9 @@ struct MessageContentView: View {
 
     private func containsImageData(_ message: String) -> Bool {
         if message.contains("<image-uuid>") {
+            return true
+        }
+        if message.contains("<file-uuid>") {
             return true
         }
         return false
@@ -121,6 +123,9 @@ struct MessageContentView: View {
 
         case .image(let image):
             renderImage(image)
+        
+        case .file(let fileAttachment):
+            renderFileAttachment(fileAttachment)
         }
     }
 
@@ -188,6 +193,63 @@ struct MessageContentView: View {
                 ZoomableImageView(image: identifiableImage.image, imageAspectRatio: aspectRatio)
 
             }
+    }
+
+    @ViewBuilder
+    private func renderFileAttachment(_ fileAttachment: FileAttachment) -> some View {
+        HStack(spacing: 12) {
+            // File icon/thumbnail
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(fileAttachment.fileType.color.opacity(0.1))
+                    .frame(width: 60, height: 60)
+                
+                if let thumbnail = fileAttachment.thumbnail {
+                    // Show thumbnail for files that have one (images, PDFs)
+                    Image(nsImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 56, height: 56)
+                        .clipped()
+                        .cornerRadius(6)
+                } else {
+                    // Show file type icon
+                    Image(systemName: fileAttachment.fileType.icon)
+                        .foregroundColor(fileAttachment.fileType.color)
+                        .font(.title2)
+                }
+            }
+            
+            // File info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(fileAttachment.fileName)
+                    .font(.system(size: effectiveFontSize, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                
+                if fileAttachment.fileSize > 0 {
+                    Text(ByteCountFormatter.string(fromByteCount: fileAttachment.fileSize, countStyle: .file))
+                        .font(.system(size: effectiveFontSize - 2))
+                        .foregroundColor(.secondary)
+                }
+                
+                // Show file type
+                Text(fileAttachment.fileType.displayName)
+                    .font(.system(size: effectiveFontSize - 2))
+                    .foregroundColor(fileAttachment.fileType.color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(fileAttachment.fileType.color.opacity(0.1))
+                    .cornerRadius(4)
+            }
+            
+            Spacer()
+        }
+        .padding(12)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .cornerRadius(12)
+        .frame(maxWidth: 300)
+        .padding(.bottom, 4)
     }
 
 }

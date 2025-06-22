@@ -42,6 +42,20 @@ enum FileAttachmentType {
         case .other: return .secondary
         }
     }
+    
+    var displayName: String {
+        switch self {
+        case .image: return "Image"
+        case .text: return "Text"
+        case .csv: return "CSV"
+        case .pdf: return "PDF"
+        case .json: return "JSON"
+        case .xml: return "XML"
+        case .markdown: return "Markdown"
+        case .rtf: return "RTF"
+        case .other(let ext): return ext.uppercased()
+        }
+    }
 }
 
 class FileAttachment: Identifiable, ObservableObject {
