@@ -72,7 +72,7 @@ struct PreferencesView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(NSColor.windowBackgroundColor))
             .overlay(
                 Rectangle()
                     .fill(Color(NSColor.separatorColor))
@@ -191,7 +191,7 @@ struct InlineSettingsView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(NSColor.windowBackgroundColor))
             .overlay(
                 Rectangle()
                     .fill(Color(NSColor.separatorColor))
