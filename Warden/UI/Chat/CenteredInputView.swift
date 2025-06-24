@@ -33,35 +33,6 @@ struct CenteredInputView: View {
                 
                 // Enhanced welcome content with better typography hierarchy
                 VStack(spacing: 56) { // Increased from 48
-                    // Improved greeting section
-                    VStack(spacing: 32) { // Increased spacing
-                        // Warden icon (removed pulse animation)
-                        Image("WelcomeIcon")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
-                            .shadow(
-                                color: Color.accentColor.opacity(0.2),
-                                radius: 6,
-                                x: 0,
-                                y: 2
-                            )
-                        
-                        // Enhanced text hierarchy
-                        VStack(spacing: 16) { // Increased spacing
-                            // Main title with improved typography (removed pulse animation)
-                            Text("How can I help?")
-                                .font(.system(size: 28, weight: .semibold, design: .default)) // Increased size and weight, using SF Pro Display
-                                .foregroundColor(.primary.opacity(0.95)) // Slightly more opaque
-                                .multilineTextAlignment(.center)
-                            
-                            // Added microcopy guidance
-                            Text("Type a question or choose an action below")
-                                .font(.system(size: 15, weight: .regular, design: .default))
-                                .foregroundColor(.secondary.opacity(0.8))
-                                .multilineTextAlignment(.center)
-                        }
-                    }
                     
                     // Input section with increased spacing and material effects
                     VStack(spacing: 24) { // Increased from 6 to 24
