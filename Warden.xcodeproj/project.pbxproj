@@ -108,6 +108,8 @@
 		7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA52DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift */; };
 		7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA42DE9DAF4003E7BCA /* MultiAgentResponseView.swift */; };
 		7F8D7CA92DE9DB13003E7BCA /* MultiAgentMessageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */; };
+		7F97AE1B2E0D75000050CAFE /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 7F97AE1A2E0D75000050CAFE /* Markdown */; };
+		7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */; };
 		7FB022A32DE9639000CE4CC8 /* SpotlightIndexManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB022A22DE9639000CE4CC8 /* SpotlightIndexManager.swift */; };
 		7FDDAED02DE8BA5C0072EA51 /* MistralHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */; };
 		7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FE379012DE9A1DA0093DACE /* InteractiveOnboardingView.swift */; };
@@ -245,6 +247,7 @@
 		7F8D7CA42DE9DAF4003E7BCA /* MultiAgentResponseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentResponseView.swift; sourceTree = "<group>"; };
 		7F8D7CA52DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentServiceSelector.swift; sourceTree = "<group>"; };
 		7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentMessageManager.swift; sourceTree = "<group>"; };
+		7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		7FB022A22DE9639000CE4CC8 /* SpotlightIndexManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexManager.swift; sourceTree = "<group>"; };
 		7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MistralHandler.swift; sourceTree = "<group>"; };
 		7FE379012DE9A1DA0093DACE /* InteractiveOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveOnboardingView.swift; sourceTree = "<group>"; };
@@ -261,6 +264,7 @@
 				4A51EC6229C32AF700973D83 /* Highlightr in Frameworks */,
 				4A5C395229D8765200BCB534 /* OmenTextField in Frameworks */,
 				4A2842492C87014800E5C920 /* KeychainAccess in Frameworks */,
+				7F97AE1B2E0D75000050CAFE /* Markdown in Frameworks */,
 				4A471B862C29C56800C66926 /* SwiftMath in Frameworks */,
 				4A7E1BDB29C910F900E57DC2 /* Sparkle in Frameworks */,
 				4A51EC6529C32B0B00973D83 /* AttributedText in Frameworks */,
@@ -320,6 +324,7 @@
 				7F4955AB2E06FB1200516E2D /* FilePreviewView.swift */,
 				4A4918792D9F4186007EB4A2 /* ToolbarButton.swift */,
 				7F60244F2DEA078A007AB8FC /* RephraseButton.swift */,
+				7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */,
 				7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */,
 				7F4B74C32DFFC83100C844A2 /* ToastNotification.swift */,
 				4A2D3CEA2D5794B00082A262 /* ThemeMode.swift */,
@@ -581,6 +586,7 @@
 				4A5C395129D8765200BCB534 /* OmenTextField */,
 				4A471B852C29C56800C66926 /* SwiftMath */,
 				4A2842482C87014800E5C920 /* KeychainAccess */,
+				7F97AE1A2E0D75000050CAFE /* Markdown */,
 			);
 			productName = macai;
 			productReference = 4A399C9529BC8FEF00E98796 /* Warden.app */;
@@ -660,6 +666,7 @@
 				4A5C395029D8765200BCB534 /* XCRemoteSwiftPackageReference "OmenTextField" */,
 				4A471B842C29C56800C66926 /* XCRemoteSwiftPackageReference "SwiftMath" */,
 				4A2842472C87014800E5C920 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				7F97AE192E0D75000050CAFE /* XCRemoteSwiftPackageReference "swift-markdown" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 4A399C9629BC8FEF00E98796 /* Products */;
@@ -773,6 +780,7 @@
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,
+				7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */,
 				7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */,
 				4A471B882C29CD3D00C66926 /* AdaptiveMathView.swift in Sources */,
 				7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */,
@@ -1212,6 +1220,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		7F97AE192E0D75000050CAFE /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swiftlang/swift-markdown";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.6.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1244,6 +1260,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4A7E1BD929C910F800E57DC2 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		7F97AE1A2E0D75000050CAFE /* Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7F97AE192E0D75000050CAFE /* XCRemoteSwiftPackageReference "swift-markdown" */;
+			productName = Markdown;
 		};
 /* End XCSwiftPackageProductDependency section */
 

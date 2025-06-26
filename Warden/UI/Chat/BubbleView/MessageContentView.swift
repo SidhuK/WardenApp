@@ -131,37 +131,102 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderText(_ text: String) -> some View {
-        let attributedString: NSAttributedString = {
-            let options = AttributedString.MarkdownParsingOptions(
-                interpretedSyntax: .inlineOnlyPreservingWhitespace
+        // Check if this text contains markdown formatting that should be rendered properly
+        if containsMarkdownFormatting(text) {
+            MarkdownView(
+                markdownText: text,
+                effectiveFontSize: effectiveFontSize,
+                own: own,
+                colorScheme: colorScheme
             )
-            let initialAttributedString =
-                (try? NSAttributedString(markdown: text, options: options))
-                ?? NSAttributedString(string: text)
+        } else {
+            // Fallback to the original method for simple text
+            let attributedString: NSAttributedString = {
+                let options = AttributedString.MarkdownParsingOptions(
+                    interpretedSyntax: .inlineOnlyPreservingWhitespace
+                )
+                let initialAttributedString =
+                    (try? NSAttributedString(markdown: text, options: options))
+                    ?? NSAttributedString(string: text)
 
-            let mutableAttributedString = NSMutableAttributedString(
-                attributedString: initialAttributedString
-            )
-            let fullRange = NSRange(location: 0, length: mutableAttributedString.length)
-            let systemFont = NSFont.systemFont(ofSize: effectiveFontSize)
+                let mutableAttributedString = NSMutableAttributedString(
+                    attributedString: initialAttributedString
+                )
+                let fullRange = NSRange(location: 0, length: mutableAttributedString.length)
+                let systemFont = NSFont.systemFont(ofSize: effectiveFontSize)
 
-            mutableAttributedString.addAttribute(.font, value: systemFont, range: fullRange)
-            mutableAttributedString.addAttribute(
-                .foregroundColor,
-                value: own ? NSColor.white : NSColor.textColor,
-                range: fullRange
-            )
-            return mutableAttributedString
-        }()
+                mutableAttributedString.addAttribute(.font, value: systemFont, range: fullRange)
+                mutableAttributedString.addAttribute(
+                    .foregroundColor,
+                    value: own ? NSColor.white : NSColor.textColor,
+                    range: fullRange
+                )
+                return mutableAttributedString
+            }()
 
-        if text.count > AppConstants.longStringCount {
-            AttributedText(attributedString)
-                .textSelection(.enabled)
+            if text.count > AppConstants.longStringCount {
+                AttributedText(attributedString)
+                    .textSelection(.enabled)
+            }
+            else {
+                Text(.init(attributedString))
+                    .textSelection(.enabled)
+            }
         }
-        else {
-            Text(.init(attributedString))
-                .textSelection(.enabled)
+    }
+    
+    private func containsMarkdownFormatting(_ text: String) -> Bool {
+        // Don't use MarkdownView if MessageParser should handle these
+        if text.contains("```") || // Code blocks - handled by MessageParser
+           text.contains("<think>") || // Thinking blocks - handled by MessageParser
+           text.contains("<image-uuid>") || // Images - handled by MessageParser
+           text.contains("<file-uuid>") || // Files - handled by MessageParser
+           text.contains("\\[") || text.contains("\\]") || // LaTeX - handled by MessageParser
+           text.first == "|" { // Tables - handled by MessageParser
+            return false
         }
+        
+        // Check for common markdown patterns that indicate block-level formatting
+        let markdownPatterns = [
+            "^#{1,6}\\s+", // Headers
+            "^\\s*[*+-]\\s+", // Unordered lists
+            "^\\s*\\d+\\.\\s+", // Ordered lists
+            "^\\s*>\\s+", // Block quotes
+            "^\\s*---\\s*$", // Horizontal rules
+            "^\\s*\\*\\*\\*\\s*$", // Horizontal rules
+            "\\[.*?\\]\\(.*?\\)" // Links with brackets and parentheses
+        ]
+        
+        let lines = text.components(separatedBy: .newlines)
+        
+        // Check each line for markdown patterns
+        for line in lines {
+            for pattern in markdownPatterns {
+                if line.range(of: pattern, options: .regularExpression) != nil {
+                    return true
+                }
+            }
+        }
+        
+        // Also check for inline formatting that suggests structured content
+        if text.contains("**") || text.contains("__") || // Bold
+           text.contains("~~") { // Strikethrough
+            return true
+        }
+        
+        // Be more selective with asterisks and underscores to avoid false positives
+        // Only consider it markdown if there are pairs of them
+        let asteriskCount = text.filter { $0 == "*" }.count
+        let underscoreCount = text.filter { $0 == "_" }.count
+        let backtickCount = text.filter { $0 == "`" }.count
+        
+        if (asteriskCount >= 2 && asteriskCount % 2 == 0) ||
+           (underscoreCount >= 2 && underscoreCount % 2 == 0) ||
+           (backtickCount >= 2 && backtickCount % 2 == 0) {
+            return true
+        }
+        
+        return false
     }
 
     @ViewBuilder
