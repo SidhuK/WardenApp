@@ -4,11 +4,13 @@ import CoreData
 struct CenteredInputView: View {
     @Binding var newMessage: String
     @Binding var attachedImages: [ImageAttachment]
+    @Binding var attachedFiles: [FileAttachment]
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
     let isStreaming: Bool
     let onSendMessage: () -> Void
     let onAddImage: () -> Void
+    let onAddFile: () -> Void
     let onAddAssistant: (() -> Void)?
     let onStopStreaming: (() -> Void)?
     
@@ -31,35 +33,6 @@ struct CenteredInputView: View {
                 
                 // Enhanced welcome content with better typography hierarchy
                 VStack(spacing: 56) { // Increased from 48
-                    // Improved greeting section
-                    VStack(spacing: 32) { // Increased spacing
-                        // Warden icon (removed pulse animation)
-                        Image("WelcomeIcon")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
-                            .shadow(
-                                color: Color.accentColor.opacity(0.2),
-                                radius: 6,
-                                x: 0,
-                                y: 2
-                            )
-                        
-                        // Enhanced text hierarchy
-                        VStack(spacing: 16) { // Increased spacing
-                            // Main title with improved typography (removed pulse animation)
-                            Text("How can I help?")
-                                .font(.system(size: 28, weight: .semibold, design: .default)) // Increased size and weight, using SF Pro Display
-                                .foregroundColor(.primary.opacity(0.95)) // Slightly more opaque
-                                .multilineTextAlignment(.center)
-                            
-                            // Added microcopy guidance
-                            Text("Type a question or choose an action below")
-                                .font(.system(size: 15, weight: .regular, design: .default))
-                                .foregroundColor(.secondary.opacity(0.8))
-                                .multilineTextAlignment(.center)
-                        }
-                    }
                     
                     // Input section with increased spacing and material effects
                     VStack(spacing: 24) { // Increased from 6 to 24
@@ -67,11 +40,13 @@ struct CenteredInputView: View {
                         MessageInputView(
                             text: $newMessage,
                             attachedImages: $attachedImages,
+                            attachedFiles: $attachedFiles,
                             chat: chat,
                             imageUploadsAllowed: imageUploadsAllowed,
                             isStreaming: isStreaming,
                             onEnter: onSendMessage,
                             onAddImage: onAddImage,
+                            onAddFile: onAddFile,
                             onAddAssistant: onAddAssistant,
                             onStopStreaming: onStopStreaming,
                             inputPlaceholderText: "Ask me anything...",
@@ -104,7 +79,7 @@ struct CenteredInputView: View {
                         }
                         
                         // Quick suggestions with more spacing
-                        if attachedImages.isEmpty && newMessage.isEmpty {
+                        if attachedImages.isEmpty && attachedFiles.isEmpty && newMessage.isEmpty {
                             HStack(spacing: 20) { // Increased from 16
                                 MinimalSuggestionButton(
                                     icon: "lightbulb",
@@ -143,6 +118,7 @@ struct CenteredInputView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: newMessage.isEmpty)
         .animation(.easeInOut(duration: 0.25), value: attachedImages.isEmpty)
+        .animation(.easeInOut(duration: 0.25), value: attachedFiles.isEmpty)
     }
 }
 
@@ -207,22 +183,28 @@ struct MinimalSuggestionButton: View {
 }
 
 #Preview {
-    // Create a mock chat for preview
-    let mockChat = ChatEntity(context: PersistenceController.preview.container.viewContext)
-    mockChat.id = UUID()
-    mockChat.name = "New Chat"
-    mockChat.systemMessage = ""
+    @Previewable @Environment(\.managedObjectContext) var viewContext
+    
+    let mockChat = {
+        let chat = ChatEntity(context: PersistenceController.preview.container.viewContext)
+        chat.id = UUID()
+        chat.name = "New Chat"
+        chat.systemMessage = ""
+        return chat
+    }()
     
     return CenteredInputView(
         newMessage: .constant(""),
         attachedImages: .constant([]),
+        attachedFiles: .constant([]),
         chat: mockChat,
         imageUploadsAllowed: true,
         isStreaming: false,
         onSendMessage: {},
         onAddImage: {},
+        onAddFile: {},
         onAddAssistant: {},
         onStopStreaming: {}
     )
-    .environmentObject(PreviewStateManager())
+    .environmentObject(PreviewStateManager.shared)
 } 

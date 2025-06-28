@@ -8,6 +8,7 @@ enum MessageElements {
     case formula(String)
     case thinking(String, isExpanded: Bool)
     case image(NSImage)
+    case file(FileAttachment)
 }
 
 struct ChatBubbleContent: Equatable {

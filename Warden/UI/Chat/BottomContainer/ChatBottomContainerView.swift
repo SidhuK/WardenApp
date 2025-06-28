@@ -6,11 +6,13 @@ struct ChatBottomContainerView: View {
     @Binding var newMessage: String
     @Binding var isExpanded: Bool
     @Binding var attachedImages: [ImageAttachment]
+    @Binding var attachedFiles: [FileAttachment]
     var imageUploadsAllowed: Bool
     var isStreaming: Bool
     var onSendMessage: () -> Void
     var onExpandToggle: () -> Void
     var onAddImage: () -> Void
+    var onAddFile: () -> Void
     var onStopStreaming: (() -> Void)?
     var onExpandedStateChange: ((Bool) -> Void)?
     @State private var showingActionMenu = false
@@ -20,11 +22,13 @@ struct ChatBottomContainerView: View {
         newMessage: Binding<String>,
         isExpanded: Binding<Bool>,
         attachedImages: Binding<[ImageAttachment]> = .constant([]),
+        attachedFiles: Binding<[FileAttachment]> = .constant([]),
         imageUploadsAllowed: Bool = false,
         isStreaming: Bool = false,
         onSendMessage: @escaping () -> Void,
         onExpandToggle: @escaping () -> Void = {},
         onAddImage: @escaping () -> Void = {},
+        onAddFile: @escaping () -> Void = {},
         onStopStreaming: (() -> Void)? = nil,
         onExpandedStateChange: ((Bool) -> Void)? = nil
     ) {
@@ -32,11 +36,13 @@ struct ChatBottomContainerView: View {
         self._newMessage = newMessage
         self._isExpanded = isExpanded
         self._attachedImages = attachedImages
+        self._attachedFiles = attachedFiles
         self.imageUploadsAllowed = imageUploadsAllowed
         self.isStreaming = isStreaming
         self.onSendMessage = onSendMessage
         self.onExpandToggle = onExpandToggle
         self.onAddImage = onAddImage
+        self.onAddFile = onAddFile
         self.onStopStreaming = onStopStreaming
         self.onExpandedStateChange = onExpandedStateChange
 
@@ -60,11 +66,13 @@ struct ChatBottomContainerView: View {
             MessageInputView(
                 text: $newMessage,
                 attachedImages: $attachedImages,
+                attachedFiles: $attachedFiles,
                 chat: chat,
                 imageUploadsAllowed: imageUploadsAllowed,
                 isStreaming: isStreaming,
                 onEnter: onSendMessage,
                 onAddImage: onAddImage,
+                onAddFile: onAddFile,
                 onAddAssistant: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isExpanded.toggle()

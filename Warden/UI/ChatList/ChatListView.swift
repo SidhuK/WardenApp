@@ -61,7 +61,7 @@ struct ChatListView: View {
     }
     
     private var groupedChatsWithoutProject: [DateGroup: [ChatEntity]] {
-        let chatsToGroup = chatsWithoutProject
+        let chatsToGroup = unpinnedChatsWithoutProject
         var grouped: [DateGroup: [ChatEntity]] = [:]
         
         for chat in chatsToGroup {
@@ -73,6 +73,14 @@ struct ChatListView: View {
         }
         
         return grouped
+    }
+    
+    private var pinnedChatsWithoutProject: [ChatEntity] {
+        return chatsWithoutProject.filter { $0.isPinned }
+    }
+    
+    private var unpinnedChatsWithoutProject: [ChatEntity] {
+        return chatsWithoutProject.filter { !$0.isPinned }
     }
 
     private var filteredChats: [ChatEntity] {
@@ -684,7 +692,44 @@ struct ChatListView: View {
                 }
             }
             
-            // Show date-grouped chats
+            // Show pinned chats first (at the very top, before any date groups)
+            if !pinnedChatsWithoutProject.isEmpty {
+                Section {
+                    ForEach(pinnedChatsWithoutProject, id: \.objectID) { chat in
+                        ChatListRow(
+                            chat: chat,
+                            selectedChat: $selectedChat,
+                            viewContext: viewContext,
+                            searchText: searchText,
+                            isSelectionMode: !selectedChatIDs.isEmpty,
+                            isSelected: selectedChatIDs.contains(chat.id),
+                            onSelectionToggle: { chatID, isSelected in
+                                if isSelected {
+                                    selectedChatIDs.insert(chatID)
+                                } else {
+                                    selectedChatIDs.remove(chatID)
+                                }
+                            },
+                            onKeyboardSelection: { chatID, isCmd, isShift in
+                                handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
+                            }
+                        )
+                    }
+                } header: {
+                    HStack {
+                        Text("Pinned")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .textCase(.uppercase)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            // Show date-grouped unpinned chats
             ForEach(DateGroup.allCases, id: \.self) { dateGroup in
                 if let chatsInGroup = groupedChatsWithoutProject[dateGroup], !chatsInGroup.isEmpty {
                     Section {

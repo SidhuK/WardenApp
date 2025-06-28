@@ -1,0 +1,676 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Chat Sharing and Export Guide
+
+Warden provides comprehensive chat sharing and export functionality, allowing users to share conversations in multiple formats and export data for backup or migration purposes. This guide covers the implementation and usage patterns.
+
+## Core Components
+
+### Chat Sharing Service
+[ChatSharingService.swift](mdc:Warden/Utilities/ChatSharingService.swift) provides the central functionality for chat export and sharing:
+
+```swift
+class ChatSharingService {
+    static let shared = ChatSharingService()
+    
+    enum ExportFormat {
+        case markdown
+        case pdf
+        case html
+        case plainText
+        case json
+    }
+    
+    func shareChat(_ chat: ChatEntity, format: ExportFormat) {
+        // Generate content in specified format
+        // Present system share sheet
+    }
+    
+    func exportChatToFile(_ chat: ChatEntity, format: ExportFormat) {
+        // Generate content and save to file
+        // Present file save dialog
+    }
+    
+    func copyChatToClipboard(_ chat: ChatEntity, format: ExportFormat) {
+        // Generate content and copy to clipboard
+    }
+}
+```
+
+### Chat Share Menu Component
+[ChatShareMenu.swift](mdc:Warden/UI/Components/ChatShareMenu.swift) provides UI components for sharing:
+
+```swift
+struct ChatShareMenu: View {
+    let chat: ChatEntity
+    
+    var body: some View {
+        Menu("Share") {
+            // Share as Markdown
+            Button(action: {
+                ChatSharingService.shared.shareChat(chat, format: .markdown)
+            }) {
+                Label("Share as Markdown", systemImage: "square.and.arrow.up")
+            }
+            
+            // Export to File
+            Button(action: {
+                ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
+            }) {
+                Label("Export to File", systemImage: "doc.badge.arrow.up")
+            }
+            
+            // Copy to Clipboard
+            Button(action: {
+                ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
+            }) {
+                Label("Copy as Markdown", systemImage: "doc.on.doc")
+            }
+        }
+    }
+}
+```
+
+### Context Menu Integration
+Chat sharing is integrated into context menus throughout the app:
+
+```swift
+struct ChatShareContextMenu: View {
+    let chat: ChatEntity
+    
+    var body: some View {
+        Menu("Share Chat") {
+            Button(action: {
+                ChatSharingService.shared.shareChat(chat, format: .markdown)
+            }) {
+                Label("Share as Markdown", systemImage: "square.and.arrow.up")
+            }
+            
+            Button(action: {
+                ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
+            }) {
+                Label("Copy as Markdown", systemImage: "doc.on.doc")
+            }
+            
+            Button(action: {
+                ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
+            }) {
+                Label("Export to File", systemImage: "doc.badge.arrow.up")
+            }
+        }
+    }
+}
+```
+
+## Export Formats
+
+### Markdown Export
+Primary export format with rich formatting support:
+
+```swift
+private func generateMarkdownContent(for chat: ChatEntity) -> String {
+    var content = "# \(chat.name ?? "Chat")\n\n"
+    
+    // Add metadata
+    content += "**Created:** \(chat.createdAt?.formatted() ?? "Unknown")\n"
+    content += "**Model:** \(chat.gptModel)\n"
+    if let persona = chat.persona?.name {
+        content += "**Persona:** \(persona)\n"
+    }
+    content += "\n---\n\n"
+    
+    // Add messages
+    for message in chat.messagesArray {
+        let role = message.isFromUser ? "**User**" : "**Assistant**"
+        content += "\(role):\n\n"
+        
+        // Handle different content types
+        if let messageContent = message.contentArray {
+            for contentItem in messageContent {
+                content += formatMessageContent(contentItem)
+            }
+        } else {
+            content += message.content ?? ""
+        }
+        
+        content += "\n\n---\n\n"
+    }
+    
+    return content
+}
+```
+
+### PDF Export
+Generate PDF documents with proper formatting:
+
+```swift
+private func generatePDFContent(for chat: ChatEntity) -> Data? {
+    let pdfRenderer = PDFRenderer()
+    
+    // Configure PDF document
+    let pageSize = CGSize(width: 612, height: 792) // US Letter
+    let pageMargin: CGFloat = 72 // 1 inch margins
+    
+    // Render chat content
+    return pdfRenderer.renderChat(chat, pageSize: pageSize, margin: pageMargin)
+}
+```
+
+### HTML Export
+Web-compatible format with styling:
+
+```swift
+private func generateHTMLContent(for chat: ChatEntity) -> String {
+    var html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>\(chat.name ?? "Chat")</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+            .message { margin: 20px 0; padding: 15px; border-radius: 8px; }
+            .user { background-color: #e3f2fd; }
+            .assistant { background-color: #f5f5f5; }
+            .code { background-color: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; }
+        </style>
+    </head>
+    <body>
+    """
+    
+    // Add chat metadata
+    html += "<h1>\(chat.name ?? "Chat")</h1>"
+    html += "<p><strong>Created:</strong> \(chat.createdAt?.formatted() ?? "Unknown")</p>"
+    
+    // Add messages
+    for message in chat.messagesArray {
+        let messageClass = message.isFromUser ? "user" : "assistant"
+        html += "<div class='message \(messageClass)'>"
+        html += "<strong>\(message.isFromUser ? "User" : "Assistant"):</strong><br>"
+        html += formatHTMLContent(message.content ?? "")
+        html += "</div>"
+    }
+    
+    html += "</body></html>"
+    return html
+}
+```
+
+### JSON Export
+Structured data format for programmatic use:
+
+```swift
+private func generateJSONContent(for chat: ChatEntity) -> Data? {
+    let chatData: [String: Any] = [
+        "id": chat.id?.uuidString ?? "",
+        "name": chat.name ?? "",
+        "createdAt": chat.createdAt?.ISO8601Format() ?? "",
+        "model": chat.gptModel,
+        "persona": chat.persona?.name ?? "",
+        "systemMessage": chat.systemMessage,
+        "messages": chat.messagesArray.map { message in
+            [
+                "id": message.id?.uuidString ?? "",
+                "content": message.content ?? "",
+                "isFromUser": message.isFromUser,
+                "timestamp": message.timestamp?.ISO8601Format() ?? "",
+                "attachments": formatAttachments(message)
+            ]
+        }
+    ]
+    
+    return try? JSONSerialization.data(withJSONObject: chatData, options: .prettyPrinted)
+}
+```
+
+## Content Formatting
+
+### Message Content Processing
+Handle different message content types appropriately:
+
+```swift
+private func formatMessageContent(_ content: MessageContentItem) -> String {
+    switch content.type {
+    case .text:
+        return content.text ?? ""
+        
+    case .image:
+        if let imageData = content.imageData,
+           let image = NSImage(data: imageData) {
+            return "[Image: \(image.size.width)x\(image.size.height)]"
+        }
+        return "[Image]"
+        
+    case .file:
+        if let fileName = content.fileName {
+            return "[File: \(fileName)]"
+        }
+        return "[File Attachment]"
+        
+    case .code:
+        return "```\(content.language ?? "")\n\(content.text ?? "")\n```"
+    }
+}
+```
+
+### Attachment Handling
+Process file and image attachments for export:
+
+```swift
+private func formatAttachments(_ message: MessageEntity) -> [[String: Any]] {
+    var attachments: [[String: Any]] = []
+    
+    // Handle image attachments
+    if let imageAttachments = message.imageAttachments {
+        for attachment in imageAttachments {
+            attachments.append([
+                "type": "image",
+                "id": attachment.id?.uuidString ?? "",
+                "fileName": attachment.fileName ?? "",
+                "size": attachment.fileSize
+            ])
+        }
+    }
+    
+    // Handle file attachments
+    if let fileAttachments = message.fileAttachments {
+        for attachment in fileAttachments {
+            attachments.append([
+                "type": "file",
+                "id": attachment.id?.uuidString ?? "",
+                "fileName": attachment.fileName ?? "",
+                "fileType": attachment.fileType ?? "",
+                "size": attachment.fileSize
+            ])
+        }
+    }
+    
+    return attachments
+}
+```
+
+### Code Block Formatting
+Special handling for code blocks in different formats:
+
+```swift
+private func formatCodeBlock(_ code: String, language: String?, format: ExportFormat) -> String {
+    switch format {
+    case .markdown:
+        return "```\(language ?? "")\n\(code)\n```"
+        
+    case .html:
+        return "<pre class='code'><code>\(escapeHTML(code))</code></pre>"
+        
+    case .plainText:
+        return code
+        
+    case .json:
+        return code // Raw code for JSON structure
+        
+    case .pdf:
+        return code // Will be styled during PDF rendering
+    }
+}
+```
+
+## System Integration
+
+### macOS Share Sheet
+Native macOS sharing integration:
+
+```swift
+func shareChat(_ chat: ChatEntity, format: ExportFormat) {
+    let content = generateContent(for: chat, format: format)
+    
+    let sharingPicker = NSSharingServicePicker(items: [content])
+    
+    // Configure sharing options
+    if let window = NSApplication.shared.keyWindow {
+        sharingPicker.show(relativeTo: .zero, of: window.contentView!, preferredEdge: .minY)
+    }
+}
+```
+
+### File Save Dialog
+Native file save functionality:
+
+```swift
+func exportChatToFile(_ chat: ChatEntity, format: ExportFormat) {
+    let savePanel = NSSavePanel()
+    savePanel.title = "Export Chat"
+    savePanel.nameFieldStringValue = "\(chat.name ?? "Chat").\(format.fileExtension)"
+    savePanel.allowedContentTypes = [format.uniformTypeIdentifier]
+    
+    if savePanel.runModal() == .OK {
+        guard let url = savePanel.url else { return }
+        
+        let content = generateContent(for: chat, format: format)
+        
+        do {
+            if format == .json || format == .pdf {
+                try (content as! Data).write(to: url)
+            } else {
+                try (content as! String).write(to: url, atomically: true, encoding: .utf8)
+            }
+        } catch {
+            // Handle save error
+            showErrorAlert("Failed to save file: \(error.localizedDescription)")
+        }
+    }
+}
+```
+
+### Clipboard Integration
+Copy formatted content to clipboard:
+
+```swift
+func copyChatToClipboard(_ chat: ChatEntity, format: ExportFormat) {
+    let content = generateContent(for: chat, format: format)
+    
+    let pasteboard = NSPasteboard.general
+    pasteboard.clearContents()
+    
+    switch format {
+    case .markdown, .html, .plainText:
+        pasteboard.setString(content as! String, forType: .string)
+        
+    case .json:
+        if let data = content as? Data,
+           let jsonString = String(data: data, encoding: .utf8) {
+            pasteboard.setString(jsonString, forType: .string)
+        }
+        
+    case .pdf:
+        if let data = content as? Data {
+            pasteboard.setData(data, forType: .pdf)
+        }
+    }
+    
+    // Show confirmation
+    showToast("Chat copied to clipboard")
+}
+```
+
+## Multi-Agent Response Handling
+
+### Multi-Agent Export Support
+Special handling for multi-agent chat responses:
+
+```swift
+private func formatMultiAgentResponse(_ responses: [AgentResponse]) -> String {
+    var content = "## Multi-Agent Responses\n\n"
+    
+    for (index, response) in responses.enumerated() {
+        content += "### \(response.serviceName) (\(response.model))\n\n"
+        
+        if let error = response.error {
+            content += "**Error:** \(error.localizedDescription)\n\n"
+        } else {
+            content += response.response
+        }
+        
+        if index < responses.count - 1 {
+            content += "\n\n---\n\n"
+        }
+    }
+    
+    return content
+}
+```
+
+### Reasoning Model Content
+Handle thinking process content from reasoning models:
+
+```swift
+private func formatReasoningContent(_ content: String) -> String {
+    // Extract thinking process if present
+    if content.contains("<think>") && content.contains("</think>") {
+        let components = content.components(separatedBy: "<think>")
+        if components.count > 1 {
+            let thinkingContent = components[1].components(separatedBy: "</think>")
+            let responseContent = components[1].components(separatedBy: "</think>").dropFirst().joined()
+            
+            return """
+            **Thinking Process:**
+            
+            ```
+            \(thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines))
+            ```
+            
+            **Response:**
+            
+            \(responseContent.trimmingCharacters(in: .whitespacesAndNewlines))
+            """
+        }
+    }
+    
+    return content
+}
+```
+
+## Project Context Export
+
+### Project-Level Export
+Export entire projects with all contained chats:
+
+```swift
+func exportProject(_ project: ProjectEntity, format: ExportFormat) -> String {
+    var content = "# Project: \(project.name ?? "Untitled")\n\n"
+    
+    // Add project metadata
+    content += "**Created:** \(project.createdAt?.formatted() ?? "Unknown")\n"
+    if let instructions = project.customInstructions {
+        content += "**Instructions:** \(instructions)\n"
+    }
+    content += "\n---\n\n"
+    
+    // Add each chat in the project
+    for chat in project.chatsArray {
+        content += generateMarkdownContent(for: chat)
+        content += "\n\n" + String(repeating: "=", count: 50) + "\n\n"
+    }
+    
+    return content
+}
+```
+
+### Bulk Export Operations
+Export multiple chats or projects simultaneously:
+
+```swift
+func exportMultipleChats(_ chats: [ChatEntity], format: ExportFormat) {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+    let timestamp = dateFormatter.string(from: Date())
+    
+    let savePanel = NSSavePanel()
+    savePanel.title = "Export Multiple Chats"
+    savePanel.nameFieldStringValue = "Warden_Export_\(timestamp)"
+    savePanel.canCreateDirectories = true
+    
+    if savePanel.runModal() == .OK {
+        guard let baseURL = savePanel.url else { return }
+        
+        for chat in chats {
+            let chatContent = generateContent(for: chat, format: format)
+            let fileName = "\(chat.name ?? "Chat_\(chat.id?.uuidString.prefix(8) ?? "unknown")").\(format.fileExtension)"
+            let fileURL = baseURL.appendingPathComponent(fileName)
+            
+            // Save individual chat file
+            saveContentToFile(chatContent, url: fileURL, format: format)
+        }
+    }
+}
+```
+
+## Security and Privacy
+
+### Data Sanitization
+Remove sensitive information from exports:
+
+```swift
+private func sanitizeContent(_ content: String, preserveUserData: Bool = true) -> String {
+    var sanitized = content
+    
+    if !preserveUserData {
+        // Remove potential API keys
+        sanitized = sanitized.replacingOccurrences(of: #"sk-[A-Za-z0-9]{48}"#, 
+                                                  with: "[API_KEY_REDACTED]", 
+                                                  options: .regularExpression)
+        
+        // Remove email addresses
+        sanitized = sanitized.replacingOccurrences(of: #"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"#,
+                                                  with: "[EMAIL_REDACTED]",
+                                                  options: .regularExpression)
+    }
+    
+    return sanitized
+}
+```
+
+### Export Permissions
+Check user permissions before exporting sensitive data:
+
+```swift
+private func checkExportPermissions(for chat: ChatEntity) -> Bool {
+    // Check if chat contains sensitive information
+    let containsSensitiveData = checkForSensitiveContent(chat)
+    
+    if containsSensitiveData {
+        let alert = NSAlert()
+        alert.messageText = "Export Sensitive Data"
+        alert.informativeText = "This chat may contain sensitive information. Are you sure you want to export it?"
+        alert.addButton(withTitle: "Export")
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Export (Sanitized)")
+        
+        let response = alert.runModal()
+        return response == .alertFirstButtonReturn || response == .alertThirdButtonReturn
+    }
+    
+    return true
+}
+```
+
+## Error Handling
+
+### Export Error Recovery
+Handle various export failure scenarios:
+
+```swift
+enum ExportError: LocalizedError {
+    case invalidChat
+    case fileSystemError
+    case contentGenerationFailed
+    case insufficientPermissions
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidChat:
+            return "The selected chat is invalid or corrupted"
+        case .fileSystemError:
+            return "Failed to access the file system"
+        case .contentGenerationFailed:
+            return "Failed to generate export content"
+        case .insufficientPermissions:
+            return "Insufficient permissions to save file"
+        }
+    }
+}
+```
+
+### Graceful Degradation
+Provide fallback options when primary export fails:
+
+```swift
+private func handleExportFailure(_ error: ExportError, chat: ChatEntity) {
+    switch error {
+    case .contentGenerationFailed:
+        // Fallback to plain text export
+        copyChatToClipboard(chat, format: .plainText)
+        showToast("Export failed, content copied as plain text")
+        
+    case .fileSystemError:
+        // Fallback to clipboard
+        copyChatToClipboard(chat, format: .markdown)
+        showToast("File save failed, content copied to clipboard")
+        
+    default:
+        showErrorAlert(error.localizedDescription)
+    }
+}
+```
+
+## Performance Optimization
+
+### Large Chat Handling
+Optimize export for chats with many messages:
+
+```swift
+private func generateContentEfficiently(for chat: ChatEntity, format: ExportFormat) -> String {
+    let messageCount = chat.messagesArray.count
+    
+    if messageCount > 1000 {
+        // Use streaming generation for large chats
+        return generateContentWithStreaming(chat, format: format)
+    } else {
+        // Use standard generation for smaller chats
+        return generateContent(for: chat, format: format)
+    }
+}
+```
+
+### Memory Management
+Efficient memory usage during export operations:
+
+```swift
+private func generateContentWithStreaming(_ chat: ChatEntity, format: ExportFormat) -> String {
+    var result = ""
+    let batchSize = 100
+    
+    let totalMessages = chat.messagesArray.count
+    
+    for start in stride(from: 0, to: totalMessages, by: batchSize) {
+        let end = min(start + batchSize, totalMessages)
+        let batch = Array(chat.messagesArray[start..<end])
+        
+        let batchContent = generateBatchContent(batch, format: format)
+        result += batchContent
+        
+        // Allow memory cleanup between batches
+        autoreleasepool {
+            // Process batch
+        }
+    }
+    
+    return result
+}
+```
+
+## Best Practices
+
+### Export Guidelines
+- Always validate chat data before export
+- Provide multiple format options for different use cases
+- Implement proper error handling and user feedback
+- Respect user privacy and data sanitization preferences
+
+### UI Integration
+- Use native macOS share sheet for consistent user experience
+- Provide context menus for quick access to export functions
+- Show progress indicators for large export operations
+- Implement keyboard shortcuts for power users
+
+### Content Quality
+- Maintain formatting consistency across export formats
+- Preserve metadata and context information
+- Handle special content types (code, images, files) appropriately
+- Ensure exported content is readable and well-structured
+
+### Performance
+- Use background queues for heavy export operations
+- Implement efficient algorithms for large data sets
+- Provide cancellation support for long-running exports
+- Cache commonly exported content when appropriate

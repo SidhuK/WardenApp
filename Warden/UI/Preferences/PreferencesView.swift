@@ -43,11 +43,13 @@ struct PreferencesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Native macOS-style tab bar
-            HStack(spacing: 2) {
+            // Native macOS-style tab bar with rounded corners and animations
+            HStack(spacing: 4) {
                 ForEach(PreferencesTabs.allCases, id: \.self) { tab in
                     Button(action: {
-                        selectedTab = tab
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            selectedTab = tab
+                        }
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: tab.icon)
@@ -65,14 +67,25 @@ struct PreferencesView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 65)
                         .background(
-                            Rectangle()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(selectedTab == tab ? Color(NSColor.selectedControlColor) : Color.clear)
+                                .scaleEffect(selectedTab == tab ? 1.0 : 0.95)
+                                .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(selectedTab == tab ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                                .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .scaleEffect(selectedTab == tab ? 1.02 : 1.0)
+                    .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
                 }
             }
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.windowBackgroundColor))
             .overlay(
                 Rectangle()
                     .fill(Color(NSColor.separatorColor))
@@ -162,11 +175,13 @@ struct InlineSettingsView: View {
             .padding(.vertical, 12)
             .background(Color(NSColor.windowBackgroundColor))
             
-            // Native macOS-style tab bar
-            HStack(spacing: 2) {
+            // Native macOS-style tab bar with rounded corners and animations
+            HStack(spacing: 4) {
                 ForEach(PreferencesTabs.allCases, id: \.self) { tab in
                     Button(action: {
-                        selectedTab = tab
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            selectedTab = tab
+                        }
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: tab.icon)
@@ -184,14 +199,25 @@ struct InlineSettingsView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 55)
                         .background(
-                            Rectangle()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(selectedTab == tab ? Color(NSColor.selectedControlColor) : Color.clear)
+                                .scaleEffect(selectedTab == tab ? 1.0 : 0.95)
+                                .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(selectedTab == tab ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                                .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .scaleEffect(selectedTab == tab ? 1.02 : 1.0)
+                    .animation(.easeInOut(duration: 0.25), value: selectedTab == tab)
                 }
             }
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.windowBackgroundColor))
             .overlay(
                 Rectangle()
                     .fill(Color(NSColor.separatorColor))

@@ -53,11 +53,16 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Highlighted Text**: [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift) - Text highlighting
 - **Theme Mode**: [ThemeMode.swift](mdc:Warden/UI/Components/ThemeMode.swift) - Light/dark theme support
 - **Toolbar Button**: [ToolbarButton.swift](mdc:Warden/UI/Components/ToolbarButton.swift) - Consistent toolbar styling
+- **File Preview**: [FilePreviewView.swift](mdc:Warden/UI/Components/FilePreviewView.swift) - File attachment preview
+- **Chat Share Menu**: [ChatShareMenu.swift](mdc:Warden/UI/Components/ChatShareMenu.swift) - Export and sharing controls
+- **Toast Notification**: [ToastNotification.swift](mdc:Warden/UI/Components/ToastNotification.swift) - User feedback system
 
 ### Specialized UI Components
 - **HTML Preview**: [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift) - Web content rendering
 - **Zoomable Image**: [ZoomableImageView.swift](mdc:Warden/UI/Chat/ZoomableImageView.swift) - Image viewer with zoom
 - **Thinking Process**: [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - AI reasoning display
+- **Multi-Agent Response**: [MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift) - Multi-service response display
+- **Project Summary**: [ProjectSummaryView.swift](mdc:Warden/UI/Chat/ProjectSummaryView.swift) - AI-generated project insights
 
 ## Projects/Folders Architecture
 

@@ -39,7 +39,7 @@ class APIServiceDetailViewModel: ObservableObject {
 
     private func setupInitialValues() {
         if let service = apiService {
-            name = service.name ?? defaultApiConfiguration!.name
+            name = service.name ?? defaultApiConfiguration?.name ?? "Untitled Service"
             type = service.type ?? AppConstants.defaultApiType
             url = service.url?.absoluteString ?? ""
             model = service.model ?? ""
@@ -50,7 +50,7 @@ class APIServiceDetailViewModel: ObservableObject {
             defaultAiPersona = service.defaultPersona
             defaultApiConfiguration = AppConstants.defaultApiConfigurations[type]
             selectedModel = model
-            isCustomModel = ((defaultApiConfiguration!.models.contains(model)) == false)
+            isCustomModel = !(defaultApiConfiguration?.models.contains(model) ?? false)
 
             if let serviceIDString = service.id?.uuidString {
                 do {
@@ -70,9 +70,10 @@ class APIServiceDetailViewModel: ObservableObject {
     private func setupBindings() {
         $selectedModel
             .sink { [weak self] newValue in
-                self?.isCustomModel = (newValue == "custom")
-                if !self!.isCustomModel {
-                    self?.model = newValue
+                guard let self = self else { return }
+                self.isCustomModel = (newValue == "custom")
+                if !self.isCustomModel {
+                    self.model = newValue
                 }
             }
             .store(in: &cancellables)
@@ -83,13 +84,18 @@ class APIServiceDetailViewModel: ObservableObject {
             fetchedModels = []
             return
         }
+        
+        guard let apiUrl = URL(string: url) else {
+            fetchedModels = []
+            return
+        }
 
         isLoadingModels = true
         modelFetchError = nil
 
         let config = APIServiceConfig(
             name: type,
-            apiUrl: URL(string: url)!,
+            apiUrl: apiUrl,
             apiKey: apiKey,
             model: ""
         )
@@ -183,14 +189,15 @@ class APIServiceDetailViewModel: ObservableObject {
     }
 
     func onChangeApiType(_ type: String) {
-        self.name = self.name == self.defaultApiConfiguration!.name ? "" : self.name
+        let oldConfigName = self.defaultApiConfiguration?.name ?? ""
+        self.name = self.name == oldConfigName ? "" : self.name
         self.defaultApiConfiguration = AppConstants.defaultApiConfigurations[type]
-        self.name = self.name == "" ? self.defaultApiConfiguration!.name : self.name
-        self.url = self.defaultApiConfiguration!.url
-        self.model = self.defaultApiConfiguration!.defaultModel
+        self.name = self.name == "" ? (self.defaultApiConfiguration?.name ?? "New API Service") : self.name
+        self.url = self.defaultApiConfiguration?.url ?? ""
+        self.model = self.defaultApiConfiguration?.defaultModel ?? ""
         self.selectedModel = self.model
         
-        self.imageUploadsAllowed = self.defaultApiConfiguration!.imageUploadsSupported
+        self.imageUploadsAllowed = self.defaultApiConfiguration?.imageUploadsSupported ?? false
 
         fetchModelsForService()
     }

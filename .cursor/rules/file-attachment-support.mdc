@@ -1,0 +1,314 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# File Attachment Support Guide
+
+Warden supports comprehensive file attachment functionality, allowing users to upload and attach various file types to chat messages. The system includes intelligent content extraction, type detection, and API integration for AI model processing.
+
+## Core Components
+
+### File Attachment Model
+[FileAttachment.swift](mdc:Warden/Models/FileAttachment.swift) is the central model for handling file attachments:
+
+```swift
+class FileAttachment: Identifiable, ObservableObject {
+    var id: UUID = UUID()
+    var url: URL?
+    @Published var fileName: String = ""
+    @Published var fileSize: Int64 = 0
+    @Published var fileType: FileAttachmentType = .other("")
+    @Published var textContent: String = ""
+    @Published var isLoading: Bool = false
+    @Published var error: Error?
+    @Published var thumbnail: NSImage?
+    @Published var image: NSImage?
+}
+```
+
+### Supported File Types
+The system supports multiple file types with specialized handling:
+
+```swift
+enum FileAttachmentType {
+    case image        // jpg, jpeg, png, gif, bmp, tiff, heic, heif, webp
+    case text         // txt, log
+    case csv          // csv files with tabular data
+    case pdf          // PDF documents with text extraction
+    case json         // JSON files with structure parsing
+    case xml          // XML, HTML, HTM files
+    case markdown     // md, markdown files
+    case rtf          // Rich Text Format files
+    case other(String) // Other file types
+}
+```
+
+### Content Extraction Patterns
+Each file type has specialized content extraction:
+
+#### Image Files
+- Load NSImage for display
+- Generate thumbnails for preview
+- Store as base64 for API transmission
+- Support for all common image formats including HEIC/HEIF
+
+#### Text-Based Files
+- UTF-8 text extraction for plain text, CSV, JSON, XML, Markdown
+- RTF parsing with NSAttributedString conversion
+- Fallback to binary file indicator for unsupported text encodings
+
+#### PDF Files
+- PDF text extraction using PDFKit
+- Content parsing for AI processing
+- Thumbnail generation from first page
+
+#### Generic Files
+- Attempt text extraction first
+- Binary file placeholder if text extraction fails
+- File metadata preservation (size, type, name)
+
+## UI Integration
+
+### File Preview Component
+[FilePreviewView.swift](mdc:Warden/UI/Components/FilePreviewView.swift) provides consistent file preview UI:
+
+```swift
+struct FilePreviewView: View {
+    @ObservedObject var attachment: FileAttachment
+    let onRemove: (Int) -> Void
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            // File icon/thumbnail with type-specific styling
+            // File name and size information
+            // Remove button for attachment management
+        }
+    }
+}
+```
+
+### Message Content Integration
+[MessageContent.swift](mdc:Warden/Models/MessageContent.swift) includes file attachment support:
+
+```swift
+struct MessageContent {
+    let content: String
+    var imageAttachment: ImageAttachment?
+    var fileAttachment: FileAttachment?
+    
+    init(fileAttachment: FileAttachment) {
+        self.content = "<file-uuid>\(fileAttachment.id.uuidString)</file-uuid>"
+        self.imageAttachment = nil
+        self.fileAttachment = fileAttachment
+    }
+}
+```
+
+### Input Area Integration
+File attachments are integrated into [MessageInputView.swift](mdc:Warden/UI/Chat/BottomContainer/MessageInputView.swift):
+
+```swift
+private var attachmentPreviewsSection: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 8) {
+            ForEach(attachedFiles) { attachment in
+                FilePreviewView(attachment: attachment) { index in
+                    // Remove attachment logic
+                }
+            }
+        }
+    }
+}
+```
+
+## API Integration
+
+### Content Formatting for AI
+File attachments are converted to API-compatible format in `toAPIContent()`:
+
+```swift
+func toAPIContent() -> [String: Any] {
+    switch fileType {
+    case .image:
+        // Base64 encoding for image files
+        return [
+            "type": "image_url",
+            "image_url": ["url": "data:image/jpeg;base64,\(base64String)"]
+        ]
+    
+    case .text, .csv, .json, .xml, .markdown, .rtf, .pdf:
+        // Text content with file context
+        let content = """
+        File: \(fileName) (\(fileTypeDescription))
+        Size: \(ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file))
+        
+        Content:
+        \(textContent)
+        """
+        return ["type": "text", "text": content]
+    }
+}
+```
+
+### Multi-Modal API Support
+File attachments work with vision-capable models and text processing models:
+- **Vision Models**: Images sent as base64-encoded data URLs
+- **Text Models**: File content extracted and formatted as structured text
+- **Mixed Content**: Support for both images and text files in same message
+
+## Core Data Integration
+
+### FileEntity Model
+File attachments are persisted using Core Data with the FileEntity:
+- **id**: Unique identifier
+- **fileName**: Original file name
+- **fileSize**: File size in bytes
+- **fileType**: File extension/type
+- **textContent**: Extracted text content
+- **imageData**: Compressed JPEG data for images
+- **thumbnailData**: Compressed thumbnail data
+
+### Persistence Patterns
+```swift
+func saveToEntity(context: NSManagedObjectContext? = nil) {
+    contextToUse.perform {
+        if self.fileEntity == nil {
+            let newEntity = FileEntity(context: contextToUse)
+            newEntity.id = self.id
+            self.fileEntity = newEntity
+        }
+        
+        // Save file metadata and content
+        self.fileEntity?.fileName = self.fileName
+        self.fileEntity?.fileSize = self.fileSize
+        self.fileEntity?.textContent = self.textContent
+        
+        // Save image data with compression
+        if let image = self.image {
+            // JPEG compression for efficient storage
+        }
+    }
+}
+```
+
+## Content Processing
+
+### File Type Detection
+Automatic file type detection based on file extensions:
+
+```swift
+private func determineFileType(from extension: String) -> FileAttachmentType {
+    switch extension.lowercased() {
+    case "jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic", "heif", "webp":
+        return .image
+    case "txt", "log":
+        return .text
+    case "csv":
+        return .csv
+    case "pdf":
+        return .pdf
+    case "json":
+        return .json
+    case "xml", "html", "htm":
+        return .xml
+    case "md", "markdown":
+        return .markdown
+    case "rtf":
+        return .rtf
+    default:
+        return .other(extension)
+    }
+}
+```
+
+### Content Extraction Methods
+Specialized extraction for each file type:
+
+#### PDF Processing
+```swift
+private func loadPDFFile(from url: URL) {
+    if let pdfDocument = PDFDocument(url: url) {
+        var extractedText = ""
+        for i in 0..<pdfDocument.pageCount {
+            if let page = pdfDocument.page(at: i) {
+                extractedText += page.string ?? ""
+            }
+        }
+        // Store extracted text and generate thumbnail
+    }
+}
+```
+
+#### Image Processing
+```swift
+private func loadImageFile(from url: URL) {
+    if let image = NSImage(contentsOf: url) {
+        self.createThumbnail(from: image)
+        // Store image and create optimized thumbnail
+    }
+}
+```
+
+## Error Handling
+
+### File Loading Errors
+- Network timeout for remote files
+- Unsupported file format handling
+- File permission issues
+- Corrupted file detection
+- Memory limits for large files
+
+### UI Error States
+- Loading indicators during file processing
+- Error messages with actionable feedback
+- Graceful degradation for unsupported files
+- Retry mechanisms for transient failures
+
+## Performance Considerations
+
+### Memory Management
+- Lazy loading of file content
+- Image compression for storage efficiency
+- Thumbnail generation for preview performance
+- Background processing for large files
+
+### File Size Limits
+- Practical limits based on API constraints
+- User feedback for oversized files
+- Compression strategies for images
+- Streaming for large text files
+
+## Security Considerations
+
+### File Validation
+- File type verification beyond extension checking
+- Content sanitization for text files
+- Malicious file detection
+- Safe file handling practices
+
+### Privacy Protection
+- Local-only file processing
+- No file upload to external services beyond AI APIs
+- Secure temporary file handling
+- Proper cleanup of file resources
+
+## Best Practices
+
+### File Handling
+- Always check file permissions before processing
+- Implement proper error handling for all file operations
+- Use background queues for file processing
+- Clean up temporary files and resources
+
+### UI Integration
+- Show loading states during file processing
+- Provide clear file type indicators
+- Support drag-and-drop file attachment
+- Implement file removal capabilities
+
+### API Integration
+- Format file content appropriately for each AI service
+- Handle API-specific file size limits
+- Provide fallback for unsupported file types
+- Include file context in AI prompts

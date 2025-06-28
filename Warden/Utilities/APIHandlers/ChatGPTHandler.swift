@@ -181,36 +181,65 @@ class ChatGPTHandler: APIService {
             }
 
             if let content = message["content"] {
-                let pattern = "<image-uuid>(.*?)</image-uuid>"
+                let imagePattern = "<image-uuid>(.*?)</image-uuid>"
+                let filePattern = "<file-uuid>(.*?)</file-uuid>"
+                
+                let hasImages = content.range(of: imagePattern, options: .regularExpression) != nil
+                let hasFiles = content.range(of: filePattern, options: .regularExpression) != nil
 
-                if content.range(of: pattern, options: .regularExpression) != nil {
-                    let textContent = content.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                if hasImages || hasFiles {
+                    var textContent = content
+                    
+                    // Remove all UUID patterns from text content
+                    textContent = textContent.replacingOccurrences(of: imagePattern, with: "", options: .regularExpression)
+                    textContent = textContent.replacingOccurrences(of: filePattern, with: "", options: .regularExpression)
+                    textContent = textContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
                     var contentArray: [[String: Any]] = []
 
+                    // Process file attachments first (as text content)
+                    if hasFiles {
+                        let fileRegex = try? NSRegularExpression(pattern: filePattern, options: [])
+                        let nsString = content as NSString
+                        let fileMatches = fileRegex?.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
+
+                        for match in fileMatches {
+                            if match.numberOfRanges > 1 {
+                                let uuidRange = match.range(at: 1)
+                                let uuidString = nsString.substring(with: uuidRange)
+
+                                if let uuid = UUID(uuidString: uuidString),
+                                   let fileContent = self.loadFileContentFromCoreData(uuid: uuid) {
+                                    contentArray.append(["type": "text", "text": fileContent])
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Add remaining text content if any
                     if !textContent.isEmpty {
                         contentArray.append(["type": "text", "text": textContent])
                     }
 
-                    let regex = try? NSRegularExpression(pattern: pattern, options: [])
-                    let nsString = content as NSString
-                    let matches =
-                        regex?.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length))
-                        ?? []
+                    // Process image attachments
+                    if hasImages {
+                        let imageRegex = try? NSRegularExpression(pattern: imagePattern, options: [])
+                        let nsString = content as NSString
+                        let imageMatches = imageRegex?.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
 
-                    for match in matches {
-                        if match.numberOfRanges > 1 {
-                            let uuidRange = match.range(at: 1)
-                            let uuidString = nsString.substring(with: uuidRange)
+                        for match in imageMatches {
+                            if match.numberOfRanges > 1 {
+                                let uuidRange = match.range(at: 1)
+                                let uuidString = nsString.substring(with: uuidRange)
 
-                            if let uuid = UUID(uuidString: uuidString),
-                                let imageData = self.loadImageFromCoreData(uuid: uuid)
-                            {
-                                contentArray.append([
-                                    "type": "image_url",
-                                    "image_url": ["url": "data:image/jpeg;base64,\(imageData.base64EncodedString())"],
-                                ])
+                                if let uuid = UUID(uuidString: uuidString),
+                                    let imageData = self.loadImageFromCoreData(uuid: uuid)
+                                {
+                                    contentArray.append([
+                                        "type": "image_url",
+                                        "image_url": ["url": "data:image/jpeg;base64,\(imageData.base64EncodedString())"],
+                                    ])
+                                }
                             }
                         }
                     }
@@ -356,6 +385,40 @@ class ChatGPTHandler: APIService {
         }
         catch {
             print("Error fetching image from CoreData: \(error)")
+        }
+
+        return nil
+    }
+    
+    private func loadFileContentFromCoreData(uuid: UUID) -> String? {
+        let viewContext = PersistenceController.shared.container.viewContext
+
+        let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+        fetchRequest.fetchLimit = 1
+
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            if let fileEntity = results.first {
+                let fileName = fileEntity.fileName ?? "Unknown File"
+                let fileSize = fileEntity.fileSize
+                let fileType = fileEntity.fileType ?? "unknown"
+                let textContent = fileEntity.textContent ?? ""
+                
+                // Format the file content for the AI
+                let formattedContent = """
+                File: \(fileName) (\(fileType.uppercased()) file)
+                Size: \(ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file))
+                
+                Content:
+                \(textContent)
+                """
+                
+                return formattedContent
+            }
+        }
+        catch {
+            print("Error fetching file from CoreData: \(error)")
         }
 
         return nil

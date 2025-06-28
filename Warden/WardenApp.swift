@@ -58,12 +58,12 @@ struct WardenApp: App {
                     handleSpotlightSearch(userActivity: userActivity)
                 }
                 .onAppear {
-                    // Set initial window size to 75% of screen
+                    // Set initial window size to 85% of screen for first launch
                     if let screen = NSScreen.main {
                         let screenWidth = screen.frame.width
                         let screenHeight = screen.frame.height
-                        let windowWidth = screenWidth * 0.75
-                        let windowHeight = screenHeight * 0.75
+                        let windowWidth = screenWidth * 0.85
+                        let windowHeight = screenHeight * 0.85
                         
                         // Center the window on screen
                         let x = (screenWidth - windowWidth) / 2
@@ -82,6 +82,7 @@ struct WardenApp: App {
                 }
         }
         .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1200, height: 800)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Warden") {
