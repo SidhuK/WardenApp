@@ -3,133 +3,456 @@ description:
 globs: 
 alwaysApply: false
 ---
-# Testing and Debugging Patterns
+# Testing and Debugging Guide
 
-Warden includes comprehensive testing strategies and debugging patterns to ensure code quality and maintainability.
+This guide covers testing strategies, debugging techniques, and quality assurance practices for Warden development.
 
-## Testing Structure
+## Testing Architecture
 
-### Unit Tests (`WardenTests/`)
-- **Test Organization**: Tests organized to mirror the main app structure
-- **Core Data Testing**: Mock Core Data stack for isolated testing
-- **API Handler Testing**: Mock implementations for all API services
-- **Model Testing**: Validation of data models and transformations
-- **Utility Testing**: Unit tests for parsing, formatting, and helper functions
+### Unit Testing Framework
+Located in [WardenTests](mdc:WardenTests):
+- **XCTest Framework**: Standard iOS/macOS testing framework
+- **Test Target**: Separate target for unit tests with proper dependencies
+- **Mock Objects**: Test doubles for external API dependencies
+- **Async Testing**: Full support for async/await and streaming patterns
+- **Core Data Testing**: In-memory store testing for persistence layer
 
-### UI Tests (`WardenUITests/`)
-- **Integration Testing**: End-to-end user workflows
-- **Accessibility Testing**: VoiceOver and keyboard navigation validation
-- **Performance Testing**: UI responsiveness and memory usage
-- **Screenshot Testing**: Visual regression testing for UI changes
+### Core Test Files
+- **Main Test Suite**: [macaiTests.swift](mdc:WardenTests/macaiTests.swift) - Primary test entry point and app lifecycle tests
+- **Message Parser Tests**: [MessageParserTests.swift](mdc:WardenTests/Utilities/MessageParserTests.swift) - Text processing and content validation
+- **Utility Tests**: Comprehensive coverage for [Extensions.swift](mdc:Warden/Utilities/Extensions.swift) and utility classes
+- **API Handler Tests**: Mock testing for all AI service integrations
+- **Core Data Tests**: Entity relationship and persistence validation
 
-### Preview Testing
-- **Preview State Manager**: [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) provides realistic test data
-- **SwiftUI Previews**: All major views include comprehensive preview scenarios
-- **Mock Data**: Consistent test data across previews and tests
-- **State Variations**: Preview different app states and edge cases
+### UI Testing Framework
+Located in [WardenUITests](mdc:WardenUITests):
+- **UI Test Suite**: [WardenUITests.swift](mdc:WardenUITests/WardenUITests.swift) - Complete user interface automation
+- **Launch Tests**: [WardenUITestsLaunchTests.swift](mdc:WardenUITests/WardenUITestsLaunchTests.swift) - App startup and initialization validation
+- **Accessibility Testing**: VoiceOver navigation and accessibility compliance
+- **Cross-Platform Testing**: Intel and Apple Silicon compatibility
+- **Project Workflow Tests**: Complete project management user flows
+
+## Preview Support
+
+### SwiftUI Previews
+Development and testing support via [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift):
+- **Realistic Mock Data**: Comprehensive test data including projects, chats, messages, and personas
+- **Multi-State Previews**: Different app states (empty, populated, loading, error)
+- **API Response Mocking**: Simulated streaming responses for UI development
+- **File Attachment Testing**: Mock file attachments for various formats
+- **Project Hierarchy Testing**: Complex project/chat relationships for UI validation
+- **Reasoning Model Testing**: Mock thinking process content for reasoning model UI
+
+### Preview Data Patterns
+```swift
+// Example from PreviewStateManager
+static func createMockChat(withProject project: Project? = nil) -> Chat {
+    let chat = Chat(context: shared.persistentContainer.viewContext)
+    chat.id = UUID()
+    chat.title = "Mock Chat \(Int.random(in: 1...100))"
+    chat.project = project
+    chat.timestamp = Date()
+    return chat
+}
+```
 
 ## Testing Patterns
 
-### Mock Implementations
-- **API Mocks**: Simulated API responses for consistent testing
-- **Core Data Mocks**: In-memory database for isolated tests
-- **Network Mocks**: Controlled network conditions and error scenarios
-- **Service Mocks**: Mock implementations of external services
+### Unit Test Structure
+```swift
+class MessageParserTests: XCTestCase {
+    var parser: MessageParser!
+    var mockContext: NSManagedObjectContext!
+    
+    override func setUp() {
+        super.setUp()
+        parser = MessageParser()
+        
+        // In-memory Core Data stack for testing
+        let container = NSPersistentContainer(name: "warenDataModel")
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        container.persistentStoreDescriptions = [description]
+        
+        container.loadPersistentStores { _, _ in }
+        mockContext = container.viewContext
+    }
+    
+    override func tearDown() {
+        parser = nil
+        mockContext = nil
+        super.tearDown()
+    }
+    
+    func testMarkdownParsing() throws {
+        let markdown = "# Header\n\n**Bold text** with `code`"
+        let result = parser.parseMarkdown(markdown)
+        
+        XCTAssertTrue(result.contains("Header"))
+        XCTAssertTrue(result.contains("Bold text"))
+    }
+}
+```
 
-### Test Data Management
-- **Fixture Data**: Predefined test datasets for consistent scenarios
-- **Factory Methods**: Programmatic generation of test objects
-- **State Setup**: Helper methods for establishing test conditions
-- **Cleanup Procedures**: Proper teardown after each test
+### Mock API Dependencies
+Create test doubles for AI service integrations:
+```swift
+class MockChatGPTHandler: APIProtocol {
+    var mockResponse: String = "Mock AI response"
+    var shouldFail: Bool = false
+    var isReasoningModel: Bool = false
+    var mockReasoningContent: String = "Mock thinking process"
+    
+    func sendMessage(
+        chatId: UUID,
+        messageContent: String,
+        conversation: [Message],
+        modelName: String,
+        systemPrompt: String?
+    ) async throws -> AsyncThrowingStream<String, Error> {
+        
+        return AsyncThrowingStream { continuation in
+            if shouldFail {
+                continuation.finish(throwing: APIError.networkError)
+                return
+            }
+            
+            // Simulate reasoning model response
+            if isReasoningModel {
+                continuation.yield("<think>\(mockReasoningContent)</think>")
+            }
+            
+            // Simulate streaming response
+            for chunk in mockResponse.chunked(into: 5) {
+                continuation.yield(String(chunk))
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms delay
+            }
+            
+            continuation.finish()
+        }
+    }
+}
+```
 
-### Async Testing
-- **XCTestExpectation**: Proper handling of async operations in tests
-- **Actor Testing**: Testing actor-isolated code safely
-- **Timeout Handling**: Reasonable timeouts for async operations
-- **Cancellation Testing**: Verify proper cleanup when operations are cancelled
+### Async and Streaming Tests
+Testing concurrent operations and real-time streaming:
+```swift
+func testStreamingResponse() async throws {
+    let mockHandler = MockChatGPTHandler()
+    mockHandler.mockResponse = "This is a test streaming response"
+    
+    let expectation = XCTestExpectation(description: "Streaming completed")
+    var receivedChunks: [String] = []
+    
+    let stream = try await mockHandler.sendMessage(
+        chatId: UUID(),
+        messageContent: "Test",
+        conversation: [],
+        modelName: "gpt-4",
+        systemPrompt: nil
+    )
+    
+    for try await chunk in stream {
+        receivedChunks.append(chunk)
+    }
+    
+    let fullResponse = receivedChunks.joined()
+    XCTAssertEqual(fullResponse, mockHandler.mockResponse)
+    expectation.fulfill()
+    
+    await fulfillment(of: [expectation], timeout: 5.0)
+}
+
+func testReasoningModelResponse() async throws {
+    let mockHandler = MockChatGPTHandler()
+    mockHandler.isReasoningModel = true
+    mockHandler.mockResponse = "Final answer"
+    mockHandler.mockReasoningContent = "Let me think about this..."
+    
+    var receivedContent = ""
+    let stream = try await mockHandler.sendMessage(
+        chatId: UUID(),
+        messageContent: "Reasoning test",
+        conversation: [],
+        modelName: "o1-preview",
+        systemPrompt: nil
+    )
+    
+    for try await chunk in stream {
+        receivedContent += chunk
+    }
+    
+    XCTAssertTrue(receivedContent.contains("<think>"))
+    XCTAssertTrue(receivedContent.contains("Let me think about this..."))
+    XCTAssertTrue(receivedContent.contains("Final answer"))
+}
+```
+
+### Core Data Testing
+Testing persistence layer with in-memory stores:
+```swift
+func testProjectChatRelationship() throws {
+    let project = Project(context: mockContext)
+    project.id = UUID()
+    project.name = "Test Project"
+    
+    let chat = Chat(context: mockContext)
+    chat.id = UUID()
+    chat.title = "Test Chat"
+    chat.project = project
+    
+    try mockContext.save()
+    
+    // Test relationship
+    XCTAssertEqual(project.chats?.count, 1)
+    XCTAssertEqual(chat.project, project)
+    
+    // Test cascade delete
+    mockContext.delete(project)
+    try mockContext.save()
+    
+    // Chat should still exist but with nil project (backwards compatibility)
+    XCTAssertNil(chat.project)
+}
+```
 
 ## Debugging Strategies
 
-### Logging Patterns
-- **Structured Logging**: Consistent log levels and formatting
-- **Context Information**: Include relevant context in log messages
-- **Privacy Protection**: Never log API keys or sensitive user data
-- **Debug vs Release**: Different logging verbosity for different builds
+### Structured Logging
+Strategic logging with os_log for production debugging:
+```swift
+import os.log
 
-### Development Tools
-- **Xcode Instruments**: Profiling memory usage and performance
-- **Debug Builds**: Additional validation and logging in debug mode
-- **Simulator Testing**: Testing across different macOS versions
-- **Device Testing**: Validation on real hardware when possible
+extension Logger {
+    private static var subsystem = Bundle.main.bundleIdentifier!
+    
+    static let api = Logger(subsystem: subsystem, category: "api")
+    static let coreData = Logger(subsystem: subsystem, category: "coredata")
+    static let ui = Logger(subsystem: subsystem, category: "ui")
+}
 
-### Error Handling Testing
-- **Error Scenarios**: Comprehensive testing of error conditions
-- **Network Failures**: Test behavior during network outages
-- **Invalid Data**: Handling of malformed API responses
-- **Resource Constraints**: Testing under low memory conditions
+// Usage throughout the app
+Logger.api.info("Sending message to \(serviceName) with model \(modelName)")
+Logger.coreData.error("Failed to save context: \(error.localizedDescription)")
+Logger.ui.debug("Chat view appeared for chat: \(chat.id)")
+```
 
-### Performance Testing
-- **Memory Leaks**: Detection and prevention of memory leaks
-- **CPU Usage**: Monitoring background processing efficiency
-- **UI Responsiveness**: Ensuring smooth user interactions
-- **Startup Time**: Optimizing app launch performance
+### Development-Only Debug Output
+```swift
+#if DEBUG
+func debugPrint(_ items: Any...) {
+    print("[DEBUG]", items.map { "\($0)" }.joined(separator: " "))
+}
 
-## Debugging Tools and Techniques
+func debugChatState(_ chat: Chat) {
+    debugPrint("Chat:", chat.title, "Messages:", chat.messages?.count ?? 0, "Project:", chat.project?.name ?? "None")
+}
+#else
+func debugPrint(_ items: Any...) { /* No-op in release */ }
+func debugChatState(_ chat: Chat) { /* No-op in release */ }
+#endif
+```
+
+### Xcode Debugging Features
+- **Conditional Breakpoints**: Break only when specific conditions are met
+- **Exception Breakpoints**: Catch all Objective-C and Swift exceptions
+- **Symbolic Breakpoints**: Break on specific method calls across all classes
+- **LLDB Commands**: Advanced debugging with custom commands and scripts
+- **View Debugging**: 3D view hierarchy inspection for SwiftUI and AppKit
+- **Memory Graph Debugger**: Visual memory relationship analysis
 
 ### Core Data Debugging
-- **Database Inspection**: Tools for examining Core Data store contents
-- **Migration Testing**: Validation of schema changes and data migration
-- **Relationship Debugging**: Ensuring proper object graph integrity
-- **Performance Monitoring**: Identifying slow queries and optimization opportunities
+Enable Core Data debugging flags:
+```swift
+// In WardenApp.swift or during container setup
+container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
+                                                      forKey: NSPersistentHistoryTrackingKey)
 
-### UI Debugging
-- **View Hierarchy**: SwiftUI view inspector for layout debugging
-- **Auto Layout**: Constraint debugging and resolution
-- **Animation Debugging**: Smooth transitions and proper timing
-- **Accessibility Auditing**: VoiceOver and assistive technology testing
+// Enable SQL debugging
+if ProcessInfo.processInfo.arguments.contains("-com.apple.CoreData.SQLDebug") {
+    // SQL statements will be logged to console
+}
+```
 
-### API Integration Debugging
-- **Network Monitoring**: Inspection of API requests and responses
-- **Error Handling**: Validation of error scenarios and user feedback
-- **Streaming Debugging**: Real-time response processing validation
-- **Rate Limiting**: Testing API quotas and throttling behavior
+## Performance Testing and Profiling
 
-### State Management Debugging
-- **State Changes**: Tracking state mutations and their effects
-- **Environment Objects**: Validation of shared state propagation
-- **User Defaults**: Monitoring preference changes and persistence
-- **Core Data Changes**: Observing entity modifications and relationships
+### XCTest Performance Metrics
+```swift
+func testChatLoadingPerformance() {
+    let chatStore = ChatStore()
+    
+    measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
+        chatStore.loadChats()
+    }
+}
+
+func testLargeProjectPerformance() {
+    // Create large dataset
+    let project = createProjectWithManyChats(chatCount: 1000)
+    
+    measureMetrics([.wallClockTime, .cpuInstructions]) {
+        let _ = chatStore.loadProjectChats(project)
+    }
+}
+
+func testAPIResponseParsing() {
+    let largeResponse = generateLargeAPIResponse(size: 10_000)
+    
+    measure {
+        let _ = MessageParser().parseMarkdown(largeResponse)
+    }
+}
+```
+
+### Instruments Profiling
+Detailed performance analysis:
+- **Time Profiler**: Identify CPU bottlenecks in AI response processing
+- **Allocations**: Track memory usage during file uploads and large conversations
+- **Core Data**: Monitor fetch request performance and faulting behavior
+- **Network**: Analyze API call patterns and streaming performance
+- **SwiftUI**: Profile view update performance and state changes
+
+### Memory Leak Detection
+```swift
+func testChatMemoryLeaks() {
+    weak var weakChat: Chat?
+    
+    autoreleasepool {
+        let chat = chatStore.createChat(title: "Memory Test")
+        weakChat = chat
+        
+        // Use the chat
+        chatStore.addMessage(to: chat, content: "Test message", role: "user")
+        
+        // Delete the chat
+        chatStore.deleteChat(chat)
+    }
+    
+    // Chat should be deallocated
+    XCTAssertNil(weakChat, "Chat should be deallocated after deletion")
+}
+```
+
+## Mock Data and Test Fixtures
+
+### Comprehensive Test Data
+Realistic test data covering all app features:
+```swift
+extension PreviewStateManager {
+    static func createCompleteTestSuite() -> (projects: [Project], chats: [Chat], personas: [Persona]) {
+        let projects = [
+            createProject(name: "SwiftUI Development", chatCount: 5),
+            createProject(name: "AI Integration", chatCount: 3),
+            createProject(name: "Core Data Migration", chatCount: 8)
+        ]
+        
+        let ungroupedChats = [
+            createChatWithMessages(title: "Quick Question", messageCount: 2),
+            createChatWithMessages(title: "Code Review", messageCount: 15),
+            createChatWithReasoningContent(title: "Complex Problem Solving")
+        ]
+        
+        let personas = [
+            createPersona(name: "Code Reviewer", systemPrompt: "You are an expert code reviewer..."),
+            createPersona(name: "Technical Writer", systemPrompt: "You help write clear documentation..."),
+            createPersona(name: "System Architect", systemPrompt: "You design scalable systems...")
+        ]
+        
+        return (projects, ungroupedChats, personas)
+    }
+}
+```
+
+### File Attachment Testing
+Mock file attachments for various formats:
+```swift
+static func createMockFileAttachments() -> [FileEntity] {
+    return [
+        createFileAttachment(filename: "requirements.txt", mimeType: "text/plain", content: "pandas\nnumpy\nrequests"),
+        createFileAttachment(filename: "data.json", mimeType: "application/json", content: """
+            {"users": [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]}
+            """),
+        createFileAttachment(filename: "report.pdf", mimeType: "application/pdf", content: Data()), // Binary data
+        createFileAttachment(filename: "image.png", mimeType: "image/png", content: createMockImageData())
+    ]
+}
+```
+
+### Edge Case Testing Data
+Boundary conditions and error scenarios:
+```swift
+static func createEdgeCaseData() -> EdgeCaseTestData {
+    return EdgeCaseTestData(
+        emptyProject: createProject(name: "Empty Project", chatCount: 0),
+        chatWithNoMessages: createChat(title: "Empty Chat", messageCount: 0),
+        chatWithManyMessages: createChat(title: "Large Chat", messageCount: 500),
+        malformedAPIResponse: "{'invalid': json syntax}",
+        oversizedFile: createLargeFile(sizeMB: 100),
+        unicodeContent: "Test with emoji 🚀 and special chars: ñ, é, 中文",
+        longChatTitle: String(repeating: "Very Long Title ", count: 50)
+    )
+}
+```
 
 ## Quality Assurance
 
 ### Code Quality Metrics
-- **Test Coverage**: Maintaining high test coverage for critical paths
-- **Code Complexity**: Monitoring cyclomatic complexity
-- **Documentation Coverage**: Ensuring public APIs are documented
-- **Lint Compliance**: Following Swift style guidelines with [.swift-format](mdc:Warden/.swift-format)
+- **Test Coverage**: Maintain >85% code coverage across core components
+- **Cyclomatic Complexity**: Keep methods under 10 complexity points
+- **Code Review**: Mandatory peer review for all changes
+- **Static Analysis**: SwiftLint integration for code style consistency
+- **Dependency Analysis**: Monitor third-party library usage and security
 
-### Continuous Integration
-- **Automated Testing**: Running tests on code changes
-- **Build Validation**: Ensuring builds succeed across configurations
-- **Static Analysis**: Detecting potential issues before runtime
-- **Performance Regression**: Monitoring for performance degradation
+### Automated Testing Pipeline
+```swift
+// Example CI/CD test script
+func runAutomatedTestSuite() {
+    // Unit tests
+    XCTAssertTrue(runUnitTests())
+    
+    // Integration tests
+    XCTAssertTrue(runIntegrationTests())
+    
+    // Performance benchmarks
+    XCTAssertTrue(runPerformanceTests())
+    
+    // Accessibility validation
+    XCTAssertTrue(runAccessibilityTests())
+    
+    // Memory leak detection
+    XCTAssertTrue(runMemoryLeakTests())
+}
+```
 
-### Manual Testing Procedures
-- **Smoke Testing**: Basic functionality validation
-- **Edge Case Testing**: Boundary conditions and unusual scenarios
-- **User Experience Testing**: Real-world usage patterns
-- **Accessibility Testing**: Manual validation of assistive technologies
+### Integration Testing Workflows
+End-to-end validation of key user journeys:
+- **New User Onboarding**: Complete welcome screen to first chat flow
+- **Project Management**: Create project → add chats → reorganize → delete workflow
+- **Multi-Agent Testing**: Concurrent API calls with different services
+- **File Upload Pipeline**: Complete file attachment lifecycle with various formats
+- **Reasoning Model Integration**: Full thinking process display and interaction
+- **Export Functionality**: Complete chat sharing and export workflows
 
-## Best Practices
+### Regression Testing Strategy
+Prevent feature breakage with comprehensive test coverage:
+- **Critical Path Protection**: Core chat functionality always tested
+- **API Compatibility**: Ensure all AI service integrations remain functional
+- **Data Migration Testing**: Validate Core Data schema changes
+- **UI Consistency**: Verify design system compliance across all components
+- **Performance Regression**: Monitor for performance degradation
+- **Accessibility Compliance**: Maintain VoiceOver and accessibility standards
 
-### Test Writing Guidelines
-- **Descriptive Names**: Test names clearly describe what is being tested
-- **Single Responsibility**: Each test validates one specific behavior
-- **Isolated Tests**: Tests don't depend on other tests or external state
-- **Readable Assertions**: Clear expectations and failure messages
-
-### Debugging Best Practices
-- **Reproducible Issues**: Steps to consistently reproduce problems
-- **Minimal Examples**: Reduced test cases that isolate the issue
-- **Version Control**: Track when issues were introduced
-- **Documentation**: Record debugging steps and solutions for future reference
+### Release Testing Checklist
+Pre-release validation protocol:
+- [ ] All unit tests passing
+- [ ] Integration tests successful
+- [ ] Performance benchmarks within acceptable ranges
+- [ ] Memory leak detection clean
+- [ ] Accessibility audit complete
+- [ ] Multi-language support validated
+- [ ] Cross-platform compatibility (Intel/Apple Silicon)
+- [ ] API key validation for all services
+- [ ] Data backup/restore functionality
+- [ ] Update mechanism testing
+- [ ] Privacy and security audit
+- [ ] User documentation accuracy

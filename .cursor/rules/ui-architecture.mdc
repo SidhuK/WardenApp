@@ -18,44 +18,90 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 ### Feature-Based Organization
 
 #### Chat Interface (`Warden/UI/Chat/`)
-- **Chat View**: Main conversation interface
+- **Chat View**: [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main conversation interface with multi-agent support
 - **Chat ViewModel**: [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift) - Chat state management
 - **Bubble Views**: [BubbleView/](mdc:Warden/UI/Chat/BubbleView) - Message display components
+  - [ChatBubbleView.swift](mdc:Warden/UI/Chat/BubbleView/ChatBubbleView.swift) - Primary message bubbles
+  - [MessageContentView.swift](mdc:Warden/UI/Chat/BubbleView/MessageContentView.swift) - Content rendering
+  - [SystemMessageBubbleView.swift](mdc:Warden/UI/Chat/BubbleView/SystemMessageBubbleView.swift) - System message display
+  - [ErrorBubbleView.swift](mdc:Warden/UI/Chat/BubbleView/ErrorBubbleView.swift) - Error message handling
+  - [TableView.swift](mdc:Warden/UI/Chat/BubbleView/TableView.swift) - Data table rendering
+  - [AdaptiveMathView.swift](mdc:Warden/UI/Chat/BubbleView/AdaptiveMathView.swift) - LaTeX equation support
 - **Bottom Container**: [BottomContainer/](mdc:Warden/UI/Chat/BottomContainer) - Input area and controls
+  - [ChatBottomContainerView.swift](mdc:Warden/UI/Chat/BottomContainer/ChatBottomContainerView.swift) - Main input container
+  - [MessageInputView.swift](mdc:Warden/UI/Chat/BottomContainer/MessageInputView.swift) - Text input with file support
+  - [PersonaSelectorView.swift](mdc:Warden/UI/Chat/BottomContainer/PersonaSelectorView.swift) - AI persona selection
 - **Chat Parameters**: [ChatParameters/](mdc:Warden/UI/Chat/ChatParameters) - Model and setting controls with visibility picker
 - **Code View**: [CodeView/](mdc:Warden/UI/Chat/CodeView) - Syntax highlighting and code preview
+  - [CodeView.swift](mdc:Warden/UI/Chat/CodeView/CodeView.swift) - Code block display
+  - [CodeViewModel.swift](mdc:Warden/UI/Chat/CodeView/CodeViewModel.swift) - Code execution logic
+  - [HighlighterManager.swift](mdc:Warden/UI/Chat/CodeView/HighlighterManager.swift) - Syntax highlighting engine
+- **Specialized Views**:
+  - [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - Collapsible reasoning display
+  - [MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift) - Multi-service response display
+  - [MultiAgentServiceSelector.swift](mdc:Warden/UI/Chat/MultiAgentServiceSelector.swift) - Service selection for multi-agent
+  - [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift) - Web content rendering
+  - [ZoomableImageView.swift](mdc:Warden/UI/Chat/ZoomableImageView.swift) - Image viewer with zoom
+  - [CenteredInputView.swift](mdc:Warden/UI/Chat/CenteredInputView.swift) - Welcome screen input
+  - [ProjectSummaryButton.swift](mdc:Warden/UI/Chat/ProjectSummaryButton.swift) - Project summary trigger
+  - [ProjectSummaryView.swift](mdc:Warden/UI/Chat/ProjectSummaryView.swift) - AI-generated project insights
 
 #### Chat List & Projects (`Warden/UI/ChatList/`)
-- **Sidebar Navigation**: Primary chat list with project organization
+- **Sidebar Navigation**: [ChatListView.swift](mdc:Warden/UI/ChatList/ChatListView.swift) - Primary chat list with project organization
 - **Projects/Folders Support**: Organize chats into logical groups with custom instructions
-- **Project Settings**: [ProjectSettingsView.swift](mdc:Warden/UI/ChatList/ProjectSettingsView.swift) - Project configuration and management
-- **Project Summary**: [ProjectSummaryView.swift](mdc:Warden/UI/ChatList/ProjectSummaryView.swift) - AI-generated project summaries
-- **Swipe Actions**: Native swipe gestures for projects and chats (delete, rename, move)
-- **New Chat Button**: Positioned above search bar for consistent v1-style placement
-- **Settings**: Moved to bottom of sidebar for improved organization
-- **Chat Search and Filtering**: Find chats across all projects
-- **Project-Scoped New Chat**: Create new chats within specific projects
+- **Core Components**:
+  - [ChatListRow.swift](mdc:Warden/UI/ChatList/ChatListRow.swift) - Individual chat row display
+  - [MessageCell.swift](mdc:Warden/UI/ChatList/MessageCell.swift) - Chat preview with latest message
+  - [ProjectListView.swift](mdc:Warden/UI/ChatList/ProjectListView.swift) - Project container display
+  - [CreateProjectView.swift](mdc:Warden/UI/ChatList/CreateProjectView.swift) - Project creation interface
+  - [MoveToProjectView.swift](mdc:Warden/UI/ChatList/MoveToProjectView.swift) - Chat organization tool
+  - [ProjectSettingsView.swift](mdc:Warden/UI/ChatList/ProjectSettingsView.swift) - Project configuration and management
+- **Features**:
+  - **Swipe Actions**: Native swipe gestures for projects and chats (delete, rename, move)
+  - **New Chat Button**: Positioned above search bar for consistent v1-style placement
+  - **Settings**: Moved to bottom of sidebar for improved organization
+  - **Chat Search and Filtering**: Find chats across all projects
+  - **Project-Scoped New Chat**: Create new chats within specific projects
+  - **Bulk Operations**: Multi-select for chat management
 
 #### Preferences (`Warden/UI/Preferences/`)
-- **General Settings**: [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift) - Includes sidebar icon visibility toggle
-- **API Services**: [TabAPIServicesView.swift](mdc:Warden/UI/Preferences/TabAPIServicesView.swift) - Model visibility picker configuration
-- **AI Personas**: [TabAIPersonasView.swift](mdc:Warden/UI/Preferences/TabAIPersonasView.swift)
-- **Backup & Restore**: [TabBackupRestoreView.swift](mdc:Warden/UI/Preferences/TabBackupRestoreView.swift)
-- **Danger Zone**: [TabDangerZoneView.swift](mdc:Warden/UI/Preferences/TabDangerZoneView.swift)
+- **Main Container**: [PreferencesView.swift](mdc:Warden/UI/Preferences/PreferencesView.swift) - Tab-based settings interface
+- **Settings Tabs**:
+  - [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift) - Includes sidebar icon visibility toggle
+  - [TabAPIServicesView.swift](mdc:Warden/UI/Preferences/TabAPIServicesView.swift) - Model visibility picker configuration
+  - [TabAIPersonasView.swift](mdc:Warden/UI/Preferences/TabAIPersonasView.swift) - Persona management
+  - [TabHotkeysView.swift](mdc:Warden/UI/Preferences/TabHotkeysView.swift) - Keyboard shortcut configuration
+  - [TabBackupRestoreView.swift](mdc:Warden/UI/Preferences/TabBackupRestoreView.swift) - Data import/export
+  - [TabCreditsView.swift](mdc:Warden/UI/Preferences/TabCreditsView.swift) - Attribution and acknowledgments
+  - [TabSupportDeveloperView.swift](mdc:Warden/UI/Preferences/TabSupportDeveloperView.swift) - Support and feedback
+  - [TabDangerZoneView.swift](mdc:Warden/UI/Preferences/TabDangerZoneView.swift) - Destructive operations
+- **API Services Detail**: [TabAPIServices/](mdc:Warden/UI/Preferences/TabAPIServices) - Detailed service configuration
+  - [APIServiceDetailView.swift](mdc:Warden/UI/Preferences/TabAPIServices/APIServiceDetailView.swift) - Individual service settings
+  - [APIServiceDetailViewModel.swift](mdc:Warden/UI/Preferences/TabAPIServices/APIServiceDetailViewModel.swift) - Service state management
+  - [ButtonTestApiTokenAndModel.swift](mdc:Warden/UI/Preferences/TabAPIServices/ButtonTestApiTokenAndModel.swift) - API validation
+  - [ModelSelectionView.swift](mdc:Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift) - Model visibility control
 
 #### Welcome Screen (`Warden/UI/WelcomeScreen/`)
-- **Initial User Onboarding**: Service setup and API key configuration
-- **Warden Logo Branding**: Features Warden logo above input box instead of AI provider logos
+- **Main Welcome**: [WelcomeScreen.swift](mdc:Warden/UI/WelcomeScreen/WelcomeScreen.swift) - Initial user onboarding
+- **Interactive Onboarding**: [InteractiveOnboardingView.swift](mdc:Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift) - Service setup and API key configuration  
+- **Particle Effects**: [SceneKitParticlesView.swift](mdc:Warden/UI/WelcomeScreen/SceneKitParticlesView.swift) - Animated background effects
+- **Features**:
+  - **Warden Logo Branding**: Features Warden logo above input box instead of AI provider logos
+  - **Service Configuration**: Guide users through API setup
+  - **Direct Chat Access**: Immediate transition to chat interface after setup
 
 ### Reusable Components (`Warden/UI/Components/`)
-- **Entity List**: [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display
-- **Button with Status**: [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states
-- **Highlighted Text**: [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift) - Text highlighting
+- **Entity List**: [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display for projects and chats
+- **Button with Status**: [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states and async operations
+- **Highlighted Text**: [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift) - Search term highlighting
+- **Markdown Rendering**: [MarkdownView.swift](mdc:Warden/UI/Components/MarkdownView.swift) - Rich text display with syntax highlighting
 - **Theme Mode**: [ThemeMode.swift](mdc:Warden/UI/Components/ThemeMode.swift) - Light/dark theme support
 - **Toolbar Button**: [ToolbarButton.swift](mdc:Warden/UI/Components/ToolbarButton.swift) - Consistent toolbar styling
-- **File Preview**: [FilePreviewView.swift](mdc:Warden/UI/Components/FilePreviewView.swift) - File attachment preview
+- **File Preview**: [FilePreviewView.swift](mdc:Warden/UI/Components/FilePreviewView.swift) - File attachment preview and display
 - **Chat Share Menu**: [ChatShareMenu.swift](mdc:Warden/UI/Components/ChatShareMenu.swift) - Export and sharing controls
 - **Toast Notification**: [ToastNotification.swift](mdc:Warden/UI/Components/ToastNotification.swift) - User feedback system
+- **Model Selector**: [ModelSelectorDropdown.swift](mdc:Warden/UI/Components/ModelSelectorDropdown.swift) - AI model selection dropdown
+- **Rephrase Button**: [RephraseButton.swift](mdc:Warden/UI/Components/RephraseButton.swift) - Message improvement tool
 
 ### Specialized UI Components
 - **HTML Preview**: [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift) - Web content rendering

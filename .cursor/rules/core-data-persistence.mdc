@@ -1,0 +1,547 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Core Data and Persistence Architecture
+
+This guide covers the Core Data architecture, persistence patterns, and data management strategies used in Warden.
+
+## Core Data Stack
+
+### Data Model Schema
+Defined in [warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld):
+
+#### Entities and Relationships
+- **Chat**: Primary conversation entity
+  - `id: UUID` - Unique identifier
+  - `title: String` - Chat display name
+  - `timestamp: Date` - Creation/last activity time
+  - `model: String` - AI model used
+  - `systemPrompt: String?` - Custom instructions
+  - `temperature: Double` - Creativity setting
+  - `project: Project?` - Optional project assignment (backwards compatible)
+  - `messages: [Message]` - One-to-many relationship
+  - `persona: Persona?` - Many-to-one relationship
+
+- **Message**: Individual chat messages
+  - `id: UUID` - Unique identifier
+  - `content: String` - Message text content
+  - `timestamp: Date` - Message creation time
+  - `role: String` - "user", "assistant", "system"
+  - `chat: Chat` - Parent chat relationship
+  - `attachments: [FileEntity]` - File attachments
+
+- **Project**: Chat organization containers
+  - `id: UUID` - Unique identifier
+  - `name: String` - Project display name
+  - `systemPrompt: String?` - Project-wide instructions
+  - `timestamp: Date` - Creation time
+  - `chats: [Chat]` - One-to-many relationship
+  - `summary: String?` - AI-generated project summary
+
+- **Persona**: AI behavior templates
+  - `id: UUID` - Unique identifier
+  - `name: String` - Persona name
+  - `systemPrompt: String` - Behavior instructions
+  - `model: String?` - Preferred model
+  - `temperature: Double` - Default creativity
+  - `chats: [Chat]` - One-to-many relationship
+
+- **FileEntity**: File attachments
+  - `id: UUID` - Unique identifier
+  - `filename: String` - Original filename
+  - `mimeType: String` - File type
+  - `data: Data` - File content
+  - `extractedText: String?` - Processed text content
+  - `message: Message` - Parent message
+
+### Store Initialization
+Implemented in [ChatStore.swift](mdc:Warden/Store/ChatStore.swift):
+
+```swift
+@MainActor
+class ChatStore: ObservableObject {
+    static let shared = ChatStore()
+    
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "warenDataModel")
+        container.loadPersistentStores { _, error in
+            if let error = error {
+                fatalError("Core Data error: \(error)")
+            }
+        }
+        return container
+    }()
+    
+    var context: NSManagedObjectContext {
+        persistentContainer.viewContext
+    }
+    
+    private var backgroundContext: NSManagedObjectContext {
+        persistentContainer.newBackgroundContext()
+    }
+}
+```
+
+## Data Access Patterns
+
+### Single Source of Truth
+All data operations flow through [ChatStore.swift](mdc:Warden/Store/ChatStore.swift):
+
+```swift
+// Published properties for UI binding
+@Published var chats: [Chat] = []
+@Published var projects: [Project] = []
+@Published var personas: [Persona] = []
+@Published var selectedChat: Chat?
+@Published var selectedProject: Project?
+```
+
+### CRUD Operations
+
+#### Creating Entities
+```swift
+func createChat(title: String, project: Project? = nil) -> Chat {
+    let chat = Chat(context: context)
+    chat.id = UUID()
+    chat.title = title
+    chat.timestamp = Date()
+    chat.project = project
+    
+    saveContext()
+    loadChats()
+    return chat
+}
+
+func createProject(name: String) -> Project {
+    let project = Project(context: context)
+    project.id = UUID()
+    project.name = name
+    project.timestamp = Date()
+    
+    saveContext()
+    loadProjects()
+    return project
+}
+```
+
+#### Reading Data
+```swift
+func loadChats() {
+    let request: NSFetchRequest<Chat> = Chat.fetchRequest()
+    request.sortDescriptors = [
+        NSSortDescriptor(keyPath: \Chat.timestamp, ascending: false)
+    ]
+    
+    do {
+        chats = try context.fetch(request)
+    } catch {
+        print("Error loading chats: \(error)")
+    }
+}
+
+func loadProjectChats(_ project: Project) {
+    let request: NSFetchRequest<Chat> = Chat.fetchRequest()
+    request.predicate = NSPredicate(format: "project == %@", project)
+    request.sortDescriptors = [
+        NSSortDescriptor(keyPath: \Chat.timestamp, ascending: false)
+    ]
+    
+    do {
+        return try context.fetch(request)
+    } catch {
+        print("Error loading project chats: \(error)")
+        return []
+    }
+}
+```
+
+#### Updating Entities
+```swift
+func updateChatTitle(_ chat: Chat, title: String) {
+    chat.title = title
+    chat.timestamp = Date() // Update last modified
+    saveContext()
+}
+
+func moveChatsToProject(_ chats: [Chat], project: Project?) {
+    for chat in chats {
+        chat.project = project
+    }
+    saveContext()
+    loadChats()
+}
+```
+
+#### Deleting Entities
+```swift
+func deleteChat(_ chat: Chat) {
+    context.delete(chat)
+    saveContext()
+    loadChats()
+}
+
+func deleteProject(_ project: Project) {
+    // Handle chat reassignment
+    let projectChats = loadProjectChats(project)
+    for chat in projectChats {
+        chat.project = nil // Move to ungrouped
+    }
+    
+    context.delete(project)
+    saveContext()
+    loadProjects()
+    loadChats()
+}
+```
+
+## Background Processing
+
+### Heavy Operations
+Use background contexts for expensive operations:
+
+```swift
+func generateProjectSummary(for project: Project) {
+    let backgroundContext = persistentContainer.newBackgroundContext()
+    
+    backgroundContext.perform {
+        // Fetch project in background context
+        guard let bgProject = backgroundContext.object(with: project.objectID) as? Project else { return }
+        
+        // Perform AI summarization
+        let summary = await AIService.generateSummary(for: bgProject)
+        
+        bgProject.summary = summary
+        
+        // Save with retry logic
+        backgroundContext.saveWithRetry(attempts: 3)
+        
+        // Update UI on main thread
+        DispatchQueue.main.async {
+            self.loadProjects()
+        }
+    }
+}
+```
+
+### Batch Operations
+Efficient bulk operations:
+
+```swift
+func bulkUpdateChatModels(chats: [Chat], newModel: String) {
+    let backgroundContext = persistentContainer.newBackgroundContext()
+    
+    backgroundContext.perform {
+        let objectIDs = chats.map { $0.objectID }
+        
+        for objectID in objectIDs {
+            if let chat = backgroundContext.object(with: objectID) as? Chat {
+                chat.model = newModel
+            }
+        }
+        
+        backgroundContext.saveWithRetry(attempts: 3)
+        
+        DispatchQueue.main.async {
+            self.loadChats()
+        }
+    }
+}
+```
+
+## Migration and Compatibility
+
+### Schema Versioning
+Handle Core Data model changes:
+
+```swift
+// In WardenApp.swift or ChatStore initialization
+container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
+                                                       forKey: NSPersistentHistoryTrackingKey)
+container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
+                                                       forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+```
+
+### Backwards Compatibility
+Projects are optional for existing chats:
+
+```swift
+// Existing chats without projects continue to work
+let unassignedChats = chats.filter { $0.project == nil }
+
+// UI handles both grouped and ungrouped chats
+var chatSections: [ChatSection] {
+    var sections: [ChatSection] = []
+    
+    // Project sections
+    for project in projects {
+        let projectChats = chats.filter { $0.project == project }
+        if !projectChats.isEmpty {
+            sections.append(ChatSection(project: project, chats: projectChats))
+        }
+    }
+    
+    // Ungrouped section
+    let ungroupedChats = chats.filter { $0.project == nil }
+    if !ungroupedChats.isEmpty {
+        sections.append(ChatSection(project: nil, chats: ungroupedChats))
+    }
+    
+    return sections
+}
+```
+
+## File Attachment Handling
+
+### Attachment Storage
+Files stored as Core Data blobs with metadata:
+
+```swift
+func addFileAttachment(to message: Message, fileURL: URL) -> FileEntity? {
+    guard let data = try? Data(contentsOf: fileURL) else { return nil }
+    
+    let attachment = FileEntity(context: context)
+    attachment.id = UUID()
+    attachment.filename = fileURL.lastPathComponent
+    attachment.mimeType = fileURL.mimeType
+    attachment.data = data
+    attachment.message = message
+    
+    // Extract text content for searchability
+    attachment.extractedText = extractTextContent(from: data, mimeType: attachment.mimeType)
+    
+    saveContext()
+    return attachment
+}
+
+private func extractTextContent(from data: Data, mimeType: String) -> String? {
+    switch mimeType {
+    case "text/plain", "text/csv":
+        return String(data: data, encoding: .utf8)
+    case "application/json":
+        return String(data: data, encoding: .utf8)
+    case "application/pdf":
+        return PDFTextExtractor.extract(from: data)
+    default:
+        return nil
+    }
+}
+```
+
+### Memory Management
+Large file handling strategies:
+
+```swift
+// Lazy loading for file previews
+extension FileEntity {
+    var thumbnailData: Data? {
+        // Generate or cache thumbnail on demand
+        return generateThumbnail(from: data, mimeType: mimeType)
+    }
+    
+    var previewText: String {
+        // Truncate for display
+        return extractedText?.prefix(500).appending("...") ?? filename
+    }
+}
+```
+
+## Performance Optimization
+
+### Fetch Request Optimization
+Efficient data fetching:
+
+```swift
+func loadRecentChats(limit: Int = 50) -> [Chat] {
+    let request: NSFetchRequest<Chat> = Chat.fetchRequest()
+    request.fetchLimit = limit
+    request.sortDescriptors = [
+        NSSortDescriptor(keyPath: \Chat.timestamp, ascending: false)
+    ]
+    
+    // Prefetch relationships to avoid faulting
+    request.relationshipKeyPathsForPrefetching = ["messages", "project", "persona"]
+    
+    do {
+        return try context.fetch(request)
+    } catch {
+        print("Error loading recent chats: \(error)")
+        return []
+    }
+}
+```
+
+### Memory Management
+Proper object lifecycle:
+
+```swift
+func clearMemoryCache() {
+    context.refreshAllObjects()
+    context.reset()
+    loadChats() // Reload essential data
+}
+
+// Automatic cleanup on memory warnings
+@objc private func handleMemoryWarning() {
+    clearMemoryCache()
+}
+```
+
+### Batch Processing
+Large dataset operations:
+
+```swift
+func batchDeleteOldChats(olderThan days: Int) {
+    let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
+    
+    let request = NSBatchDeleteRequest(fetchRequest: NSFetchRequest<NSFetchRequestResult>(entityName: "Chat"))
+    request.predicate = NSPredicate(format: "timestamp < %@", cutoffDate as NSDate)
+    
+    do {
+        try context.execute(request)
+        loadChats()
+    } catch {
+        print("Batch delete failed: \(error)")
+    }
+}
+```
+
+## Search and Indexing
+
+### Core Data Search
+Text-based search across entities:
+
+```swift
+func searchChats(query: String) -> [Chat] {
+    let request: NSFetchRequest<Chat> = Chat.fetchRequest()
+    
+    // Search in chat title, messages, and file attachments
+    let predicates = [
+        NSPredicate(format: "title CONTAINS[cd] %@", query),
+        NSPredicate(format: "ANY messages.content CONTAINS[cd] %@", query),
+        NSPredicate(format: "ANY messages.attachments.extractedText CONTAINS[cd] %@", query)
+    ]
+    
+    request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+    request.sortDescriptors = [
+        NSSortDescriptor(keyPath: \Chat.timestamp, ascending: false)
+    ]
+    
+    do {
+        return try context.fetch(request)
+    } catch {
+        print("Search failed: \(error)")
+        return []
+    }
+}
+```
+
+### Spotlight Integration
+Coordinate with [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift):
+
+```swift
+func saveContext() {
+    do {
+        try context.save()
+        
+        // Update Spotlight index after successful save
+        SpotlightIndexManager.shared.indexRecentChats()
+    } catch {
+        print("Save failed: \(error)")
+        context.rollback()
+    }
+}
+```
+
+## Error Handling and Recovery
+
+### Save Operations
+Robust error handling with retry logic:
+
+```swift
+extension NSManagedObjectContext {
+    func saveWithRetry(attempts: Int) {
+        do {
+            try save()
+        } catch {
+            print("Core Data save failed: \(error)")
+            rollback()
+            
+            if attempts > 0 {
+                print("Retrying save operation...")
+                saveWithRetry(attempts: attempts - 1)
+            } else {
+                print("Failed to save after multiple attempts")
+                // Notify user of critical error
+                NotificationCenter.default.post(
+                    name: .coreDataSaveFailure,
+                    object: error
+                )
+            }
+        }
+    }
+}
+```
+
+### Data Validation
+Entity validation before save:
+
+```swift
+extension Chat {
+    override func validateForInsert() throws {
+        try super.validateForInsert()
+        
+        guard let title = title, !title.isEmpty else {
+            throw NSError(domain: "ChatValidation", code: 1, 
+                         userInfo: [NSLocalizedDescriptionKey: "Chat title cannot be empty"])
+        }
+        
+        guard let id = id else {
+            throw NSError(domain: "ChatValidation", code: 2,
+                         userInfo: [NSLocalizedDescriptionKey: "Chat must have an ID"])
+        }
+    }
+}
+```
+
+### Conflict Resolution
+Handle concurrent modifications:
+
+```swift
+func handleMergeConflicts(_ notification: Notification) {
+    context.perform {
+        context.mergeChanges(fromContextDidSave: notification)
+        
+        // Reload affected data
+        loadChats()
+        loadProjects()
+    }
+}
+```
+
+## Best Practices
+
+### Data Access
+- Always use the main context for UI-bound data
+- Use background contexts for heavy operations
+- Batch operations when possible
+- Implement proper error handling with user feedback
+
+### Relationships
+- Define proper cascade delete rules in the data model
+- Use lazy loading for large relationships
+- Prefetch related objects when needed
+- Handle optional relationships gracefully
+
+### Performance
+- Limit fetch request results where appropriate
+- Use batch operations for bulk changes
+- Implement memory management strategies
+- Monitor Core Data performance in Instruments
+
+### Security
+- Never store sensitive data (API keys) in Core Data
+- Implement proper data validation
+- Handle user data with appropriate privacy measures
+- Consider encryption for sensitive file attachments
