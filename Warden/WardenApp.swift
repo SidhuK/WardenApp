@@ -58,25 +58,31 @@ struct WardenApp: App {
                     handleSpotlightSearch(userActivity: userActivity)
                 }
                 .onAppear {
-                    // Set initial window size to 85% of screen for first launch
-                    if let screen = NSScreen.main {
-                        let screenWidth = screen.frame.width
-                        let screenHeight = screen.frame.height
-                        let windowWidth = screenWidth * 0.85
-                        let windowHeight = screenHeight * 0.85
-                        
-                        // Center the window on screen
-                        let x = (screenWidth - windowWidth) / 2
-                        let y = (screenHeight - windowHeight) / 2
-                        
-                        if let window = NSApp.windows.first {
-                            window.setFrame(
-                                NSRect(x: x, y: y, width: windowWidth, height: windowHeight),
-                                display: true
-                            )
+                    // Persist and restore window size/position using autosave
+                    if let window = NSApp.keyWindow ?? NSApp.windows.first {
+                        window.setFrameAutosaveName("WardenMainWindow")
+                        let didRestore = window.setFrameUsingName("WardenMainWindow")
+
+                        // If no saved frame yet, apply an initial size (85% of screen) and center
+                        if !didRestore {
+                            let screen = window.screen ?? NSScreen.main
+                            if let screen = screen {
+                                let screenWidth = screen.frame.width
+                                let screenHeight = screen.frame.height
+                                let windowWidth = screenWidth * 0.85
+                                let windowHeight = screenHeight * 0.85
+
+                                let x = (screenWidth - windowWidth) / 2
+                                let y = (screenHeight - windowHeight) / 2
+
+                                window.setFrame(
+                                    NSRect(x: x, y: y, width: windowWidth, height: windowHeight),
+                                    display: true
+                                )
+                            }
                         }
                     }
-                    
+
                     // Initialize model cache with all configured API services
                     initializeModelCache()
                 }
