@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
+description: Custom SwiftUI extensions, modifiers, and utilities in Warden
+globs: Warden/UI/**,Warden/Utilities/Extensions.swift
 alwaysApply: false
 ---
+
 # SwiftUI Extensions and Utilities
 
 This guide covers the custom SwiftUI extensions, modifiers, and utility patterns used throughout Warden to enhance UI development.
@@ -10,9 +11,11 @@ This guide covers the custom SwiftUI extensions, modifiers, and utility patterns
 ## Core Extensions
 
 ### View Extensions
+
 Located in [Extensions.swift](mdc:Warden/Utilities/Extensions.swift):
 
 #### Custom Border Modifier
+
 ```swift
 extension View {
     func border(width: CGFloat, edges: [Edge], color: Color) -> some View {
@@ -22,12 +25,14 @@ extension View {
 ```
 
 Allows selective edge borders on views:
+
 ```swift
 Text("Content")
     .border(width: 1, edges: [.top, .bottom], color: .gray)
 ```
 
 #### View Erasure Helper
+
 ```swift
 extension View {
     func eraseToAnyView() -> AnyView {
@@ -41,6 +46,7 @@ Simplifies type erasure for dynamic view composition in [HighlightedText.swift](
 ### Binding Extensions
 
 #### Equality Binding
+
 ```swift
 extension Binding {
     func equalTo<A: Equatable>(_ value: A) -> Binding<Bool> where Value == A? {
@@ -63,6 +69,7 @@ Used for radio button-style selections and optional value toggling.
 ### Color Extensions
 
 #### Hex Color Support
+
 ```swift
 extension Color {
     init?(hex: String) -> Color?
@@ -72,6 +79,7 @@ extension Color {
 ```
 
 Enables hex color initialization and conversion:
+
 ```swift
 let customColor = Color(hex: "#FF5733")
 let hexString = Color.blue.toHex()
@@ -80,6 +88,7 @@ let hexString = Color.blue.toHex()
 ## Custom ViewModifiers
 
 ### Swipe Gesture Modifier
+
 Implemented in [SwipeModifier.swift](mdc:Warden/Utilities/SwipeModifier.swift):
 
 ```swift
@@ -91,6 +100,7 @@ extension View {
 ```
 
 Provides native macOS swipe gesture detection:
+
 ```swift
 chatRow
     .onSwipe { event in
@@ -103,6 +113,7 @@ chatRow
 ```
 
 #### SwipeEvent Structure
+
 ```swift
 struct SwipeEvent {
     let direction: Compass  // .north, .south, .east, .west, etc.
@@ -112,12 +123,14 @@ struct SwipeEvent {
 ```
 
 ### Edge Border Shape
+
 Custom shape for selective borders:
+
 ```swift
 struct EdgeBorder: Shape {
     var width: CGFloat
     var edges: [Edge]
-    
+
     func path(in rect: CGRect) -> Path {
         // Implementation for drawing borders on specific edges
     }
@@ -127,6 +140,7 @@ struct EdgeBorder: Shape {
 ## Text and Content Extensions
 
 ### Highlighted Text Component
+
 Defined in [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift):
 
 ```swift
@@ -134,17 +148,19 @@ struct HighlightedText: View {
     let text: String
     let highlight: String
     let color: Color
-    
+
     // Automatically highlights search terms in text
 }
 ```
 
 Usage for search functionality:
+
 ```swift
 HighlightedText("Chat about SwiftUI", highlight: "Swift", color: .yellow)
 ```
 
 ### Markdown Rendering
+
 Implemented in [MarkdownView.swift](mdc:Warden/UI/Components/MarkdownView.swift):
 
 ```swift
@@ -157,6 +173,7 @@ struct MarkdownView: View {
 ```
 
 Provides rich text rendering with:
+
 - Code syntax highlighting
 - Link detection and styling
 - Adaptive color schemes for light/dark mode
@@ -165,7 +182,9 @@ Provides rich text rendering with:
 ## Data and Type Extensions
 
 ### Data Cryptography
+
 SHA256 hashing for data integrity:
+
 ```swift
 extension Data {
     public func sha256() -> String
@@ -177,7 +196,9 @@ extension String {
 ```
 
 ### Numeric Conversions
+
 Type-safe numeric conversions:
+
 ```swift
 extension Double {
     func toInt16() -> Int16?
@@ -195,7 +216,9 @@ extension Float {
 ## Core Data Extensions
 
 ### Context Save with Retry
+
 Robust Core Data operations in [Extensions.swift](mdc:Warden/Utilities/Extensions.swift):
+
 ```swift
 extension NSManagedObjectContext {
     func saveWithRetry(attempts: Int) {
@@ -205,6 +228,7 @@ extension NSManagedObjectContext {
 ```
 
 Usage in [ChatStore.swift](mdc:Warden/Store/ChatStore.swift):
+
 ```swift
 backgroundContext.saveWithRetry(attempts: 3)
 ```
@@ -212,6 +236,7 @@ backgroundContext.saveWithRetry(attempts: 3)
 ## UI Component Patterns
 
 ### Reusable Button Styles
+
 Consistent button styling throughout the app:
 
 ```swift
@@ -226,7 +251,9 @@ Button("Action") {
 ```
 
 ### Card Background Pattern
+
 Consistent card styling for grouped content:
+
 ```swift
 VStack {
     // Content
@@ -243,7 +270,9 @@ VStack {
 ```
 
 ### Responsive Layout Patterns
+
 Adaptive layouts for different window sizes:
+
 ```swift
 Group {
     if horizontalSizeClass == .compact {
@@ -258,7 +287,9 @@ Group {
 ## Animation Patterns
 
 ### Smooth Transitions
+
 Consistent animation timing throughout the app:
+
 ```swift
 withAnimation(.easeInOut(duration: 0.25)) {
     // State changes
@@ -266,7 +297,9 @@ withAnimation(.easeInOut(duration: 0.25)) {
 ```
 
 ### Scale and Opacity Effects
+
 For button interactions and state changes:
+
 ```swift
 .scaleEffect(isSelected ? 1.02 : 1.0)
 .opacity(isEnabled ? 1.0 : 0.6)
@@ -276,7 +309,9 @@ For button interactions and state changes:
 ## Theme and Appearance
 
 ### Color Scheme Adaptation
+
 Automatic light/dark mode support:
+
 ```swift
 private var textColor: Color {
     colorScheme == .dark ? .white : .primary
@@ -288,7 +323,9 @@ private var backgroundColor: Color {
 ```
 
 ### Dynamic Type Support
+
 Font scaling for accessibility:
+
 ```swift
 Text("Content")
     .font(.system(size: effectiveFontSize, weight: .regular))
@@ -298,7 +335,9 @@ Text("Content")
 ## Performance Considerations
 
 ### Lazy Loading
+
 Efficient rendering for large lists:
+
 ```swift
 LazyVStack {
     ForEach(items) { item in
@@ -308,7 +347,9 @@ LazyVStack {
 ```
 
 ### Memory Management
+
 Proper cleanup in view lifecycle:
+
 ```swift
 .onAppear {
     setupObservers()
@@ -321,18 +362,21 @@ Proper cleanup in view lifecycle:
 ## Best Practices
 
 ### Extension Organization
+
 - Group related extensions in logical files
 - Use clear, descriptive naming for custom modifiers
 - Document complex extension behavior with examples
 - Maintain consistency with Apple's naming conventions
 
 ### Performance
+
 - Use extensions for functionality, not data storage
 - Implement lazy evaluation where appropriate
 - Avoid expensive operations in extension getters
 - Cache computed values when necessary
 
 ### Accessibility
+
 - Ensure all custom components support VoiceOver
 - Provide appropriate accessibility labels and hints
 - Test with Dynamic Type and reduced motion settings

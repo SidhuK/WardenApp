@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
+description: Multi-agent orchestration and concurrent API streaming
+globs: Warden/Utilities/MultiAgentMessageManager.swift,Warden/UI/Chat/MultiAgentResponseView.swift,Warden/UI/Chat/MultiAgentServiceSelector.swift
 alwaysApply: false
 ---
+
 # Multi-Agent Support Guide
 
 This guide covers the implementation and usage of Warden's multi-agent functionality, which allows users to query multiple AI services simultaneously and compare their responses in real-time.
@@ -10,6 +11,7 @@ This guide covers the implementation and usage of Warden's multi-agent functiona
 ## Core Components
 
 ### Multi-Agent Message Manager
+
 [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) is the central orchestrator for multi-agent operations:
 
 ```swift
@@ -17,7 +19,7 @@ class MultiAgentMessageManager: ObservableObject {
     @Published var activeAgents: [AgentResponse] = []
     @Published var isProcessing = false
     private var activeTasks: [Task<Void, Never>] = []
-    
+
     struct AgentResponse: Identifiable {
         let id = UUID()
         let serviceName: String
@@ -27,7 +29,7 @@ class MultiAgentMessageManager: ObservableObject {
         var isComplete: Bool = false
         var error: APIError?
         var timestamp: Date = Date()
-        
+
         var displayName: String {
             return "\(serviceName) (\(model))"
         }
@@ -36,6 +38,7 @@ class MultiAgentMessageManager: ObservableObject {
 ```
 
 ### UI Integration Components
+
 Multi-agent functionality is integrated across multiple UI components:
 
 - **Chat View**: [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main interface with mode toggling
@@ -45,6 +48,7 @@ Multi-agent functionality is integrated across multiple UI components:
 ## Implementation Patterns
 
 ### Concurrent Service Requests
+
 Send requests to multiple AI services simultaneously using structured concurrency:
 
 ```swift
@@ -59,19 +63,19 @@ func sendMessageToMultipleServices(
         completion(.failure(APIError.noApiService("No services selected")))
         return
     }
-    
+
     // Limit to maximum 3 services for optimal UX
     let limitedServices = Array(selectedServices.prefix(3))
-    
+
     isProcessing = true
     activeAgents = []
     activeTasks.removeAll()
-    
+
     let requestMessages = constructRequestMessages(chat: chat, forUserMessage: message, contextSize: contextSize)
     let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
-    
+
     let dispatchGroup = DispatchGroup()
-    
+
     // Create initial agent responses
     for service in limitedServices {
         let agentResponse = AgentResponse(
@@ -81,11 +85,11 @@ func sendMessageToMultipleServices(
         )
         activeAgents.append(agentResponse)
     }
-    
+
     // Send requests concurrently
     for (index, service) in limitedServices.enumerated() {
         dispatchGroup.enter()
-        
+
         let task = Task {
             await sendStreamRequest(
                 apiService: APIService(serviceEntity: service),
@@ -97,7 +101,7 @@ func sendMessageToMultipleServices(
         }
         activeTasks.append(task)
     }
-    
+
     dispatchGroup.notify(queue: .main) {
         self.isProcessing = false
         completion(.success(self.activeAgents))
@@ -106,6 +110,7 @@ func sendMessageToMultipleServices(
 ```
 
 ### Streaming Response Handling
+
 Handle real-time streaming responses from multiple services with proper cancellation support:
 
 ```swift
@@ -120,13 +125,13 @@ private func sendStreamRequest(
         do {
             let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
             var accumulatedResponse = ""
-            
+
             for try await chunk in stream {
                 // Check for cancellation
                 try Task.checkCancellation()
-                
+
                 accumulatedResponse += chunk
-                
+
                 await MainActor.run {
                     if agentIndex < self.activeAgents.count {
                         self.activeAgents[agentIndex].response = accumulatedResponse
@@ -134,7 +139,7 @@ private func sendStreamRequest(
                     }
                 }
             }
-            
+
             // Only complete if not cancelled
             if !Task.isCancelled {
                 await MainActor.run {
@@ -145,7 +150,7 @@ private func sendStreamRequest(
                     }
                 }
             }
-            
+
             dispatchGroup.leave()
         } catch is CancellationError {
             await MainActor.run {
@@ -165,12 +170,13 @@ private func sendStreamRequest(
             dispatchGroup.leave()
         }
     }
-    
+
     activeTasks.append(task)
 }
 ```
 
 ### Cancellation Support
+
 Proper cancellation of all active tasks:
 
 ```swift
@@ -178,10 +184,10 @@ func stopStreaming() {
     // Cancel all active tasks
     activeTasks.forEach { $0.cancel() }
     activeTasks.removeAll()
-    
+
     // Update state
     isProcessing = false
-    
+
     // Mark incomplete agents as cancelled
     for index in activeAgents.indices {
         if !activeAgents[index].isComplete {
@@ -195,18 +201,19 @@ func stopStreaming() {
 ## User Interface Components
 
 ### Chat View Integration
+
 Multi-agent mode is integrated into the main chat interface:
 
 ```swift
 // Mode toggle button in chat toolbar
 Button(action: {
     isMultiAgentMode.toggle()
-    
+
     // Clear multi-agent responses when switching modes
     if !isMultiAgentMode {
         multiAgentManager.activeAgents.removeAll()
     }
-    
+
     if isMultiAgentMode && selectedMultiAgentServices.isEmpty {
         // Auto-select up to 3 available services with valid API keys
         selectedMultiAgentServices = Set(apiServices.filter { service in
@@ -229,6 +236,7 @@ Button(action: {
 ```
 
 ### Service Selection Interface
+
 Service selection sheet for choosing which AI services to query:
 
 ```swift
@@ -243,6 +251,7 @@ Service selection sheet for choosing which AI services to query:
 ```
 
 ### Response Display
+
 Show responses from multiple agents in organized column layout:
 
 ```swift
@@ -257,6 +266,7 @@ if enableMultiAgentMode && isMultiAgentMode && (!multiAgentManager.activeAgents.
 ```
 
 ### Multi-Agent Response View
+
 [MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift) displays responses in a structured format:
 
 ```swift
@@ -264,7 +274,7 @@ struct MultiAgentResponseView: View {
     let responses: [MultiAgentMessageManager.AgentResponse]
     let isProcessing: Bool
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if isProcessing && responses.isEmpty {
@@ -293,13 +303,14 @@ struct MultiAgentResponseView: View {
 ```
 
 ### Individual Agent Response Column
+
 Each agent response is displayed in its own column with service branding:
 
 ```swift
 struct AgentResponseColumn: View {
     let response: MultiAgentMessageManager.AgentResponse
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Service header with icon and model name
@@ -310,19 +321,19 @@ struct AgentResponseColumn: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 16, height: 16)
                 }
-                
+
                 VStack(alignment: .leading, spacing: 0) {
                     Text(response.serviceName)
                         .font(.system(size: chatFontSize - 1, weight: .medium))
                         .foregroundColor(.primary)
-                    
+
                     Text(response.model)
                         .font(.system(size: chatFontSize - 3))
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 // Status indicator
                 if response.isComplete {
                     if response.error != nil {
@@ -339,9 +350,9 @@ struct AgentResponseColumn: View {
                         .scaleEffect(0.6)
                 }
             }
-            
+
             Divider()
-            
+
             // Response content
             if let error = response.error {
                 Text("Error: \(error.localizedDescription)")
@@ -359,7 +370,7 @@ struct AgentResponseColumn: View {
                     .foregroundColor(.primary)
                     .textSelection(.enabled)
             }
-            
+
             Spacer()
         }
         .padding(12)
@@ -376,6 +387,7 @@ struct AgentResponseColumn: View {
 ## Service Limitations and Constraints
 
 ### Maximum Service Limit
+
 Limit concurrent requests to maintain optimal performance and user experience:
 
 ```swift
@@ -389,6 +401,7 @@ if limitedServices.count != selectedMultiAgentServices.count {
 ```
 
 ### Resource Management
+
 - **Memory Usage**: Monitor memory consumption with multiple active streams
 - **Network Resources**: Manage concurrent network connections efficiently
 - **UI Performance**: Ensure responsive interface during multiple operations
@@ -397,6 +410,7 @@ if limitedServices.count != selectedMultiAgentServices.count {
 ## Configuration Management
 
 ### Feature Flag
+
 Multi-agent functionality can be enabled/disabled via user preferences:
 
 ```swift
@@ -411,6 +425,7 @@ Multi-agent functionality can be enabled/disabled via user preferences:
 ```
 
 ### Service Availability Check
+
 Verify API keys are available for selected services:
 
 ```swift
@@ -426,6 +441,7 @@ private func hasValidAPIKey(for service: APIServiceEntity) -> Bool {
 ```
 
 ### Auto-Selection Logic
+
 Automatically select available services when entering multi-agent mode:
 
 ```swift
@@ -439,18 +455,20 @@ if isMultiAgentMode && selectedMultiAgentServices.isEmpty {
 ## Error Handling and Recovery
 
 ### Individual Service Errors
+
 Each agent can fail independently without affecting others:
 
 ```swift
 struct AgentResponse {
     var error: APIError?
     var isComplete: Bool = false
-    
+
     // Error states are handled per-agent
 }
 ```
 
 ### Timeout Handling
+
 Individual service timeouts don't cancel other concurrent requests:
 
 ```swift
@@ -470,6 +488,7 @@ Task {
 ```
 
 ### Network Error Recovery
+
 - Display clear error messages per service
 - Allow retry for failed services
 - Continue processing successful responses
@@ -478,6 +497,7 @@ Task {
 ## Performance Optimization
 
 ### Efficient State Updates
+
 Minimize UI updates during streaming:
 
 ```swift
@@ -491,12 +511,14 @@ await MainActor.run {
 ```
 
 ### Memory Management
+
 - Clean up completed tasks promptly
 - Limit response content length for display
 - Use lazy loading for large responses
 - Implement proper resource cleanup
 
 ### Concurrent Request Optimization
+
 - Use DispatchGroup for coordinating multiple async operations
 - Implement proper cancellation handling
 - Balance request concurrency with system resources
@@ -505,6 +527,7 @@ await MainActor.run {
 ## Testing and Debugging
 
 ### Mock Multi-Agent Responses
+
 Use preview data for UI development and testing:
 
 ```swift
@@ -521,6 +544,7 @@ static var mockAgentResponses: [MultiAgentMessageManager.AgentResponse] = [
 ```
 
 ### Error Simulation
+
 Test error handling with simulated failures:
 
 ```swift
@@ -534,6 +558,7 @@ let errorResponse = AgentResponse(
 ```
 
 ### Performance Testing
+
 - Test with maximum number of concurrent services
 - Verify proper cancellation behavior
 - Monitor memory usage during long-running operations
@@ -542,24 +567,28 @@ let errorResponse = AgentResponse(
 ## Best Practices
 
 ### Implementation Guidelines
+
 - Always limit concurrent services to prevent resource exhaustion
 - Implement proper cancellation for all async operations
 - Use structured concurrency patterns (async/await, Task)
 - Handle individual service failures gracefully
 
 ### UI/UX Considerations
+
 - Provide clear visual feedback for each service's status
 - Show loading states and progress indicators
 - Make service selection intuitive and discoverable
 - Allow easy cancellation of multi-agent requests
 
 ### Resource Management
+
 - Monitor memory usage with multiple concurrent streams
 - Implement proper cleanup for cancelled operations
 - Use background queues for non-UI operations
 - Limit response content size for display performance
 
 ### Error Handling
+
 - Display service-specific error messages
 - Allow retry for individual failed services
 - Provide fallback to single-agent mode

@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
+description: Preferences architecture, API service configuration, and model visibility
+globs: Warden/UI/Preferences/**,Warden/Utilities/SelectedModelsManager.swift,Warden/Utilities/FavoriteModelsManager.swift
 alwaysApply: false
 ---
+
 # Preferences and Settings Management Guide
 
 Warden implements a comprehensive preferences system that manages user settings, API configurations, model visibility, and application behavior. This guide covers the preferences architecture and implementation patterns.
@@ -10,13 +11,14 @@ Warden implements a comprehensive preferences system that manages user settings,
 ## Core Components
 
 ### Preferences View Structure
+
 [PreferencesView.swift](mdc:Warden/UI/Preferences/PreferencesView.swift) implements a native macOS tab-based preferences interface:
 
 ```swift
 struct PreferencesView: View {
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     private enum PreferencesTabs: String, CaseIterable {
         case general = "General"
         case apiServices = "API Services"
@@ -30,12 +32,13 @@ struct PreferencesView: View {
 ```
 
 ### Inline Settings View
+
 Warden also supports an inline settings view for integration within the main window:
 
 ```swift
 struct InlineSettingsView: View {
     let onDismiss: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header with close button
@@ -49,6 +52,7 @@ struct InlineSettingsView: View {
 ## Tab-Based Organization
 
 ### General Settings
+
 [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift) manages core application preferences:
 
 - **UI Appearance**: Font size, theme settings, sidebar customization
@@ -64,6 +68,7 @@ struct InlineSettingsView: View {
 ```
 
 ### API Services Configuration
+
 [TabAPIServicesView.swift](mdc:Warden/UI/Preferences/TabAPIServicesView.swift) handles AI service management:
 
 ```swift
@@ -71,7 +76,7 @@ struct TabAPIServicesView: View {
     @State private var apiServices: [APIServiceEntity] = []
     @State private var selectedService: APIServiceEntity?
     @State private var showingModelSelection = false
-    
+
     var body: some View {
         HSplitView {
             // Service list with configuration status
@@ -83,6 +88,7 @@ struct TabAPIServicesView: View {
 ```
 
 #### API Service Detail View
+
 [APIServiceDetailView.swift](mdc:Warden/UI/Preferences/TabAPIServices/APIServiceDetailView.swift) provides detailed service configuration:
 
 - **API Key Management**: Secure token storage and validation
@@ -91,6 +97,7 @@ struct TabAPIServicesView: View {
 - **Custom Endpoints**: Support for self-hosted and custom API endpoints
 
 ### Model Visibility Management
+
 [ModelSelectionView.swift](mdc:Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift) implements multi-select model visibility:
 
 ```swift
@@ -98,7 +105,7 @@ struct ModelSelectionView: View {
     let service: APIServiceEntity
     @Binding var isVisible: Bool
     @StateObject private var selectedModelsManager = SelectedModelsManager()
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Service header with icon
@@ -111,6 +118,7 @@ struct ModelSelectionView: View {
 ```
 
 ### AI Personas Management
+
 [TabAIPersonasView.swift](mdc:Warden/UI/Preferences/TabAIPersonasView.swift) handles persona creation and management:
 
 - **Persona Library**: Pre-defined and custom personas
@@ -119,6 +127,7 @@ struct ModelSelectionView: View {
 - **Import/Export**: Persona sharing and backup functionality
 
 ### Keyboard Shortcuts
+
 [TabHotkeysView.swift](mdc:Warden/UI/Preferences/TabHotkeysView.swift) manages application-wide keyboard shortcuts:
 
 - **Global Shortcuts**: System-wide hotkeys for common actions
@@ -127,6 +136,7 @@ struct ModelSelectionView: View {
 - **Conflict Detection**: Prevention of shortcut conflicts
 
 ### Backup & Restore
+
 [TabBackupRestoreView.swift](mdc:Warden/UI/Preferences/TabBackupRestoreView.swift) provides data management:
 
 - **Data Export**: Comprehensive backup of chats, projects, and settings
@@ -137,6 +147,7 @@ struct ModelSelectionView: View {
 ## Data Storage Patterns
 
 ### AppStorage Integration
+
 User preferences are stored using SwiftUI's `@AppStorage` for automatic persistence:
 
 ```swift
@@ -155,6 +166,7 @@ User preferences are stored using SwiftUI's `@AppStorage` for automatic persiste
 ```
 
 ### Secure Storage
+
 Sensitive data like API keys are stored securely using the TokenManager:
 
 ```swift
@@ -169,6 +181,7 @@ try TokenManager.deleteToken(for: serviceId)
 ```
 
 ### Core Data Integration
+
 Complex settings and preferences are stored in Core Data:
 
 ```swift
@@ -186,39 +199,41 @@ try viewContext.save()
 ## Model Management System
 
 ### Selected Models Manager
+
 [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift) controls model visibility:
 
 ```swift
 class SelectedModelsManager: ObservableObject {
     @Published var selectedModels: [String: Set<String>] = [:]
-    
+
     func isModelSelected(_ model: String, for serviceType: String) -> Bool {
         return selectedModels[serviceType]?.contains(model) ?? true
     }
-    
+
     func toggleModel(_ model: String, for serviceType: String) {
         if selectedModels[serviceType] == nil {
             selectedModels[serviceType] = Set()
         }
-        
+
         if selectedModels[serviceType]!.contains(model) {
             selectedModels[serviceType]!.remove(model)
         } else {
             selectedModels[serviceType]!.insert(model)
         }
-        
+
         saveSelectedModels()
     }
 }
 ```
 
 ### Favorite Models Manager
+
 [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift) manages user's preferred models:
 
 ```swift
 class FavoriteModelsManager: ObservableObject {
     @Published var favoriteModels: Set<String> = []
-    
+
     func toggleFavorite(_ modelId: String) {
         if favoriteModels.contains(modelId) {
             favoriteModels.remove(modelId)
@@ -227,7 +242,7 @@ class FavoriteModelsManager: ObservableObject {
         }
         saveFavorites()
     }
-    
+
     func isFavorite(_ modelId: String) -> Bool {
         return favoriteModels.contains(modelId)
     }
@@ -237,6 +252,7 @@ class FavoriteModelsManager: ObservableObject {
 ## API Key Management
 
 ### Token Manager Integration
+
 Secure API key storage and retrieval:
 
 ```swift
@@ -248,10 +264,10 @@ class TokenManager {
             kSecAttrAccount as String: serviceId,
             kSecValueData as String: token.data(using: .utf8)!
         ]
-        
+
         // Delete existing item first
         SecItemDelete(keychainQuery)
-        
+
         // Add new item
         let status = SecItemAdd(keychainQuery, nil)
         guard status == errSecSuccess else {
@@ -262,6 +278,7 @@ class TokenManager {
 ```
 
 ### API Key Validation
+
 [ButtonTestApiTokenAndModel.swift](mdc:Warden/UI/Preferences/TabAPIServices/ButtonTestApiTokenAndModel.swift) provides API key testing:
 
 ```swift
@@ -269,7 +286,7 @@ struct ButtonTestApiTokenAndModel: View {
     let service: APIServiceEntity
     @State private var isLoading = false
     @State private var testResult: APITestResult?
-    
+
     var body: some View {
         Button(action: testAPIConnection) {
             HStack {
@@ -285,7 +302,7 @@ struct ButtonTestApiTokenAndModel: View {
         }
         .disabled(isLoading)
     }
-    
+
     private func testAPIConnection() {
         // Implement API connection testing
     }
@@ -295,12 +312,13 @@ struct ButtonTestApiTokenAndModel: View {
 ## Settings Window Management
 
 ### Window Management
+
 [SettingsWindowManager.swift](mdc:Warden/Utilities/SettingsWindowManager.swift) handles preferences window lifecycle:
 
 ```swift
 class SettingsWindowManager: ObservableObject {
     private var settingsWindow: NSWindow?
-    
+
     func showPreferences() {
         if settingsWindow == nil {
             let contentView = PreferencesView()
@@ -314,7 +332,7 @@ class SettingsWindowManager: ObservableObject {
             settingsWindow?.title = "Warden Preferences"
             settingsWindow?.center()
         }
-        
+
         settingsWindow?.makeKeyAndOrderFront(nil)
         settingsWindow?.orderFrontRegardless()
     }
@@ -322,6 +340,7 @@ class SettingsWindowManager: ObservableObject {
 ```
 
 ### Inline Settings Integration
+
 Support for showing preferences within the main application window:
 
 ```swift
@@ -338,6 +357,7 @@ Support for showing preferences within the main application window:
 ## UI Design Patterns
 
 ### Native macOS Tab Style
+
 Implement native macOS-style tab bars with animations:
 
 ```swift
@@ -352,7 +372,7 @@ HStack(spacing: 4) {
                 Image(systemName: tab.icon)
                     .font(.system(size: 24, weight: selectedTab == tab ? .medium : .regular))
                     .foregroundColor(selectedTab == tab ? .accentColor : .secondary)
-                
+
                 Text(tab.rawValue)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(selectedTab == tab ? .primary : .secondary)
@@ -374,6 +394,7 @@ HStack(spacing: 4) {
 ```
 
 ### Responsive Layout
+
 Support both window and inline presentation modes:
 
 ```swift
@@ -393,6 +414,7 @@ Group {
 ## Preference Validation
 
 ### Input Validation
+
 Validate user inputs for critical settings:
 
 ```swift
@@ -410,6 +432,7 @@ private func validateContextSize(_ size: Int) -> Bool {
 ```
 
 ### Error Handling
+
 Provide clear feedback for invalid settings:
 
 ```swift
@@ -417,16 +440,16 @@ Provide clear feedback for invalid settings:
 
 private func saveSettings() {
     validationErrors.removeAll()
-    
+
     if !validateAPIKey(apiKey) {
         validationErrors.append("Invalid API key format")
     }
-    
+
     if !validationErrors.isEmpty {
         showValidationAlert = true
         return
     }
-    
+
     // Save valid settings
 }
 ```
@@ -434,13 +457,14 @@ private func saveSettings() {
 ## Migration and Compatibility
 
 ### Settings Migration
+
 Handle settings migration between app versions:
 
 ```swift
 private func migrateSettingsIfNeeded() {
     let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     let lastMigratedVersion = UserDefaults.standard.string(forKey: "lastMigratedSettingsVersion") ?? "0.0"
-    
+
     if shouldMigrateSettings(from: lastMigratedVersion, to: currentVersion) {
         performSettingsMigration(from: lastMigratedVersion)
         UserDefaults.standard.set(currentVersion, forKey: "lastMigratedSettingsVersion")
@@ -449,6 +473,7 @@ private func migrateSettingsIfNeeded() {
 ```
 
 ### Backwards Compatibility
+
 Maintain compatibility with older preference formats:
 
 ```swift
@@ -464,36 +489,42 @@ private func loadLegacySettings() {
 ## Best Practices
 
 ### State Management
+
 - Use `@AppStorage` for simple preferences
 - Use `@StateObject` for complex preference managers
 - Implement proper validation before saving
 - Provide immediate visual feedback for changes
 
 ### Security
+
 - Store sensitive data (API keys) in Keychain
 - Validate all user inputs
 - Implement secure defaults for critical settings
 - Clear sensitive data from memory promptly
 
 ### User Experience
+
 - Provide clear descriptions for all settings
 - Group related settings logically
 - Implement search functionality for large preference sets
 - Show real-time previews where applicable
 
 ### Performance
+
 - Load preferences lazily where possible
 - Implement efficient change detection
 - Use background queues for expensive operations
 - Cache frequently accessed preferences
 
 ### Accessibility
+
 - Provide proper accessibility labels
 - Support keyboard navigation
 - Implement VoiceOver support
 - Use appropriate contrast ratios
 
 ### Testing
+
 - Test settings persistence across app launches
 - Verify migration between versions
 - Test with invalid inputs and edge cases

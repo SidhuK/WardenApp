@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
-alwaysApply: true
+description: SwiftUI component structure and feature-based UI organization
+globs: Warden/UI/**
+alwaysApply: false
 ---
+
 # UI Architecture and Component Structure
 
 Warden follows a modular UI architecture built with SwiftUI, organizing components by feature and reusability. This guide covers the UI structure and component patterns.
@@ -10,6 +11,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 ## Main UI Structure
 
 ### Core Views
+
 - **Content View**: [ContentView.swift](mdc:Warden/UI/ContentView.swift) - Main application interface with sidebar and content area
 - **Chat View**: [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Primary chat interface
 - **Chat List**: [ChatListView.swift](mdc:Warden/UI/ChatList/ChatListView.swift) - Sidebar chat navigation with Projects/Folders support
@@ -18,6 +20,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 ### Feature-Based Organization
 
 #### Chat Interface (`Warden/UI/Chat/`)
+
 - **Chat View**: [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) - Main conversation interface with multi-agent support
 - **Chat ViewModel**: [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift) - Chat state management
 - **Bubble Views**: [BubbleView/](mdc:Warden/UI/Chat/BubbleView) - Message display components
@@ -47,6 +50,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
   - [ProjectSummaryView.swift](mdc:Warden/UI/Chat/ProjectSummaryView.swift) - AI-generated project insights
 
 #### Chat List & Projects (`Warden/UI/ChatList/`)
+
 - **Sidebar Navigation**: [ChatListView.swift](mdc:Warden/UI/ChatList/ChatListView.swift) - Primary chat list with project organization
 - **Projects/Folders Support**: Organize chats into logical groups with custom instructions
 - **Core Components**:
@@ -65,6 +69,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
   - **Bulk Operations**: Multi-select for chat management
 
 #### Preferences (`Warden/UI/Preferences/`)
+
 - **Main Container**: [PreferencesView.swift](mdc:Warden/UI/Preferences/PreferencesView.swift) - Tab-based settings interface
 - **Settings Tabs**:
   - [TabGeneralSettingsView.swift](mdc:Warden/UI/Preferences/TabGeneralSettingsView.swift) - Includes sidebar icon visibility toggle
@@ -82,8 +87,9 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
   - [ModelSelectionView.swift](mdc:Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift) - Model visibility control
 
 #### Welcome Screen (`Warden/UI/WelcomeScreen/`)
+
 - **Main Welcome**: [WelcomeScreen.swift](mdc:Warden/UI/WelcomeScreen/WelcomeScreen.swift) - Initial user onboarding
-- **Interactive Onboarding**: [InteractiveOnboardingView.swift](mdc:Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift) - Service setup and API key configuration  
+- **Interactive Onboarding**: [InteractiveOnboardingView.swift](mdc:Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift) - Service setup and API key configuration
 - **Particle Effects**: [SceneKitParticlesView.swift](mdc:Warden/UI/WelcomeScreen/SceneKitParticlesView.swift) - Animated background effects
 - **Features**:
   - **Warden Logo Branding**: Features Warden logo above input box instead of AI provider logos
@@ -91,6 +97,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
   - **Direct Chat Access**: Immediate transition to chat interface after setup
 
 ### Reusable Components (`Warden/UI/Components/`)
+
 - **Entity List**: [EntityListView.swift](mdc:Warden/UI/Components/EntityListView.swift) - Generic list display for projects and chats
 - **Button with Status**: [ButtonWithStatusIndicator.swift](mdc:Warden/UI/Components/ButtonWithStatusIndicator.swift) - Loading states and async operations
 - **Highlighted Text**: [HighlightedText.swift](mdc:Warden/UI/Components/HighlightedText.swift) - Search term highlighting
@@ -104,6 +111,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Rephrase Button**: [RephraseButton.swift](mdc:Warden/UI/Components/RephraseButton.swift) - Message improvement tool
 
 ### Specialized UI Components
+
 - **HTML Preview**: [HTMLPreviewView.swift](mdc:Warden/UI/Chat/HTMLPreviewView.swift) - Web content rendering
 - **Zoomable Image**: [ZoomableImageView.swift](mdc:Warden/UI/Chat/ZoomableImageView.swift) - Image viewer with zoom
 - **Thinking Process**: [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift) - AI reasoning display
@@ -113,6 +121,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 ## Projects/Folders Architecture
 
 ### Project Organization
+
 - **Hierarchical Structure**: Projects act as containers for related chats
 - **Custom Instructions**: Per-project system prompts and context
 - **AI Summarization**: Automatic project summaries generated from chat content
@@ -120,6 +129,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Color Coding**: Subtle visual indicators with folder-only highlighting
 
 ### Project Management
+
 - **Creation/Deletion**: Full project lifecycle management
 - **Chat Organization**: Move existing chats into projects, create new chats within projects
 - **Bulk Operations**: Multi-select actions for chat management within projects
@@ -127,6 +137,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Backwards Compatibility**: Existing chats work seamlessly without projects
 
 ### UI Patterns for Projects
+
 - **Subtle Highlighting**: Only folder icons are tinted, keeping selections clean
 - **Swipe Actions**: Native iOS-style swipe gestures for quick actions
 - **Context Menus**: Right-click actions for project and chat management
@@ -136,22 +147,26 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 ## Model Management
 
 ### Model Visibility Control
+
 - **Model Picker**: Multi-select interface to choose which models appear in selector
 - **Per-Service Filtering**: Hide/show models from specific AI providers
 - **Preference Persistence**: Model visibility preferences stored in user settings
 - **Dynamic Updates**: Model list updates immediately when preferences change
 
 ### Sidebar Customization
+
 - **Provider Icon Toggle**: Show/hide AI provider logos in sidebar for cleaner appearance
 - **Configurable Branding**: Optional display of service logos vs. generic chat indicators
 - **Consistent Styling**: Maintains visual coherence regardless of icon display preference
 
 ## Preview Support
+
 - **Preview State Manager**: [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift) - Mock data for SwiftUI previews
 - **Project Preview Data**: Realistic project and folder structures for development
-- **All major views include SwiftUI previews with realistic data
+- \*\*All major views include SwiftUI previews with realistic data
 
 ## Design Patterns
+
 - **MVVM Architecture**: Views paired with view models for complex state
 - **Environment Objects**: Shared state via ChatStore and other environment objects
 - **Modular Components**: Reusable components for consistent UI
@@ -159,6 +174,7 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Accessibility**: VoiceOver and keyboard navigation support
 
 ## Navigation Structure
+
 - **Sidebar Navigation**: Primary chat list and project navigation
 - **Project Hierarchy**: Nested navigation for project-contained chats
 - **Tab-based Preferences**: Organized settings by category
@@ -166,12 +182,14 @@ Warden follows a modular UI architecture built with SwiftUI, organizing componen
 - **Toolbar Actions**: Context-appropriate actions in each view
 
 ## State Management
+
 - **Local State**: `@State` for view-specific data
 - **Shared State**: `@ObservedObject` and `@EnvironmentObject` for app-wide state
 - **Preferences**: `@AppStorage` for user settings including model visibility and sidebar preferences
 - **Core Data**: Integrated through ChatStore for persistence with project support
 
 ## Performance Considerations
+
 - **Lazy Loading**: Large lists use LazyVStack/LazyHStack
 - **Project Virtualization**: Efficient rendering of large project lists
 - **View Hierarchy**: Efficient view composition to minimize redraws

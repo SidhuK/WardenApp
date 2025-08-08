@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
+description: High-level development notes, history, and identity of the Warden project
+globs:
 alwaysApply: false
 ---
+
 # Warden Development Guidelines
 
 Warden is a native macOS AI chat client built with SwiftUI that supports multiple AI providers. This project was originally based on macai by Renset and is maintained by **Karat Sidhu**.
@@ -20,6 +21,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Core Architecture Patterns
 
 ### File Organization
+
 - **Main App**: [WardenApp.swift](mdc:Warden/WardenApp.swift) - App entry point with Core Data setup
 - **Models**: [Warden/Models/](mdc:Warden/Models) - Data models and transformers
 - **UI Components**: [Warden/UI/](mdc:Warden/UI) - Feature-based UI organization
@@ -28,6 +30,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 - **Data Store**: [Warden/Store/ChatStore.swift](mdc:Warden/Store/ChatStore.swift) - Core Data management
 
 ### SwiftUI Development Patterns
+
 - Use `@StateObject` for view model lifecycle management
 - Use `@ObservedObject` for shared view models passed between views
 - Use `@EnvironmentObject` for app-wide state like ChatStore
@@ -36,6 +39,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 - Follow MVVM architecture with lightweight views
 
 ### Data Management Philosophy
+
 - **Single Source of Truth**: All Core Data operations go through [ChatStore.swift](mdc:Warden/Store/ChatStore.swift)
 - **Privacy First**: 100% local data storage, no cloud synchronization
 - **Zero Telemetry**: No data collection or usage tracking
@@ -44,6 +48,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## AI Provider Integration
 
 ### Supported Providers
+
 - **OpenAI ChatGPT**: Including o1/o3 reasoning models (o1-preview, o1-mini, o3-mini, etc.)
 - **Anthropic Claude**: Latest Claude models with vision support
 - **Google Gemini**: Gemini 1.5 and 2.0 models
@@ -57,6 +62,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 - **Any OpenAI-compatible API**: Custom endpoints supported
 
 ### API Handler Implementation
+
 - All handlers implement [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift)
 - Use [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift) for handler creation
 - Implement streaming responses for real-time interaction
@@ -66,17 +72,20 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## UI Development Guidelines
 
 ### Component Organization
+
 - **Feature-based structure**: Chat, ChatList, Preferences, WelcomeScreen
 - **Reusable components**: [Warden/UI/Components/](mdc:Warden/UI/Components)
 - **Modular design**: Each feature has its own directory with related views
 
 ### Naming Conventions
+
 - **Views**: PascalCase ending with "View" (e.g., `ChatListView`)
 - **View Models**: PascalCase ending with "ViewModel" or "Store"
 - **Properties**: camelCase with descriptive names
 - **Methods**: camelCase starting with verbs
 
 ### Design Principles
+
 - Support both light and dark themes automatically
 - Use native macOS design patterns and SF Symbols
 - Maintain consistent spacing and typography
@@ -85,12 +94,14 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Key Features Implementation
 
 ### AI Personas System
+
 - Customizable system instructions per persona
 - Temperature settings for creativity control
 - Default personas defined in [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift)
 - Per-chat persona override capability
 
 ### Message Handling
+
 - **Real-time Streaming**: Responses via [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift)
 - **Reasoning Support**: Thinking process display via [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift)
 - **Syntax Highlighting**: Code block detection and formatting
@@ -100,6 +111,7 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 - **Multi-Agent Support**: [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) for complex workflows
 
 ### Search and Indexing
+
 - **Spotlight Integration**: [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift) enables macOS system search
 - **Fast Local Search**: Search across all chats and messages within the app
 - **Automatic Indexing**: New content automatically indexed for Spotlight search
@@ -109,18 +121,21 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Development Best Practices
 
 ### Code Quality Standards
+
 - Follow Swift naming conventions and [.swift-format](mdc:Warden/.swift-format) configuration
 - Include comprehensive error handling
 - Write unit tests for new features in [WardenTests/](mdc:WardenTests)
 - Use meaningful commit messages
 
 ### Performance Optimization
+
 - Use LazyVStack/LazyHStack for large lists
 - Optimize image loading and caching
 - Minimize view redraws through efficient state management
 - Background processing for API calls and heavy operations
 
 ### Security and Privacy Requirements
+
 - **Never log or expose API keys** in any circumstances
 - Secure storage of user credentials using Keychain
 - Local data processing only - no external data transmission
@@ -129,12 +144,14 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Core Data Patterns
 
 ### Entity Structure
+
 - **ChatEntity**: Primary conversation entity with messages relationship
 - **MessageEntity**: Individual messages within chats
 - **APIServiceEntity**: AI service configurations and API keys
 - **PersonaEntity**: AI persona definitions with system instructions
 
 ### Best Practices
+
 - Use NSPredicate for efficient filtering and queries
 - Implement proper cascade delete rules
 - Perform saves strategically to balance performance and data safety
@@ -144,11 +161,13 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Testing and Quality Assurance
 
 ### Test Structure
+
 - Unit tests in [WardenTests/](mdc:WardenTests)
 - UI tests in [WardenUITests/](mdc:WardenUITests)
 - Mock data for SwiftUI previews using [PreviewStateManager.swift](mdc:Warden/UI/PreviewStateManager.swift)
 
 ### Testing Guidelines
+
 - Test API handlers with mock responses
 - Validate Core Data migrations thoroughly
 - Test UI components with various data states
@@ -157,12 +176,14 @@ Warden is a native macOS AI chat client built with SwiftUI that supports multipl
 ## Build and Distribution
 
 ### Requirements
+
 - Xcode 14.3 or later
 - macOS 13.0+ deployment target
 - Universal binary support (Intel + Apple Silicon)
 - Apple Developer account for notarization
 
 ### Release Process
+
 - Apple notarization for security compliance
 - GitHub releases for manual download
 - Homebrew cask for package management
@@ -192,6 +213,7 @@ When working on Warden:
 ## Important Notes for AI Assistance
 
 When helping with Warden development:
+
 - Always reference the app as "Warden" in user-facing content
 - Remember that Karat Sidhu is the creator and maintainer
 - Prioritize privacy and local data storage in all implementations
