@@ -1,0 +1,109 @@
+---
+alwaysApply: true
+description: Agent operating guide for Warden (macOS AI) - architecture, files, and common edits
+---
+
+## Warden Agent Guide
+
+Use this as your fast orientation for the Warden macOS SwiftUI app. It tells you where key things live and how to implement common changes safely.
+
+### Core Entry Points
+- **Main app**: [Warden/WardenApp.swift](mdc:Warden/WardenApp.swift)
+- **Root UI**: [Warden/UI/ContentView.swift](mdc:Warden/UI/ContentView.swift)
+- **Configuration & model lists**: [Warden/Configuration/AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift)
+- **Data models**: [Warden/Models/Models.swift](mdc:Warden/Models/Models.swift), [Warden/Models/MessageContent.swift](mdc:Warden/Models/MessageContent.swift)
+- **Persistence (Core Data)**: [Warden/Store/ChatStore.swift](mdc:Warden/Store/ChatStore.swift), [Warden/Store/warenDataModel.xcdatamodeld](mdc:Warden/Store/warenDataModel.xcdatamodeld)
+
+### API Abstraction (Multi-Provider)
+- **Unified protocol**: [Warden/Utilities/APIHandlers/APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift)
+- **Handler factory**: [Warden/Utilities/APIHandlers/APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift)
+- **High-level orchestrator**: [Warden/Utilities/APIServiceManager.swift](mdc:Warden/Utilities/APIServiceManager.swift)
+- **Per-provider handlers**: see [Warden/Utilities/APIHandlers/](mdc:Warden/Utilities/APIHandlers/)
+- **Message building/parsing**: [Warden/Utilities/MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift), [Warden/Utilities/MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift)
+- **Request conversion**: [Warden/Models/RequestMessagesTransformer.swift](mdc:Warden/Models/RequestMessagesTransformer.swift)
+
+### Reasoning Models (o1/o3/deepseek-reasoner, etc.)
+- Warden supports special "thinking" streams and display.
+- Convert system messages to user role for reasoning models.
+- Show reasoning content in UI, separated from final content.
+- UI: [Warden/UI/Chat/ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift)
+- Example handling (pattern):
+```swift
+// Example pattern used in reasoning-capable handlers
+if let reasoningContent = message["reasoning_content"] as? String {
+    finalContent = "<think>\n\(reasoningContent)\n</think>\n\n\(messageContent)"
+}
+```
+
+### Chat UI and Multi-Agent
+- **Main chat screen**: [Warden/UI/Chat/ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift), [Warden/UI/Chat/ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift)
+- **Multi-agent orchestration**: [Warden/Utilities/MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift)
+- **Multi-agent UI**: [Warden/UI/Chat/MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift)
+
+### Attachments & Multimodal
+- **Images**: [Warden/Models/ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift)
+- **Files (PDF/CSV/JSON/etc.)**: [Warden/Models/FileAttachment.swift](mdc:Warden/Models/FileAttachment.swift)
+- **Reusable previews & components**: [Warden/UI/Components/](mdc:Warden/UI/Components/)
+
+### Preferences, Models, and Keys
+- **Preferences UI**: [Warden/UI/Preferences/](mdc:Warden/UI/Preferences/)
+- **Model visibility**: [Warden/Utilities/SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift)
+- **Favorites**: [Warden/Utilities/FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift)
+- **Constants & default models**: [Warden/Configuration/AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift)
+- Never log or expose API keys. Keys are stored in user preferences and read by handlers.
+
+### Sharing & Search
+- **Export/Share Chats**: [Warden/Utilities/ChatSharingService.swift](mdc:Warden/Utilities/ChatSharingService.swift)
+- **Spotlight Search**: [Warden/Utilities/SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift)
+
+### Testing
+- **Unit tests**: [WardenTests](mdc:WardenTests)
+- **UI tests**: [WardenUITests](mdc:WardenUITests)
+
+## Common Edits (Recipes)
+
+### Add a new AI provider or model
+1. Define model identifiers and defaults in [AppConstants.swift](mdc:Warden/Configuration/AppConstants.swift).
+2. Implement a handler conforming to [APIProtocol.swift](mdc:Warden/Utilities/APIHandlers/APIProtocol.swift).
+3. Register it in [APIServiceFactory.swift](mdc:Warden/Utilities/APIHandlers/APIServiceFactory.swift).
+4. Ensure request formatting via [RequestMessagesTransformer.swift](mdc:Warden/Models/RequestMessagesTransformer.swift) and [MessageManager.swift](mdc:Warden/Utilities/MessageManager.swift).
+5. Parse/stream responses in the handler and via [MessageParser.swift](mdc:Warden/Utilities/MessageParser.swift) (include reasoning streams when applicable).
+6. Update model visibility and preferences using [SelectedModelsManager.swift](mdc:Warden/Utilities/SelectedModelsManager.swift) and [FavoriteModelsManager.swift](mdc:Warden/Utilities/FavoriteModelsManager.swift).
+
+### Handle reasoning-capable models
+- Convert system messages to user role before sending.
+- Surface reasoning content separately and render via [ThinkingProcessView.swift](mdc:Warden/UI/Chat/ThinkingProcessView.swift).
+- Temperature and similar parameters may be ignored by some reasoning models; prefer service defaults.
+
+### Add or modify chat UI features
+- Edit view/state in [ChatView.swift](mdc:Warden/UI/Chat/ChatView.swift) and [ChatViewModel.swift](mdc:Warden/UI/Chat/ChatViewModel.swift).
+- For multi-agent, coordinate via [MultiAgentMessageManager.swift](mdc:Warden/Utilities/MultiAgentMessageManager.swift) and render in [MultiAgentResponseView.swift](mdc:Warden/UI/Chat/MultiAgentResponseView.swift).
+
+### Work with attachments
+- Use [ImageAttachment.swift](mdc:Warden/Models/ImageAttachment.swift) and [FileAttachment.swift](mdc:Warden/Models/FileAttachment.swift) to extract, type-detect, and send content.
+- Provide previews/components under [UI/Components](mdc:Warden/UI/Components/).
+
+### Persistence & indexing
+- Use [ChatStore.swift](mdc:Warden/Store/ChatStore.swift) for Core Data operations.
+- Keep Spotlight index consistent via [SpotlightIndexManager.swift](mdc:Warden/Utilities/SpotlightIndexManager.swift).
+
+## Guardrails & Best Practices
+- **Privacy**: Never log API keys or sensitive message content.
+- **Streaming**: Always clean up streaming connections; support cancellation.
+- **Reasoning**: Check for reasoning capability and handle dual streams (reasoning + content).
+- **Performance**: Prefer async/await and structured concurrency; avoid blocking the main thread.
+- **UI consistency**: Follow existing SwiftUI patterns and component styles under [Warden/UI](mdc:Warden/UI).
+- **Accessibility**: Ensure VoiceOver labels, keyboard navigation; see [accessibility-localization.mdc](mdc:.cursor/rules/accessibility-localization.mdc).
+- **Testing**: Add/adjust tests in [WardenTests](mdc:WardenTests) and [WardenUITests](mdc:WardenUITests) for new functionality.
+
+## See Also (Focused Rules)
+- API architecture: [api-architecture.mdc](mdc:.cursor/rules/api-architecture.mdc)
+- Reasoning models: [reasoning-models.mdc](mdc:.cursor/rules/reasoning-models.mdc)
+- Model management: [model-management.mdc](mdc:.cursor/rules/model-management.mdc)
+- UI architecture: [ui-architecture.mdc](mdc:.cursor/rules/ui-architecture.mdc)
+- Core Data: [core-data-persistence.mdc](mdc:.cursor/rules/core-data-persistence.mdc)
+- Preferences/settings: [preferences-settings.mdc](mdc:.cursor/rules/preferences-settings.mdc)
+- Testing & debugging: [testing-debugging.mdc](mdc:.cursor/rules/testing-debugging.mdc)
+- Utilities overview: [utilities-guide.mdc](mdc:.cursor/rules/utilities-guide.mdc)
+
+This agent guide applies globally and complements the focused rules above.
