@@ -471,9 +471,11 @@ struct ChatListView: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                // Clear selectedChat if it's in the list to be deleted
-                if let selectedChatID = selectedChat?.id, selectedChatIDs.contains(selectedChatID) {
-                    selectedChat = nil
+                DispatchQueue.main.async {
+                    // Clear selectedChat if it's in the list to be deleted
+                    if let selectedChatID = selectedChat?.id, selectedChatIDs.contains(selectedChatID) {
+                        selectedChat = nil
+                    }
                 }
                 
                 // Perform bulk delete

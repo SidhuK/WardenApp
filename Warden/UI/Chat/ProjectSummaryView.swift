@@ -484,13 +484,15 @@ struct ProjectSummaryView: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !newName.isEmpty {
-                    chat.name = newName
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !newName.isEmpty {
+                        chat.name = newName
+                        do {
+                            try viewContext.save()
+                        } catch {
+                            print("Error renaming chat: \(error.localizedDescription)")
+                        }
                     }
                 }
             }
@@ -513,11 +515,13 @@ struct ProjectSummaryView: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                chat.clearMessages()
-                do {
-                    try viewContext.save()
-                } catch {
-                    print("Error clearing chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    chat.clearMessages()
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error clearing chat: \(error.localizedDescription)")
+                    }
                 }
             }
         }
@@ -534,14 +538,16 @@ struct ProjectSummaryView: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                // Remove from Spotlight index before deleting
-                store.removeChatFromSpotlight(chatId: chat.id)
-                
-                viewContext.delete(chat)
-                do {
-                    try viewContext.save()
-                } catch {
-                    print("Error deleting chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    // Remove from Spotlight index before deleting
+                    store.removeChatFromSpotlight(chatId: chat.id)
+                    
+                    viewContext.delete(chat)
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error deleting chat: \(error.localizedDescription)")
+                    }
                 }
             }
         }

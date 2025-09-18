@@ -570,13 +570,15 @@ struct ProjectChatRow: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !newName.isEmpty {
-                    chat.name = newName
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !newName.isEmpty {
+                        chat.name = newName
+                        do {
+                            try viewContext.save()
+                        } catch {
+                            print("Error renaming chat: \(error.localizedDescription)")
+                        }
                     }
                 }
             }
@@ -1050,13 +1052,15 @@ struct ProjectChatRowInList: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !newName.isEmpty {
-                    chat.name = newName
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !newName.isEmpty {
+                        chat.name = newName
+                        do {
+                            try viewContext.save()
+                        } catch {
+                            print("Error renaming chat: \(error.localizedDescription)")
+                        }
                     }
                 }
             }

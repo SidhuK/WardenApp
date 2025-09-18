@@ -233,9 +233,11 @@ struct ChatListRow: View, Equatable {
         alert.alertStyle = .warning
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                // Clear selectedChat to prevent accessing deleted item
-                if selectedChat?.id == chat.id {
-                    selectedChat = nil
+                DispatchQueue.main.async {
+                    // Clear selectedChat to prevent accessing deleted item
+                    if selectedChat?.id == chat.id {
+                        selectedChat = nil
+                    }
                 }
                 
                 // Remove from Spotlight index before deleting
@@ -266,13 +268,13 @@ struct ChatListRow: View, Equatable {
         alert.accessoryView = textField
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                chat.name = textField.stringValue
-                do {
-                    try viewContext.save()
-                }
-
-                catch {
-                    print("Error renaming chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    chat.name = textField.stringValue
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error renaming chat: \(error.localizedDescription)")
+                    }
                 }
             }
         }
@@ -287,22 +289,26 @@ struct ChatListRow: View, Equatable {
         alert.alertStyle = .warning
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                chat.clearMessages()
-                do {
-                    try viewContext.save()
-                } catch {
-                    print("Error clearing chat: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    chat.clearMessages()
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error clearing chat: \(error.localizedDescription)")
+                    }
                 }
             }
         }
     }
     
     func togglePinChat(_ chat: ChatEntity) {
-        chat.isPinned.toggle()
-        do {
-            try viewContext.save()
-        } catch {
-            print("Error toggling pin status: \(error.localizedDescription)")
+        DispatchQueue.main.async {
+            chat.isPinned.toggle()
+            do {
+                try viewContext.save()
+            } catch {
+                print("Error toggling pin status: \(error.localizedDescription)")
+            }
         }
     }
 }
