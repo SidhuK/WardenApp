@@ -1,17 +1,7 @@
 import SwiftUI
 
-struct ChatListRow: View, Equatable {
-    static func == (lhs: ChatListRow, rhs: ChatListRow) -> Bool {
-        lhs.chat?.id == rhs.chat?.id &&
-        lhs.chat?.updatedDate == rhs.chat?.updatedDate &&
-        lhs.chat?.name == rhs.chat?.name &&
-        lhs.chat?.lastMessage?.body == rhs.chat?.lastMessage?.body &&
-        lhs.chat?.isPinned == rhs.chat?.isPinned &&
-        lhs.searchText == rhs.searchText &&
-        lhs.isSelectionMode == rhs.isSelectionMode &&
-        lhs.isSelected == rhs.isSelected &&
-        (lhs.selectedChat?.id == rhs.selectedChat?.id)
-    }
+struct ChatListRow: View {
+    // Removed Equatable conformance - it was preventing proper re-renders when selection changed
     let chat: ChatEntity?
     let chatID: UUID  // Store the ID separately
     @Binding var selectedChat: ChatEntity?
@@ -24,7 +14,6 @@ struct ChatListRow: View, Equatable {
     var onKeyboardSelection: ((UUID, Bool, Bool) -> Void)?
     @StateObject private var chatViewModel: ChatViewModel
     @State private var showingMoveToProject = false
-
     init(
         chat: ChatEntity?,
         selectedChat: Binding<ChatEntity?>,
@@ -47,20 +36,13 @@ struct ChatListRow: View, Equatable {
         self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat!, viewContext: viewContext))
     }
 
-    var isActive: Binding<Bool> {
-        Binding<Bool>(
-            get: {
-                selectedChat?.id == chatID
-            },
-            set: { newValue in
-                if newValue {
-                    selectedChat = chat
-                }
-                else {
-                    selectedChat = nil
-                }
-            }
-        )
+    private var computedIsActive: Bool {
+        guard let selectedChat = selectedChat, 
+              let chat = chat,
+              !chat.isDeleted else {
+            return false
+        }
+        return selectedChat.objectID == chat.objectID
     }
 
     var body: some View {
@@ -87,7 +69,7 @@ struct ChatListRow: View, Equatable {
                 chat: chat!,
                 timestamp: chat?.lastMessage?.timestamp ?? Date(),
                 message: chat?.lastMessage?.body ?? "",
-                isActive: isActive,
+                isActive: .constant(computedIsActive),
                 viewContext: viewContext,
                 searchText: searchText,
                 isSelectionMode: isSelectionMode,

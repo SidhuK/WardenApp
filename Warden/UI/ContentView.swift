@@ -249,13 +249,12 @@ struct ContentView: View {
         do {
             try viewContext.save()
             
-            // Index the new chat for Spotlight search
-            store.indexChatForSpotlight(newChat)
+            // Select the new chat
+            selectedChat = newChat
             
+            // Index for Spotlight (async to avoid blocking)
             DispatchQueue.main.async {
-                self.selectedChat?.objectWillChange.send()
-                self.selectedChat = newChat
-
+                self.store.indexChatForSpotlight(newChat)
             }
         }
         catch {

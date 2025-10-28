@@ -1,22 +1,8 @@
 import SwiftUI
 
-struct MessageCell: View, Equatable {
-    static func == (lhs: MessageCell, rhs: MessageCell) -> Bool {
-        // Safely compare chat objects
-        guard !lhs.chat.isDeleted && !rhs.chat.isDeleted else {
-            return false
-        }
-        
-        return lhs.chat.id == rhs.chat.id &&
-               lhs.timestamp == rhs.timestamp &&
-               lhs.message == rhs.message &&
-               lhs.searchText == rhs.searchText &&
-               lhs.chat.isPinned == rhs.chat.isPinned &&
-               lhs.isSelectionMode == rhs.isSelectionMode &&
-               lhs.isSelected == rhs.isSelected
-    }
+struct MessageCell: View {
     
-    @ObservedObject var chat: ChatEntity
+    let chat: ChatEntity  // Don't observe - parent manages updates
     @State var timestamp: Date
     var message: String
     @Binding var isActive: Bool
