@@ -76,6 +76,7 @@ struct ChatView: View {
                     newMessage: $newMessage,
                     attachedImages: $attachedImages,
                     attachedFiles: $attachedFiles,
+                    webSearchEnabled: $webSearchEnabled,
                     chat: chat,
                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                     isStreaming: isStreaming,
@@ -122,6 +123,7 @@ struct ChatView: View {
                         isExpanded: $isBottomContainerExpanded,
                         attachedImages: $attachedImages,
                         attachedFiles: $attachedFiles,
+                        webSearchEnabled: $webSearchEnabled,
                         imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                         isStreaming: isStreaming,
                         onSendMessage: {
@@ -563,7 +565,8 @@ extension ChatView {
             Task { @MainActor in
                 await chatViewModel.sendMessageStreamWithSearch(
                     messageBody,
-                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize))
+                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
+                    useWebSearch: webSearchEnabled
                 ) { result in
                     DispatchQueue.main.async {
                         switch result {

@@ -5,6 +5,7 @@ struct CenteredInputView: View {
     @Binding var newMessage: String
     @Binding var attachedImages: [ImageAttachment]
     @Binding var attachedFiles: [FileAttachment]
+    @Binding var webSearchEnabled: Bool
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
     let isStreaming: Bool
@@ -41,6 +42,7 @@ struct CenteredInputView: View {
                             text: $newMessage,
                             attachedImages: $attachedImages,
                             attachedFiles: $attachedFiles,
+                            webSearchEnabled: $webSearchEnabled,
                             chat: chat,
                             imageUploadsAllowed: imageUploadsAllowed,
                             isStreaming: isStreaming,
@@ -197,6 +199,7 @@ struct MinimalSuggestionButton: View {
         newMessage: .constant(""),
         attachedImages: .constant([]),
         attachedFiles: .constant([]),
+        webSearchEnabled: .constant(false),
         chat: mockChat,
         imageUploadsAllowed: true,
         isStreaming: false,

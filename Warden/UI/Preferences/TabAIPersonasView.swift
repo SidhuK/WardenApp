@@ -599,6 +599,7 @@ struct PersonaDetailView: View {
                     text: $systemMessage,
                     attachedImages: .constant([]),
                     attachedFiles: .constant([]),
+                    webSearchEnabled: .constant(false),
                     chat: nil,
                     imageUploadsAllowed: false,
                     onEnter: {},

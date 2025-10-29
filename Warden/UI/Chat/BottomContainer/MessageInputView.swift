@@ -7,6 +7,7 @@ struct MessageInputView: View {
     @Binding var text: String
     @Binding var attachedImages: [ImageAttachment]
     @Binding var attachedFiles: [FileAttachment]
+    @Binding var webSearchEnabled: Bool
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
     var isStreaming: Bool = false
@@ -60,13 +61,16 @@ struct MessageInputView: View {
         VStack(spacing: 0) {
             attachmentPreviewsSection
             
-            // New layout: Plus button, Input box, Send button
+            // New layout: Plus button, Input box, Web Search toggle, Send button
             HStack(spacing: 8) {
                 // Plus button on the left
                 plusButtonMenu
                 
                 // Main input container (without action buttons inside)
                 mainInputContainer
+                
+                // Web search toggle button
+                webSearchToggleButton
                 
                 // Send button on the right
                 sendButton
@@ -214,6 +218,18 @@ struct MessageInputView: View {
             .padding(.vertical, 8)
             .frame(minWidth: 150)
         }
+    }
+    
+    private var webSearchToggleButton: some View {
+        Button(action: {
+            webSearchEnabled.toggle()
+        }) {
+            Image(systemName: webSearchEnabled ? "globe" : "globe")
+                .font(.system(size: 20))
+                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help(webSearchEnabled ? "Web search enabled - Click to disable" : "Web search disabled - Click to enable")
     }
     
     private var sendButton: some View {

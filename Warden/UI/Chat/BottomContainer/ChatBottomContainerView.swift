@@ -7,6 +7,7 @@ struct ChatBottomContainerView: View {
     @Binding var isExpanded: Bool
     @Binding var attachedImages: [ImageAttachment]
     @Binding var attachedFiles: [FileAttachment]
+    @Binding var webSearchEnabled: Bool
     var imageUploadsAllowed: Bool
     var isStreaming: Bool
     var onSendMessage: () -> Void
@@ -23,6 +24,7 @@ struct ChatBottomContainerView: View {
         isExpanded: Binding<Bool>,
         attachedImages: Binding<[ImageAttachment]> = .constant([]),
         attachedFiles: Binding<[FileAttachment]> = .constant([]),
+        webSearchEnabled: Binding<Bool> = .constant(false),
         imageUploadsAllowed: Bool = false,
         isStreaming: Bool = false,
         onSendMessage: @escaping () -> Void,
@@ -37,6 +39,7 @@ struct ChatBottomContainerView: View {
         self._isExpanded = isExpanded
         self._attachedImages = attachedImages
         self._attachedFiles = attachedFiles
+        self._webSearchEnabled = webSearchEnabled
         self.imageUploadsAllowed = imageUploadsAllowed
         self.isStreaming = isStreaming
         self.onSendMessage = onSendMessage
@@ -67,6 +70,7 @@ struct ChatBottomContainerView: View {
                 text: $newMessage,
                 attachedImages: $attachedImages,
                 attachedFiles: $attachedFiles,
+                webSearchEnabled: $webSearchEnabled,
                 chat: chat,
                 imageUploadsAllowed: imageUploadsAllowed,
                 isStreaming: isStreaming,
