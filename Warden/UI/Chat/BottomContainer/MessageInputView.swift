@@ -224,12 +224,22 @@ struct MessageInputView: View {
         Button(action: {
             webSearchEnabled.toggle()
         }) {
-            Image(systemName: webSearchEnabled ? "globe" : "globe")
-                .font(.system(size: 20))
-                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+            ZStack {
+                Image(systemName: webSearchEnabled ? "globe" : "globe")
+                    .font(.system(size: 20))
+                    .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+                
+                // Add a small filled circle indicator when enabled
+                if webSearchEnabled {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 8, y: -8)
+                }
+            }
         }
         .buttonStyle(PlainButtonStyle())
-        .help(webSearchEnabled ? "Web search enabled - Click to disable" : "Web search disabled - Click to enable")
+        .help(webSearchEnabled ? "Web search enabled 🌐 - Your messages will include web results" : "Web search disabled - Click to enable")
     }
     
     private var sendButton: some View {

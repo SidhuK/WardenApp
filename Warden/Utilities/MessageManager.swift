@@ -57,11 +57,22 @@ class MessageManager: ObservableObject {
     }
     
     func executeSearch(_ query: String) async throws -> String {
+        print("🔍 [WebSearch] executeSearch called with query: \(query)")
+        
         let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
             ?? AppConstants.tavilyDefaultSearchDepth
         let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
         let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
         let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
+        
+        print("🔍 [WebSearch] Search settings - depth: \(searchDepth), maxResults: \(resultsLimit), includeAnswer: \(includeAnswer)")
+        
+        // Check if API key exists
+        if let apiKey = TavilyKeyManager.shared.getApiKey() {
+            print("🔍 [WebSearch] API key found: \(String(apiKey.prefix(10)))...")
+        } else {
+            print("❌ [WebSearch] No API key found!")
+        }
         
         let response = try await tavilyService.search(
             query: query,
@@ -69,6 +80,8 @@ class MessageManager: ObservableObject {
             maxResults: resultsLimit,
             includeAnswer: includeAnswer
         )
+        
+        print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
         
         return tavilyService.formatResultsForContext(response)
     }
@@ -81,11 +94,18 @@ class MessageManager: ObservableObject {
         useWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
+        print("🔍 [WebSearch] sendMessageStreamWithSearch called")
+        print("🔍 [WebSearch] useWebSearch: \(useWebSearch)")
+        print("🔍 [WebSearch] message: \(message)")
+        
         var finalMessage = message
         
         // Check if web search is enabled (either by toggle or by command)
         let searchCheck = isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
+        
+        print("🔍 [WebSearch] searchCheck.isSearch: \(searchCheck.isSearch)")
+        print("🔍 [WebSearch] shouldSearch: \(shouldSearch)")
         
         if shouldSearch {
             let query: String
@@ -95,10 +115,14 @@ class MessageManager: ObservableObject {
                 query = message
             }
             
+            print("🔍 [WebSearch] Executing search with query: \(query)")
+            
             chat.waitingForResponse = true
             
             do {
                 let searchResults = try await executeSearch(query)
+                print("🔍 [WebSearch] Search completed successfully")
+                print("🔍 [WebSearch] Results length: \(searchResults.count) characters")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -107,11 +131,16 @@ class MessageManager: ObservableObject {
                 
                 Based on the search results above, please provide a comprehensive answer to the user's question. Include relevant citations using the source numbers [1], [2], etc.
                 """
+                
+                print("🔍 [WebSearch] Final message prepared with search results")
             } catch {
+                print("❌ [WebSearch] Search failed with error: \(error)")
                 chat.waitingForResponse = false
                 completion(.failure(error))
                 return
             }
+        } else {
+            print("🔍 [WebSearch] Search skipped - shouldSearch is false")
         }
         
         sendMessageStream(finalMessage, in: chat, contextSize: contextSize, completion: completion)

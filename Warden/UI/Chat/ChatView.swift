@@ -39,6 +39,7 @@ struct ChatView: View {
     
     // Web search functionality
     @State private var webSearchEnabled = false
+    @State private var isSearchingWeb = false
     
     // Multi-agent functionality
     @State private var isMultiAgentMode = false
@@ -562,6 +563,12 @@ extension ChatView {
 
         if chat.apiService?.useStreamResponse ?? false {
             self.isStreaming = true
+            
+            // Show web search indicator if enabled
+            if webSearchEnabled {
+                self.isSearchingWeb = true
+            }
+            
             Task { @MainActor in
                 await chatViewModel.sendMessageStreamWithSearch(
                     messageBody,
@@ -569,6 +576,8 @@ extension ChatView {
                     useWebSearch: webSearchEnabled
                 ) { result in
                     DispatchQueue.main.async {
+                        self.isSearchingWeb = false
+                        
                         switch result {
                         case .success:
                             handleResponseFinished()

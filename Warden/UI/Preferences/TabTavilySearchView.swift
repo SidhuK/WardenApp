@@ -87,7 +87,12 @@ struct TabTavilySearchView: View {
         maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
         if maxResults == 0 { 
             maxResults = AppConstants.tavilyDefaultMaxResults 
+        }
+        
+        // Check if includeAnswer has been set, if not default to true
+        if UserDefaults.standard.object(forKey: AppConstants.tavilyIncludeAnswerKey) == nil {
             includeAnswer = true
+            UserDefaults.standard.set(true, forKey: AppConstants.tavilyIncludeAnswerKey)
         } else {
             includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
         }
