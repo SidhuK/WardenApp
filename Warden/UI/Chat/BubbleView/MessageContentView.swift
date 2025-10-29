@@ -131,6 +131,15 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderText(_ text: String) -> some View {
+        let _ = {
+            // Debug logging
+            if text.contains("[") && text.contains("](") {
+                print("🎨 [UI] Text contains markdown links: \(String(text.prefix(200)))")
+            }
+            let hasMarkdown = containsMarkdownFormatting(text)
+            print("🎨 [UI] hasMarkdown: \(hasMarkdown), text length: \(text.count)")
+        }()
+        
         // Check if this text contains markdown formatting that should be rendered properly
         if containsMarkdownFormatting(text) {
             MarkdownView(

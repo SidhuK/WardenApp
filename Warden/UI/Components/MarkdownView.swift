@@ -1,5 +1,6 @@
 import SwiftUI
 import Markdown
+import AttributedText
 
 // Type aliases to resolve naming conflicts
 typealias MarkdownText = Markdown.Text
@@ -207,9 +208,11 @@ struct MarkdownView: View {
                 .padding(.bottom, 4)
             
         case .paragraph(let attributedText):
-            Text(AttributedString(attributedText))
-                .textSelection(.enabled)
-                .padding(.bottom, 4)
+            // Use AttributedText for proper link handling (clickable links)
+            VStack(alignment: .leading) {
+                AttributedText(attributedText)
+            }
+            .padding(.bottom, 4)
             
         case .codeBlock(let code, _):
             // Simple code block rendering - main code blocks are handled by MessageParser

@@ -99,28 +99,22 @@ class MessageManager: ObservableObject {
         
         var result = text
         print("🔗 [Citations] Converting citations to links, found \(lastSearchUrls.count) URLs")
+        print("🔗 [Citations] Original text preview: \(String(text.prefix(200)))...")
         
         // Convert [1], [2], etc. to clickable markdown links
-        // We need to escape the brackets properly for regex
         for (index, url) in lastSearchUrls.enumerated() {
             let citationNumber = index + 1
-            // Match [N] where N is the citation number
-            let pattern = "\\[\(citationNumber)\\]"
+            let searchPattern = "[\(citationNumber)]"
             let replacement = "[\(citationNumber)](\(url))"
             
-            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-                let nsString = result as NSString
-                let range = NSRange(location: 0, length: nsString.length)
-                result = regex.stringByReplacingMatches(
-                    in: result,
-                    options: [],
-                    range: range,
-                    withTemplate: replacement
-                )
-            }
+            // Simple string replacement - more reliable than regex template
+            result = result.replacingOccurrences(of: searchPattern, with: replacement)
+            
+            print("🔗 [Citations] Replacing [\(citationNumber)] with [\(citationNumber)](\(String(url.prefix(50)))...)")
         }
         
         print("🔗 [Citations] Conversion complete, text length: \(result.count)")
+        print("🔗 [Citations] Result preview: \(String(result.prefix(300)))...")
         
         // Clear URLs after conversion to prevent applying to future messages
         clearSearchUrls()
@@ -446,8 +440,14 @@ class MessageManager: ObservableObject {
     }
 
     private func addMessageToChat(chat: ChatEntity, message: String) {
+        print("💬 [Message] AI response received, length: \(message.count)")
+        print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
+        
         // Convert citations to clickable links if we have search URLs
         let finalMessage = convertCitationsToLinks(message)
+        
+        print("💬 [Message] After conversion, length: \(finalMessage.count)")
+        print("💬 [Message] Final preview: \(String(finalMessage.prefix(200)))...")
         
         let newMessage = MessageEntity(context: self.viewContext)
         newMessage.id = Int64(chat.messages.count + 1)
