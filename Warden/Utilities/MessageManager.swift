@@ -98,23 +98,17 @@ class MessageManager: ObservableObject {
         }
         
         var result = text
-        print("🔗 [Citations] Converting citations to links, found \(lastSearchUrls.count) URLs")
-        print("🔗 [Citations] Original text preview: \(String(text.prefix(200)))...")
+        print("🔗 [Citations] Adding sources list with \(lastSearchUrls.count) URLs")
         
-        // Convert [1], [2], etc. to clickable markdown links
+        // Add a sources section at the end
+        result += "\n\n---\n\n**Sources:**\n"
+        
         for (index, url) in lastSearchUrls.enumerated() {
             let citationNumber = index + 1
-            let searchPattern = "[\(citationNumber)]"
-            let replacement = "[\(citationNumber)](\(url))"
-            
-            // Simple string replacement - more reliable than regex template
-            result = result.replacingOccurrences(of: searchPattern, with: replacement)
-            
-            print("🔗 [Citations] Replacing [\(citationNumber)] with [\(citationNumber)](\(String(url.prefix(50)))...)")
+            result += "**[\(citationNumber)]** \(url)\n"
         }
         
-        print("🔗 [Citations] Conversion complete, text length: \(result.count)")
-        print("🔗 [Citations] Result preview: \(String(result.prefix(300)))...")
+        print("🔗 [Citations] Sources list added, final length: \(result.count)")
         
         // Clear URLs after conversion to prevent applying to future messages
         clearSearchUrls()
