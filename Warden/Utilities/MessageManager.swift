@@ -56,7 +56,7 @@ class MessageManager: ObservableObject {
         return (false, nil)
     }
     
-    func executeSearch(_ query: String) async throws -> String {
+    func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
         print("🔍 [WebSearch] executeSearch called with query: \(query)")
         
         let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
@@ -83,7 +83,56 @@ class MessageManager: ObservableObject {
         
         print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
         
-        return tavilyService.formatResultsForContext(response)
+        // Extract URLs for citation linking
+        let urls = response.results.map { $0.url }
+        
+        return (tavilyService.formatResultsForContext(response), urls)
+    }
+    
+    // Store URLs temporarily for citation conversion
+    private var lastSearchUrls: [String] = []
+    
+    func convertCitationsToLinks(_ text: String) -> String {
+        guard !lastSearchUrls.isEmpty else {
+            return text
+        }
+        
+        var result = text
+        print("🔗 [Citations] Converting citations to links, found \(lastSearchUrls.count) URLs")
+        
+        // Convert [1], [2], etc. to clickable markdown links
+        // We need to escape the brackets properly for regex
+        for (index, url) in lastSearchUrls.enumerated() {
+            let citationNumber = index + 1
+            // Match [N] where N is the citation number
+            let pattern = "\\[\(citationNumber)\\]"
+            let replacement = "[\(citationNumber)](\(url))"
+            
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                let nsString = result as NSString
+                let range = NSRange(location: 0, length: nsString.length)
+                result = regex.stringByReplacingMatches(
+                    in: result,
+                    options: [],
+                    range: range,
+                    withTemplate: replacement
+                )
+            }
+        }
+        
+        print("🔗 [Citations] Conversion complete, text length: \(result.count)")
+        
+        // Clear URLs after conversion to prevent applying to future messages
+        clearSearchUrls()
+        
+        return result
+    }
+    
+    private func clearSearchUrls() {
+        if !lastSearchUrls.isEmpty {
+            print("🔗 [Citations] Clearing \(lastSearchUrls.count) stored URLs")
+            lastSearchUrls = []
+        }
     }
     
     @MainActor
@@ -120,9 +169,11 @@ class MessageManager: ObservableObject {
             chat.waitingForResponse = true
             
             do {
-                let searchResults = try await executeSearch(query)
+                let (searchResults, urls) = try await executeSearch(query)
+                lastSearchUrls = urls // Store for citation conversion
                 print("🔍 [WebSearch] Search completed successfully")
                 print("🔍 [WebSearch] Results length: \(searchResults.count) characters")
+                print("🔍 [WebSearch] Stored \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -180,9 +231,11 @@ class MessageManager: ObservableObject {
             chat.waitingForResponse = true
             
             do {
-                let searchResults = try await executeSearch(query)
+                let (searchResults, urls) = try await executeSearch(query)
+                lastSearchUrls = urls // Store for citation conversion
                 print("🔍 [WebSearch NON-STREAM] Search completed successfully")
                 print("🔍 [WebSearch NON-STREAM] Results length: \(searchResults.count) characters")
+                print("🔍 [WebSearch NON-STREAM] Stored \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -393,9 +446,12 @@ class MessageManager: ObservableObject {
     }
 
     private func addMessageToChat(chat: ChatEntity, message: String) {
+        // Convert citations to clickable links if we have search URLs
+        let finalMessage = convertCitationsToLinks(message)
+        
         let newMessage = MessageEntity(context: self.viewContext)
         newMessage.id = Int64(chat.messages.count + 1)
-        newMessage.body = message
+        newMessage.body = finalMessage
         newMessage.timestamp = Date()
         newMessage.own = false
         newMessage.chat = chat
@@ -412,8 +468,12 @@ class MessageManager: ObservableObject {
 
     private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String) {
         print("Streaming chunk received: \(accumulatedResponse.suffix(20))")
+        
+        // Convert citations to clickable links if we have search URLs
+        let finalMessage = convertCitationsToLinks(accumulatedResponse)
+        
         chat.waitingForResponse = false
-        lastMessage.body = accumulatedResponse
+        lastMessage.body = finalMessage
         lastMessage.timestamp = Date()
         lastMessage.waitingForResponse = false
 
