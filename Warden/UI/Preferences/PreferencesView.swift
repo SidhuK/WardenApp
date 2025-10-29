@@ -21,6 +21,7 @@ struct PreferencesView: View {
         case general = "General"
         case apiServices = "API Services"
         case aiPersonas = "AI Assistants"
+        case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
         case backupRestore = "Backup & Restore"
         case supportDeveloper = "Support Developer"
@@ -31,6 +32,7 @@ struct PreferencesView: View {
             case .general: return "gearshape"
             case .apiServices: return "network"
             case .aiPersonas: return "person.2"
+            case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
             case .backupRestore: return "arrow.clockwise.icloud"
             case .supportDeveloper: return "heart.fill"
@@ -104,6 +106,8 @@ struct PreferencesView: View {
                     TabAIPersonasView()
                         .environmentObject(store)
                         .environment(\.managedObjectContext, viewContext)
+                case .webSearch:
+                    TabTavilySearchView()
                 case .keyboardShortcuts:
                     TabHotkeysView()
                 case .backupRestore:
@@ -137,6 +141,7 @@ struct InlineSettingsView: View {
         case general = "General"
         case apiServices = "API Services"
         case aiPersonas = "AI Assistants"
+        case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
         case backupRestore = "Backup & Restore"
         case supportDeveloper = "Support Developer"
@@ -147,6 +152,7 @@ struct InlineSettingsView: View {
             case .general: return "gearshape"
             case .apiServices: return "network"
             case .aiPersonas: return "person.2"
+            case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
             case .backupRestore: return "arrow.clockwise.icloud"
             case .supportDeveloper: return "heart.fill"

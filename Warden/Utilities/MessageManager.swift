@@ -8,6 +8,7 @@ class MessageManager: ObservableObject {
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
+    private let tavilyService = TavilySearchService()
     
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
@@ -41,6 +42,69 @@ class MessageManager: ObservableObject {
         
         // Cancel outside the lock to avoid deadlock
         taskToCancel?.cancel()
+    }
+    
+    // MARK: - Tavily Search Support
+    
+    func isSearchCommand(_ message: String) -> (isSearch: Bool, query: String?) {
+        for prefix in AppConstants.searchCommandAliases {
+            if message.lowercased().hasPrefix(prefix) {
+                let query = message.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
+                return (true, query.isEmpty ? nil : query)
+            }
+        }
+        return (false, nil)
+    }
+    
+    func executeSearch(_ query: String) async throws -> String {
+        let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
+            ?? AppConstants.tavilyDefaultSearchDepth
+        let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
+        let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
+        let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
+        
+        let response = try await tavilyService.search(
+            query: query,
+            searchDepth: searchDepth,
+            maxResults: resultsLimit,
+            includeAnswer: includeAnswer
+        )
+        
+        return tavilyService.formatResultsForContext(response)
+    }
+    
+    @MainActor
+    func sendMessageStreamWithSearch(
+        _ message: String,
+        in chat: ChatEntity,
+        contextSize: Int,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) async {
+        let searchCheck = isSearchCommand(message)
+        
+        var finalMessage = message
+        
+        if searchCheck.isSearch, let query = searchCheck.query {
+            chat.waitingForResponse = true
+            
+            do {
+                let searchResults = try await executeSearch(query)
+                
+                finalMessage = """
+                User asked: \(query)
+                
+                \(searchResults)
+                
+                Based on the search results above, please provide a comprehensive answer to the user's question. Include relevant citations using the source numbers [1], [2], etc.
+                """
+            } catch {
+                chat.waitingForResponse = false
+                completion(.failure(error))
+                return
+            }
+        }
+        
+        sendMessageStream(finalMessage, in: chat, contextSize: contextSize, completion: completion)
     }
 
     func sendMessage(

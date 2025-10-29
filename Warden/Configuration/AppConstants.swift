@@ -848,6 +848,35 @@ Remember that true productivity serves your overall life satisfaction and well-b
         static let copyLastUserMessage = "⌘⇧U"
         static let newChat = "⌘N"
     }
+    
+    // MARK: - Tavily Search Configuration
+    
+    /// Base URL for Tavily API
+    static let tavilyBaseURL = "https://api.tavily.com"
+    
+    /// Default search depth for Tavily queries
+    static let tavilyDefaultSearchDepth = "basic"
+    
+    /// Default maximum results to return
+    static let tavilyDefaultMaxResults = 5
+    
+    /// Maximum results allowed
+    static let tavilyMaxResultsLimit = 10
+    
+    /// Search command prefix
+    static let searchCommandPrefix = "/search"
+    
+    /// Alternative search command prefixes
+    static let searchCommandAliases = ["/search", "/web", "/google"]
+    
+    /// UserDefaults key for Tavily search depth preference
+    static let tavilySearchDepthKey = "tavilySearchDepth"
+    
+    /// UserDefaults key for Tavily max results preference
+    static let tavilyMaxResultsKey = "tavilyMaxResults"
+    
+    /// UserDefaults key for Tavily include answer preference
+    static let tavilyIncludeAnswerKey = "tavilyIncludeAnswer"
 }
 
 /// Returns the current date formatted as "yyyy-MM-dd".

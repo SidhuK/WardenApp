@@ -117,6 +117,10 @@
 		7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */; };
 		7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */; };
 		7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */; };
+		C46B73DF2EB1D5BB00D07415 /* TavilyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */; };
+		C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */; };
+		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
+		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -255,6 +259,10 @@
 		7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectorDropdown.swift; sourceTree = "<group>"; };
 		7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteModelsManager.swift; sourceTree = "<group>"; };
 		7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMStudioHandler.swift; sourceTree = "<group>"; };
+		C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyModels.swift; sourceTree = "<group>"; };
+		C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilySearchService.swift; sourceTree = "<group>"; };
+		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
+		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -371,6 +379,7 @@
 				4A8A78C72D4C41980057A6CC /* TabGeneralSettingsView.swift */,
 				4A164BB82C95CC450060ECFE /* TabAPIServices */,
 				4AE3CEB62C93A86F00A9CF4C /* TabAPIServicesView.swift */,
+				C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */,
 				7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */,
 				4A399CC329BCE67800E98796 /* PreferencesView.swift */,
 				4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */,
@@ -432,6 +441,7 @@
 		4A272A6E29F5CE3900F93D0D /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */,
 				4A27FF922DA1C4640075D730 /* ImageAttachment.swift */,
 				7F4955A92E06FAFF00516E2D /* FileAttachment.swift */,
 				4A27FF932DA1C4640075D730 /* MessageContent.swift */,
@@ -448,6 +458,8 @@
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
+				C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */,
+				C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */,
 				7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */,
 				7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
@@ -742,6 +754,7 @@
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
 				7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */,
+				C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */,
 				4A885C562CEA3F6C0018BBED /* ChatListView.swift in Sources */,
 				4AADD98C2C924FBA00242D20 /* APIServiceManager.swift in Sources */,
 				7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */,
@@ -765,14 +778,17 @@
 				4AA6EF592C565F90003B6D41 /* APIServiceConfig.swift in Sources */,
 				4AADF71F2C9CE788001B7A26 /* ClaudeHandler.swift in Sources */,
 				4A27FF912DA1C43E0075D730 /* MessageInputView.swift in Sources */,
+				C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */,
 				7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */,
 				4A49187A2D9F4186007EB4A2 /* ToolbarButton.swift in Sources */,
 				4A270AE329D4AFE7005E063C /* AppConstants.swift in Sources */,
 				7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */,
+				C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */,
 				4A399C9929BC8FEF00E98796 /* WardenApp.swift in Sources */,
 				4A775A042C1486F3004301D3 /* Extensions.swift in Sources */,
 				7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */,
 				4AFDEB7E2AFF90FB00BA8642 /* TabDangerZoneView.swift in Sources */,
+				C46B73DF2EB1D5BB00D07415 /* TavilyModels.swift in Sources */,
 				4A27FF8F2DA1C41B0075D730 /* ZoomableImageView.swift in Sources */,
 				4A194C062C9633BC003C8782 /* EntityListView.swift in Sources */,
 				7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */,
