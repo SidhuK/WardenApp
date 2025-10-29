@@ -773,7 +773,17 @@ struct PersonaDetailView: View {
         }
         catch {
             let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            print("❌ Failed to save persona: \(nsError), \(nsError.userInfo)")
+            
+            // Show error to user
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Failed to Save Persona"
+                alert.informativeText = "Could not save the persona changes. Error: \(nsError.localizedDescription)"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            }
         }
     }
 
@@ -786,7 +796,17 @@ struct PersonaDetailView: View {
             }
             catch {
                 let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("❌ Failed to delete persona: \(nsError), \(nsError.userInfo)")
+                
+                // Show error to user
+                DispatchQueue.main.async {
+                    let alert = NSAlert()
+                    alert.messageText = "Failed to Delete Persona"
+                    alert.informativeText = "Could not delete the persona. Error: \(nsError.localizedDescription)"
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
             }
         }
     }

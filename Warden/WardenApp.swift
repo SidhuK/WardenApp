@@ -9,13 +9,49 @@ class PersistenceController {
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
+        // TODO: Model name has typo "warenDataModel" should be "wardenDataModel"
+        // Requires careful migration to avoid breaking existing user databases
+        // See bugs.md Bug #2 for migration strategy
         container = NSPersistentContainer(name: "warenDataModel")
+        
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
+        
+        // Configure merge policy for conflict resolution (Bug #9 fix)
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        
+        // Enable persistent history tracking for better multi-context support
+        let description = container.persistentStoreDescriptions.first
+        description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+                print("❌ Critical: Core Data failed to load: \(error), \(error.userInfo)")
+                
+                // Show user-friendly error dialog
+                DispatchQueue.main.async {
+                    let alert = NSAlert()
+                    alert.messageText = "Database Error"
+                    alert.informativeText = "Failed to load the application database. The app will use a temporary database for this session. Your data is safe, but changes won't be saved until you restart the app.\n\nError: \(error.localizedDescription)"
+                    alert.alertStyle = .critical
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
+                
+                // Fall back to in-memory store as last resort
+                print("⚠️ Falling back to in-memory database")
+                let inMemoryDescription = NSPersistentStoreDescription()
+                inMemoryDescription.type = NSInMemoryStoreType
+                self.container.persistentStoreDescriptions = [inMemoryDescription]
+                self.container.loadPersistentStores { _, fallbackError in
+                    if let fallbackError = fallbackError {
+                        print("❌ Even in-memory store failed: \(fallbackError)")
+                    }
+                }
+                return
             }
         })
     }

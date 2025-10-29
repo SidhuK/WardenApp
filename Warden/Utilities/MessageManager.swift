@@ -7,15 +7,19 @@ class MessageManager: ObservableObject {
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
     private var _currentStreamingTask: Task<Void, Never>?
-    private let taskQueue = DispatchQueue(label: "com.warden.messagemanager.task", attributes: [])
+    private let taskLock = NSLock()
     
-    // Thread-safe access to currentStreamingTask
+    // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
         get {
-            taskQueue.sync { _currentStreamingTask }
+            taskLock.lock()
+            defer { taskLock.unlock() }
+            return _currentStreamingTask
         }
         set {
-            taskQueue.sync { _currentStreamingTask = newValue }
+            taskLock.lock()
+            defer { taskLock.unlock() }
+            _currentStreamingTask = newValue
         }
     }
 
@@ -30,10 +34,13 @@ class MessageManager: ObservableObject {
     }
     
     func stopStreaming() {
-        taskQueue.sync {
-            _currentStreamingTask?.cancel()
-            _currentStreamingTask = nil
-        }
+        taskLock.lock()
+        let taskToCancel = _currentStreamingTask
+        _currentStreamingTask = nil
+        taskLock.unlock()
+        
+        // Cancel outside the lock to avoid deadlock
+        taskToCancel?.cancel()
     }
 
     func sendMessage(
@@ -70,10 +77,13 @@ class MessageManager: ObservableObject {
         contextSize: Int,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
+        // Cancel any existing streaming task first
+        stopStreaming()
+        
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
 
-        currentStreamingTask = Task {
+        currentStreamingTask = Task { @MainActor in
             do {
                 let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
                 var accumulatedResponse = ""

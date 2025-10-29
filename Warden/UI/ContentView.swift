@@ -272,7 +272,8 @@ struct ContentView: View {
             return index
         }
         else {
-            fatalError("Chat not found in array")
+            print("⚠️ Warning: Chat not found in array, returning 0")
+            return 0
         }
     }
 }

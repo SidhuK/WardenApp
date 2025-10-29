@@ -33,7 +33,9 @@ class APIServiceFactory {
         case "lmstudio":
             return LMStudioHandler(config: config, session: session)
         default:
-            fatalError("Unsupported API service: \(config.name)")
+            // Fall back to ChatGPT handler for unknown services
+            print("⚠️ Warning: Unsupported API service '\(config.name)', falling back to ChatGPT-compatible handler")
+            return ChatGPTHandler(config: config, session: session)
         }
     }
 }

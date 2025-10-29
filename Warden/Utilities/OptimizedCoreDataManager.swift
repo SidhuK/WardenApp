@@ -16,6 +16,8 @@ class OptimizedCoreDataManager: ObservableObject {
     private lazy var backgroundContext: NSManagedObjectContext = {
         let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         context.parent = viewContext
+        context.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
+        context.automaticallyMergesChangesFromParent = true
         return context
     }()
     

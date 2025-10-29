@@ -21,7 +21,9 @@ struct TabBackupRestoreView: View {
                                 store.loadFromCoreData { result in
                                     switch result {
                                     case .failure(let error):
-                                        fatalError(error.localizedDescription)
+                                        print("❌ Failed to load chats for export: \(error.localizedDescription)")
+                                        Self.showErrorAlert("Export Failed", "Failed to load chat data: \(error.localizedDescription)")
+                                        return
                                     case .success(let chats):
                                         let encoder = JSONEncoder()
                                         encoder.outputFormatting = .prettyPrinted
@@ -77,7 +79,8 @@ struct TabBackupRestoreView: View {
                                             store.saveToCoreData(chats: chats) { result in
                                                 print("State saved")
                                                 if case .failure(let error) = result {
-                                                    fatalError(error.localizedDescription)
+                                                    print("❌ Failed to import chats: \(error.localizedDescription)")
+                                                    Self.showErrorAlert("Import Failed", "Failed to save imported chats: \(error.localizedDescription)")
                                                 }
                                             }
 
@@ -184,7 +187,9 @@ struct InlineTabBackupRestoreView: View {
                             store.loadFromCoreData { result in
                                 switch result {
                                 case .failure(let error):
-                                    fatalError(error.localizedDescription)
+                                    print("❌ Failed to load chats for export: \(error.localizedDescription)")
+                                    Self.showErrorAlert("Export Failed", "Failed to load chat data: \(error.localizedDescription)")
+                                    return
                                 case .success(let chats):
                                     let encoder = JSONEncoder()
                                     encoder.outputFormatting = .prettyPrinted
@@ -240,7 +245,8 @@ struct InlineTabBackupRestoreView: View {
                                         store.saveToCoreData(chats: chats) { result in
                                             print("State saved")
                                             if case .failure(let error) = result {
-                                                fatalError(error.localizedDescription)
+                                                print("❌ Failed to import chats: \(error.localizedDescription)")
+                                                Self.showErrorAlert("Import Failed", "Failed to save imported chats: \(error.localizedDescription)")
                                             }
                                         }
 
@@ -333,7 +339,9 @@ struct BackupRestoreView: View {
                     store.loadFromCoreData { result in
                         switch result {
                         case .failure(let error):
-                            fatalError(error.localizedDescription)
+                            print("❌ Failed to load chats for export: \(error.localizedDescription)")
+                            Self.showErrorAlert("Export Failed", "Failed to load chat data: \(error.localizedDescription)")
+                            return
                         case .success(let chats):
                             let encoder = JSONEncoder()
                             encoder.outputFormatting = .prettyPrinted
@@ -379,7 +387,8 @@ struct BackupRestoreView: View {
                                 store.saveToCoreData(chats: chats) { result in
                                     print("State saved")
                                     if case .failure(let error) = result {
-                                        fatalError(error.localizedDescription)
+                                        print("❌ Failed to import chats: \(error.localizedDescription)")
+                                        Self.showErrorAlert("Import Failed", "Failed to save imported chats: \(error.localizedDescription)")
                                     }
                                 }
 

@@ -17,7 +17,8 @@ class ChatStore: ObservableObject {
         
         // Index existing chats for Spotlight search after initialization
         if SpotlightIndexManager.isSpotlightAvailable {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self = self else { return }
                 self.spotlightManager.indexAllChats(from: self.viewContext)
             }
         }
@@ -286,7 +287,17 @@ class ChatStore: ObservableObject {
             saveToCoreData(chats: oldChats) { result in
                 print("State saved")
                 if case .failure(let error) = result {
-                    fatalError(error.localizedDescription)
+                    print("❌ Migration failed: \(error.localizedDescription)")
+                    
+                    // Show error to user but don't crash
+                    DispatchQueue.main.async {
+                        let alert = NSAlert()
+                        alert.messageText = "Migration Error"
+                        alert.informativeText = "Failed to migrate old chat data. Your existing chats may not be available. Error: \(error.localizedDescription)"
+                        alert.alertStyle = .warning
+                        alert.addButton(withTitle: "OK")
+                        alert.runModal()
+                    }
                 }
             }
 
