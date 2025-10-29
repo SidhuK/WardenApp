@@ -101,11 +101,12 @@ class MessageManager: ObservableObject {
         print("🔗 [Citations] Adding sources list with \(lastSearchUrls.count) URLs")
         
         // Add a sources section at the end
-        result += "\n\n---\n\n**Sources:**\n"
+        result += "\n\n---\n\n**Sources:**\n\n"
         
         for (index, url) in lastSearchUrls.enumerated() {
             let citationNumber = index + 1
-            result += "**[\(citationNumber)]** \(url)\n"
+            result += "**[\(citationNumber)]** \(url)\n\n"
+            print("🔗 [Citations] Added source [\(citationNumber)]: \(url)")
         }
         
         print("🔗 [Citations] Sources list added, final length: \(result.count)")
