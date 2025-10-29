@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChatListRow: View {
     // Removed Equatable conformance - it was preventing proper re-renders when selection changed
-    let chat: ChatEntity?
+    let chat: ChatEntity
     let chatID: UUID  // Store the ID separately
     @Binding var selectedChat: ChatEntity?
     let viewContext: NSManagedObjectContext
@@ -15,7 +15,7 @@ struct ChatListRow: View {
     @StateObject private var chatViewModel: ChatViewModel
     @State private var showingMoveToProject = false
     init(
-        chat: ChatEntity?,
+        chat: ChatEntity,
         selectedChat: Binding<ChatEntity?>,
         viewContext: NSManagedObjectContext,
         searchText: String = "",
@@ -25,7 +25,7 @@ struct ChatListRow: View {
         onKeyboardSelection: ((UUID, Bool, Bool) -> Void)? = nil
     ) {
         self.chat = chat
-        self.chatID = chat?.id ?? UUID()
+        self.chatID = chat.id
         self._selectedChat = selectedChat
         self.viewContext = viewContext
         self.searchText = searchText
@@ -33,12 +33,11 @@ struct ChatListRow: View {
         self.isSelected = isSelected
         self.onSelectionToggle = onSelectionToggle
         self.onKeyboardSelection = onKeyboardSelection
-        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat!, viewContext: viewContext))
+        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: viewContext))
     }
 
     private var computedIsActive: Bool {
-        guard let selectedChat = selectedChat, 
-              let chat = chat,
+        guard let selectedChat = selectedChat,
               !chat.isDeleted else {
             return false
         }
@@ -66,10 +65,10 @@ struct ChatListRow: View {
             }
         } label: {
             MessageCell(
-                chat: chat!,
-                timestamp: chat?.lastMessage?.timestamp ?? Date(),
-                message: chat?.lastMessage?.body ?? "",
-                isActive: .constant(computedIsActive),
+                chat: chat,
+                timestamp: chat.lastMessage?.timestamp ?? Date(),
+                message: chat.lastMessage?.body ?? "",
+                isActive: Binding(get: { computedIsActive }, set: { _ in }),
                 viewContext: viewContext,
                 searchText: searchText,
                 isSelectionMode: isSelectionMode,
@@ -83,19 +82,19 @@ struct ChatListRow: View {
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             // Delete action (destructive, red)
             Button(role: .destructive) {
-                deleteChat(chat!)
+                deleteChat(chat)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
             
             // Pin/Unpin action
             Button {
-                togglePinChat(chat!)
+                togglePinChat(chat)
             } label: {
-                Label(chat!.isPinned ? "Unpin" : "Pin", 
-                      systemImage: chat!.isPinned ? "pin.slash" : "pin")
+                Label(chat.isPinned ? "Unpin" : "Pin", 
+                      systemImage: chat.isPinned ? "pin.slash" : "pin")
             }
-            .tint(chat!.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
+            .tint(chat.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             // Move to Project action
@@ -108,7 +107,7 @@ struct ChatListRow: View {
             
             // Rename action
             Button {
-                renameChat(chat!)
+                renameChat(chat)
             } label: {
                 Label("Rename", systemImage: "pencil")
             }
@@ -116,7 +115,7 @@ struct ChatListRow: View {
             
             // Share action
             Button {
-                ChatSharingService.shared.shareChat(chat!, format: .markdown)
+                ChatSharingService.shared.shareChat(chat, format: .markdown)
             } label: {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
@@ -124,14 +123,14 @@ struct ChatListRow: View {
             
             // Clear chat action
             Button {
-                clearChat(chat!)
+                clearChat(chat)
             } label: {
                 Label("Clear", systemImage: "eraser")
             }
             .tint(Color(.systemOrange).opacity(0.6))
             
             // Regenerate name action (only if supported)
-            if chat!.apiService?.generateChatNames ?? false {
+            if chat.apiService?.generateChatNames ?? false {
                 Button {
                     chatViewModel.regenerateChatName()
                 } label: {
@@ -142,22 +141,22 @@ struct ChatListRow: View {
         }
         .contextMenu {
             Button(action: { 
-                togglePinChat(chat!) 
+                togglePinChat(chat) 
             }) {
-                Label(chat!.isPinned ? "Unpin" : "Pin", systemImage: chat!.isPinned ? "pin.slash" : "pin")
+                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
             }
             
-            Button(action: { renameChat(chat!) }) {
+            Button(action: { renameChat(chat) }) {
                 Label("Rename", systemImage: "pencil")
             }
-            if chat!.apiService?.generateChatNames ?? false {
+            if chat.apiService?.generateChatNames ?? false {
                 Button(action: {
                     chatViewModel.regenerateChatName()
                 }) {
                     Label("Regenerate Name", systemImage: "arrow.clockwise")
                 }
             }
-            Button(action: { clearChat(chat!) }) {
+            Button(action: { clearChat(chat) }) {
                 Label("Clear Chat", systemImage: "eraser")
             }
             
@@ -171,38 +170,36 @@ struct ChatListRow: View {
             
             Menu("Share Chat") {
                 Button(action: {
-                    ChatSharingService.shared.shareChat(chat!, format: .markdown)
+                    ChatSharingService.shared.shareChat(chat, format: .markdown)
                 }) {
                     Label("Share as Markdown", systemImage: "square.and.arrow.up")
                 }
                 
                 Button(action: {
-                    ChatSharingService.shared.copyChatToClipboard(chat!, format: .markdown)
+                    ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
                 }) {
                     Label("Copy as Markdown", systemImage: "doc.on.doc")
                 }
                 
                 Button(action: {
-                    ChatSharingService.shared.exportChatToFile(chat!, format: .markdown)
+                    ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
                 }) {
                     Label("Export to File", systemImage: "doc.badge.arrow.up")
                 }
             }
             
             Divider()
-            Button(action: { deleteChat(chat!) }) {
+            Button(action: { deleteChat(chat) }) {
                 Label("Delete", systemImage: "trash")
             }
         }
         .sheet(isPresented: $showingMoveToProject) {
-            if let chat = chat {
-                MoveToProjectView(
-                    chats: [chat],
-                    onComplete: {
-                        // Refresh or update as needed
-                    }
-                )
-            }
+            MoveToProjectView(
+                chats: [chat],
+                onComplete: {
+                    // Refresh or update as needed
+                }
+            )
         }
     }
 

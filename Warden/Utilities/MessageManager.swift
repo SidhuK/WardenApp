@@ -6,7 +6,18 @@ class MessageManager: ObservableObject {
     private var viewContext: NSManagedObjectContext
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
-    private var currentStreamingTask: Task<Void, Never>?
+    private var _currentStreamingTask: Task<Void, Never>?
+    private let taskQueue = DispatchQueue(label: "com.warden.messagemanager.task", attributes: [])
+    
+    // Thread-safe access to currentStreamingTask
+    private var currentStreamingTask: Task<Void, Never>? {
+        get {
+            taskQueue.sync { _currentStreamingTask }
+        }
+        set {
+            taskQueue.sync { _currentStreamingTask = newValue }
+        }
+    }
 
     init(apiService: APIService, viewContext: NSManagedObjectContext) {
         self.apiService = apiService
@@ -19,8 +30,10 @@ class MessageManager: ObservableObject {
     }
     
     func stopStreaming() {
-        currentStreamingTask?.cancel()
-        currentStreamingTask = nil
+        taskQueue.sync {
+            _currentStreamingTask?.cancel()
+            _currentStreamingTask = nil
+        }
     }
 
     func sendMessage(
@@ -67,10 +80,21 @@ class MessageManager: ObservableObject {
                 chat.waitingForResponse = true
 
                 for try await chunk in stream {
-                    // Check for cancellation
+                    // Check for cancellation immediately
                     try Task.checkCancellation()
+                    guard !Task.isCancelled else {
+                        print("⚠️ Streaming cancelled before processing chunk")
+                        break
+                    }
                     
                     accumulatedResponse += chunk
+                    
+                    // Double-check cancellation before UI updates
+                    guard !Task.isCancelled else {
+                        print("⚠️ Streaming cancelled before UI update")
+                        break
+                    }
+                    
                     if let lastMessage = chat.lastMessage {
                         if lastMessage.own {
                             self.addMessageToChat(chat: chat, message: accumulatedResponse)
@@ -91,7 +115,16 @@ class MessageManager: ObservableObject {
                 
                 // Only complete if not cancelled
                 if !Task.isCancelled {
-                    updateLastMessage(chat: chat, lastMessage: chat.lastMessage!, accumulatedResponse: accumulatedResponse)
+                    guard let lastMessage = chat.lastMessage else {
+                        // If no last message exists, create a new one
+                        print("⚠️ Warning: No last message found after streaming, creating new message")
+                        addMessageToChat(chat: chat, message: accumulatedResponse)
+                        addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                        completion(.success(()))
+                        return
+                    }
+                    
+                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse)
                     addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
                     completion(.success(()))
                 }

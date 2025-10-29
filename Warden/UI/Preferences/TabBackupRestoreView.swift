@@ -25,19 +25,26 @@ struct TabBackupRestoreView: View {
                                     case .success(let chats):
                                         let encoder = JSONEncoder()
                                         encoder.outputFormatting = .prettyPrinted
-                                        let data = try! encoder.encode(chats)
-                                        let savePanel = NSSavePanel()
-                                        savePanel.allowedContentTypes = [.json]
-                                        savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
-                                        savePanel.begin { (result) in
-                                            if result == .OK {
-                                                do {
-                                                    try data.write(to: savePanel.url!)
-                                                }
-                                                catch {
-                                                    print(error)
+                                        
+                                        do {
+                                            let data = try encoder.encode(chats)
+                                            let savePanel = NSSavePanel()
+                                            savePanel.allowedContentTypes = [.json]
+                                            savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
+                                            savePanel.begin { (result) in
+                                                if result == .OK {
+                                                    do {
+                                                        try data.write(to: savePanel.url!)
+                                                    }
+                                                    catch {
+                                                        print("Error writing backup file: \(error)")
+                                                        Self.showErrorAlert("Backup Failed", "Failed to write backup file: \(error.localizedDescription)")
+                                                    }
                                                 }
                                             }
+                                        } catch {
+                                            print("Error encoding chats for backup: \(error)")
+                                            Self.showErrorAlert("Backup Failed", "Failed to encode chat data: \(error.localizedDescription)")
                                         }
                                     }
                                 }
@@ -135,6 +142,17 @@ struct TabBackupRestoreView: View {
                 .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
         )
     }
+    
+    private static func showErrorAlert(_ title: String, _ message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
+    }
 }
 
 // MARK: - Inline Version for Main Window
@@ -170,19 +188,26 @@ struct InlineTabBackupRestoreView: View {
                                 case .success(let chats):
                                     let encoder = JSONEncoder()
                                     encoder.outputFormatting = .prettyPrinted
-                                    let data = try! encoder.encode(chats)
-                                    let savePanel = NSSavePanel()
-                                    savePanel.allowedContentTypes = [.json]
-                                    savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
-                                    savePanel.begin { (result) in
-                                        if result == .OK {
-                                            do {
-                                                try data.write(to: savePanel.url!)
-                                            }
-                                            catch {
-                                                print(error)
+                                    
+                                    do {
+                                        let data = try encoder.encode(chats)
+                                        let savePanel = NSSavePanel()
+                                        savePanel.allowedContentTypes = [.json]
+                                        savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
+                                        savePanel.begin { (result) in
+                                            if result == .OK {
+                                                do {
+                                                    try data.write(to: savePanel.url!)
+                                                }
+                                                catch {
+                                                    print("Error writing export file: \(error)")
+                                                    Self.showErrorAlert("Export Failed", "Failed to write export file: \(error.localizedDescription)")
+                                                }
                                             }
                                         }
+                                    } catch {
+                                        print("Error encoding chats for export: \(error)")
+                                        Self.showErrorAlert("Export Failed", "Failed to encode chat data: \(error.localizedDescription)")
                                     }
                                 }
                             }
@@ -274,6 +299,17 @@ struct InlineTabBackupRestoreView: View {
                 )
         )
     }
+    
+    private static func showErrorAlert(_ title: String, _ message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
+    }
 }
 
 // MARK: - Legacy BackupRestoreView (for compatibility)
@@ -301,19 +337,26 @@ struct BackupRestoreView: View {
                         case .success(let chats):
                             let encoder = JSONEncoder()
                             encoder.outputFormatting = .prettyPrinted
-                            let data = try! encoder.encode(chats)
-                            let savePanel = NSSavePanel()
-                            savePanel.allowedContentTypes = [.json]
-                            savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
-                            savePanel.begin { (result) in
-                                if result == .OK {
-                                    do {
-                                        try data.write(to: savePanel.url!)
-                                    }
-                                    catch {
-                                        print(error)
+                            
+                            do {
+                                let data = try encoder.encode(chats)
+                                let savePanel = NSSavePanel()
+                                savePanel.allowedContentTypes = [.json]
+                                savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
+                                savePanel.begin { (result) in
+                                    if result == .OK {
+                                        do {
+                                            try data.write(to: savePanel.url!)
+                                        }
+                                        catch {
+                                            print("Error writing export file: \(error)")
+                                            Self.showErrorAlert("Export Failed", "Failed to write export file: \(error.localizedDescription)")
+                                        }
                                     }
                                 }
+                            } catch {
+                                print("Error encoding chats for export: \(error)")
+                                Self.showErrorAlert("Export Failed", "Failed to encode chat data: \(error.localizedDescription)")
                             }
                         }
                     }
@@ -350,5 +393,16 @@ struct BackupRestoreView: View {
             }
         }
         .padding(32)
+    }
+    
+    private static func showErrorAlert(_ title: String, _ message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 }

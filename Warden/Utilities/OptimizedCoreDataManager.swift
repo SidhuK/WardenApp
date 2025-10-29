@@ -22,11 +22,17 @@ class OptimizedCoreDataManager: ObservableObject {
     // MARK: - Cache
     private var cachedQueries: [String: CachedQuery] = [:]
     private let cacheQueue = DispatchQueue(label: "coredata-cache", qos: .utility)
+    private var cacheCleanupTimer: Timer?
     
     init(viewContext: NSManagedObjectContext) {
         self.viewContext = viewContext
         self.backgroundQueue = DispatchQueue(label: backgroundQueueName, qos: .utility)
         setupCacheCleanup()
+    }
+    
+    deinit {
+        cacheCleanupTimer?.invalidate()
+        cacheCleanupTimer = nil
     }
     
     // MARK: - Optimized Project Queries
@@ -373,7 +379,7 @@ class OptimizedCoreDataManager: ObservableObject {
     
     private func setupCacheCleanup() {
         // Clean cache every 5 minutes
-        Timer.scheduledTimer(withTimeInterval: 5 * 60, repeats: true) { [weak self] _ in
+        cacheCleanupTimer = Timer.scheduledTimer(withTimeInterval: 5 * 60, repeats: true) { [weak self] _ in
             self?.cleanupExpiredCache()
         }
     }

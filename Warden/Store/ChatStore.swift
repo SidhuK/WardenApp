@@ -36,56 +36,66 @@ class ChatStore: ObservableObject {
     }
 
     func saveInCoreData() {
-        //        DispatchQueue.main.async {
-        //            do {
-        //                try  self.viewContext.saveWithRetry(attempts: 3)
-        //            } catch {
-        //                print("[Warning] Couldn't save to store")
-        //            }
-        //        }
         Task {
             await MainActor.run {
-                self.viewContext.saveWithRetry(attempts: 1)
+                do {
+                    try self.viewContext.saveWithRetry(attempts: 3)
+                } catch {
+                    print("❌ Critical: Failed to save Core Data changes: \(error.localizedDescription)")
+                    
+                    // Show alert to user for critical save failures
+                    DispatchQueue.main.async {
+                        let alert = NSAlert()
+                        alert.messageText = "Failed to Save Changes"
+                        alert.informativeText = "Your recent changes may not have been saved. Error: \(error.localizedDescription)"
+                        alert.alertStyle = .warning
+                        alert.addButton(withTitle: "OK")
+                        alert.runModal()
+                    }
+                }
             }
         }
     }
 
     func loadFromCoreData(completion: @escaping (Result<[Chat], Error>) -> Void) {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
 
-        do {
-            let chatEntities = try self.viewContext.fetch(fetchRequest)
-            let chats = chatEntities.map { Chat(chatEntity: $0) }
+        viewContext.perform {
+            do {
+                let chatEntities = try self.viewContext.fetch(fetchRequest)
+                let chats = chatEntities.map { Chat(chatEntity: $0) }
 
-            DispatchQueue.main.async {
-                completion(.success(chats))
+                DispatchQueue.main.async {
+                    completion(.success(chats))
+                }
             }
-        }
-        catch {
-            DispatchQueue.main.async {
-                completion(.failure(error))
+            catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }
 
     func saveToCoreData(chats: [Chat], completion: @escaping (Result<Int, Error>) -> Void) {
-        do {
-            var defaultApiService: APIServiceEntity? = nil
-            if let defaultServiceIDString = UserDefaults.standard.string(forKey: "defaultApiService"),
-                let url = URL(string: defaultServiceIDString),
-                let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url)
-            {
-                defaultApiService = try viewContext.existingObject(with: objectID) as? APIServiceEntity
-            }
+        viewContext.perform {
+            do {
+                var defaultApiService: APIServiceEntity? = nil
+                if let defaultServiceIDString = UserDefaults.standard.string(forKey: "defaultApiService"),
+                    let url = URL(string: defaultServiceIDString),
+                    let objectID = self.viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url)
+                {
+                    defaultApiService = try self.viewContext.existingObject(with: objectID) as? APIServiceEntity
+                }
 
             for oldChat in chats {
-                let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+                let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
                 fetchRequest.predicate = NSPredicate(format: "id == %@", oldChat.id as CVarArg)
 
-                let existingChats = try viewContext.fetch(fetchRequest)
+                let existingChats = try self.viewContext.fetch(fetchRequest)
 
                 if existingChats.isEmpty {
-                    let chatEntity = ChatEntity(context: viewContext)
+                    let chatEntity = ChatEntity(context: self.viewContext)
                     chatEntity.id = oldChat.id
                     chatEntity.newChat = oldChat.newChat
                     chatEntity.temperature = oldChat.temperature ?? 0.0
@@ -107,7 +117,7 @@ class ChatStore: ObservableObject {
                             apiServiceName,
                             apiServiceType
                         )
-                        if let existingService = try viewContext.fetch(apiServiceFetch).first {
+                        if let existingService = try self.viewContext.fetch(apiServiceFetch).first {
                             chatEntity.apiService = existingService
                         }
                         else {
@@ -121,13 +131,13 @@ class ChatStore: ObservableObject {
                     if let personaName = oldChat.personaName {
                         let personaFetch = NSFetchRequest<PersonaEntity>(entityName: "PersonaEntity")
                         personaFetch.predicate = NSPredicate(format: "name == %@", personaName)
-                        if let existingPersona = try viewContext.fetch(personaFetch).first {
+                        if let existingPersona = try self.viewContext.fetch(personaFetch).first {
                             chatEntity.persona = existingPersona
                         }
                     }
 
                     for oldMessage in oldChat.messages {
-                        let messageEntity = MessageEntity(context: viewContext)
+                        let messageEntity = MessageEntity(context: self.viewContext)
                         messageEntity.id = Int64(oldMessage.id)
                         messageEntity.name = oldMessage.name
                         messageEntity.body = oldMessage.body
@@ -141,106 +151,115 @@ class ChatStore: ObservableObject {
                 }
             }
 
-            DispatchQueue.main.async {
-                completion(.success(chats.count))
-            }
+                DispatchQueue.main.async {
+                    completion(.success(chats.count))
+                }
 
-            try viewContext.save()
-        }
-        catch {
-            DispatchQueue.main.async {
-                completion(.failure(error))
+                try self.viewContext.save()
+            }
+            catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }
 
     func deleteAllChats() {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        viewContext.perform {
+            let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
 
-        do {
-            let chatEntities = try self.viewContext.fetch(fetchRequest)
+            do {
+                let chatEntities = try self.viewContext.fetch(fetchRequest)
 
-            for chat in chatEntities {
-                self.viewContext.delete(chat)
-            }
-            
-            // Clear all Spotlight indexes when all chats are deleted
-            clearSpotlightIndexes()
-
-            DispatchQueue.main.async {
-                do {
-                    try self.viewContext.save()
-                } catch {
-                    print("Error saving context after deleting all chats: \(error)")
-                    self.viewContext.rollback()
+                for chat in chatEntities {
+                    self.viewContext.delete(chat)
                 }
+                
+                // Clear all Spotlight indexes when all chats are deleted
+                self.clearSpotlightIndexes()
+
+                DispatchQueue.main.async {
+                    do {
+                        try self.viewContext.save()
+                    } catch {
+                        print("Error saving context after deleting all chats: \(error)")
+                        self.viewContext.rollback()
+                    }
+                }
+            } catch {
+                print("Error deleting all chats: \(error)")
             }
-        } catch {
-            print("Error deleting all chats: \(error)")
         }
     }
 
     func deleteSelectedChats(_ chatIDs: Set<UUID>) {
         guard !chatIDs.isEmpty else { return }
         
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
-        fetchRequest.predicate = NSPredicate(format: "id IN %@", chatIDs)
+        viewContext.perform {
+            let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            fetchRequest.predicate = NSPredicate(format: "id IN %@", chatIDs)
 
-        do {
-            let chatEntities = try self.viewContext.fetch(fetchRequest)
+            do {
+                let chatEntities = try self.viewContext.fetch(fetchRequest)
 
-            for chat in chatEntities {
-                // Remove from Spotlight index before deleting
-                removeChatFromSpotlight(chatId: chat.id)
-                self.viewContext.delete(chat)
-            }
-
-            DispatchQueue.main.async {
-                do {
-                    try self.viewContext.save()
-                } catch {
-                    print("Error saving context after deleting selected chats: \(error)")
-                    self.viewContext.rollback()
+                for chat in chatEntities {
+                    // Remove from Spotlight index before deleting
+                    self.removeChatFromSpotlight(chatId: chat.id)
+                    self.viewContext.delete(chat)
                 }
+
+                DispatchQueue.main.async {
+                    do {
+                        try self.viewContext.save()
+                    } catch {
+                        print("Error saving context after deleting selected chats: \(error)")
+                        self.viewContext.rollback()
+                    }
+                }
+            } catch {
+                print("Error deleting selected chats: \(error)")
             }
-        } catch {
-            print("Error deleting selected chats: \(error)")
         }
     }
 
     func deleteAllPersonas() {
-        let fetchRequest = PersonaEntity.fetchRequest()
+        viewContext.perform {
+            let fetchRequest = PersonaEntity.fetchRequest()
 
-        do {
-            let personaEntities = try self.viewContext.fetch(fetchRequest)
+            do {
+                let personaEntities = try self.viewContext.fetch(fetchRequest)
 
-            for persona in personaEntities {
-                self.viewContext.delete(persona)
+                for persona in personaEntities {
+                    self.viewContext.delete(persona)
+                }
+
+                try self.viewContext.save()
             }
-
-            try self.viewContext.save()
-        }
-        catch {
-            print("Error deleting all assistants: \(error)")
+            catch {
+                print("Error deleting all assistants: \(error)")
+            }
         }
     }
 
     func deleteAllAPIServices() {
-        let fetchRequest = APIServiceEntity.fetchRequest()
+        viewContext.perform {
+            let fetchRequest = APIServiceEntity.fetchRequest()
 
-        do {
-            let apiServiceEntities = try self.viewContext.fetch(fetchRequest)
+            do {
+                let apiServiceEntities = try self.viewContext.fetch(fetchRequest)
 
-            for apiService in apiServiceEntities {
-                let tokenIdentifier = apiService.tokenIdentifier
-                try TokenManager.deleteToken(for: tokenIdentifier ?? "")
-                self.viewContext.delete(apiService)
+                for apiService in apiServiceEntities {
+                    let tokenIdentifier = apiService.tokenIdentifier
+                    try TokenManager.deleteToken(for: tokenIdentifier ?? "")
+                    self.viewContext.delete(apiService)
+                }
+
+                try self.viewContext.save()
             }
-
-            try self.viewContext.save()
-        }
-        catch {
-            print("Error deleting all api services: \(error)")
+            catch {
+                print("Error deleting all api services: \(error)")
+            }
         }
     }
 
@@ -481,7 +500,7 @@ class ChatStore: ObservableObject {
     
     /// Efficiently fetch chats in a specific project with lazy loading
     func getChatsInProject(_ project: ProjectEntity) -> [ChatEntity] {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         fetchRequest.predicate = NSPredicate(format: "project == %@", project)
         fetchRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
@@ -503,7 +522,7 @@ class ChatStore: ObservableObject {
     
     /// Efficiently fetch chats without project assignment
     func getChatsWithoutProject() -> [ChatEntity] {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         fetchRequest.predicate = NSPredicate(format: "project == nil")
         fetchRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
@@ -525,7 +544,7 @@ class ChatStore: ObservableObject {
     
     /// Efficiently fetch all chats with batch loading
     func getAllChats() -> [ChatEntity] {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         fetchRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \ChatEntity.isPinned, ascending: false),
             NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)
@@ -546,7 +565,7 @@ class ChatStore: ObservableObject {
     
     /// Efficiently fetch chats with pagination support
     func getChatsPaginated(limit: Int = 50, offset: Int = 0, projectId: UUID? = nil) -> [ChatEntity] {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         
         // Build predicate based on project filter
         if let projectId = projectId {
@@ -574,7 +593,7 @@ class ChatStore: ObservableObject {
     
     /// Efficiently count chats without loading them into memory
     func countChats(projectId: UUID? = nil) -> Int {
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         
         if let projectId = projectId {
             fetchRequest.predicate = NSPredicate(format: "project.id == %@", projectId as CVarArg)
