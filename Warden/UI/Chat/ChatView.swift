@@ -560,8 +560,12 @@ extension ChatView {
         }
 
         userIsScrolling = false
+        
+        print("📤 [ChatView] Sending message, webSearchEnabled: \(webSearchEnabled)")
+        print("📤 [ChatView] useStreamResponse: \(chat.apiService?.useStreamResponse ?? false)")
 
         if chat.apiService?.useStreamResponse ?? false {
+            print("📤 [ChatView] Using STREAMING path")
             self.isStreaming = true
             
             // Show web search indicator if enabled
@@ -593,21 +597,33 @@ extension ChatView {
             }
         }
         else {
+            print("📤 [ChatView] Using NON-STREAMING path")
             self.waitingForResponse = true
-            chatViewModel.sendMessage(
-                messageBody,
-                contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize))
-            ) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        chatViewModel.generateChatNameIfNeeded()
-                        handleResponseFinished()
-                        break
-                    case .failure(let error):
-                        print("Error sending message: \(error)")
-                        currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
-                        handleResponseFinished()
+            
+            // Show web search indicator if enabled
+            if webSearchEnabled {
+                self.isSearchingWeb = true
+            }
+            
+            Task { @MainActor in
+                await chatViewModel.sendMessageWithSearch(
+                    messageBody,
+                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
+                    useWebSearch: webSearchEnabled
+                ) { result in
+                    DispatchQueue.main.async {
+                        self.isSearchingWeb = false
+                        
+                        switch result {
+                        case .success:
+                            chatViewModel.generateChatNameIfNeeded()
+                            handleResponseFinished()
+                            break
+                        case .failure(let error):
+                            print("Error sending message: \(error)")
+                            currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
+                            handleResponseFinished()
+                        }
                     }
                 }
             }

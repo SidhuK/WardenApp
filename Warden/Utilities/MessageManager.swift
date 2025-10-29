@@ -146,6 +146,66 @@ class MessageManager: ObservableObject {
         sendMessageStream(finalMessage, in: chat, contextSize: contextSize, completion: completion)
     }
 
+    @MainActor
+    func sendMessageWithSearch(
+        _ message: String,
+        in chat: ChatEntity,
+        contextSize: Int,
+        useWebSearch: Bool = false,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) async {
+        print("🔍 [WebSearch NON-STREAM] sendMessageWithSearch called")
+        print("🔍 [WebSearch NON-STREAM] useWebSearch: \(useWebSearch)")
+        print("🔍 [WebSearch NON-STREAM] message: \(message)")
+        
+        var finalMessage = message
+        
+        // Check if web search is enabled (either by toggle or by command)
+        let searchCheck = isSearchCommand(message)
+        let shouldSearch = useWebSearch || searchCheck.isSearch
+        
+        print("🔍 [WebSearch NON-STREAM] searchCheck.isSearch: \(searchCheck.isSearch)")
+        print("🔍 [WebSearch NON-STREAM] shouldSearch: \(shouldSearch)")
+        
+        if shouldSearch {
+            let query: String
+            if searchCheck.isSearch, let commandQuery = searchCheck.query {
+                query = commandQuery
+            } else {
+                query = message
+            }
+            
+            print("🔍 [WebSearch NON-STREAM] Executing search with query: \(query)")
+            
+            chat.waitingForResponse = true
+            
+            do {
+                let searchResults = try await executeSearch(query)
+                print("🔍 [WebSearch NON-STREAM] Search completed successfully")
+                print("🔍 [WebSearch NON-STREAM] Results length: \(searchResults.count) characters")
+                
+                finalMessage = """
+                User asked: \(query)
+                
+                \(searchResults)
+                
+                Based on the search results above, please provide a comprehensive answer to the user's question. Include relevant citations using the source numbers [1], [2], etc.
+                """
+                
+                print("🔍 [WebSearch NON-STREAM] Final message prepared with search results")
+            } catch {
+                print("❌ [WebSearch NON-STREAM] Search failed with error: \(error)")
+                chat.waitingForResponse = false
+                completion(.failure(error))
+                return
+            }
+        } else {
+            print("🔍 [WebSearch NON-STREAM] Search skipped - shouldSearch is false")
+        }
+        
+        sendMessage(finalMessage, in: chat, contextSize: contextSize, completion: completion)
+    }
+    
     func sendMessage(
         _ message: String,
         in chat: ChatEntity,

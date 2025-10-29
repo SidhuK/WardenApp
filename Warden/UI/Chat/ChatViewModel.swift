@@ -83,6 +83,16 @@ class ChatViewModel: ObservableObject {
         }
     }
     
+    @MainActor
+    func sendMessageWithSearch(_ message: String, contextSize: Int, useWebSearch: Bool = false, completion: @escaping (Result<Void, Error>) -> Void) async {
+        guard let messageManager = self.messageManager else {
+            completion(.failure(APIError.noApiService("No valid API service configuration")))
+            return
+        }
+        
+        await messageManager.sendMessageWithSearch(message, in: chat, contextSize: contextSize, useWebSearch: useWebSearch, completion: completion)
+    }
+    
     func isSearchCommand(_ message: String) -> Bool {
         return messageManager?.isSearchCommand(message).isSearch ?? false
     }
