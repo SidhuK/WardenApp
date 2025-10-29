@@ -42,7 +42,7 @@ struct ProjectListView: View {
             
             // Active projects with lazy loading
             if !activeProjects.isEmpty {
-                ForEach(activeProjects, id: \.objectID) { project in
+                ForEach(activeProjects, id: \.id) { project in
                     ProjectRow(
                         project: project,
                         isExpanded: expandedProjects.contains(project.id ?? UUID()),
@@ -142,7 +142,7 @@ struct ProjectListView: View {
             
             // Archived projects list
             if showingArchivedProjects {
-                ForEach(archivedProjects, id: \.objectID) { project in
+                ForEach(archivedProjects, id: \.id) { project in
                     ProjectRow(
                         project: project,
                         isExpanded: expandedProjects.contains(project.id ?? UUID()),
@@ -317,7 +317,7 @@ struct ProjectRow: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     // Chats in project
-                    ForEach(projectChats, id: \.objectID) { chat in
+                    ForEach(projectChats, id: \.id) { chat in
                         ProjectChatRow(
                             chat: chat,
                             selectedChat: $selectedChat,
@@ -720,7 +720,7 @@ struct ProjectRowInList: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     // Chats in project
-                    ForEach(projectChats, id: \.objectID) { chat in
+                    ForEach(projectChats, id: \.id) { chat in
                         ProjectChatRowInList(
                             chat: chat,
                             selectedChat: $selectedChat,

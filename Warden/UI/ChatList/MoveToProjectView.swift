@@ -68,7 +68,7 @@ struct MoveToProjectView: View {
                         }
                         
                         // Project options
-                        ForEach(filteredProjects, id: \.objectID) { project in
+                        ForEach(filteredProjects, id: \.id) { project in
                             ProjectOptionRow(
                                 project: project,
                                 isSelected: selectedProject?.objectID == project.objectID,

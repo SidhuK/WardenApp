@@ -528,7 +528,7 @@ struct ChatListView: View {
             }
             
             // Active projects - each as individual list item
-            ForEach(store.getActiveProjects(), id: \.objectID) { project in
+            ForEach(store.getActiveProjects(), id: \.id) { project in
                 ProjectRowInList(
                     project: project,
                     selectedChat: $selectedChat,
@@ -634,7 +634,7 @@ struct ChatListView: View {
             
             // Archived projects list
             if showingArchivedProjects {
-                ForEach(getArchivedProjects(), id: \.objectID) { project in
+                ForEach(getArchivedProjects(), id: \.id) { project in
                     ProjectRowInList(
                         project: project,
                         selectedChat: $selectedChat,
@@ -694,7 +694,7 @@ struct ChatListView: View {
             // Show pinned chats first (at the very top, before any date groups)
             if !pinnedChatsWithoutProject.isEmpty {
                 Section {
-                    ForEach(pinnedChatsWithoutProject, id: \.objectID) { chat in
+                    ForEach(pinnedChatsWithoutProject, id: \.id) { chat in
                         ChatListRow(
                             chat: chat,
                             selectedChat: $selectedChat,
@@ -732,7 +732,7 @@ struct ChatListView: View {
             ForEach(DateGroup.allCases, id: \.self) { dateGroup in
                 if let chatsInGroup = groupedChatsWithoutProject[dateGroup], !chatsInGroup.isEmpty {
                     Section {
-                        ForEach(chatsInGroup, id: \.objectID) { chat in
+                        ForEach(chatsInGroup, id: \.id) { chat in
                             ChatListRow(
                                 chat: chat,
                                 selectedChat: $selectedChat,
