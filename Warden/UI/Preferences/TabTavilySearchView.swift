@@ -49,16 +49,12 @@ struct TabTavilySearchView: View {
             
             Section(header: Text("Usage")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Use the /search command in chat:")
+                    Text("Enable web search in chat:")
                         .font(.headline)
-                    Text("Example: /search latest AI news")
+                    Text("Click the globe button (🌐) in the message input area to toggle web search on/off. When enabled, your messages will include web search results.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
-                    Text("Alternative commands: /web, /google")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             
@@ -107,7 +103,22 @@ struct TabTavilySearchView: View {
     }
     
     private func testConnection() {
+        guard !apiKey.trimmingCharacters(in: .whitespaces).isEmpty else {
+            testResultMessage = "❌ Please enter an API key first."
+            showingTestResult = true
+            return
+        }
+        
         isTesting = true
+        
+        // Save the API key first so the test can use it
+        let saveSuccess = TavilyKeyManager.shared.saveApiKey(apiKey)
+        guard saveSuccess else {
+            testResultMessage = "❌ Failed to save API key. Please try again."
+            showingTestResult = true
+            isTesting = false
+            return
+        }
         
         Task {
             do {

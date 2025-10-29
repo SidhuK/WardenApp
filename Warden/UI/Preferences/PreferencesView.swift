@@ -243,6 +243,8 @@ struct InlineSettingsView: View {
                         TabAIPersonasView()
                             .environmentObject(store)
                             .environment(\.managedObjectContext, viewContext)
+                    case .webSearch:
+                        TabTavilySearchView()
                     case .keyboardShortcuts:
                         TabHotkeysView()
                     case .backupRestore:

@@ -37,6 +37,9 @@ struct ChatView: View {
     @State private var userIsScrolling = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
     
+    // Web search functionality
+    @State private var webSearchEnabled = false
+    
     // Multi-agent functionality
     @State private var isMultiAgentMode = false
     @State private var showServiceSelector = false
@@ -557,20 +560,22 @@ extension ChatView {
 
         if chat.apiService?.useStreamResponse ?? false {
             self.isStreaming = true
-            chatViewModel.sendMessageStream(
-                messageBody,
-                contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize))
-            ) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        handleResponseFinished()
-                        chatViewModel.generateChatNameIfNeeded()
-                        break
-                    case .failure(let error):
-                        print("Error sending message: \(error)")
-                        currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
-                        handleResponseFinished()
+            Task { @MainActor in
+                await chatViewModel.sendMessageStreamWithSearch(
+                    messageBody,
+                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize))
+                ) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success:
+                            handleResponseFinished()
+                            chatViewModel.generateChatNameIfNeeded()
+                            break
+                        case .failure(let error):
+                            print("Error sending message: \(error)")
+                            currentError = ErrorMessage(type: convertToAPIError(error), timestamp: Date())
+                            handleResponseFinished()
+                        }
                     }
                 }
             }

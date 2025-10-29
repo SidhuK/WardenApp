@@ -78,13 +78,23 @@ class MessageManager: ObservableObject {
         _ message: String,
         in chat: ChatEntity,
         contextSize: Int,
+        useWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
-        let searchCheck = isSearchCommand(message)
-        
         var finalMessage = message
         
-        if searchCheck.isSearch, let query = searchCheck.query {
+        // Check if web search is enabled (either by toggle or by command)
+        let searchCheck = isSearchCommand(message)
+        let shouldSearch = useWebSearch || searchCheck.isSearch
+        
+        if shouldSearch {
+            let query: String
+            if searchCheck.isSearch, let commandQuery = searchCheck.query {
+                query = commandQuery
+            } else {
+                query = message
+            }
+            
             chat.waitingForResponse = true
             
             do {
