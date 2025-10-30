@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MessageCell: View {
     
-    let chat: ChatEntity  // Don't observe - parent manages updates
+    @ObservedObject var chat: ChatEntity
     @State var timestamp: Date
     var message: String
     @Binding var isActive: Bool

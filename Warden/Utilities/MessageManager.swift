@@ -89,21 +89,19 @@ class MessageManager: ObservableObject {
         return (tavilyService.formatResultsForContext(response), urls)
     }
     
-    // Store URLs temporarily for citation conversion
-    private var lastSearchUrls: [String] = []
-    
-    func convertCitationsToLinks(_ text: String) -> String {
-        guard !lastSearchUrls.isEmpty else {
+    // Convert citations to links using provided URLs (passed per-message to avoid race conditions)
+    private func convertCitationsToLinks(_ text: String, urls: [String]) -> String {
+        guard !urls.isEmpty else {
             return text
         }
         
         var result = text
-        print("🔗 [Citations] Adding sources list with \(lastSearchUrls.count) URLs")
+        print("🔗 [Citations] Adding sources list with \(urls.count) URLs")
         
         // Add a sources section at the end
         result += "\n\n---\n\n**Sources:**\n\n"
         
-        for (index, url) in lastSearchUrls.enumerated() {
+        for (index, url) in urls.enumerated() {
             let citationNumber = index + 1
             result += "**[\(citationNumber)]** \(url)\n\n"
             print("🔗 [Citations] Added source [\(citationNumber)]: \(url)")
@@ -111,17 +109,7 @@ class MessageManager: ObservableObject {
         
         print("🔗 [Citations] Sources list added, final length: \(result.count)")
         
-        // Clear URLs after conversion to prevent applying to future messages
-        clearSearchUrls()
-        
         return result
-    }
-    
-    private func clearSearchUrls() {
-        if !lastSearchUrls.isEmpty {
-            print("🔗 [Citations] Clearing \(lastSearchUrls.count) stored URLs")
-            lastSearchUrls = []
-        }
     }
     
     @MainActor
@@ -159,10 +147,9 @@ class MessageManager: ObservableObject {
             
             do {
                 let (searchResults, urls) = try await executeSearch(query)
-                lastSearchUrls = urls // Store for citation conversion
                 print("🔍 [WebSearch] Search completed successfully")
                 print("🔍 [WebSearch] Results length: \(searchResults.count) characters")
-                print("🔍 [WebSearch] Stored \(urls.count) URLs for citation linking")
+                print("🔍 [WebSearch] Got \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -173,6 +160,10 @@ class MessageManager: ObservableObject {
                 """
                 
                 print("🔍 [WebSearch] Final message prepared with search results")
+                
+                // Pass URLs through to sendMessageStream
+                sendMessageStream(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls, completion: completion)
+                return
             } catch {
                 print("❌ [WebSearch] Search failed with error: \(error)")
                 chat.waitingForResponse = false
@@ -221,10 +212,9 @@ class MessageManager: ObservableObject {
             
             do {
                 let (searchResults, urls) = try await executeSearch(query)
-                lastSearchUrls = urls // Store for citation conversion
                 print("🔍 [WebSearch NON-STREAM] Search completed successfully")
                 print("🔍 [WebSearch NON-STREAM] Results length: \(searchResults.count) characters")
-                print("🔍 [WebSearch NON-STREAM] Stored \(urls.count) URLs for citation linking")
+                print("🔍 [WebSearch NON-STREAM] Got \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -235,6 +225,10 @@ class MessageManager: ObservableObject {
                 """
                 
                 print("🔍 [WebSearch NON-STREAM] Final message prepared with search results")
+                
+                // Pass URLs through to sendMessage
+                sendMessage(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls, completion: completion)
+                return
             } catch {
                 print("❌ [WebSearch NON-STREAM] Search failed with error: \(error)")
                 chat.waitingForResponse = false
@@ -252,6 +246,7 @@ class MessageManager: ObservableObject {
         _ message: String,
         in chat: ChatEntity,
         contextSize: Int,
+        searchUrls: [String]? = nil,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
@@ -264,7 +259,7 @@ class MessageManager: ObservableObject {
             switch result {
             case .success(let messageBody):
                 chat.waitingForResponse = false
-                addMessageToChat(chat: chat, message: messageBody)
+                addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
                 addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
                 self.viewContext.saveWithRetry(attempts: 1)
                 completion(.success(()))
@@ -280,6 +275,7 @@ class MessageManager: ObservableObject {
         _ message: String,
         in chat: ChatEntity,
         contextSize: Int,
+        searchUrls: [String]? = nil,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         // Cancel any existing streaming task first
@@ -312,7 +308,7 @@ class MessageManager: ObservableObject {
                     
                     if let lastMessage = chat.lastMessage {
                         if lastMessage.own {
-                            self.addMessageToChat(chat: chat, message: accumulatedResponse)
+                            self.addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
                         }
                         else {
                             let now = Date()
@@ -320,7 +316,8 @@ class MessageManager: ObservableObject {
                                 updateLastMessage(
                                     chat: chat,
                                     lastMessage: lastMessage,
-                                    accumulatedResponse: accumulatedResponse
+                                    accumulatedResponse: accumulatedResponse,
+                                    searchUrls: searchUrls
                                 )
                                 lastUpdateTime = now
                             }
@@ -333,13 +330,14 @@ class MessageManager: ObservableObject {
                     guard let lastMessage = chat.lastMessage else {
                         // If no last message exists, create a new one
                         print("⚠️ Warning: No last message found after streaming, creating new message")
-                        addMessageToChat(chat: chat, message: accumulatedResponse)
+                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
                         addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
                         completion(.success(()))
                         return
                     }
                     
-                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse)
+                    // Final update: append citations now
+                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
                     addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
                     completion(.success(()))
                 }
@@ -434,12 +432,17 @@ class MessageManager: ObservableObject {
         return constructRequestMessages(chat: chat, forUserMessage: userMessage, contextSize: contextSize)
     }
 
-    private func addMessageToChat(chat: ChatEntity, message: String) {
+    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil) {
         print("💬 [Message] AI response received, length: \(message.count)")
         print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
         
         // Convert citations to clickable links if we have search URLs
-        let finalMessage = convertCitationsToLinks(message)
+        let finalMessage: String
+        if let urls = searchUrls, !urls.isEmpty {
+            finalMessage = convertCitationsToLinks(message, urls: urls)
+        } else {
+            finalMessage = message
+        }
         
         print("💬 [Message] After conversion, length: \(finalMessage.count)")
         print("💬 [Message] Final preview: \(String(finalMessage.prefix(200)))...")
@@ -461,11 +464,16 @@ class MessageManager: ObservableObject {
         self.viewContext.saveWithRetry(attempts: 1)
     }
 
-    private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String) {
+    private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String, searchUrls: [String]? = nil, appendCitations: Bool = false) {
         print("Streaming chunk received: \(accumulatedResponse.suffix(20))")
         
-        // Convert citations to clickable links if we have search URLs
-        let finalMessage = convertCitationsToLinks(accumulatedResponse)
+        // Only convert citations at the final update, not during intermediate streaming updates
+        let finalMessage: String
+        if appendCitations, let urls = searchUrls, !urls.isEmpty {
+            finalMessage = convertCitationsToLinks(accumulatedResponse, urls: urls)
+        } else {
+            finalMessage = accumulatedResponse
+        }
         
         chat.waitingForResponse = false
         lastMessage.body = finalMessage

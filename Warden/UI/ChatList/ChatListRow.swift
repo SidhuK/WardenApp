@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChatListRow: View {
     // Removed Equatable conformance - it was preventing proper re-renders when selection changed
-    let chat: ChatEntity
+    @ObservedObject var chat: ChatEntity
     let chatID: UUID  // Store the ID separately
     @Binding var selectedChat: ChatEntity?
     let viewContext: NSManagedObjectContext
@@ -24,7 +24,7 @@ struct ChatListRow: View {
         onSelectionToggle: ((UUID, Bool) -> Void)? = nil,
         onKeyboardSelection: ((UUID, Bool, Bool) -> Void)? = nil
     ) {
-        self.chat = chat
+        self._chat = ObservedObject(wrappedValue: chat)
         self.chatID = chat.id
         self._selectedChat = selectedChat
         self.viewContext = viewContext
