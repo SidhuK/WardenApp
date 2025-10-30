@@ -17,6 +17,7 @@ class ChatGPTHandler: APIService {
     internal let apiKey: String
     let model: String
     internal let session: URLSession
+    internal let dataLoader = BackgroundDataLoader()
 
     init(config: APIServiceConfiguration, session: URLSession) {
         self.name = config.name
@@ -209,7 +210,7 @@ class ChatGPTHandler: APIService {
                                 let uuidString = nsString.substring(with: uuidRange)
 
                                 if let uuid = UUID(uuidString: uuidString),
-                                   let fileContent = self.loadFileContentFromCoreData(uuid: uuid) {
+                                   let fileContent = self.dataLoader.loadFileContent(uuid: uuid) {
                                     contentArray.append(["type": "text", "text": fileContent])
                                 }
                             }
@@ -233,7 +234,7 @@ class ChatGPTHandler: APIService {
                                 let uuidString = nsString.substring(with: uuidRange)
 
                                 if let uuid = UUID(uuidString: uuidString),
-                                    let imageData = self.loadImageFromCoreData(uuid: uuid)
+                                    let imageData = self.dataLoader.loadImageData(uuid: uuid)
                                 {
                                     contentArray.append([
                                         "type": "image_url",
@@ -370,57 +371,5 @@ class ChatGPTHandler: APIService {
         return !string.starts(with: ":")
     }
 
-    private func loadImageFromCoreData(uuid: UUID) -> Data? {
-        let viewContext = PersistenceController.shared.container.viewContext
 
-        let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-        fetchRequest.fetchLimit = 1
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let imageEntity = results.first, let imageData = imageEntity.image {
-                return imageData
-            }
-        }
-        catch {
-            print("Error fetching image from CoreData: \(error)")
-        }
-
-        return nil
-    }
-    
-    private func loadFileContentFromCoreData(uuid: UUID) -> String? {
-        let viewContext = PersistenceController.shared.container.viewContext
-
-        let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-        fetchRequest.fetchLimit = 1
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let fileEntity = results.first {
-                let fileName = fileEntity.fileName ?? "Unknown File"
-                let fileSize = fileEntity.fileSize
-                let fileType = fileEntity.fileType ?? "unknown"
-                let textContent = fileEntity.textContent ?? ""
-                
-                // Format the file content for the AI
-                let formattedContent = """
-                File: \(fileName) (\(fileType.uppercased()) file)
-                Size: \(ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file))
-                
-                Content:
-                \(textContent)
-                """
-                
-                return formattedContent
-            }
-        }
-        catch {
-            print("Error fetching file from CoreData: \(error)")
-        }
-
-        return nil
-    }
 }

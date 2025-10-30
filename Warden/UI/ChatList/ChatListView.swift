@@ -13,6 +13,12 @@ struct ChatListView: View {
     @State private var selectedChatIDs: Set<UUID> = []
     @State private var lastSelectedChatID: UUID?
     @FocusState private var isSearchFocused: Bool
+    
+    // Search performance optimization
+    @State private var debouncedSearchText = ""
+    @State private var searchTask: Task<Void, Never>?
+    @State private var searchResults: Set<UUID> = []
+    @State private var isSearching = false
 
     @FetchRequest(
         entity: ChatEntity.entity(),
@@ -83,38 +89,95 @@ struct ChatListView: View {
     }
 
     private var filteredChats: [ChatEntity] {
-        guard !searchText.isEmpty else { return Array(chats) }
-
-        let searchQuery = searchText.lowercased()
+        guard !debouncedSearchText.isEmpty else { return Array(chats) }
+        
+        // Use search results from background task
         return chats.filter { chat in
-            let name = chat.name.lowercased()
-            if name.contains(searchQuery) {
-                return true
-            }
-
-            if chat.systemMessage.lowercased().contains(searchQuery) {
-                return true
-            }
-
-            if let personaName = chat.persona?.name?.lowercased(),
-                personaName.contains(searchQuery)
-            {
-                return true
-            }
-
-            if let messages = chat.messages.array as? [MessageEntity],
-                messages.contains(where: { $0.body.lowercased().contains(searchQuery) })
-            {
-                return true
-            }
-
-            return false
+            searchResults.contains(chat.id)
         }
     }
     
     private var chatsWithoutProject: [ChatEntity] {
-        let allChats = searchText.isEmpty ? Array(chats) : filteredChats
+        let allChats = debouncedSearchText.isEmpty ? Array(chats) : filteredChats
         return allChats.filter { $0.project == nil }
+    }
+    
+    // MARK: - Background Search
+    
+    private func performSearch(_ query: String) {
+        // Cancel any existing search
+        searchTask?.cancel()
+        
+        guard !query.isEmpty else {
+            debouncedSearchText = ""
+            searchResults.removeAll()
+            isSearching = false
+            return
+        }
+        
+        isSearching = true
+        
+        searchTask = Task.detached(priority: .userInitiated) {
+            let searchQuery = query.lowercased()
+            var matchingChatIDs: Set<UUID> = []
+            
+            // Perform search in background context
+            let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
+            
+            await backgroundContext.perform {
+                let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+                
+                do {
+                    let allChats = try backgroundContext.fetch(fetchRequest)
+                    
+                    for chat in allChats {
+                        // Check cancellation periodically
+                        if Task.isCancelled { return }
+                        
+                        // Search in chat name
+                        if (chat.name ?? "").lowercased().contains(searchQuery) {
+                            matchingChatIDs.insert(chat.id)
+                            continue
+                        }
+                        
+                        // Search in system message
+                        if chat.systemMessage.lowercased().contains(searchQuery) {
+                            matchingChatIDs.insert(chat.id)
+                            continue
+                        }
+                        
+                        // Search in persona name
+                        if let personaName = chat.persona?.name?.lowercased(),
+                           personaName.contains(searchQuery) {
+                            matchingChatIDs.insert(chat.id)
+                            continue
+                        }
+                        
+                        // Search in messages (batch load)
+                        if let messages = chat.messages.array as? [MessageEntity] {
+                            for message in messages {
+                                if Task.isCancelled { return }
+                                if message.body.lowercased().contains(searchQuery) {
+                                    matchingChatIDs.insert(chat.id)
+                                    break
+                                }
+                            }
+                        }
+                    }
+                } catch {
+                    print("❌ Search error: \(error)")
+                }
+            }
+            
+            // Update UI on main thread
+            await MainActor.run {
+                if !Task.isCancelled {
+                    self.searchResults = matchingChatIDs
+                    self.debouncedSearchText = query
+                    self.isSearching = false
+                }
+            }
+        }
     }
 
     var body: some View {
@@ -191,8 +254,15 @@ struct ChatListView: View {
 
     private var searchBarSection: some View {
         HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
+            // Show loading indicator or magnifying glass
+            if isSearching {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+            }
 
             TextField("Search chats...", text: $searchText)
                 .textFieldStyle(PlainTextFieldStyle())
@@ -202,10 +272,32 @@ struct ChatListView: View {
                     searchText = ""
                     isSearchFocused = false
                 }
+                .onChange(of: searchText) { oldValue, newValue in
+                    // Debounce search by 300ms
+                    searchTask?.cancel()
+                    
+                    if newValue.isEmpty {
+                        debouncedSearchText = ""
+                        searchResults.removeAll()
+                        isSearching = false
+                    } else {
+                        isSearching = true
+                        searchTask = Task {
+                            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+                            if !Task.isCancelled {
+                                await performSearch(newValue)
+                            }
+                        }
+                    }
+                }
 
             if !searchText.isEmpty {
                 Button(action: {
                     searchText = ""
+                    debouncedSearchText = ""
+                    searchResults.removeAll()
+                    isSearching = false
+                    searchTask?.cancel()
                 }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.gray)

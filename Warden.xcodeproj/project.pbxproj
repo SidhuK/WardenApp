@@ -50,7 +50,7 @@
 		4A5F64BA29C64F9D000403F7 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5F64B929C64F9D000403F7 /* ChatView.swift */; };
 		4A5F64C129C78B64000403F7 /* SceneKitParticlesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5F64C029C78B64000403F7 /* SceneKitParticlesView.swift */; };
 		4A775A042C1486F3004301D3 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A775A032C1486F3004301D3 /* Extensions.swift */; };
-		4A79A0762CEA9FB900CB41D8 /* warenDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 4A751D2329CBA70B006B983B /* warenDataModel.xcdatamodeld */; };
+		4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 4A751D2329CBA70B006B983B /* wardenDataModel.xcdatamodeld */; };
 		4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A7AFF172B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift */; };
 		4A7E1BDB29C910F900E57DC2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4A7E1BDA29C910F900E57DC2 /* Sparkle */; };
 		4A885C522CEA3B130018BBED /* HTMLPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A885C512CEA3B130018BBED /* HTMLPreviewView.swift */; };
@@ -122,6 +122,7 @@
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
 		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
+		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -193,7 +194,7 @@
 		4A5F64B729C64E21000403F7 /* ChatBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBubbleView.swift; sourceTree = "<group>"; };
 		4A5F64B929C64F9D000403F7 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		4A5F64C029C78B64000403F7 /* SceneKitParticlesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitParticlesView.swift; sourceTree = "<group>"; };
-		4A751D2429CBA70B006B983B /* warenDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = warenDataModel.xcdatamodel; sourceTree = "<group>"; };
+		4A751D2429CBA70B006B983B /* wardenDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = wardenDataModel.xcdatamodel; sourceTree = "<group>"; };
 		4A775A032C1486F3004301D3 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		4A7AFF172B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonTestApiTokenAndModel.swift; sourceTree = "<group>"; };
 		4A885C512CEA3B130018BBED /* HTMLPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLPreviewView.swift; sourceTree = "<group>"; };
@@ -265,6 +266,7 @@
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
 		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
+		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -397,7 +399,7 @@
 		4A272A6A29F5CD5E00F93D0D /* Store */ = {
 			isa = PBXGroup;
 			children = (
-				4A751D2329CBA70B006B983B /* warenDataModel.xcdatamodeld */,
+				4A751D2329CBA70B006B983B /* wardenDataModel.xcdatamodeld */,
 				4A399CC529BCF02500E98796 /* ChatStore.swift */,
 			);
 			path = Store;
@@ -464,6 +466,7 @@
 				C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */,
 				C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */,
 				7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */,
+				C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */,
 				7F5A91C72DF937BB00A18860 /* SelectedModelsManager.swift */,
 				7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */,
 				7F5CD1E42DF7F2AE003248F9 /* OptimizedCoreDataManager.swift */,
@@ -651,7 +654,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1420;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					4A399C9429BC8FEF00E98796 = {
 						CreatedOnToolsVersion = 14.2;
@@ -766,7 +769,7 @@
 				4ABDBE6629F86B5900661B2D /* MessageParser.swift in Sources */,
 				7F8D7CA92DE9DB13003E7BCA /* MultiAgentMessageManager.swift in Sources */,
 				4AEB7E1B2C8D04A70004818C /* DatabasePatcher.swift in Sources */,
-				4A79A0762CEA9FB900CB41D8 /* warenDataModel.xcdatamodeld in Sources */,
+				4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */,
 				4AFDEB7C2AFF90C000BA8642 /* TabBackupRestoreView.swift in Sources */,
 				4A254A6F2CEA6A2400F66935 /* CodeViewModel.swift in Sources */,
 				4A2B9E952CE1272E00C8042F /* RequestMessagesTransformer.swift in Sources */,
@@ -800,6 +803,7 @@
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,
 				7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */,
+				C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */,
 				7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */,
 				4A471B882C29CD3D00C66926 /* AdaptiveMathView.swift in Sources */,
 				7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */,
@@ -910,6 +914,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -967,6 +972,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -986,8 +992,12 @@
 				CURRENT_PROJECT_VERSION = 0.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Warden/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Warden;
@@ -1032,8 +1042,12 @@
 				CURRENT_PROJECT_VERSION = 0.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Warden/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Warden;
@@ -1289,13 +1303,13 @@
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
-		4A751D2329CBA70B006B983B /* warenDataModel.xcdatamodeld */ = {
+		4A751D2329CBA70B006B983B /* wardenDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
-				4A751D2429CBA70B006B983B /* warenDataModel.xcdatamodel */,
+				4A751D2429CBA70B006B983B /* wardenDataModel.xcdatamodel */,
 			);
-			currentVersion = 4A751D2429CBA70B006B983B /* warenDataModel.xcdatamodel */;
-			path = warenDataModel.xcdatamodeld;
+			currentVersion = 4A751D2429CBA70B006B983B /* wardenDataModel.xcdatamodel */;
+			path = wardenDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
 		};

@@ -25,8 +25,23 @@ class APIServiceDetailViewModel: ObservableObject {
     @Published var fetchedModels: [AIModel] = []
     @Published var isLoadingModels: Bool = false
     @Published var modelFetchError: String? = nil
+    @Published var userNotification: UserNotification?
     
     private let selectedModelsManager = SelectedModelsManager.shared
+    
+    // User-facing notification structure
+    struct UserNotification: Identifiable {
+        let id = UUID()
+        let type: NotificationType
+        let message: String
+        
+        enum NotificationType {
+            case info
+            case warning
+            case error
+            case success
+        }
+    }
 
     init(viewContext: NSManagedObjectContext, apiService: APIServiceEntity?) {
         self.viewContext = viewContext
@@ -82,16 +97,28 @@ class APIServiceDetailViewModel: ObservableObject {
     private func fetchModelsForService() {
         guard type.lowercased() == "ollama" || !apiKey.isEmpty else {
             fetchedModels = []
+            // Notify user if API key is missing for non-Ollama services
+            if type.lowercased() != "ollama" {
+                userNotification = UserNotification(
+                    type: .warning,
+                    message: "API key required to fetch models. Using default model list."
+                )
+            }
             return
         }
         
         guard let apiUrl = URL(string: url) else {
             fetchedModels = []
+            userNotification = UserNotification(
+                type: .error,
+                message: "Invalid API URL. Using default model list."
+            )
             return
         }
 
         isLoadingModels = true
         modelFetchError = nil
+        userNotification = nil // Clear previous notifications
 
         let config = APIServiceConfig(
             name: type,
@@ -115,6 +142,19 @@ class APIServiceDetailViewModel: ObservableObject {
                         self.selectedModel = "custom"
                         self.isCustomModel = true
                     }
+                    
+                    // Success notification
+                    self.userNotification = UserNotification(
+                        type: .success,
+                        message: "✅ Fetched \(models.count) models from API"
+                    )
+                    
+                    // Auto-dismiss success notification after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        if case .success? = self.userNotification?.type {
+                            self.userNotification = nil
+                        }
+                    }
                 }
             }
             catch {
@@ -122,6 +162,21 @@ class APIServiceDetailViewModel: ObservableObject {
                     self.modelFetchError = error.localizedDescription
                     self.isLoadingModels = false
                     self.fetchedModels = []
+                    
+                    // User-facing error notification
+                    self.userNotification = UserNotification(
+                        type: .error,
+                        message: "Failed to fetch models: \(self.getUserFriendlyErrorMessage(error))"
+                    )
+                    
+                    // Log detailed error for debugging
+                    print("""
+                    ❌ Model fetch failed for API service
+                    Service Type: \(self.type)
+                    Service Name: \(self.name)
+                    API URL: \(self.url)
+                    Error: \(error.localizedDescription)
+                    """)
                 }
             }
         }
@@ -217,5 +272,53 @@ class APIServiceDetailViewModel: ObservableObject {
     
     func updateSelectedModels(_ selectedIds: Set<String>) {
         selectedModelsManager.setSelectedModels(for: type, modelIds: selectedIds)
+    }
+    
+    // MARK: - Error Handling
+    
+    /// Converts API errors to user-friendly messages
+    private func getUserFriendlyErrorMessage(_ error: Error) -> String {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .unauthorized:
+                return "Invalid API key. Please check your credentials."
+            case .serverError(let message):
+                // Extract meaningful part of server error if possible
+                if message.contains("401") {
+                    return "Authentication failed - check your API key"
+                } else if message.contains("404") {
+                    return "API endpoint not found - check your URL"
+                } else if message.contains("500") {
+                    return "Server error - the API service is having issues"
+                } else {
+                    return "Server error: \(message.prefix(100))"
+                }
+            case .rateLimited:
+                return "Rate limited - too many requests. Try again later."
+            case .invalidResponse:
+                return "Invalid response from server - check your API URL"
+            case .requestFailed:
+                return "Network request failed - check your internet connection"
+            case .decodingFailed:
+                return "Could not parse server response"
+            default:
+                return apiError.localizedDescription
+            }
+        }
+        
+        // Handle standard errors
+        let nsError = error as NSError
+        switch nsError.code {
+        case NSURLErrorNotConnectedToInternet:
+            return "No internet connection"
+        case NSURLErrorTimedOut:
+            return "Request timed out - check your network"
+        case NSURLErrorCannotFindHost:
+            return "Cannot find server - check your URL"
+        case NSURLErrorCannotConnectToHost:
+            return "Cannot connect to server - check if it's running"
+        default:
+            return error.localizedDescription
+        }
     }
 }

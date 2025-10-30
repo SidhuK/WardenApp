@@ -72,7 +72,7 @@ class LMStudioHandler: ChatGPTHandler {
                         if uuidRange.location != NSNotFound {
                             let uuid = nsString.substring(with: uuidRange)
                             if let uuid = UUID(uuidString: uuid),
-                               let imageData = self.loadImageFromCoreData(uuid: uuid) {
+                               let imageData = self.dataLoader.loadImageData(uuid: uuid) {
                                 let base64Image = imageData.base64EncodedString()
                                 contentArray.append([
                                     "type": "image_url",
@@ -143,26 +143,7 @@ class LMStudioHandler: ChatGPTHandler {
         }
     }
     
-    /// Load image data from Core Data using UUID
-    private func loadImageFromCoreData(uuid: UUID) -> Data? {
-        let viewContext = PersistenceController.shared.container.viewContext
 
-        let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-        fetchRequest.fetchLimit = 1
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let imageEntity = results.first, let imageData = imageEntity.image {
-                return imageData
-            }
-        }
-        catch {
-            print("Error fetching image from CoreData: \(error)")
-        }
-
-        return nil
-    }
 }
 
 // MARK: - Private helper for ChatGPTModelsResponse

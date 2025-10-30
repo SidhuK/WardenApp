@@ -396,20 +396,44 @@ class ChatStore: ObservableObject {
         
         do {
             guard let apiServiceEntity = try viewContext.fetch(apiServiceFetch).first else {
-                print("No API service available for title regeneration")
+                print("❌ No API service available for title regeneration")
+                showError(message: "No API service configured. Please add an API service in Settings.")
                 return
             }
             
-            // Create API service configuration from entity
+            // Validate API service has required fields
             guard let apiUrl = apiServiceEntity.url else {
-                print("API service URL is missing")
+                print("❌ API service URL is missing")
+                showError(message: "API service configuration is incomplete (missing URL).")
                 return
             }
             
+            // Retrieve the actual API key from secure storage
+            guard let serviceIDString = apiServiceEntity.id?.uuidString else {
+                print("❌ API service ID is missing")
+                showError(message: "API service configuration is corrupted (missing ID).")
+                return
+            }
+            
+            let apiKey: String
+            do {
+                apiKey = try TokenManager.getToken(for: serviceIDString) ?? ""
+                if apiKey.isEmpty {
+                    print("❌ API key is empty for service: \(apiServiceEntity.name ?? "unknown")")
+                    showError(message: "API key not found. Please configure your API service in Settings.")
+                    return
+                }
+            } catch {
+                print("❌ Failed to retrieve API key: \(error)")
+                showError(message: "Failed to retrieve API key: \(error.localizedDescription)")
+                return
+            }
+            
+            // Create API service configuration with actual API key
             let apiConfig = APIServiceConfig(
                 name: apiServiceEntity.name ?? "default",
                 apiUrl: apiUrl,
-                apiKey: "", // We'll use the stored API key
+                apiKey: apiKey,  // ✅ Use actual API key from TokenManager
                 model: apiServiceEntity.model ?? AppConstants.chatGptDefaultModel
             )
             
@@ -423,13 +447,31 @@ class ChatStore: ObservableObject {
             )
             
             // Regenerate titles for each chat
+            var successCount = 0
             for chat in chats {
                 if !chat.messagesArray.isEmpty {
                     messageManager.generateChatNameIfNeeded(chat: chat, force: true)
+                    successCount += 1
                 }
             }
+            
+            print("✅ Started title regeneration for \(successCount) chats")
+            
         } catch {
-            print("Error fetching API service for title regeneration: \(error)")
+            print("❌ Error fetching API service for title regeneration: \(error)")
+            showError(message: "Failed to regenerate titles: \(error.localizedDescription)")
+        }
+    }
+    
+    // Helper method to show errors to user
+    private func showError(message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Title Regeneration Failed"
+            alert.informativeText = message
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
         }
     }
     

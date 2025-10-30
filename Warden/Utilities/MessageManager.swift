@@ -285,9 +285,11 @@ class MessageManager: ObservableObject {
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
 
         currentStreamingTask = Task { @MainActor in
+            var accumulatedResponse = ""
+            var wasStreamingCancelled = false
+            
             do {
                 let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
-                var accumulatedResponse = ""
                 chat.waitingForResponse = true
 
                 for try await chunk in stream {
@@ -295,6 +297,7 @@ class MessageManager: ObservableObject {
                     try Task.checkCancellation()
                     guard !Task.isCancelled else {
                         print("⚠️ Streaming cancelled before processing chunk")
+                        wasStreamingCancelled = true
                         break
                     }
                     
@@ -303,6 +306,7 @@ class MessageManager: ObservableObject {
                     // Double-check cancellation before UI updates
                     guard !Task.isCancelled else {
                         print("⚠️ Streaming cancelled before UI update")
+                        wasStreamingCancelled = true
                         break
                     }
                     
@@ -325,31 +329,95 @@ class MessageManager: ObservableObject {
                     }
                 }
                 
-                // Only complete if not cancelled
-                if !Task.isCancelled {
-                    guard let lastMessage = chat.lastMessage else {
-                        // If no last message exists, create a new one
-                        print("⚠️ Warning: No last message found after streaming, creating new message")
-                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                        addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
-                        completion(.success(()))
-                        return
+                // Handle cancellation: save partial response to context
+                if wasStreamingCancelled || Task.isCancelled {
+                    print("⚠️ Streaming was cancelled - saving partial response to context")
+                    
+                    // Ensure the partial message is in the UI
+                    if let lastMessage = chat.lastMessage, !lastMessage.own {
+                        updateLastMessage(
+                            chat: chat,
+                            lastMessage: lastMessage,
+                            accumulatedResponse: accumulatedResponse,
+                            searchUrls: searchUrls,
+                            appendCitations: true
+                        )
+                        
+                        // ✅ SAVE PARTIAL RESPONSE TO CONTEXT
+                        if !accumulatedResponse.isEmpty {
+                            addNewMessageToRequestMessages(
+                                chat: chat,
+                                content: accumulatedResponse,
+                                role: AppConstants.defaultRole
+                            )
+                            print("✅ Partial response saved to context (\(accumulatedResponse.count) chars)")
+                        }
+                    } else {
+                        // No last message yet - create one with partial content
+                        if !accumulatedResponse.isEmpty {
+                            addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                            addNewMessageToRequestMessages(
+                                chat: chat,
+                                content: accumulatedResponse,
+                                role: AppConstants.defaultRole
+                            )
+                        }
                     }
                     
-                    // Final update: append citations now
-                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
+                    chat.waitingForResponse = false
+                    completion(.failure(CancellationError()))
+                    return
+                }
+                
+                // Normal completion path - stream finished successfully
+                guard let lastMessage = chat.lastMessage else {
+                    // If no last message exists, create a new one
+                    print("⚠️ Warning: No last message found after streaming, creating new message")
+                    addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
                     addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
                     completion(.success(()))
+                    return
                 }
+                
+                // Final update: append citations now
+                updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
+                addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                completion(.success(()))
             }
             catch is CancellationError {
-                print("Streaming cancelled by user")
-                // Clean up streaming state
+                print("⚠️ Streaming cancelled via exception")
+                
+                // Save partial response even when cancelled via exception
+                if !accumulatedResponse.isEmpty {
+                    if let lastMessage = chat.lastMessage, !lastMessage.own {
+                        updateLastMessage(
+                            chat: chat,
+                            lastMessage: lastMessage,
+                            accumulatedResponse: accumulatedResponse,
+                            searchUrls: searchUrls,
+                            appendCitations: true
+                        )
+                        addNewMessageToRequestMessages(
+                            chat: chat,
+                            content: accumulatedResponse,
+                            role: AppConstants.defaultRole
+                        )
+                    } else {
+                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                        addNewMessageToRequestMessages(
+                            chat: chat,
+                            content: accumulatedResponse,
+                            role: AppConstants.defaultRole
+                        )
+                    }
+                    print("✅ Partial response saved after cancellation exception")
+                }
+                
                 chat.waitingForResponse = false
                 completion(.failure(CancellationError()))
             }
             catch {
-                print("Streaming error: \(error)")
+                print("❌ Streaming error: \(error)")
                 chat.waitingForResponse = false
                 completion(.failure(error))
             }
@@ -544,42 +612,62 @@ class MessageManager: ObservableObject {
     }
     
     /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
-    /// Handles instruction precedence: project instructions + persona instructions + chat-specific instructions
+    /// Uses clear delimiters and hierarchy for better AI comprehension
+    /// Handles instruction precedence: project-specific > project context > base instructions
     private func buildSystemMessageWithProjectContext(for chat: ChatEntity) -> String {
-        var systemMessageComponents: [String] = []
+        var sections: [String] = []
         
-        // 1. Start with base persona system message or chat system message
+        // Section 1: Base System Instructions (general behavior)
         let baseSystemMessage = chat.persona?.systemMessage ?? chat.systemMessage
         if !baseSystemMessage.isEmpty {
-            systemMessageComponents.append(baseSystemMessage)
+            sections.append("""
+            === BASE INSTRUCTIONS ===
+            \(baseSystemMessage)
+            ========================
+            """)
         }
         
-        // 2. Add project context if available
+        // Section 2: Project Context (if applicable)
         if let project = chat.project {
-            // Provide basic project info
-            let projectInfo = """
+            var projectSection = """
             
-            PROJECT CONTEXT:
+            === PROJECT CONTEXT ===
             You are working within the "\(project.name ?? "Untitled Project")" project.
             """
+            
             if let description = project.projectDescription, !description.isEmpty {
-                systemMessageComponents.append(projectInfo + " Project description: \(description)")
-            } else {
-                systemMessageComponents.append(projectInfo)
+                projectSection += "\n\nProject Description:\n\(description)"
             }
             
-            // 3. Add project-specific custom instructions
+            projectSection += "\n======================="
+            sections.append(projectSection)
+            
+            // Section 3: Project-Specific Instructions (highest priority)
             if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
-                let projectInstructions = """
+                sections.append("""
                 
-                PROJECT-SPECIFIC INSTRUCTIONS:
+                === PROJECT-SPECIFIC INSTRUCTIONS ===
+                The following instructions are specific to this project and should take precedence when relevant:
+                
                 \(customInstructions)
-                """
-                systemMessageComponents.append(projectInstructions)
+                =====================================
+                """)
             }
         }
         
-        // 4. Combine all components into final system message
-        return systemMessageComponents.joined(separator: "\n")
+        // Add instruction priority note if multiple sections exist
+        if sections.count > 1 {
+            sections.append("""
+            
+            === INSTRUCTION PRIORITY ===
+            When instructions conflict:
+            1. Project-specific instructions take highest priority
+            2. Project context provides domain knowledge
+            3. Base instructions provide general behavior guidelines
+            ============================
+            """)
+        }
+        
+        return sections.joined(separator: "\n")
     }
 }

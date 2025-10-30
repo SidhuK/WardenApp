@@ -9,13 +9,17 @@ class PersistenceController {
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
-        // TODO: Model name has typo "warenDataModel" should be "wardenDataModel"
-        // Requires careful migration to avoid breaking existing user databases
-        // See bugs.md Bug #2 for migration strategy
-        container = NSPersistentContainer(name: "warenDataModel")
+        // Fixed: Use correct model name "wardenDataModel" (was "warenDataModel")
+        // Migration handled automatically for existing users
+        container = NSPersistentContainer(name: "wardenDataModel")
         
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+        }
+        
+        // Migrate from old typo'd database if needed
+        if !inMemory {
+            Self.migrateFromTypoStoreIfNeeded()
         }
         
         // Configure merge policy for conflict resolution (Bug #9 fix)
@@ -54,6 +58,72 @@ class PersistenceController {
                 return
             }
         })
+    }
+    
+    /// Migrates the database from the typo'd name ("warenDataModel") to the correct name ("wardenDataModel")
+    /// This ensures existing users don't lose their data when we fix the typo
+    private static func migrateFromTypoStoreIfNeeded() {
+        let fileManager = FileManager.default
+        
+        // Get application support directory
+        guard let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            print("⚠️ Could not access application support directory")
+            return
+        }
+        
+        // Define old and new store URLs
+        let oldStoreURL = appSupportURL.appendingPathComponent("warenDataModel.sqlite")
+        let newStoreURL = appSupportURL.appendingPathComponent("wardenDataModel.sqlite")
+        
+        // Only migrate if old store exists and new store doesn't
+        guard fileManager.fileExists(atPath: oldStoreURL.path),
+              !fileManager.fileExists(atPath: newStoreURL.path) else {
+            // Either old store doesn't exist (new install) or migration already done
+            return
+        }
+        
+        print("📦 Migrating database from 'warenDataModel' to 'wardenDataModel'...")
+        
+        do {
+            // Copy the main SQLite file
+            try fileManager.copyItem(at: oldStoreURL, to: newStoreURL)
+            print("✅ Copied main database file")
+            
+            // Copy associated WAL file if it exists
+            let oldWalURL = appSupportURL.appendingPathComponent("warenDataModel.sqlite-wal")
+            let newWalURL = appSupportURL.appendingPathComponent("wardenDataModel.sqlite-wal")
+            if fileManager.fileExists(atPath: oldWalURL.path) {
+                try? fileManager.copyItem(at: oldWalURL, to: newWalURL)
+                print("✅ Copied WAL file")
+            }
+            
+            // Copy associated SHM file if it exists
+            let oldShmURL = appSupportURL.appendingPathComponent("warenDataModel.sqlite-shm")
+            let newShmURL = appSupportURL.appendingPathComponent("wardenDataModel.sqlite-shm")
+            if fileManager.fileExists(atPath: oldShmURL.path) {
+                try? fileManager.copyItem(at: oldShmURL, to: newShmURL)
+                print("✅ Copied SHM file")
+            }
+            
+            print("✅ Database migration successful! User data preserved.")
+            
+            // Note: We keep the old files as backup. They can be removed in a future release
+            // after confirming migration worked for all users
+            
+        } catch {
+            print("❌ Database migration failed: \(error.localizedDescription)")
+            print("⚠️ App will continue but may not see old data")
+            
+            // Show user-friendly error dialog
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Database Migration Issue"
+                alert.informativeText = "Failed to migrate your data to the new database format. Your existing data is safe, but you may need to reconfigure some settings.\n\nError: \(error.localizedDescription)"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            }
+        }
     }
 }
 
