@@ -89,21 +89,85 @@ class MessageManager: ObservableObject {
         return (tavilyService.formatResultsForContext(response), urls)
     }
     
-    // Convert citations to links using provided URLs (passed per-message to avoid race conditions)
+    // Convert citations like [1], [2] to inline markdown links using provided URLs.
+    // Also appends a markdown-formatted Sources section for backward compatibility.
     private func convertCitationsToLinks(_ text: String, urls: [String]) -> String {
         guard !urls.isEmpty else {
             return text
         }
         
         var result = text
-        print("🔗 [Citations] Adding sources list with \(urls.count) URLs")
+        print("🔗 [Citations] Converting inline citations with \(urls.count) URLs")
         
-        // Add a sources section at the end
+        // Regex to match standalone [n] style citations:
+        // - \[(\d+)\] captures the number
+        // - (?=[^\[]|\z) is a light guard to avoid overlapping like [[1]]
+        // We will additionally validate boundaries in code.
+        let pattern = #"\[(\d+)\]"#
+        
+        if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+            let nsString = result as NSString
+            let matches = regex.matches(in: result, options: [], range: NSRange(location: 0, length: nsString.length))
+            
+            // Replace from the end to preserve indices
+            var mutableResult = result as NSString
+            
+            for match in matches.reversed() {
+                guard match.numberOfRanges >= 2 else { continue }
+                let fullRange = match.range(at: 0)
+                let numberRange = match.range(at: 1)
+                
+                let numberString = nsString.substring(with: numberRange)
+                guard let number = Int(numberString) else { continue }
+                
+                // Map [1] -> urls[0], [2] -> urls[1], etc.
+                let urlIndex = number - 1
+                guard urlIndex >= 0 && urlIndex < urls.count else { continue }
+                
+                // Ensure this [n] is "standalone-ish":
+                // - Preceded by start, whitespace, punctuation, or '('
+                // - Followed by end, whitespace, punctuation, or ')'
+                let start = fullRange.location
+                let end = fullRange.location + fullRange.length
+                let prevChar: Character? = start > 0 ? Character(String(nsString.character(at: start - 1))) : nil
+                let nextChar: Character? = end < nsString.length ? Character(String(nsString.character(at: end))) : nil
+                
+                func isBoundary(_ ch: Character?) -> Bool {
+                    guard let ch = ch else { return true }
+                    return ch.isWhitespace ||
+                        [".", ",", ";", ":", "!", "?", ")", "(", "[", "]"].contains(ch)
+                }
+                
+                guard isBoundary(prevChar), isBoundary(nextChar) else {
+                    continue
+                }
+                
+                let url = urls[urlIndex]
+                let replacement = "[\(number)](\(url))"
+                mutableResult = mutableResult.replacingCharacters(in: fullRange, with: replacement) as NSString
+                print("🔗 [Citations] Replaced [\(number)] with markdown link -> \(url)")
+            }
+            
+            result = mutableResult as String
+        } else {
+            print("❌ [Citations] Failed to create regex for inline citations")
+        }
+        
+        print("🔗 [Citations] Adding markdown sources list with \(urls.count) URLs")
+        
+        // Append markdown-formatted Sources section (kept for backward compatibility)
+        // Example:
+        // ---
+        //
+        // **Sources:**
+        //
+        // - [1](https://example.com)
+        // - [2](https://example.org)
         result += "\n\n---\n\n**Sources:**\n\n"
         
         for (index, url) in urls.enumerated() {
             let citationNumber = index + 1
-            result += "**[\(citationNumber)]** \(url)\n\n"
+            result += "- [\(citationNumber)](\(url))\n"
             print("🔗 [Citations] Added source [\(citationNumber)]: \(url)")
         }
         

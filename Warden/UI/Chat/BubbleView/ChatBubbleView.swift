@@ -89,7 +89,8 @@ struct ChatBubbleView: View, Equatable {
     var body: some View {
         VStack(spacing: 4) {
             HStack(alignment: .bottom, spacing: 6) {
-                if content.own {
+                if content.own && !content.systemMessage {
+                    // Push user messages to the trailing edge
                     Spacer(minLength: 40)
                 }
 
@@ -100,6 +101,8 @@ struct ChatBubbleView: View, Equatable {
                     Spacer().frame(width: 4)
                 }
             }
+            // Ensure the entire row respects role-based horizontal alignment
+            .frame(maxWidth: .infinity, alignment: rowAlignment)
 
             if content.errorMessage == nil && !(content.waitingForResponse ?? false) {
                 HStack {
@@ -114,13 +117,16 @@ struct ChatBubbleView: View, Equatable {
                         Spacer()
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: content.own ? .trailing : .leading)
                 .frame(height: 12)
                 .transition(.opacity)
                 .opacity(isHovered ? 1 : 0)
                 .animation(.easeInOut(duration: 0.2), value: isHovered)
             }
             else {
-                Color.clear.frame(height: 12)
+                Color.clear
+                    .frame(maxWidth: .infinity, alignment: content.own ? .trailing : .leading)
+                    .frame(height: 12)
             }
         }
         .padding(.vertical, 8)
@@ -164,6 +170,16 @@ struct ChatBubbleView: View, Equatable {
         catch {
             print("Error deleting message: \(error)")
         }
+    }
+
+    // Role-based row alignment used for both bubble row and its metadata.
+    private var rowAlignment: Alignment {
+        if content.systemMessage {
+            // System messages align with assistant on the leading edge.
+            return .leading
+        }
+        // User on trailing, assistant on leading.
+        return content.own ? .trailing : .leading
     }
 
     private var toolbarContent: some View {
@@ -220,8 +236,9 @@ struct ChatBubbleView: View, Equatable {
 
     private var userBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
+            // User bubbles never show the assistant thinking indicator here.
             if content.waitingForResponse ?? false {
-                thinkingView
+                messageBody
             } else {
                 messageBody
             }
@@ -333,6 +350,7 @@ struct ChatBubbleView: View, Equatable {
     }
 
     private var thinkingView: some View {
+        // Assistant-style "Thinking" indicator aligned to the leading edge.
         HStack(spacing: 6) {
             Text("Thinking")
                 .font(.system(size: 13))
@@ -342,6 +360,7 @@ struct ChatBubbleView: View, Equatable {
                 .frame(width: 6, height: 6)
                 .modifier(PulsatingCircle())
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

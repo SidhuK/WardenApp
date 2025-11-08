@@ -61,7 +61,7 @@ struct MoveToProjectView: View {
                 
                 // Project list
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 10) {
                         // Option to remove from current project
                         if currentProject != nil {
                             removeFromProjectOption
@@ -87,10 +87,14 @@ struct MoveToProjectView: View {
                             emptySearchState
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.vertical, 8)
                 }
             }
+            .padding(.vertical, 12)
+            .background(AppConstants.backgroundElevated)
+            .frame(minWidth: 420, idealWidth: 480, maxWidth: 520,
+                   minHeight: 420, idealHeight: 520, maxHeight: 640)
             .navigationTitle("Move to Project")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -108,7 +112,6 @@ struct MoveToProjectView: View {
                 }
             }
         }
-        .frame(width: 500, height: 600)
         .sheet(isPresented: $showingCreateProject) {
             CreateProjectView(
                 onProjectCreated: { project in
@@ -144,11 +147,12 @@ struct MoveToProjectView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+            RoundedRectangle(cornerRadius: 14)
+                .fill(AppConstants.backgroundElevated)
+                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
         )
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
     }
     
     private var searchSection: some View {
@@ -179,7 +183,7 @@ struct MoveToProjectView: View {
                         .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                 )
         )
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 8)
     }
     
@@ -214,12 +218,13 @@ struct MoveToProjectView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(selectedProject == nil && currentProject != nil ? Color.orange.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                    .fill(selectedProject == nil && currentProject != nil ? Color.orange.opacity(0.08) : AppConstants.backgroundElevated)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedProject == nil && currentProject != nil ? Color.orange : Color.clear, lineWidth: 2)
+                            .stroke(selectedProject == nil && currentProject != nil ? Color.orange : Color.clear, lineWidth: 1.5)
                     )
             )
         }
@@ -255,12 +260,13 @@ struct MoveToProjectView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.accentColor.opacity(0.05))
+                    .fill(Color.accentColor.opacity(0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.accentColor.opacity(0.2), lineWidth: 1)
+                            .stroke(Color.accentColor.opacity(0.18), lineWidth: 1)
                     )
             )
         }
@@ -289,6 +295,10 @@ struct MoveToProjectView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(32)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(AppConstants.backgroundElevated)
+        )
     }
     
     private func moveChatsToProject() {
@@ -375,12 +385,13 @@ struct ProjectOptionRow: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? projectColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                    .fill(isSelected ? projectColor.opacity(0.08) : AppConstants.backgroundElevated)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? projectColor : Color.clear, lineWidth: 2)
+                            .stroke(isSelected ? projectColor : Color.clear, lineWidth: isSelected ? 1.5 : 0)
                     )
             )
         }

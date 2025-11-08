@@ -99,73 +99,7 @@ struct StandaloneModelSelector: View {
     }
     
     var body: some View {
-        HStack {
-            Spacer()
-
-            Button(action: {
-                isExpanded.toggle()
-            }) {
-                HStack(spacing: 8) {
-                    Image("logo_\(currentProvider)")
-                        .resizable()
-                        .renderingMode(.template)
-                        .interpolation(.high)
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(AppConstants.textSecondary)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(currentModel)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(AppConstants.textPrimary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        Text(currentProviderName)
-                            .font(.system(size: 10, weight: .regular))
-                            .foregroundColor(AppConstants.textSecondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(AppConstants.textSecondary)
-                        .padding(.leading, 4)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(AppConstants.backgroundChrome)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-                        )
-                )
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: 360)
-            .onHover { hovering in
-                withAnimation(.easeOut(duration: 0.16)) {
-                    isHovered = hovering
-                }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? AppConstants.backgroundSubtle.opacity(0.6) : Color.clear)
-            )
-            .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
-                popoverContent
-            }
-
-            Spacer()
-        }
-        .onAppear {
-            modelCache.fetchAllModels(from: Array(apiServices))
-        }
-        .onChange(of: apiServices.count) { _, _ in
-            modelCache.fetchAllModels(from: Array(apiServices))
-        }
+        ModelSelectorDropdown(chat: chat)
     }
     
     private var popoverContent: some View {
@@ -452,25 +386,145 @@ struct StandaloneModelSelector: View {
         .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
 }
 
-// Keep the original ModelSelectorDropdown as a simple placeholder
+/// Canonical model selector entrypoint.
+/// Thin wrapper over StandaloneModelSelector with toolbar-aligned trigger styling.
 struct ModelSelectorDropdown: View {
-    @Binding var selectedProvider: String
-    @Binding var selectedModel: String
-    @Binding var isVisible: Bool
-    let chat: ChatEntity?
-    let onModelChange: (String, String) -> Void
+    @ObservedObject var chat: ChatEntity
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    @StateObject private var modelCache = ModelCacheManager.shared
+    @StateObject private var selectedModelsManager = SelectedModelsManager.shared
+    @StateObject private var favoriteManager = FavoriteModelsManager.shared
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
+        animation: .default
+    )
+    private var apiServices: FetchedResults<APIServiceEntity>
+    
+    @State private var isExpanded = false
+    @State private var isHovered = false
+    
+    private var currentProviderType: String {
+        chat.apiService?.type ?? AppConstants.defaultApiType
+    }
+    
+    private var currentProviderDisplayName: String {
+        if let type = chat.apiService?.type,
+           let config = AppConstants.defaultApiConfigurations[type] {
+            return config.name
+        }
+        return chat.apiService?.name ?? "No AI Service"
+    }
+    
+    private var currentModelLabel: String {
+        guard let service = chat.apiService else {
+            return "Select Model"
+        }
+        let modelId = chat.gptModel
+        if modelId.isEmpty {
+            return "Select Model"
+        }
+        
+        // Prefer friendly label from cache if available
+        let models = modelCache.getModels(for: service.type ?? currentProviderType)
+        if let match = models.first(where: { $0.id == modelId }) {
+            return match.displayName ?? match.id
+        }
+        return modelId
+    }
+    
+    private var hasMultipleVisibleModels: Bool {
+        // Use the same visibility rules as StandaloneModelSelector / SelectedModelsManager.
+        guard let providerType = chat.apiService?.type else { return false }
+        let models = modelCache.getModelsSorted(for: providerType)
+        return models.count > 1
+    }
     
     var body: some View {
-        VStack {
-            Text("Model Selector")
-                .font(.headline)
-            Text("Coming Soon")
-                .font(.caption)
-                .foregroundColor(.secondary)
+        Button(action: {
+            isExpanded.toggle()
+            
+            // Lazy-load models only when user opens the selector.
+            if isExpanded {
+                triggerModelFetchIfNeeded()
+            }
+        }) {
+            HStack(spacing: 8) {
+                // Provider logo
+                Image("logo_\(currentProviderType)")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(AppConstants.textSecondary)
+                    .opacity(chat.apiService == nil ? 0.6 : 1.0)
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    // Current model
+                    Text(currentModelLabel)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppConstants.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    
+                    // Provider / hint
+                    Text(currentProviderDisplayName)
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(AppConstants.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                
+                // Chevron only if there are choices; keeps UI lightweight.
+                if hasMultipleVisibleModels {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(AppConstants.textSecondary)
+                        .padding(.leading, 4)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(AppConstants.backgroundChrome)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isHovered ? AppConstants.borderStrong.opacity(0.5) : AppConstants.borderSubtle,
+                                lineWidth: isHovered ? 1.0 : 0.8
+                            )
+                    )
+            )
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
+        .buttonStyle(.plain)
+        .frame(maxWidth: 360)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.16)) {
+                isHovered = hovering
+            }
+        }
+        .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+            StandaloneModelSelector(chat: chat)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .onAppear {
+            // Prime cache once using current active services; avoid repeated global fetches.
+            triggerModelFetchIfNeeded()
+        }
+    }
+    
+    private func triggerModelFetchIfNeeded() {
+        let services = Array(apiServices)
+        guard !services.isEmpty else { return }
+        
+        // Delegate deduping/conditions to ModelCacheManager; this is a safe, local entry point.
+        modelCache.fetchAllModels(from: services)
+        
+        // Ensure SelectedModelsManager has visibility config; cheap no-op if already loaded.
+        SelectedModelsManager.shared.loadSelections(from: services)
     }
 }
 

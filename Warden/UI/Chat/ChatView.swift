@@ -166,8 +166,8 @@ struct ChatView: View {
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                // Model Selector centered in toolbar
-                StandaloneModelSelector(chat: chat)
+                // Canonical model selector entrypoint
+                ModelSelectorDropdown(chat: chat)
                     .padding(.top, 6)
             }
             

@@ -29,7 +29,8 @@ struct MessageListView: View {
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
 
     var body: some View {
-        VStack(spacing: 0) {
+        // Leading-aligned stack; individual bubbles handle their own horizontal position.
+        VStack(alignment: .leading, spacing: 0) {
             if !chat.systemMessage.isEmpty {
                 SystemMessageBubbleView(
                     message: chat.systemMessage,
@@ -62,6 +63,7 @@ struct MessageListView: View {
                     ChatBubbleView(content: bubbleContent, message: messageEntity)
                         .id(messageEntity.id)
                         .padding(.top, topPadding)
+                        .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                 }
             }
 
@@ -78,6 +80,7 @@ struct MessageListView: View {
 
                 ChatBubbleView(content: bubbleContent)
                     .id(-1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else if let error = currentError {
                 let bubbleContent = ChatBubbleContent(
                     message: "",
@@ -91,6 +94,7 @@ struct MessageListView: View {
 
                 ChatBubbleView(content: bubbleContent)
                     .id(-2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             // Multi-agent responses (only show in multi-agent mode and when feature is enabled)
@@ -103,6 +107,7 @@ struct MessageListView: View {
                 )
                 .id("multi-agent-responses")
                 .padding(.top, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             // Extra bottom padding so bubbles do not collide with input

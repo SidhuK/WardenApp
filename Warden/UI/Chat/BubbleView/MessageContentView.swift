@@ -203,7 +203,7 @@ struct MessageContentView: View {
             "^\\s*>\\s+", // Block quotes
             "^\\s*---\\s*$", // Horizontal rules
             "^\\s*\\*\\*\\*\\s*$", // Horizontal rules
-            "\\[.*?\\]\\(.*?\\)" // Links with brackets and parentheses
+            "\\[.*?\\]\\(.*?\\)" // Any markdown links
         ]
         
         let lines = text.components(separatedBy: .newlines)
