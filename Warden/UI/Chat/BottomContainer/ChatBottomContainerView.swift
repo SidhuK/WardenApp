@@ -59,13 +59,23 @@ struct ChatBottomContainerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack {
-                if isExpanded {
-                    PersonaSelectorView(chat: chat)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+            // Top divider / subtle border
+            Rectangle()
+                .fill(AppConstants.borderSubtle)
+                .frame(height: 0.5)
+                .frame(maxWidth: .infinity)
+
+            // Persona selector integrated into the same chrome
+            if isExpanded {
+                PersonaSelectorView(chat: chat)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .background(AppConstants.backgroundWindow)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
+            // Main input area with normalized padding
             MessageInputView(
                 text: $newMessage,
                 attachedImages: $attachedImages,
@@ -78,15 +88,17 @@ struct ChatBottomContainerView: View {
                 onAddImage: onAddImage,
                 onAddFile: onAddFile,
                 onAddAssistant: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
                         isExpanded.toggle()
                         onExpandedStateChange?(isExpanded)
                     }
                 },
                 onStopStreaming: onStopStreaming
             )
-            .padding(.vertical)
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(AppConstants.backgroundWindow)
         }
+        .background(AppConstants.backgroundWindow)
     }
 }

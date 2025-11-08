@@ -16,8 +16,8 @@ struct MessageInputView: View {
     var onAddFile: () -> Void
     var onAddAssistant: (() -> Void)?
     var onStopStreaming: (() -> Void)?
-    var inputPlaceholderText: String = "Type your text here to start a conversation with your favorite AI"
-    var cornerRadius: Double = 10.0
+    var inputPlaceholderText: String = "Type your message..."
+    var cornerRadius: Double = 11.0
 
     @Environment(\.managedObjectContext) private var viewContext
     @State var frontReturnKeyType = OmenTextField.ReturnKeyType.next
@@ -34,9 +34,9 @@ struct MessageInputView: View {
     private let initialInputSize = 16.0
     private let inputPadding = 8.0
     private let lineWidthOnBlur = 1.0
-    private let lineWidthOnFocus = 2.0
-    private let lineColorOnBlur = Color.gray.opacity(0.3)
-    private let lineColorOnFocus = Color.gray.opacity(0.6)
+    private let lineWidthOnFocus = 1.8
+    private let lineColorOnBlur = AppConstants.borderSubtle
+    private let lineColorOnFocus = Color.accentColor.opacity(0.4)
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
 
     private var effectiveFontSize: Double {
@@ -118,19 +118,24 @@ struct MessageInputView: View {
                     }
                 }
             }
-            .padding(.horizontal, 0)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 2)
+            .padding(.bottom, 6)
         }
-        .frame(height: hasAttachments ? 100 : 0)
+        .frame(height: hasAttachments ? 80 : 0)
     }
     
     private var plusButtonMenu: some View {
         Button(action: {
             showingPlusMenu.toggle()
         }) {
-            Image(systemName: "plus.circle.fill")
-                .font(.system(size: 20))
-                .foregroundColor(.accentColor)
+            Image(systemName: "plus")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 24, height: 24)
+                .foregroundColor(AppConstants.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(AppConstants.backgroundSubtle)
+                )
         }
         .buttonStyle(PlainButtonStyle())
         .help("More options")
@@ -153,7 +158,7 @@ struct MessageInputView: View {
                         Text("Rephrase")
                         Spacer()
                     }
-                    .foregroundColor(canRephrase ? .primary : .secondary)
+                    .foregroundColor(canRephrase ? AppConstants.textPrimary : AppConstants.textSecondary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 }
@@ -172,7 +177,7 @@ struct MessageInputView: View {
                             Text("Add Image")
                             Spacer()
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppConstants.textPrimary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                     }
@@ -190,7 +195,7 @@ struct MessageInputView: View {
                         Text("Add File")
                         Spacer()
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppConstants.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 }
@@ -208,7 +213,7 @@ struct MessageInputView: View {
                             Text(chat?.persona != nil ? "Edit Assistant" : "Add Assistant")
                             Spacer()
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppConstants.textPrimary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                     }
@@ -224,22 +229,17 @@ struct MessageInputView: View {
         Button(action: {
             webSearchEnabled.toggle()
         }) {
-            ZStack {
-                Image(systemName: webSearchEnabled ? "globe" : "globe")
-                    .font(.system(size: 20))
-                    .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
-                
-                // Add a small filled circle indicator when enabled
-                if webSearchEnabled {
-                    Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: 6, height: 6)
-                        .offset(x: 8, y: -8)
-                }
-            }
+            Image(systemName: "globe")
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 24, height: 24)
+                .foregroundColor(webSearchEnabled ? Color.accentColor : AppConstants.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(webSearchEnabled ? AppConstants.backgroundSubtle : Color.clear)
+                )
         }
         .buttonStyle(PlainButtonStyle())
-        .help(webSearchEnabled ? "Web search enabled 🌐 - Your messages will include web results" : "Web search disabled - Click to enable")
+        .help(webSearchEnabled ? "Web search enabled - your messages may use web results" : "Web search disabled")
     }
     
     private var sendButton: some View {
@@ -250,9 +250,14 @@ struct MessageInputView: View {
                 onEnter()
             }
         }) {
-            Image(systemName: isStreaming ? "stop.circle.fill" : "paperplane.circle.fill")
-                .font(.system(size: 20))
-                .foregroundColor(isStreaming ? .red : (canSend ? .accentColor : .secondary))
+            Image(systemName: isStreaming ? "stop.fill" : "paperplane.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isStreaming ? AppConstants.destructive : (canSend ? .accentColor : AppConstants.textSecondary))
+                .frame(width: 26, height: 26)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(canSend || isStreaming ? AppConstants.backgroundSubtle : Color.clear)
+                )
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(!isStreaming && !canSend)
@@ -378,66 +383,30 @@ struct MessageInputView: View {
     private var mainInputContainer: some View {
         ZStack {
             textSizingBackground
-            
-            // Text input area without action buttons
+
             textInputArea
                 .background(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(Color(NSColor.controlBackgroundColor))
+                        .fill(AppConstants.backgroundInput)
                 )
-                .background(
+                .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .stroke(
                             isHoveringDropZone
-                                ? Color.green.opacity(0.8)
+                                ? Color.accentColor.opacity(0.55)
                                 : (isFocused == .focused ? lineColorOnFocus : lineColorOnBlur),
                             lineWidth: isHoveringDropZone
-                                ? 3 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
-                        )
-                        .overlay(
-                            // Subtle pulse animation when idle
-                            RoundedRectangle(cornerRadius: cornerRadius)
-                                .stroke(
-                                    Color.accentColor.opacity(inputPulseAnimation ? 0.3 : 0.1),
-                                    lineWidth: inputPulseAnimation ? 1.5 : 0.5
-                                )
-                                .opacity(text.isEmpty && isFocused != .focused ? 1 : 0)
-                                .animation(
-                                    .easeInOut(duration: 2.0)
-                                    .repeatForever(autoreverses: true),
-                                    value: inputPulseAnimation
-                                )
+                                ? 2 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
                         )
                 )
                 .onTapGesture {
                     isFocused = .focused
                 }
-                .onAppear {
-                    // Start pulse animation when idle
-                    if text.isEmpty && isFocused != .focused {
-                        inputPulseAnimation = true
-                    }
-                }
-                .onChange(of: text) { oldValue, newValue in
-                    // Stop animation when user starts typing
-                    if !newValue.isEmpty {
-                        inputPulseAnimation = false
-                    } else if isFocused != .focused {
-                        inputPulseAnimation = true
-                    }
-                }
-                .onChange(of: isFocused) { oldValue, newValue in
-                    if newValue == .focused {
-                        inputPulseAnimation = false
-                    } else if text.isEmpty {
-                        inputPulseAnimation = true
-                    }
-                }
         }
     }
     
     private var textSizingBackground: some View {
-        Text(text == "" ? inputPlaceholderText : text)
+        Text(text.isEmpty ? inputPlaceholderText : text)
             .font(.system(size: effectiveFontSize))
             .lineLimit(10)
             .background(
@@ -468,6 +437,7 @@ struct MessageInputView: View {
                         onEnter()
                     }
                 )
+                .foregroundColor(AppConstants.textPrimary)
             }
         }
         .padding(inputPadding)

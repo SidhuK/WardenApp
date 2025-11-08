@@ -28,7 +28,7 @@ struct ChatView: View {
     @State private var renderTime: Double = 0
     @State private var selectedPersona: PersonaEntity?
     @State private var selectedApiService: APIServiceEntity?
-    var backgroundColor = Color(NSColor.controlBackgroundColor)
+    var backgroundColor = AppConstants.backgroundWindow
     @State private var currentError: ErrorMessage?
     @Environment(\.colorScheme) private var colorScheme
     @State private var isBottomContainerExpanded = false
@@ -111,13 +111,13 @@ struct ChatView: View {
                         self.stopStreaming()
                     }
                 )
-                .background(backgroundColor)
+                .background(AppConstants.backgroundWindow)
             } else {
                 // Show normal chat layout for chats with messages
                 VStack(spacing: 0) {
                     mainChatContent
-                    
-                                        // Chat input container
+
+                    // Chat input container
                     ChatBottomContainerView(
                         chat: chat,
                         newMessage: $newMessage,
@@ -158,8 +158,9 @@ struct ChatView: View {
                             // Handle expanded state change if needed
                         }
                     )
+                    .background(AppConstants.backgroundWindow)
                 }
-                .background(backgroundColor)
+                .background(AppConstants.backgroundWindow)
             }
         }
         .navigationTitle("")
@@ -312,7 +313,9 @@ struct ChatView: View {
                     },
                     scrollView: scrollView
                 )
-                .padding(24)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
                 .onAppear {
                     pendingCodeBlocks = chatViewModel.sortedMessages.reduce(0) { count, message in
                         count + (message.body.components(separatedBy: "```").count - 1) / 2
@@ -402,21 +405,21 @@ struct ChatView: View {
             .id("chatContainer")
         }
         .modifier(MeasureModifier(renderTime: $renderTime))
-        .padding(.bottom, 6)
+        .padding(.bottom, 8)
+        .background(AppConstants.backgroundWindow)
         .overlay(alignment: .bottom) {
             LinearGradient(
                 colors: [
                     .clear,
-                    backgroundColor.opacity(0.25),
-                    backgroundColor.opacity(0.5),
-                    backgroundColor.opacity(0.9),
-                    backgroundColor,
+                    AppConstants.backgroundWindow.opacity(0.12),
+                    AppConstants.backgroundWindow.opacity(0.22),
+                    AppConstants.backgroundWindow.opacity(0.3)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: 40)
-            .padding(.trailing, 16)
+            .frame(height: 24)
+            .padding(.horizontal, 16)
             .allowsHitTesting(false)
         }
     }

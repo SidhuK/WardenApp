@@ -52,11 +52,12 @@ struct ContentView: View {
                 onNewChat: newChat,
                 onOpenPreferences: openInlineSettings
             )
-                .navigationSplitViewColumnWidth(
-                    min: 180,
-                    ideal: 220,
-                    max: 400
-                )
+            .navigationSplitViewColumnWidth(
+                min: 180,
+                ideal: 220,
+                max: 400
+            )
+            .background(AppConstants.backgroundSidebar)
         } detail: {
             HSplitView {
                 if showingSettings {
@@ -101,12 +102,26 @@ struct ContentView: View {
                         openPreferencesView: openInlineSettings,
                         newChat: newChat
                     )
+                    .background(AppConstants.backgroundWindow)
                 }
 
                 if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
                     PreviewPane(stateManager: previewStateManager)
+                        .background(AppConstants.backgroundElevated)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppConstants.borderSubtle, lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
                 }
             }
+            .background(AppConstants.backgroundWindow)
+            .overlay(
+                Rectangle()
+                    .fill(AppConstants.borderSubtle)
+                    .frame(width: 1),
+                alignment: .leading
+            )
         }
         .onAppear(perform: {
             if let lastOpenedChatId = UUID(uuidString: lastOpenedChatId) {
@@ -199,6 +214,7 @@ struct ContentView: View {
         }
 
         .environmentObject(previewStateManager)
+        .background(AppConstants.backgroundWindow)
         .overlay(alignment: .top) {
             ToastManager()
         }

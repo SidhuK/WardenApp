@@ -1,4 +1,6 @@
 import Foundation
+import SwiftUI
+import AppKit
 
 /// Defines application-wide constants and configurations.
 ///
@@ -46,6 +48,98 @@ struct AppConstants {
     static let firaCode = "FiraCodeRoman-Regular"
     /// The name of the PT Mono font used in the application.
     static let ptMono = "PTMono-Regular"
+
+    // MARK: - Semantic Colors
+
+    /// Primary window background – soft, neutral, adapts to light/dark.
+    static var backgroundWindow: Color {
+        Color(NSColor.windowBackgroundColor)
+    }
+
+    /// Chrome surfaces (toolbars, header bars, controls background).
+    static var backgroundChrome: Color {
+        Color(NSColor.controlBackgroundColor)
+    }
+
+    /// Elevated surfaces such as cards, popovers, preview panels.
+    static var backgroundElevated: Color {
+        Color(NSColor.controlBackgroundColor)
+            .opacity(1.0)
+    }
+
+    /// Very subtle fills for hover, pressed, or lightweight emphasis.
+    static var backgroundSubtle: Color {
+        Color(NSColor.controlBackgroundColor)
+            .opacity(0.6)
+    }
+
+    /// Sidebar background, aligned with system sidebar style.
+    static var backgroundSidebar: Color {
+        if #available(macOS 11.0, *) {
+            return Color(NSColor.sidebarBackgroundColor)
+        } else {
+            return Color(NSColor.windowBackgroundColor)
+        }
+    }
+
+    /// Input field background: slightly elevated against window background.
+    static var backgroundInput: Color {
+        Color(NSColor.textBackgroundColor)
+            .opacity(0.96)
+    }
+
+    /// Hairline / subtle borders and separators.
+    static var borderSubtle: Color {
+        Color(NSColor.separatorColor)
+            .opacity(0.55)
+    }
+
+    /// Stronger border for emphasis when needed.
+    static var borderStrong: Color {
+        Color.primary.opacity(0.25)
+    }
+
+    /// Primary text color.
+    static var textPrimary: Color {
+        Color.primary
+    }
+
+    /// Secondary text color.
+    static var textSecondary: Color {
+        Color.secondary
+    }
+
+    /// Tertiary / de-emphasized text color.
+    static var textTertiary: Color {
+        Color.secondary.opacity(0.6)
+    }
+
+    /// Destructive / error semantic color.
+    static var destructive: Color {
+        if #available(macOS 11.0, *) {
+            return Color(NSColor.systemRed)
+        } else {
+            return Color.red
+        }
+    }
+
+    /// Success semantic color.
+    static var success: Color {
+        if #available(macOS 11.0, *) {
+            return Color(NSColor.systemGreen)
+        } else {
+            return Color.green
+        }
+    }
+
+    /// Warning semantic color.
+    static var warning: Color {
+        if #available(macOS 11.0, *) {
+            return Color(NSColor.systemYellow)
+        } else {
+            return Color.yellow
+        }
+    }
 
     /// Represents an AI persona with a name, symbol, system message, and temperature.
     struct Persona {

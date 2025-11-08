@@ -13,142 +13,92 @@ struct ThemeButton: View {
     let mode: ThemeMode
     let action: () -> Void
 
+    @State private var isHovering: Bool = false
+
     var body: some View {
         Button(action: action) {
-            VStack {
+            VStack(spacing: 6) {
                 ZStack {
-                    if mode == .system {
-                        HStack(spacing: 0) {
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 35)
-                            Rectangle()
-                                .fill(Color.black)
-                                .frame(width: 35)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(backgroundColor)
-                    }
-
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(Color.gray.opacity(0.5), lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(tileBackgroundColor)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(
+                                    isSelected ? Color.accentColor : AppConstants.borderSubtle,
+                                    lineWidth: isSelected ? 2 : 1
+                                )
+                        )
                         .frame(width: 70, height: 50)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 2) {
-                            Circle()
-                                .fill(Color.red.opacity(0.8))
-                                .frame(width: 6, height: 6)
-                            Circle()
-                                .fill(Color.yellow.opacity(0.8))
-                                .frame(width: 6, height: 6)
-                            Circle()
-                                .fill(Color.green.opacity(0.8))
-                                .frame(width: 6, height: 6)
-                        }
-                        .padding(.top, 4)
-                        .frame(maxWidth: 70, alignment: .leading)
-                        .padding(.leading, 4)
+                    VStack(spacing: 4) {
+                        Image(systemName: iconName)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(iconColor)
 
-                        Group {
-                            switch mode {
-                            case .system:
-                                VStack(spacing: 0) {
-                                    HStack(spacing: 0) {
-                                        Text("  Lorem")
-                                            .foregroundColor(.black)
-                                            .frame(width: 35)
-                                        Text("ipsum  ")
-                                            .foregroundColor(.white)
-                                            .frame(width: 35)
-                                    }
-                                    HStack(spacing: 0) {
-                                        Capsule()
-                                            .fill(Color.yellow.opacity(0.6))
-                                            .overlay(
-                                                Capsule()
-                                                    .stroke(Color.yellow.opacity(0.8), lineWidth: 1)
-                                            )
-                                            .shadow(
-                                                color: Color.yellow.opacity(0.7),
-                                                radius: 4
-                                            )
-                                            .frame(width: 24, height: 8)
-                                            .frame(width: 35)
-                                    }
-                                    .padding(.top, 6)
-                                }
-                            case .light:
-                                VStack(spacing: 0) {
-                                    Text("Lorem ipsum")
-                                        .foregroundColor(.black)
-                                        .frame(width: 70)
-
-                                    Capsule()
-                                        .fill(Color.yellow.opacity(0.6))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.yellow.opacity(0.8), lineWidth: 1)
-                                        )
-                                        .shadow(
-                                            color: Color.yellow.opacity(0.7),
-                                            radius: 4
-                                        )
-                                        .frame(width: 24, height: 8)
-                                        .padding(.top, 6)
-                                }
-                            case .dark:
-                                VStack(spacing: 0) {
-                                    Text("Lorem ipsum")
-                                        .foregroundColor(.white)
-                                        .frame(width: 70)
-
-                                    Capsule()
-                                        .fill(Color.yellow.opacity(0.6))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.yellow.opacity(0.8), lineWidth: 1)
-                                        )
-                                        .shadow(
-                                            color: Color.yellow.opacity(0.7),
-                                            radius: 4
-                                        )
-                                        .frame(width: 24, height: 8)
-                                        .padding(.top, 6)
-                                }
-                            }
-                        }
-                        .font(.system(size: 8))
-
-                        Spacer()
+                        Text(subtitle)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(AppConstants.textSecondary)
                     }
-                    .frame(width: 70)
                 }
-                .frame(width: 70, height: 50)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
-                )
 
                 Text(title)
-                    .font(.caption)
-                    .fontWeight(isSelected ? .bold : .regular)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? AppConstants.textPrimary : AppConstants.textSecondary)
             }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 
-    private var backgroundColor: Color {
+    private var tileBackgroundColor: Color {
         switch mode {
         case .system:
-            return Color.clear
+            return AppConstants.backgroundChrome
         case .light:
             return Color.white
         case .dark:
-            return Color.black
+            return Color.black.opacity(0.9)
+        }
+    }
+
+    private var iconName: String {
+        switch mode {
+        case .system:
+            return "macwindow"
+        case .light:
+            return "sun.max"
+        case .dark:
+            return "moon"
+        }
+    }
+
+    private var iconColor: Color {
+        if isSelected {
+            return Color.accentColor
+        }
+
+        switch mode {
+        case .system:
+            return AppConstants.textSecondary
+        case .light:
+            return .yellow.opacity(0.9)
+        case .dark:
+            return .white
+        }
+    }
+
+    private var subtitle: String {
+        switch mode {
+        case .system:
+            return "Follows macOS"
+        case .light:
+            return "Light"
+        case .dark:
+            return "Dark"
         }
     }
 }
