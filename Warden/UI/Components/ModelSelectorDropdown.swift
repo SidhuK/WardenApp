@@ -101,84 +101,63 @@ struct StandaloneModelSelector: View {
     var body: some View {
         HStack {
             Spacer()
-            
+
             Button(action: {
                 isExpanded.toggle()
             }) {
                 HStack(spacing: 8) {
-                    // Provider logo
                     Image("logo_\(currentProvider)")
                         .resizable()
                         .renderingMode(.template)
                         .interpolation(.high)
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(isHovered ? .accentColor : .secondary)
-                    
-                    HStack(spacing: 4) {
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(AppConstants.textSecondary)
+
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(currentModel)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(isHovered ? .primary : .primary)
+                            .foregroundColor(AppConstants.textPrimary)
                             .lineLimit(1)
                             .truncationMode(.tail)
-                        
-                        Text("(\(currentProviderName))")
+
+                        Text(currentProviderName)
                             .font(.system(size: 10, weight: .regular))
-                            .foregroundColor(isHovered ? .secondary : .secondary)
+                            .foregroundColor(AppConstants.textSecondary)
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
-                    
-                    Spacer()
-                    
+
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(isHovered ? .accentColor : .secondary)
+                        .foregroundColor(AppConstants.textSecondary)
+                        .padding(.leading, 4)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppConstants.backgroundChrome)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(
-                                    LinearGradient(
-                                        colors: isHovered ? 
-                                            [Color.accentColor.opacity(0.08), Color.accentColor.opacity(0.03)] :
-                                            [Color.primary.opacity(0.04), Color.clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(
-                                    isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.08),
-                                    lineWidth: isHovered ? 1.2 : 0.6
-                                )
-                        )
-                        .shadow(
-                            color: isHovered ? Color.accentColor.opacity(0.12) : Color.black.opacity(0.05),
-                            radius: isHovered ? 4 : 2,
-                            x: 0,
-                            y: isHovered ? 2 : 1
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
                         )
                 )
             }
             .buttonStyle(.plain)
-            .opacity(isHovered ? 0.95 : 0.85)
-            .frame(maxWidth: 400) // Approximately 45% of typical chat width
+            .frame(maxWidth: 360)
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.easeOut(duration: 0.16)) {
                     isHovered = hovering
                 }
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0), value: isHovered)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? AppConstants.backgroundSubtle.opacity(0.6) : Color.clear)
+            )
             .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
                 popoverContent
             }
-            
+
             Spacer()
         }
         .onAppear {
@@ -209,8 +188,16 @@ struct StandaloneModelSelector: View {
             }
             .frame(maxHeight: 280) // Reduced height for better proportion
         }
-        .frame(minWidth: 350, maxWidth: 400)
+        .frame(minWidth: 340, maxWidth: 400)
         .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(AppConstants.backgroundElevated)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
+                )
+        )
     }
     
     private var searchBar: some View {
@@ -236,14 +223,14 @@ struct StandaloneModelSelector: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-                        .background(
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(AppConstants.backgroundInput)
+                .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(NSColor.textBackgroundColor).opacity(0.8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                        )
+                        .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
                 )
+        )
     }
     
     private var favoritesToggle: some View {
@@ -288,10 +275,10 @@ struct StandaloneModelSelector: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(AppConstants.backgroundChrome)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                        .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
                 )
         )
     }
@@ -315,7 +302,7 @@ struct StandaloneModelSelector: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.primary.opacity(0.04))
+            .background(Color.clear)
             
             // Models
             ForEach(models, id: \.self) { model in
@@ -344,7 +331,7 @@ struct StandaloneModelSelector: View {
                 
                 Text(model)
                     .font(.system(size: 11, weight: .regular))
-                    .foregroundColor(.primary)
+                    .foregroundColor(isCurrentlySelected(provider: provider, model: model) ? .accentColor : AppConstants.textPrimary)
                     .lineLimit(1)
                 
                 Spacer()
@@ -380,9 +367,8 @@ struct StandaloneModelSelector: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
-                Rectangle()
-                    .fill(hoveredItem == "\(provider)_\(model)" ? 
-                          Color.accentColor.opacity(0.08) : Color.clear)
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(hoveredItem == "\(provider)_\(model)" ? AppConstants.backgroundSubtle : Color.clear)
             )
         }
         .buttonStyle(.plain)

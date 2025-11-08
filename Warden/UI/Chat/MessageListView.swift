@@ -29,7 +29,7 @@ struct MessageListView: View {
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             if !chat.systemMessage.isEmpty {
                 SystemMessageBubbleView(
                     message: chat.systemMessage,
@@ -38,10 +38,17 @@ struct MessageListView: View {
                     editSystemMessage: .constant(false)
                 )
                 .id("system_message")
+                .padding(.bottom, 8)
             }
 
             if !sortedMessages.isEmpty {
-                ForEach(sortedMessages, id: \.id) { messageEntity in
+                ForEach(sortedMessages.indices, id: \.self) { index in
+                    let messageEntity = sortedMessages[index]
+                    let previous = index > 0 ? sortedMessages[index - 1] : nil
+                    let sameAuthorAsPrevious = previous?.own == messageEntity.own
+
+                    let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 12
+
                     let bubbleContent = ChatBubbleContent(
                         message: messageEntity.body,
                         own: messageEntity.own,
@@ -51,8 +58,10 @@ struct MessageListView: View {
                         isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
                         isLatestMessage: messageEntity.id == sortedMessages.last?.id
                     )
+
                     ChatBubbleView(content: bubbleContent, message: messageEntity)
                         .id(messageEntity.id)
+                        .padding(.top, topPadding)
                 }
             }
 
@@ -93,7 +102,12 @@ struct MessageListView: View {
                     isProcessing: multiAgentManager.isProcessing
                 )
                 .id("multi-agent-responses")
+                .padding(.top, 12)
             }
+
+            // Extra bottom padding so bubbles do not collide with input
+            Spacer()
+                .frame(height: 16)
         }
         .onAppear {
             // Precompute code block count once per appearance

@@ -2,26 +2,39 @@
 import SwiftUI
 
 struct ToolbarButton: View {
-    let icon: String
+    let icon: String?
     let text: String
     let action: () -> Void
-    
+
     @State private var isHovered = false
-    
+
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .imageScale(.small)
-                .frame(width: 10)
-            Text(text)
-                .font(.system(size: 12))
+            HStack(spacing: 4) {
+                if let icon = icon, !icon.isEmpty {
+                    Image(systemName: icon)
+                        .font(.system(size: 10, weight: .medium))
+                }
+
+                if !text.isEmpty {
+                    Text(text)
+                        .font(.system(size: 11, weight: .medium))
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovered ? AppConstants.backgroundSubtle : .clear)
+            )
+            .foregroundColor(isHovered ? AppConstants.textPrimary : AppConstants.textSecondary)
+            .contentShape(RoundedRectangle(cornerRadius: 6))
         }
-        .buttonStyle(PlainButtonStyle())
-        .foregroundColor(isHovered ? .primary : .gray.opacity(0.7))
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
         .onHover { hovering in
-            isHovered = hovering
+            withAnimation(.easeOut(duration: 0.16)) {
+                isHovered = hovering
+            }
         }
-        .animation(.easeInOut(duration: 0.2), value: isHovered)
     }
 }

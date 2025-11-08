@@ -4,30 +4,54 @@ struct ToastNotification: View {
     let message: String
     let icon: String
     @Binding var isVisible: Bool
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white)
-            
-            Text(message)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white)
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var semanticColor: Color {
+        switch icon {
+        case "checkmark.circle.fill":
+            return AppConstants.success
+        case "exclamationmark.triangle.fill",
+             "exclamationmark.triangle",
+             "xmark.octagon.fill":
+            return AppConstants.destructive
+        case "info.circle.fill",
+             "info.circle":
+            return Color.accentColor
+        default:
+            return Color.accentColor
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(semanticColor)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppConstants.textPrimary)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.8))
-                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+            RoundedRectangle(cornerRadius: 10)
+                .fill(AppConstants.backgroundElevated.opacity(colorScheme == .dark ? 0.98 : 0.98))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 4)
         )
         .opacity(isVisible ? 1 : 0)
-        .scaleEffect(isVisible ? 1 : 0.8)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isVisible)
+        .offset(y: isVisible ? 0 : -6)
+        .animation(.easeOut(duration: 0.22), value: isVisible)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation {
+                withAnimation(.easeOut(duration: 0.22)) {
                     isVisible = false
                 }
             }
@@ -39,21 +63,21 @@ struct ToastManager: View {
     @State private var toasts: [ToastItem] = []
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             ForEach(toasts) { toast in
                 ToastNotification(
                     message: toast.message,
                     icon: toast.icon,
                     isVisible: .constant(true)
                 )
-                .transition(.asymmetric(
-                    insertion: .move(edge: .top).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                ))
+                .transition(
+                    .move(edge: .top)
+                    .combined(with: .opacity)
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, 60)
+        .padding(.top, 52)
         .allowsHitTesting(false)
         .onReceive(NotificationCenter.default.publisher(for: .showToast)) { notification in
             if let userInfo = notification.userInfo,
@@ -66,13 +90,13 @@ struct ToastManager: View {
     
     private func showToast(message: String, icon: String) {
         let toast = ToastItem(message: message, icon: icon)
-        
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+
+        withAnimation(.easeOut(duration: 0.22)) {
             toasts.append(toast)
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            withAnimation(.easeInOut(duration: 0.3)) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            withAnimation(.easeOut(duration: 0.22)) {
                 toasts.removeAll { $0.id == toast.id }
             }
         }

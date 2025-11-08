@@ -24,145 +24,125 @@ struct WelcomeScreen: View {
                         }
                     )
                 } else {
-                    // Original welcome screen with enhanced design
+                    // Refined welcome screen
                     ZStack {
-                        // Static gradient background
-                        LinearGradient(
-                            colors: [
-                                .blue.opacity(0.05),
-                                .purple.opacity(0.05),
-                                .pink.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .ignoresSafeArea()
+                        AppConstants.backgroundWindow
+                            .ignoresSafeArea()
 
                         VStack(spacing: 32) {
-                            Spacer()
-                            
+                            Spacer(minLength: 40)
+
                             WelcomeIcon()
-                            
-                            VStack(spacing: 20) {
+
+                            VStack(spacing: 12) {
                                 Text("Welcome to Warden")
-                                    .font(.system(size: 32, weight: .light, design: .rounded))
-                                    .foregroundColor(.primary)
+                                    .font(.system(size: 28, weight: .semibold))
+                                    .foregroundColor(AppConstants.textPrimary)
                                 
-                                if !apiServiceIsPresent {
-                                    VStack(spacing: 16) {
-                                        Text("Your intelligent AI assistant")
-                                            .font(.system(size: 16, weight: .regular, design: .default))
-                                            .foregroundColor(.secondary)
-                                        
-                                        // Interactive onboarding option for new users
-                                        if !hasCompletedOnboarding {
-                                            Button(action: { 
-                                                withAnimation(.easeInOut(duration: 0.5)) {
-                                                    showInteractiveOnboarding = true
-                                                }
-                                            }) {
-                                                HStack(spacing: 12) {
-                                                    Image(systemName: "sparkles")
-                                                        .font(.system(size: 16, weight: .medium))
-                                                    Text("Start Interactive Setup")
-                                                        .font(.system(size: 16, weight: .medium))
-                                                }
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 24)
-                                                .padding(.vertical, 14)
-                                                .background(
-                                                    Capsule()
-                                                        .fill(
-                                                            LinearGradient(
-                                                                colors: [.blue, .purple],
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
-                                                            )
-                                                        )
-                                                )
-                                                .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
+                                Text("A focused workspace for your AI conversations.")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(AppConstants.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: 420)
+                            }
+
+                            if !apiServiceIsPresent {
+                                VStack(spacing: 14) {
+                                    if !hasCompletedOnboarding {
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.35)) {
+                                                showInteractiveOnboarding = true
                                             }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                        
-                                        Text("or")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.secondary)
-                                        
-                                        Button(action: openPreferencesView) {
+                                        }) {
                                             HStack(spacing: 8) {
-                                                Image(systemName: "gearshape")
+                                                Image(systemName: "sparkles")
                                                     .font(.system(size: 14, weight: .medium))
-                                                Text("Open Settings")
-                                                    .font(.system(size: 14, weight: .medium))
+                                                Text("Start interactive setup")
+                                                    .font(.system(size: 14, weight: .semibold))
                                             }
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(.white)
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 10)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(.secondary.opacity(0.3), lineWidth: 1)
+                                                    .fill(Color.accentColor)
                                             )
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        .buttonStyle(.plain)
+                                    }
+
+                                    Button(action: openPreferencesView) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "gearshape")
+                                                .font(.system(size: 13, weight: .medium))
+                                            Text("Open Settings")
+                                                .font(.system(size: 13, weight: .medium))
+                                        }
+                                        .foregroundColor(AppConstants.textPrimary)
+                                        .padding(.horizontal, 18)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(AppConstants.borderSubtle, lineWidth: 0.9)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            } else {
+                                if chatsCount == 0 {
+                                    VStack(spacing: 14) {
+                                        Text("You are connected. Start your first conversation.")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AppConstants.textSecondary)
+
+                                        Button(action: newChat) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "plus.bubble")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                Text("New Chat")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                            }
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 9)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color.accentColor)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 } else {
-                                    if chatsCount == 0 {
-                                        VStack(spacing: 16) {
-                                            Text("Ready to start your first conversation?")
-                                                .font(.system(size: 16, weight: .regular, design: .default))
-                                                .foregroundColor(.secondary)
-                                            
-                                            Button(action: newChat) {
-                                                HStack(spacing: 8) {
-                                                    Image(systemName: "plus.bubble")
-                                                        .font(.system(size: 14, weight: .medium))
-                                                    Text("Create New Chat")
-                                                        .font(.system(size: 14, weight: .medium))
-                                                }
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 20)
-                                                .padding(.vertical, 10)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(Color.accentColor)
-                                                )
+                                    VStack(spacing: 10) {
+                                        Text("Select a chat from the sidebar or start a new one.")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AppConstants.textSecondary)
+
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                showInteractiveOnboarding = true
                                             }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                    } else {
-                                        VStack(spacing: 12) {
-                                            Text("Select a chat to continue, or create a new one")
-                                                .font(.system(size: 16, weight: .regular, design: .default))
-                                                .foregroundColor(.secondary)
-                                            
-                                            // Quick action to restart onboarding for existing users
-                                            Button(action: { 
-                                                withAnimation(.easeInOut(duration: 0.5)) {
-                                                    showInteractiveOnboarding = true
-                                                }
-                                            }) {
-                                                HStack(spacing: 8) {
-                                                    Image(systemName: "arrow.clockwise")
-                                                        .font(.system(size: 12))
-                                                    Text("View Setup Guide")
-                                                        .font(.system(size: 12))
-                                                }
-                                                .foregroundColor(.secondary)
-                                                .padding(.horizontal, 16)
-                                                .padding(.vertical, 8)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 6)
-                                                        .stroke(.secondary.opacity(0.2), lineWidth: 1)
-                                                )
+                                        }) {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: "questionmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("View setup guide")
+                                                    .font(.system(size: 11, weight: .medium))
                                             }
-                                            .buttonStyle(PlainButtonStyle())
+                                            .foregroundColor(AppConstants.textSecondary)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 7)
+                                                    .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
+                                            )
                                         }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
-                            
-                            Spacer()
+
+                            Spacer(minLength: 40)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.horizontal, 40)
@@ -178,35 +158,29 @@ struct WelcomeIcon: View {
 
     var body: some View {
         ZStack {
-            // Glow effect background
+            // Soft, subtle background halo
             Image("WelcomeIcon")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 120, height: 120)
-                .blur(radius: 8)
-                .opacity(0.4)
-                .scaleEffect(1.1)
-            
+                .blur(radius: 10)
+                .opacity(0.16)
+
             // Main icon
             Image("WelcomeIcon")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 120, height: 120)
         }
-        .scaleEffect(isHovered ? 1.05 : 1.0)
+        .frame(width: 120, height: 120)
         .shadow(
-            color: Color.accentColor.opacity(0.3),
-            radius: isHovered ? 20 : 12,
+            color: Color.black.opacity(0.14),
+            radius: 10,
             x: 0,
-            y: isHovered ? 8 : 6
+            y: 4
         )
-        .frame(width: 120, height: 120) // Fixed frame to prevent layout changes
-        .animation(.easeInOut(duration: 0.3), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-        }
-        .onAppear {
-            // Static state - no animations
         }
     }
 }

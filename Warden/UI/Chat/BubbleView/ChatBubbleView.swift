@@ -35,11 +35,11 @@ struct ChatBubbleView: View, Equatable {
 
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.managedObjectContext) private var viewContext
-    private let outgoingBubbleColorLight = Color.accentColor.opacity(0.85) // Use system accent color
-    private let outgoingBubbleColorDark = Color.accentColor.opacity(0.75) // Use system accent color
-    private let incomingBubbleColorLight = Color(.white).opacity(0)
-    private let incomingBubbleColorDark = Color(.white).opacity(0)
-    private let incomingLabelColor = NSColor.labelColor
+
+    // MARK: - Bubble Metrics
+    private let bubbleCornerRadius: CGFloat = 13
+    private let verticalSpacingCompact: CGFloat = 4   // for same author
+    private let verticalSpacingSeparated: CGFloat = 12 // between authors
     @State private var isHovered = false
     @State private var showingDeleteConfirmation = false
     @State private var isCopied = false
@@ -87,217 +87,17 @@ struct ChatBubbleView: View, Equatable {
     }
 
     var body: some View {
-        VStack {
-            HStack {
+        VStack(spacing: 4) {
+            HStack(alignment: .bottom, spacing: 6) {
                 if content.own {
-                    Color.clear
-                        .frame(width: 80)
-                    Spacer()
+                    Spacer(minLength: 40)
                 }
 
-                if !content.own && !content.systemMessage {
-                    // For incoming messages, add logo inline at the left
-                    HStack(alignment: .bottom, spacing: 8) {
-                        // AI provider logo inline at the left
-                        Image("logo_\(message?.chat?.apiService?.type ?? "")")
-                            .resizable()
-                            .renderingMode(.template)
-                            .interpolation(.high)
-                            .antialiased(true)
-                            .frame(width: 16, height: 16)
-                            .foregroundColor(.secondary)
-                            .padding(.bottom, 8)
-                        
-                        VStack(alignment: .leading) {
-                            if content.waitingForResponse ?? false {
-                                HStack {
-                                    Text("Thinking")
-                                        .foregroundColor(.primary)
-                                        .font(.system(size: 14))
-                                    Circle()
-                                        .fill(Color.gray)
-                                        .frame(width: 6, height: 6)
-                                        .modifier(PulsatingCircle())
-                                        .padding(.top, 4)
-                                }
-                            }
-                            else if let errorMessage = content.errorMessage {
-                                ErrorBubbleView(
-                                    error: errorMessage,
-                                    onRetry: {
-                                        NotificationCenter.default.post(
-                                            name: NSNotification.Name("RetryMessage"),
-                                            object: nil
-                                        )
-                                    },
-                                    onIgnore: {
-                                        NotificationCenter.default.post(
-                                            name: NSNotification.Name("IgnoreError"),
-                                            object: nil
-                                        )
-                                    }
-                                )
-                            }
-                            else {
-                                MessageContentView(
-                                    message: content.message,
-                                    isStreaming: content.isStreaming,
-                                    own: content.own,
-                                    effectiveFontSize: effectiveFontSize,
-                                    colorScheme: colorScheme
-                                )
-                            }
-                        }
-                        .foregroundColor(Color(incomingLabelColor))
-                        .multilineTextAlignment(.leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            content.systemMessage
-                                ? (Color(hex: color ?? "#CCCCCC") ?? .gray).opacity(0.6)
-                                : colorScheme == .dark
-                                    ? incomingBubbleColorDark
-                                    : incomingBubbleColorLight
-                        )
-                        .cornerRadius(16)
-                    }
-                } else {
-                    // For outgoing and system messages, use original layout
-                    VStack(alignment: .leading) {
-                        if content.waitingForResponse ?? false {
-                            HStack {
-                                Text("Thinking")
-                                    .foregroundColor(.primary)
-                                    .font(.system(size: 14))
-                                Circle()
-                                    .fill(Color.gray)
-                                    .frame(width: 6, height: 6)
-                                    .modifier(PulsatingCircle())
-                                    .padding(.top, 4)
-                            }
-                        }
-                        else if let errorMessage = content.errorMessage {
-                            ErrorBubbleView(
-                                error: errorMessage,
-                                onRetry: {
-                                    NotificationCenter.default.post(
-                                        name: NSNotification.Name("RetryMessage"),
-                                        object: nil
-                                    )
-                                },
-                                onIgnore: {
-                                    NotificationCenter.default.post(
-                                        name: NSNotification.Name("IgnoreError"),
-                                        object: nil
-                                    )
-                                }
-                            )
-                        }
-                        else {
-                            MessageContentView(
-                                message: content.message,
-                                isStreaming: content.isStreaming,
-                                own: content.own,
-                                effectiveFontSize: effectiveFontSize,
-                                colorScheme: colorScheme
-                            )
-                        }
-                    }
-                    .foregroundColor(Color(content.own ? incomingLabelColor : incomingLabelColor))
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background {
-                        if content.systemMessage {
-                            (Color(hex: color ?? "#CCCCCC") ?? .gray).opacity(0.6)
-                        } else if content.own {
-                            // Enhanced outgoing bubble style
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    colorScheme == .dark ? outgoingBubbleColorDark.opacity(0.9) : outgoingBubbleColorLight.opacity(0.9),
-                                    colorScheme == .dark ? outgoingBubbleColorDark.opacity(0.7) : outgoingBubbleColorLight.opacity(0.7)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        } else {
-                            colorScheme == .dark ? incomingBubbleColorDark : incomingBubbleColorLight
-                        }
-                    }
-                    .cornerRadius(16)
-                    .overlay(
-                        content.own && !content.systemMessage
-                            ? RoundedRectangle(cornerRadius: 16)
-                                .stroke(
-                                    colorScheme == .dark 
-                                        ? Color.accentColor.opacity(0.3) 
-                                        : Color.accentColor.opacity(0.2), 
-                                    lineWidth: 1
-                                )
-                            : nil
-                    )
-                    .shadow(
-                        color: content.own && !content.systemMessage 
-                            ? Color.accentColor.opacity(0.3) 
-                            : .clear, 
-                        radius: 3, 
-                        x: 0, 
-                        y: 2
-                    )
-                    .shadow(
-                        color: content.own && !content.systemMessage 
-                            ? .black.opacity(0.1) 
-                            : .clear, 
-                        radius: 1, 
-                        x: 0, 
-                        y: 1
-                    )
-                }
+                // Bubble content
+                bubbleView
 
                 if content.own && !content.systemMessage {
-                    // Enhanced user indicator symbol for outgoing messages
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        colorScheme == .dark ? outgoingBubbleColorDark.opacity(0.9) : outgoingBubbleColorLight.opacity(0.9),
-                                        colorScheme == .dark ? outgoingBubbleColorDark.opacity(0.7) : outgoingBubbleColorLight.opacity(0.7)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        colorScheme == .dark 
-                                            ? Color.accentColor.opacity(0.3) 
-                                            : Color.accentColor.opacity(0.2), 
-                                        lineWidth: 1
-                                    )
-                            )
-                            .shadow(
-                                color: Color.accentColor.opacity(0.3), 
-                                radius: 3, 
-                                x: 0, 
-                                y: 2
-                            )
-                            .shadow(
-                                color: .black.opacity(0.1), 
-                                radius: 1, 
-                                x: 0, 
-                                y: 1
-                            )
-                        
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
-                    }
-                    .frame(width: 20, height: 20)
-                    .padding(.leading, 8)
-                } else {
-                    Spacer()
+                    Spacer().frame(width: 4)
                 }
             }
 
@@ -367,58 +167,180 @@ struct ChatBubbleView: View, Equatable {
     }
 
     private var toolbarContent: some View {
-        HStack {
-            if content.own {
-                Spacer()
+        HStack(spacing: 6) {
+            if !content.own, let _ = message {
+                Text(formattedTimestamp)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppConstants.textTertiary)
             }
-            
-            // Group timestamp and action buttons together
-            HStack(spacing: 8) {
-                // Show timestamp first for incoming, last for outgoing
-                if !content.own, let messageEntity = message {
-                    Text(formattedTimestamp)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .opacity(0.7)
-                }
-                
-                // Action buttons
-                HStack(spacing: 12) {
-                    if content.systemMessage {
-                        ToolbarButton(icon: "pencil", text: "Edit") {
-                            onEdit?()
-                        }
-                    }
-                    
-                    if content.isLatestMessage && !content.systemMessage {
-                        ToolbarButton(icon: "arrow.clockwise", text: "Retry") {
-                            NotificationCenter.default.post(name: NSNotification.Name("RetryMessage"), object: nil)
-                        }
-                    }
-                    
-                    ToolbarButton(icon: isCopied ? "checkmark" : "doc.on.doc", text: "Copy") {
-                        copyMessageToClipboard(content.message)
-                    }
-                    
-                    if !content.systemMessage {
-                        ToolbarButton(icon: "trash", text: "") {
-                            showingDeleteConfirmation = true
-                        }
-                    }
-                }
-                
-                // Show timestamp last for outgoing messages
-                if content.own, let messageEntity = message {
-                    Text(formattedTimestamp)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .opacity(0.7)
+
+            if content.systemMessage {
+                ToolbarButton(icon: "pencil", text: "Edit") {
+                    onEdit?()
                 }
             }
-            
-            if !content.own {
-                Spacer()
+
+            if content.isLatestMessage && !content.systemMessage {
+                ToolbarButton(icon: "arrow.clockwise", text: "Retry") {
+                    NotificationCenter.default.post(name: NSNotification.Name("RetryMessage"), object: nil)
+                }
             }
+
+            ToolbarButton(icon: isCopied ? "checkmark" : "doc.on.doc", text: "Copy") {
+                copyMessageToClipboard(content.message)
+            }
+
+            if !content.systemMessage {
+                ToolbarButton(icon: "trash", text: "") {
+                    showingDeleteConfirmation = true
+                }
+            }
+
+            if content.own, let _ = message {
+                Text(formattedTimestamp)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppConstants.textTertiary)
+            }
+        }
+    }
+    // MARK: - Semantic Bubble Variants
+
+    @ViewBuilder
+    private var bubbleView: some View {
+        if let error = content.errorMessage {
+            errorBubble(error)
+        } else if content.systemMessage {
+            systemBubble
+        } else if content.own {
+            userBubble
+        } else {
+            assistantBubble
+        }
+    }
+
+    private var userBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if content.waitingForResponse ?? false {
+                thinkingView
+            } else {
+                messageBody
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                .fill(
+                    Color.accentColor
+                        .opacity(colorScheme == .dark ? 0.22 : 0.16)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.12), radius: 3, x: 0, y: 1)
+    }
+
+    private var assistantBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if content.waitingForResponse ?? false {
+                thinkingView
+            } else {
+                messageBody
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                .fill(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.04)
+                        : AppConstants.backgroundElevated
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
+                )
+        )
+    }
+
+    private var systemBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            MessageContentView(
+                message: content.message,
+                isStreaming: content.isStreaming,
+                own: false,
+                effectiveFontSize: effectiveFontSize,
+                colorScheme: colorScheme
+            )
+            .italic()
+            .foregroundColor(AppConstants.textSecondary)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                .fill(Color.accentColor.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
+                )
+        )
+    }
+
+    private func errorBubble(_ error: ErrorMessage) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ErrorBubbleView(
+                error: error,
+                onRetry: {
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("RetryMessage"),
+                        object: nil
+                    )
+                },
+                onIgnore: {
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("IgnoreError"),
+                        object: nil
+                    )
+                }
+            )
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                .fill(AppConstants.destructive.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(AppConstants.destructive.opacity(0.5), lineWidth: 1)
+                )
+        )
+    }
+
+    private var messageBody: some View {
+        MessageContentView(
+            message: content.message,
+            isStreaming: content.isStreaming,
+            own: content.own,
+            effectiveFontSize: effectiveFontSize,
+            colorScheme: colorScheme
+        )
+        .foregroundColor(AppConstants.textPrimary)
+        .multilineTextAlignment(.leading)
+    }
+
+    private var thinkingView: some View {
+        HStack(spacing: 6) {
+            Text("Thinking")
+                .font(.system(size: 13))
+                .foregroundColor(AppConstants.textSecondary)
+            Circle()
+                .fill(AppConstants.textSecondary)
+                .frame(width: 6, height: 6)
+                .modifier(PulsatingCircle())
         }
     }
 }
