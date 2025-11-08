@@ -99,7 +99,65 @@ struct StandaloneModelSelector: View {
     }
     
     var body: some View {
-        ModelSelectorDropdown(chat: chat)
+        Button(action: {
+            isExpanded.toggle()
+        }) {
+            HStack(spacing: 8) {
+                // Provider logo
+                Image("logo_\(currentProvider)")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(AppConstants.textSecondary)
+                    .opacity(chat.apiService == nil ? 0.6 : 1.0)
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    // Current model
+                    Text(currentModel)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppConstants.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    
+                    // Provider / hint
+                    Text(currentProviderName)
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(AppConstants.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(AppConstants.textSecondary)
+                    .padding(.leading, 4)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(AppConstants.backgroundChrome)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isHovered ? AppConstants.borderStrong.opacity(0.5) : AppConstants.borderSubtle,
+                                lineWidth: isHovered ? 1.0 : 0.8
+                            )
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.16)) {
+                isHovered = hovering
+            }
+        }
+        .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+            popoverContent
+                .environment(\.managedObjectContext, viewContext)
+        }
     }
     
     private var popoverContent: some View {
@@ -425,11 +483,12 @@ struct ModelSelectorDropdown: View {
         if modelId.isEmpty {
             return "Select Model"
         }
-        
+
         // Prefer friendly label from cache if available
         let models = modelCache.getModels(for: service.type ?? currentProviderType)
         if let match = models.first(where: { $0.id == modelId }) {
-            return match.displayName ?? match.id
+            // AIModel currently exposes only `id`; use that directly as the label.
+            return match.id
         }
         return modelId
     }
