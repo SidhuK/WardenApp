@@ -73,13 +73,10 @@ struct AppConstants {
             .opacity(0.6)
     }
 
-    /// Sidebar background, aligned with system sidebar style.
+    /// Sidebar background, aligned with system-style chrome while remaining compatible across macOS versions.
     static var backgroundSidebar: Color {
-        if #available(macOS 11.0, *) {
-            return Color(NSColor.sidebarBackgroundColor)
-        } else {
-            return Color(NSColor.windowBackgroundColor)
-        }
+        // Use controlBackgroundColor for a neutral, Apple-like sidebar chrome that works on all supported macOS versions.
+        return Color(NSColor.controlBackgroundColor)
     }
 
     /// Input field background: slightly elevated against window background.
