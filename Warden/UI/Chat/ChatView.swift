@@ -294,71 +294,24 @@ struct ChatView: View {
     private var mainChatContent: some View {
         ScrollView {
             ScrollViewReader { scrollView in
-                VStack {
-                    if !chat.systemMessage.isEmpty {
-                        SystemMessageBubbleView(
-                            message: chat.systemMessage,
-                            color: chat.persona?.color,
-                            newMessage: $newMessage,
-                            editSystemMessage: $editSystemMessage
-                        )
-                        .id("system_message")
-                    }
-
-                    if chat.messages.count > 0 {
-                        ForEach(chatViewModel.sortedMessages, id: \.self) { messageEntity in
-                            let bubbleContent = ChatBubbleContent(
-                                message: messageEntity.body,
-                                own: messageEntity.own,
-                                waitingForResponse: messageEntity.waitingForResponse,
-                                errorMessage: nil,
-                                systemMessage: false,
-                                isStreaming: isStreaming,
-                                isLatestMessage: messageEntity.id == chatViewModel.sortedMessages.last?.id
-                            )
-                            ChatBubbleView(content: bubbleContent, message: messageEntity)
-                                .id(messageEntity.id)
-                        }
-                    }
-
-                    if chat.waitingForResponse {
-                        let bubbleContent = ChatBubbleContent(
-                            message: "",
-                            own: false,
-                            waitingForResponse: true,
-                            errorMessage: nil,
-                            systemMessage: false,
-                            isStreaming: isStreaming,
-                            isLatestMessage: false
-                        )
-
-                        ChatBubbleView(content: bubbleContent)
-                            .id(-1)
-                    }
-                    else if let error = currentError {
-                        let bubbleContent = ChatBubbleContent(
-                            message: "",
-                            own: false,
-                            waitingForResponse: false,
-                            errorMessage: error,
-                            systemMessage: false,
-                            isStreaming: isStreaming,
-                            isLatestMessage: true
-                        )
-
-                        ChatBubbleView(content: bubbleContent)
-                            .id(-2)
-                    }
-                    
-                    // Multi-agent responses (only show in multi-agent mode and when feature is enabled)
-                    if enableMultiAgentMode && isMultiAgentMode && (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing) {
-                        MultiAgentResponseView(
-                            responses: multiAgentManager.activeAgents,
-                            isProcessing: multiAgentManager.isProcessing
-                        )
-                        .id("multi-agent-responses")
-                    }
-                }
+                MessageListView(
+                    chat: chat,
+                    sortedMessages: chatViewModel.sortedMessages,
+                    isStreaming: isStreaming,
+                    currentError: currentError,
+                    enableMultiAgentMode: enableMultiAgentMode,
+                    isMultiAgentMode: isMultiAgentMode,
+                    multiAgentManager: multiAgentManager,
+                    userIsScrolling: $userIsScrolling,
+                    onRetryMessage: {
+                        // Retry last failed or pending message using existing logic
+                        sendMessage(ignoreMessageInput: true)
+                    },
+                    onIgnoreError: {
+                        currentError = nil
+                    },
+                    scrollView: scrollView
+                )
                 .padding(24)
                 .onAppear {
                     pendingCodeBlocks = chatViewModel.sortedMessages.reduce(0) { count, message in
@@ -419,34 +372,6 @@ struct ChatView: View {
                             }
                         }
                     }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RetryMessage"))) { _ in
-                    guard !chat.waitingForResponse && !isStreaming else { return }
-
-                    if currentError != nil {
-                        sendMessage(ignoreMessageInput: true)
-                    }
-                    else {
-                        if let lastUserMessage = chatViewModel.sortedMessages.last(where: { $0.own }) {
-                            let messageToResend = lastUserMessage.body
-
-                            if let lastMessage = chatViewModel.sortedMessages.last {
-                                viewContext.delete(lastMessage)
-                                if !lastMessage.own,
-                                    let secondLastMessage = chatViewModel.sortedMessages.dropLast().last
-                                {
-                                    viewContext.delete(secondLastMessage)
-                                }
-                                try? viewContext.save()
-                            }
-
-                            newMessage = messageToResend
-                            sendMessage()
-                        }
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("IgnoreError"))) { _ in
-                    currentError = nil
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) {
                     _ in

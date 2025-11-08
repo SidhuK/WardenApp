@@ -122,6 +122,7 @@
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
 		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
+		C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479718C2EBF3E410097C000 /* MessageListView.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 /* End PBXBuildFile section */
 
@@ -266,6 +267,7 @@
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
 		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
+		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -367,6 +369,7 @@
 				4A254A6B2CEA69DF00F66935 /* CodeView */,
 				4A885C512CEA3B130018BBED /* HTMLPreviewView.swift */,
 				4A5F64B929C64F9D000403F7 /* ChatView.swift */,
+				C479718C2EBF3E410097C000 /* MessageListView.swift */,
 				4A8E2E0A2C56FCFD00F077F2 /* ChatViewModel.swift */,
 				7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */,
 				7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */,
@@ -760,6 +763,7 @@
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
 				7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */,
+				C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */,
 				C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */,
 				4A885C562CEA3F6C0018BBED /* ChatListView.swift in Sources */,
 				4AADD98C2C924FBA00242D20 /* APIServiceManager.swift in Sources */,

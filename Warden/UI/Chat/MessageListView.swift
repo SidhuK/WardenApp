@@ -1,0 +1,149 @@
+import SwiftUI
+import CoreData
+
+/// Extracted message list to:
+/// - Reduce body size in ChatView
+/// - Make rendering behavior easier to tune
+/// - Keep scroll/stream logic centralized and testable
+struct MessageListView: View {
+    let chat: ChatEntity
+    let sortedMessages: [MessageEntity]
+    let isStreaming: Bool
+    let currentError: ErrorMessage?
+    let enableMultiAgentMode: Bool
+    let isMultiAgentMode: Bool
+    @ObservedObject var multiAgentManager: MultiAgentMessageManager
+
+    // State and coordination passed from ChatView
+    @Binding var userIsScrolling: Bool
+
+    // Callbacks
+    let onRetryMessage: () -> Void
+    let onIgnoreError: () -> Void
+
+    // We accept a ScrollViewProxy via closure-style usage in ChatView
+    let scrollView: ScrollViewProxy
+
+    @State private var pendingCodeBlocks: Int = 0
+    @State private var codeBlocksRendered: Bool = false
+    @State private var scrollDebounceWorkItem: DispatchWorkItem?
+
+    var body: some View {
+        VStack {
+            if !chat.systemMessage.isEmpty {
+                SystemMessageBubbleView(
+                    message: chat.systemMessage,
+                    color: chat.persona?.color,
+                    newMessage: .constant(""),
+                    editSystemMessage: .constant(false)
+                )
+                .id("system_message")
+            }
+
+            if !sortedMessages.isEmpty {
+                ForEach(sortedMessages, id: \.id) { messageEntity in
+                    let bubbleContent = ChatBubbleContent(
+                        message: messageEntity.body,
+                        own: messageEntity.own,
+                        waitingForResponse: messageEntity.waitingForResponse,
+                        errorMessage: nil,
+                        systemMessage: false,
+                        isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
+                        isLatestMessage: messageEntity.id == sortedMessages.last?.id
+                    )
+                    ChatBubbleView(content: bubbleContent, message: messageEntity)
+                        .id(messageEntity.id)
+                }
+            }
+
+            if chat.waitingForResponse {
+                let bubbleContent = ChatBubbleContent(
+                    message: "",
+                    own: false,
+                    waitingForResponse: true,
+                    errorMessage: nil,
+                    systemMessage: false,
+                    isStreaming: true,
+                    isLatestMessage: false
+                )
+
+                ChatBubbleView(content: bubbleContent)
+                    .id(-1)
+            } else if let error = currentError {
+                let bubbleContent = ChatBubbleContent(
+                    message: "",
+                    own: false,
+                    waitingForResponse: false,
+                    errorMessage: error,
+                    systemMessage: false,
+                    isStreaming: false,
+                    isLatestMessage: true
+                )
+
+                ChatBubbleView(content: bubbleContent)
+                    .id(-2)
+            }
+
+            // Multi-agent responses (only show in multi-agent mode and when feature is enabled)
+            if enableMultiAgentMode,
+               isMultiAgentMode,
+               (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing) {
+                MultiAgentResponseView(
+                    responses: multiAgentManager.activeAgents,
+                    isProcessing: multiAgentManager.isProcessing
+                )
+                .id("multi-agent-responses")
+            }
+        }
+        .onAppear {
+            // Precompute code block count once per appearance
+            pendingCodeBlocks = sortedMessages.reduce(0) { count, message in
+                count + (message.body.components(separatedBy: "```").count - 1) / 2
+            }
+
+            if let lastMessage = sortedMessages.last {
+                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+            }
+
+            if pendingCodeBlocks == 0 {
+                codeBlocksRendered = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) { _ in
+            guard pendingCodeBlocks > 0 else { return }
+            pendingCodeBlocks -= 1
+            if pendingCodeBlocks == 0 {
+                codeBlocksRendered = true
+                if let lastMessage = sortedMessages.last {
+                    scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RetryMessage"))) { _ in
+            onRetryMessage()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("IgnoreError"))) { _ in
+            onIgnoreError()
+        }
+        .onChange(of: sortedMessages.last?.body) { _, _ in
+            // Only auto-scroll while streaming and if user has not scrolled away
+            guard isStreaming, !userIsScrolling else { return }
+
+            scrollDebounceWorkItem?.cancel()
+            let workItem = DispatchWorkItem {
+                if let lastMessage = sortedMessages.last {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                    }
+                }
+            }
+            scrollDebounceWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
+        }
+        .onSwipe { event in
+            if event.direction == .up {
+                userIsScrolling = true
+            }
+        }
+    }
+}
