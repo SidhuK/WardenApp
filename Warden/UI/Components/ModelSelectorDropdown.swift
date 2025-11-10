@@ -485,18 +485,20 @@ struct ModelSelectorDropdown: View {
                         .padding(.leading, 4)
                 }
             }
-            // Keep the trigger visually minimal; remove any extra-looking outer chrome.
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+            // Compact, self-contained trigger: a single rounded rect boundary, no outer pill.
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 6)
                     .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
                     .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
             )
+            .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
-        .contentShape(RoundedRectangle(cornerRadius: 6))
         .frame(maxWidth: 360)
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.16)) {

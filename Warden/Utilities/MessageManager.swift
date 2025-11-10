@@ -129,13 +129,29 @@ class MessageManager: ObservableObject {
                 // - Followed by end, whitespace, punctuation, or ')'
                 let start = fullRange.location
                 let end = fullRange.location + fullRange.length
-                let prevChar: Character? = start > 0 ? Character(String(nsString.character(at: start - 1))) : nil
-                let nextChar: Character? = end < nsString.length ? Character(String(nsString.character(at: end))) : nil
-                
+
+                // Use Swift String indices for safe boundary detection over extended grapheme clusters.
+                let stringStartIndex = result.startIndex
+                let stringEndIndex = result.endIndex
+
+                let startIndex = result.index(stringStartIndex, offsetBy: start)
+                let endIndex = result.index(stringStartIndex, offsetBy: end)
+
+                let prevChar: Character? = (startIndex > stringStartIndex)
+                    ? result[result.index(before: startIndex)]
+                    : nil
+
+                let nextChar: Character? = (endIndex < stringEndIndex)
+                    ? result[endIndex]
+                    : nil
+
                 func isBoundary(_ ch: Character?) -> Bool {
-                    guard let ch = ch else { return true }
-                    return ch.isWhitespace ||
-                        [".", ",", ";", ":", "!", "?", ")", "(", "[", "]"].contains(ch)
+                    guard let ch = ch else { return true } // Treat start/end as boundary
+                    if ch.isWhitespace { return true }
+
+                    // Delimiters where citations should be considered standalone-ish
+                    let delimiters: Set<Character> = [".", ",", ";", ":", "!", "?", "(", ")", "[", "]"]
+                    return delimiters.contains(ch)
                 }
                 
                 guard isBoundary(prevChar), isBoundary(nextChar) else {
