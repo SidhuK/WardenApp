@@ -51,76 +51,62 @@ struct MoveToProjectView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                headerSection
-                
-                // Search bar
-                searchSection
-                
-                // Project list
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        // Option to remove from current project
-                        if currentProject != nil {
-                            removeFromProjectOption
-                        }
-                        
-                        // Project options
-                        ForEach(filteredProjects, id: \.id) { project in
-                            ProjectOptionRow(
-                                project: project,
-                                isSelected: selectedProject?.objectID == project.objectID,
-                                isCurrentProject: currentProject?.objectID == project.objectID,
-                                onSelect: {
-                                    selectedProject = project
-                                }
-                            )
-                        }
-                        
-                        // Create new project option
-                        createNewProjectOption
-                        
-                        // Empty state
-                        if filteredProjects.isEmpty && !searchText.isEmpty {
-                            emptySearchState
-                        }
+        VStack(spacing: 0) {
+            // Header
+            headerSection
+            
+            // Search bar
+            searchSection
+            
+            // Project list - single column, full width, scrollable
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    // Option to remove from current project
+                    if currentProject != nil {
+                        removeFromProjectOption
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-                }
-            }
-            .padding(.vertical, 12)
-            .background(AppConstants.backgroundElevated)
-            .frame(minWidth: 420, idealWidth: 480, maxWidth: 520,
-                   minHeight: 420, idealHeight: 520, maxHeight: 640)
-            .navigationTitle("Move to Project")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+                    
+                    // Project options
+                    ForEach(filteredProjects, id: \.id) { project in
+                        ProjectOptionRow(
+                            project: project,
+                            isSelected: selectedProject?.objectID == project.objectID,
+                            isCurrentProject: currentProject?.objectID == project.objectID,
+                            onSelect: {
+                                selectedProject = project
+                            }
+                        )
+                    }
+                    
+                    // Create new project option (always visible inline)
+                    createNewProjectOption
+                    
+                    // Empty state
+                    if filteredProjects.isEmpty && !searchText.isEmpty {
+                        emptySearchState
                     }
                 }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Move") {
-                        moveChatsToProject()
-                    }
-                    .disabled(!canMove)
-                    .buttonStyle(.borderedProminent)
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
         }
+        .padding(.vertical, 12)
+        .background(AppConstants.backgroundElevated)
+        .frame(minWidth: 420, idealWidth: 480, maxWidth: 520,
+               minHeight: 420, idealHeight: 520, maxHeight: 640)
         .sheet(isPresented: $showingCreateProject) {
             CreateProjectView(
                 onProjectCreated: { project in
+                    // Close the sheet, bind new project back and immediately apply selection.
                     selectedProject = project
+                    showingCreateProject = false
                 },
                 onCancel: {
                     showingCreateProject = false
                 }
             )
+            .frame(minWidth: 520, idealWidth: 640, maxWidth: 720,
+                   minHeight: 520, idealHeight: 620, maxHeight: 720)
         }
     }
     

@@ -137,15 +137,8 @@ struct StandaloneModelSelector: View {
             .padding(.vertical, 6)
             .contentShape(RoundedRectangle(cornerRadius: 8))
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(AppConstants.backgroundChrome)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(
-                                isHovered ? AppConstants.borderStrong.opacity(0.5) : AppConstants.borderSubtle,
-                                lineWidth: isHovered ? 1.0 : 0.8
-                            )
-                    )
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
             )
         }
         .buttonStyle(.plain)
@@ -162,7 +155,7 @@ struct StandaloneModelSelector: View {
     
     private var popoverContent: some View {
         VStack(spacing: 0) {
-            // Header with search and favorites toggle inline
+            // Subtle top padding to separate from toolbar, no heavy border container.
             HStack(spacing: 8) {
                 searchBar
                 favoritesToggle
@@ -183,12 +176,7 @@ struct StandaloneModelSelector: View {
         .frame(minWidth: 340, maxWidth: 400)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(AppConstants.backgroundElevated)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-                )
+            AppConstants.backgroundElevated
         )
     }
     
@@ -547,15 +535,8 @@ struct ModelSelectorDropdown: View {
             .padding(.vertical, 6)
             .contentShape(RoundedRectangle(cornerRadius: 8))
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(AppConstants.backgroundChrome)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(
-                                isHovered ? AppConstants.borderStrong.opacity(0.5) : AppConstants.borderSubtle,
-                                lineWidth: isHovered ? 1.0 : 0.8
-                            )
-                    )
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
             )
         }
         .buttonStyle(.plain)
@@ -568,6 +549,7 @@ struct ModelSelectorDropdown: View {
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
             StandaloneModelSelector(chat: chat)
                 .environment(\.managedObjectContext, viewContext)
+                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
         }
         .onAppear {
             // Prime cache once using current active services; avoid repeated global fetches.
