@@ -8,11 +8,14 @@ struct StandaloneModelSelector: View {
     @StateObject private var modelCache = ModelCacheManager.shared
     @StateObject private var selectedModelsManager = SelectedModelsManager.shared
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    @State private var isExpanded = false
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
     @State private var showOnlyFavorites = false
     @State private var isHovered = false
+    
+    // Allow parent to control expanded state when used in popover
+    var isExpanded: Bool = true
+    var onDismiss: (() -> Void)? = nil
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -99,55 +102,7 @@ struct StandaloneModelSelector: View {
     }
     
     var body: some View {
-        Button(action: {
-            isExpanded.toggle()
-        }) {
-            HStack(spacing: 8) {
-                // Provider logo
-                Image("logo_\(currentProvider)")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 14, height: 14)
-                    .foregroundColor(AppConstants.textSecondary)
-                    .opacity(chat.apiService == nil ? 0.6 : 1.0)
-                
-                VStack(alignment: .leading, spacing: 1) {
-                    // Current model
-                    Text(currentModel)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(AppConstants.textPrimary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    
-                    // Provider / hint
-                    Text(currentProviderName)
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundColor(AppConstants.textSecondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(AppConstants.textSecondary)
-                    .padding(.leading, 4)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .contentShape(RoundedRectangle(cornerRadius: 8))
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.16)) {
-                isHovered = hovering
-            }
-        }
-        .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+        if isExpanded {
             popoverContent
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -294,9 +249,7 @@ struct StandaloneModelSelector: View {
     private func modelRow(provider: String, model: String) -> some View {
         Button(action: {
             handleModelChange(providerType: provider, model: model)
-            withAnimation(.easeInOut(duration: 0.05)) {
-                isExpanded = false
-            }
+            onDismiss?()
         }) {
             HStack(spacing: 8) {
                 // Current selection indicator
@@ -427,7 +380,7 @@ struct StandaloneModelSelector: View {
 }
 
 #Preview {
-    StandaloneModelSelector(chat: PreviewStateManager.shared.sampleChat)
+    StandaloneModelSelector(chat: PreviewStateManager.shared.sampleChat, isExpanded: true)
         .environmentObject(PreviewStateManager.shared.chatStore)
         .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
 }
@@ -550,7 +503,11 @@ struct ModelSelectorDropdown: View {
         }
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
             // Directly render the full selector content, without an extra nested trigger.
-            StandaloneModelSelector(chat: chat)
+            StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
+                withAnimation(.easeInOut(duration: 0.05)) {
+                    isExpanded = false
+                }
+            })
                 .environment(\.managedObjectContext, viewContext)
                 .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
         }
@@ -607,7 +564,7 @@ struct ModelRowView: View {
 // Preview
 struct StandaloneModelSelector_Previews: PreviewProvider {
     static var previews: some View {
-        StandaloneModelSelector(chat: PreviewStateManager.shared.sampleChat)
+        StandaloneModelSelector(chat: PreviewStateManager.shared.sampleChat, isExpanded: true)
             .frame(width: 300)
             .padding()
             .environmentObject(PreviewStateManager.shared.chatStore)
