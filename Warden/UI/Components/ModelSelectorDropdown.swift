@@ -490,9 +490,10 @@ struct ModelSelectorDropdown: View {
     
     var body: some View {
         Button(action: {
-            isExpanded.toggle()
-            
-            // Lazy-load models only when user opens the selector.
+            // Single-click opens the full selector immediately.
+            isExpanded = true
+
+            // Lazy-load models when user opens the selector.
             if isExpanded {
                 triggerModelFetchIfNeeded()
             }
@@ -506,7 +507,7 @@ struct ModelSelectorDropdown: View {
                     .frame(width: 14, height: 14)
                     .foregroundColor(AppConstants.textSecondary)
                     .opacity(chat.apiService == nil ? 0.6 : 1.0)
-                
+
                 VStack(alignment: .leading, spacing: 1) {
                     // Current model
                     Text(currentModelLabel)
@@ -514,7 +515,7 @@ struct ModelSelectorDropdown: View {
                         .foregroundColor(AppConstants.textPrimary)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    
+
                     // Provider / hint
                     Text(currentProviderDisplayName)
                         .font(.system(size: 10, weight: .regular))
@@ -522,7 +523,7 @@ struct ModelSelectorDropdown: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                
+
                 // Chevron only if there are choices; keeps UI lightweight.
                 if hasMultipleVisibleModels {
                     Image(systemName: "chevron.down")
@@ -531,6 +532,7 @@ struct ModelSelectorDropdown: View {
                         .padding(.leading, 4)
                 }
             }
+            // Keep the trigger visually minimal; remove any extra-looking outer chrome.
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .contentShape(RoundedRectangle(cornerRadius: 8))
@@ -547,6 +549,7 @@ struct ModelSelectorDropdown: View {
             }
         }
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+            // Directly render the full selector content, without an extra nested trigger.
             StandaloneModelSelector(chat: chat)
                 .environment(\.managedObjectContext, viewContext)
                 .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
