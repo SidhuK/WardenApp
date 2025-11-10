@@ -96,6 +96,7 @@ struct ChatBubbleView: View, Equatable {
 
                 // Bubble content
                 bubbleView
+                    .modifier(StreamingPulseModifier(isStreaming: content.isStreaming))
 
                 if content.own && !content.systemMessage {
                     Spacer().frame(width: 4)
@@ -103,6 +104,8 @@ struct ChatBubbleView: View, Equatable {
             }
             // Ensure the entire row respects role-based horizontal alignment
             .frame(maxWidth: .infinity, alignment: rowAlignment)
+            // Apply message arrival animation for new messages
+            .messageArrival(duration: 0.35, delay: content.isLatestMessage ? 0 : 0)
 
             if content.errorMessage == nil && !(content.waitingForResponse ?? false) {
                 HStack {
@@ -366,19 +369,58 @@ struct ChatBubbleView: View, Equatable {
 
 struct PulsatingCircle: ViewModifier {
     @State private var isAnimating = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .scaleEffect(isAnimating ? 1.5 : 1.0)
             .opacity(isAnimating ? 0.5 : 1.0)
             .animation(
-                Animation
-                    .easeInOut(duration: 0.8)
-                    .repeatForever(autoreverses: true),
+                reduceMotion
+                    ? nil
+                    : Animation
+                        .easeInOut(duration: 0.8)
+                        .repeatForever(autoreverses: true),
                 value: isAnimating
             )
             .onAppear {
-                isAnimating = true
+                if !reduceMotion {
+                    isAnimating = true
+                }
+            }
+    }
+}
+
+// MARK: - Streaming Animation
+
+struct StreamingPulseModifier: ViewModifier {
+    let isStreaming: Bool
+    @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isPulsing && isStreaming ? 0.8 : 1.0)
+            .animation(
+                isStreaming
+                    ? (reduceMotion
+                        ? nil
+                        : Animation.easeInOut(duration: 1.5)
+                            .repeatForever(autoreverses: true))
+                    : nil,
+                value: isPulsing
+            )
+            .onChange(of: isStreaming) { _, newValue in
+                if newValue && !reduceMotion {
+                    isPulsing = true
+                } else {
+                    isPulsing = false
+                }
+            }
+            .onAppear {
+                if isStreaming && !reduceMotion {
+                    isPulsing = true
+                }
             }
     }
 }

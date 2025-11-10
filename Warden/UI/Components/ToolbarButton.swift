@@ -14,6 +14,7 @@ struct ToolbarButton: View {
                 if let icon = icon, !icon.isEmpty {
                     Image(systemName: icon)
                         .font(.system(size: 10, weight: .medium))
+                        .scaleEffect(isHovered ? 1.1 : 1.0)
                 }
 
                 if !text.isEmpty {

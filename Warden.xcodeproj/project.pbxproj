@@ -117,6 +117,11 @@
 		7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */; };
 		7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */; };
 		7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */; };
+		C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A502EC200A900326693 /* AnimationModifiers.swift */; };
+		C4642A562EC200C000326693 /* AnimatedStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A532EC200C000326693 /* AnimatedStateView.swift */; };
+		C4642A572EC200C000326693 /* SkeletonLoaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A542EC200C000326693 /* SkeletonLoaderView.swift */; };
+		C4642A582EC200C000326693 /* TypingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A552EC200C000326693 /* TypingIndicatorView.swift */; };
+		C4642A5A2EC200E700326693 /* AnimationShowcase.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A592EC200E700326693 /* AnimationShowcase.swift */; };
 		C46B73DF2EB1D5BB00D07415 /* TavilyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */; };
 		C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */; };
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
@@ -262,6 +267,11 @@
 		7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectorDropdown.swift; sourceTree = "<group>"; };
 		7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteModelsManager.swift; sourceTree = "<group>"; };
 		7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMStudioHandler.swift; sourceTree = "<group>"; };
+		C4642A502EC200A900326693 /* AnimationModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationModifiers.swift; sourceTree = "<group>"; };
+		C4642A532EC200C000326693 /* AnimatedStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedStateView.swift; sourceTree = "<group>"; };
+		C4642A542EC200C000326693 /* SkeletonLoaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoaderView.swift; sourceTree = "<group>"; };
+		C4642A552EC200C000326693 /* TypingIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingIndicatorView.swift; sourceTree = "<group>"; };
+		C4642A592EC200E700326693 /* AnimationShowcase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationShowcase.swift; sourceTree = "<group>"; };
 		C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyModels.swift; sourceTree = "<group>"; };
 		C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilySearchService.swift; sourceTree = "<group>"; };
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
@@ -335,6 +345,9 @@
 			isa = PBXGroup;
 			children = (
 				7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */,
+				C4642A532EC200C000326693 /* AnimatedStateView.swift */,
+				C4642A542EC200C000326693 /* SkeletonLoaderView.swift */,
+				C4642A552EC200C000326693 /* TypingIndicatorView.swift */,
 				7F4955AB2E06FB1200516E2D /* FilePreviewView.swift */,
 				C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */,
 				4A4918792D9F4186007EB4A2 /* ToolbarButton.swift */,
@@ -436,6 +449,8 @@
 			isa = PBXGroup;
 			children = (
 				4A885C532CEA3D960018BBED /* PreviewStateManager.swift */,
+				C4642A592EC200E700326693 /* AnimationShowcase.swift */,
+				C4642A512EC200A900326693 /* Modifiers */,
 				4A164BB92C962E520060ECFE /* Components */,
 				4A399C9A29BC8FEF00E98796 /* ContentView.swift */,
 				4A272A6C29F5CD9D00F93D0D /* WelcomeScreen */,
@@ -583,6 +598,14 @@
 				4AA6EF5A2C565FDF003B6D41 /* APIServiceFactory.swift */,
 			);
 			path = APIHandlers;
+			sourceTree = "<group>";
+		};
+		C4642A512EC200A900326693 /* Modifiers */ = {
+			isa = PBXGroup;
+			children = (
+				C4642A502EC200A900326693 /* AnimationModifiers.swift */,
+			);
+			path = Modifiers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -745,6 +768,7 @@
 				4AE3CEB72C93A88D00A9CF4C /* TabAPIServicesView.swift in Sources */,
 				4A8E2E0B2C56FCFD00F077F2 /* ChatViewModel.swift in Sources */,
 				7F4955AA2E06FAFF00516E2D /* FileAttachment.swift in Sources */,
+				C4642A5A2EC200E700326693 /* AnimationShowcase.swift in Sources */,
 				4A399C9B29BC8FEF00E98796 /* ContentView.swift in Sources */,
 				4A885C522CEA3B130018BBED /* HTMLPreviewView.swift in Sources */,
 				7F6024502DEA078A007AB8FC /* RephraseButton.swift in Sources */,
@@ -803,6 +827,7 @@
 				4A194C062C9633BC003C8782 /* EntityListView.swift in Sources */,
 				7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */,
 				4AE3CEB92C93AEA800A9CF4C /* APIServiceDetailView.swift in Sources */,
+				C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,
@@ -812,6 +837,9 @@
 				4A471B882C29CD3D00C66926 /* AdaptiveMathView.swift in Sources */,
 				7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */,
 				7F8D7CA12DE9CE2C003E7BCA /* ChatSharingService.swift in Sources */,
+				C4642A562EC200C000326693 /* AnimatedStateView.swift in Sources */,
+				C4642A572EC200C000326693 /* SkeletonLoaderView.swift in Sources */,
+				C4642A582EC200C000326693 /* TypingIndicatorView.swift in Sources */,
 				4A0E02852D0F571000D2FAF3 /* PerplexityHandler.swift in Sources */,
 				4AA6EF5D2C566009003B6D41 /* MessageManager.swift in Sources */,
 				C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */,

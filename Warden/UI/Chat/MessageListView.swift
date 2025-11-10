@@ -81,6 +81,7 @@ struct MessageListView: View {
                 ChatBubbleView(content: bubbleContent)
                     .id(-1)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
             } else if let error = currentError {
                 let bubbleContent = ChatBubbleContent(
                     message: "",
