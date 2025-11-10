@@ -164,6 +164,7 @@ struct ChatView: View {
             }
         }
         .navigationTitle("")
+        .toolbarBackground(.hidden)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 // Canonical model selector entrypoint

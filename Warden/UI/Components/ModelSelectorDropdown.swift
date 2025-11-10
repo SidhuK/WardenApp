@@ -492,9 +492,11 @@ struct ModelSelectorDropdown: View {
             .background(
                 RoundedRectangle(cornerRadius: 6)
                     .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
+                    .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: 6))
         .frame(maxWidth: 360)
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.16)) {
