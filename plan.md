@@ -221,11 +221,6 @@ Implement smooth animations for message arrival, typing indicators, state change
     - Ensure 60 FPS on older Macs (reduce animation complexity if needed)
     - Disable animations if "Reduce Motion" is enabled (check `@Environment(\.accessibilityReduceMotion)`)
 
-11. **Add haptic feedback (optional)**
-    - Subtle haptic when message is sent (requires macOS 11+)
-    - Haptic feedback when actions complete
-    - Use `NSHapticFeedbackManager` for tactile feedback
-
 ---
 
 ## General Implementation Notes
