@@ -275,11 +275,7 @@ struct ProjectRow: View {
                     
                     // Archive/Unarchive action
                     Button {
-                        if isArchived {
-                            store.unarchiveProject(project)
-                        } else {
-                            store.archiveProject(project)
-                        }
+                        store.setProjectArchived(project, archived: !isArchived)
                     } label: {
                         Label(isArchived ? "Unarchive" : "Archive", 
                               systemImage: isArchived ? "tray.and.arrow.up" : "tray.and.arrow.down")
@@ -406,11 +402,11 @@ struct ProjectRow: View {
             
             if isArchived {
                 Button("Unarchive Project") {
-                    store.unarchiveProject(project)
+                    store.setProjectArchived(project, archived: false)
                 }
             } else {
                 Button("Archive Project") {
-                    store.archiveProject(project)
+                    store.setProjectArchived(project, archived: true)
                 }
             }
             
@@ -747,9 +743,9 @@ struct ProjectRowInList: View {
             // Archive/Unarchive action
             Button {
                 if isArchived {
-                    store.unarchiveProject(project)
+                    store.setProjectArchived(project, archived: false)
                 } else {
-                    store.archiveProject(project)
+                    store.setProjectArchived(project, archived: true)
                 }
             } label: {
                 Label(isArchived ? "Unarchive" : "Archive", 
@@ -804,11 +800,11 @@ struct ProjectRowInList: View {
             
             if isArchived {
                 Button("Unarchive Project") {
-                    store.unarchiveProject(project)
+                    store.setProjectArchived(project, archived: false)
                 }
             } else {
                 Button("Archive Project") {
-                    store.archiveProject(project)
+                    store.setProjectArchived(project, archived: true)
                 }
             }
             

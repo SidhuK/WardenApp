@@ -125,11 +125,7 @@ struct ProjectSettingsView: View {
                 
                 // Archive/Unarchive button
                 Button(project.isArchived ? "Unarchive" : "Archive") {
-                    if project.isArchived {
-                        store.unarchiveProject(project)
-                    } else {
-                        store.archiveProject(project)
-                    }
+                    store.setProjectArchived(project, archived: !project.isArchived)
                 }
                 .foregroundColor(project.isArchived ? .accentColor : .orange)
             }
