@@ -123,7 +123,6 @@ class ImageAttachment: Identifiable, ObservableObject {
 
     func saveToEntity(image: NSImage? = nil, context: NSManagedObjectContext? = nil) {
         guard let imageToSave = image ?? self.image else { return }
-
         guard let contextToUse = context ?? managedObjectContext else { return }
 
         if context != nil {
@@ -144,32 +143,15 @@ class ImageAttachment: Identifiable, ObservableObject {
                     self.imageEntity = newEntity
                 }
 
-                let formatString = self.getFormatString(from: self.originalFileType)
-                self.imageEntity?.imageFormat = formatString
+                self.imageEntity?.imageFormat = self.getFormatString(from: self.originalFileType)
 
-                if let tiffData = imageToSave.tiffRepresentation,
-                    let bitmapImage = NSBitmapImageRep(data: tiffData)
-                {
-                    if let imageData = self.getImageData(from: bitmapImage, using: self.originalFileType) {
-                        self.imageEntity?.image = imageData
-                    }
-                    else {
-                        if let jpegData = bitmapImage.representation(
-                            using: .jpeg,
-                            properties: [.compressionFactor: 0.9]
-                        ) {
-                            self.imageEntity?.image = jpegData
-                            self.imageEntity?.imageFormat = "jpeg"
-                        }
-                    }
+                if let imageData = self.convertImageToData(imageToSave, format: self.originalFileType) {
+                    self.imageEntity?.image = imageData
                 }
 
                 if let thumbnail = self.thumbnail,
-                    let tiffData = thumbnail.tiffRepresentation,
-                    let bitmapImage = NSBitmapImageRep(data: tiffData),
-                    let jpegData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
-                {
-                    self.imageEntity?.thumbnail = jpegData
+                    let thumbnailData = self.convertImageToData(thumbnail, format: .jpeg, compression: 0.7) {
+                    self.imageEntity?.thumbnail = thumbnailData
                 }
 
                 do {
@@ -184,21 +166,12 @@ class ImageAttachment: Identifiable, ObservableObject {
 
     private func createThumbnail(from image: NSImage) {
         let thumbnailSize: CGFloat = AppConstants.thumbnailSize
-
         let size = image.size
         let aspectRatio = size.width / size.height
 
-        var newWidth: CGFloat
-        var newHeight: CGFloat
-
-        if size.width > size.height {
-            newWidth = thumbnailSize
-            newHeight = thumbnailSize / aspectRatio
-        }
-        else {
-            newHeight = thumbnailSize
-            newWidth = thumbnailSize * aspectRatio
-        }
+        let (newWidth, newHeight) = size.width > size.height
+            ? (thumbnailSize, thumbnailSize / aspectRatio)
+            : (thumbnailSize * aspectRatio, thumbnailSize)
 
         let thumbnailImage = NSImage(size: NSSize(width: newWidth, height: newHeight))
 
@@ -232,15 +205,9 @@ class ImageAttachment: Identifiable, ObservableObject {
         guard let image = self.image else { return nil }
 
         let resizedImage = resizeImageIfNeeded(image)
+        guard let data = convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
 
-        guard let tiffData = resizedImage.tiffRepresentation,
-            let bitmapImage = NSBitmapImageRep(data: tiffData),
-            let jpegData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.8])
-        else {
-            return nil
-        }
-
-        return jpegData.base64EncodedString()
+        return data.base64EncodedString()
     }
 
     private func resizeImageIfNeeded(_ image: NSImage) -> NSImage {
@@ -255,17 +222,9 @@ class ImageAttachment: Identifiable, ObservableObject {
             return image
         }
 
-        var newWidth: CGFloat
-        var newHeight: CGFloat
-
-        if size.width < size.height {
-            newWidth = maxShortSide
-            newHeight = min(maxLongSide, size.height * (maxShortSide / size.width))
-        }
-        else {
-            newHeight = maxShortSide
-            newWidth = min(maxLongSide, size.width * (maxShortSide / size.height))
-        }
+        let (newWidth, newHeight) = size.width < size.height
+            ? (maxShortSide, min(maxLongSide, size.height * (maxShortSide / size.width)))
+            : (min(maxLongSide, size.width * (maxShortSide / size.height)), maxShortSide)
 
         let newImage = NSImage(size: NSSize(width: newWidth, height: newHeight))
 
@@ -284,59 +243,29 @@ class ImageAttachment: Identifiable, ObservableObject {
 
     private func getFormatString(from type: UTType) -> String {
         switch type {
-        case .jpeg:
-            return "jpeg"
-        case .png:
-            return "png"
-        case .webP:
-            return "webp"
-        case .heic:
-            return "heic"
-        case .heif:
-            return "heif"
-        default:
-            // Try to get the preferred filename extension
-            return type.preferredFilenameExtension ?? "jpeg"
+        case .jpeg: return "jpeg"
+        case .png: return "png"
+        case .webP: return "webp"
+        case .heic: return "heic"
+        case .heif: return "heif"
+        default: return type.preferredFilenameExtension ?? "jpeg"
         }
     }
 
-    private func getImageData(from bitmapImage: NSBitmapImageRep, using type: UTType) -> Data? {
-        switch type {
+    private func convertImageToData(_ image: NSImage, format: UTType, compression: Double = 0.9) -> Data? {
+        guard let tiffData = image.tiffRepresentation,
+              let bitmapImage = NSBitmapImageRep(data: tiffData) else { return nil }
+
+        switch format {
         case .png:
             return bitmapImage.representation(using: .png, properties: [:])
         case .jpeg:
-            return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
-        case .webP:
-            // WebP is not directly supported by NSBitmapImageRep, fallback to PNG
-            return bitmapImage.representation(using: .png, properties: [:])
-        case .heic, .heif:
-            // HEIC/HEIF are not directly supported by NSBitmapImageRep, fallback to PNG
+            return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compression])
+        case .webP, .heic, .heif:
             return bitmapImage.representation(using: .png, properties: [:])
         default:
-            // For unknown types, try PNG first
             return bitmapImage.representation(using: .png, properties: [:])
-                ?? bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
-        }
-    }
-}
-
-extension URL {
-    func getUTType() -> UTType? {
-        let fileExtension = self.pathExtension.lowercased()
-
-        switch fileExtension {
-        case "jpg", "jpeg":
-            return .jpeg
-        case "png":
-            return .png
-        case "webp":
-            return .webP
-        case "heic":
-            return .heic
-        case "heif":
-            return .heif
-        default:
-            return UTType(filenameExtension: fileExtension)
+                ?? bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compression])
         }
     }
 }

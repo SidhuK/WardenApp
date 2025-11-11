@@ -74,10 +74,11 @@ struct KeyboardShortcut: Codable, Equatable {
     }
 }
 
-/// Extension to help convert string keys to KeyEquivalent
 extension KeyEquivalent {
     init?(_ string: String) {
-        switch string.lowercased() {
+        let lower = string.lowercased()
+        
+        switch lower {
         case "a": self = .init("a")
         case "b": self = .init("b")
         case "c": self = .init("c")
@@ -104,6 +105,7 @@ extension KeyEquivalent {
         case "x": self = .init("x")
         case "y": self = .init("y")
         case "z": self = .init("z")
+        case "0": self = .init("0")
         case "1": self = .init("1")
         case "2": self = .init("2")
         case "3": self = .init("3")
@@ -113,7 +115,6 @@ extension KeyEquivalent {
         case "7": self = .init("7")
         case "8": self = .init("8")
         case "9": self = .init("9")
-        case "0": self = .init("0")
         case " ", "space": self = .space
         case "tab": self = .tab
         case "return", "enter": self = .return
@@ -195,16 +196,15 @@ class HotkeyManager: ObservableObject {
     
     func updateShortcut(for actionId: String, shortcut: KeyboardShortcut) {
         shortcuts[actionId] = shortcut
-        let userDefaultsKey = "hotkey_\(actionId)"
-        UserDefaults.standard.set(shortcut.displayString, forKey: userDefaultsKey)
+        UserDefaults.standard.set(shortcut.displayString, forKey: "hotkey_\(actionId)")
     }
     
     func getShortcut(for actionId: String) -> KeyboardShortcut? {
-        return shortcuts[actionId]
+        shortcuts[actionId]
     }
     
     func getDisplayString(for actionId: String) -> String {
-        return shortcuts[actionId]?.displayString ?? ""
+        shortcuts[actionId]?.displayString ?? ""
     }
     
     func resetToDefault(for actionId: String) {
@@ -219,4 +219,4 @@ class HotkeyManager: ObservableObject {
             resetToDefault(for: action.id)
         }
     }
-} 
+}

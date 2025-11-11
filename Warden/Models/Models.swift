@@ -2,6 +2,7 @@
 import CoreData
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var id: UUID
@@ -25,12 +26,11 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var aiGeneratedSummary: String?
 
     public var messagesArray: [MessageEntity] {
-        let array = messages.array as? [MessageEntity] ?? []
-        return array
+        messages.array as? [MessageEntity] ?? []
     }
 
     public var lastMessage: MessageEntity? {
-        return messages.lastObject as? MessageEntity
+        messages.lastObject as? MessageEntity
     }
 
     public func addToMessages(_ message: MessageEntity) {
@@ -44,7 +44,16 @@ public class ChatEntity: NSManagedObject, Identifiable {
         newMessages.remove(message)
         messages = newMessages
     }
-
+    
+    public func addUserMessage(_ message: String) {
+        self.requestMessages.append(["role": "user", "content": message])
+    }
+    
+    public func clearMessages() {
+        (messages.array as? [MessageEntity])?.forEach { managedObjectContext?.delete($0) }
+        messages = NSOrderedSet()
+        newChat = true
+    }
 }
 
 public class MessageEntity: NSManagedObject, Identifiable {
@@ -117,24 +126,6 @@ struct Message: Codable, Equatable {
     }
 }
 
-extension ChatEntity {
-    func addUserMessage(_ message: String) {
-        let newMessage = ["role": "user", "content": message]
-        self.requestMessages.append(newMessage)
-    }
-}
-
-extension ChatEntity {
-    func clearMessages() {
-        let allMessages = self.messages.array as? [MessageEntity] ?? []
-        for message in allMessages {
-            self.managedObjectContext?.delete(message)
-        }
-        self.messages = NSOrderedSet()
-        self.newChat = true
-    }
-}
-
 extension APIServiceEntity: NSCopying {
     public func copy(with zone: NSZone? = nil) -> Any {
         let copy = APIServiceEntity(context: self.managedObjectContext!)
@@ -147,5 +138,28 @@ extension APIServiceEntity: NSCopying {
         copy.generateChatNames = self.generateChatNames
         copy.defaultPersona = self.defaultPersona
         return copy
+    }
+}
+
+extension URL {
+    func getUTType() -> UTType? {
+        let fileExtension = pathExtension.lowercased()
+        
+        switch fileExtension {
+        case "txt": return .plainText
+        case "csv": return .commaSeparatedText
+        case "json": return .json
+        case "xml": return .xml
+        case "html", "htm": return .html
+        case "md", "markdown": return .init(filenameExtension: "md")
+        case "rtf": return .rtf
+        case "pdf": return .pdf
+        case "jpg", "jpeg": return .jpeg
+        case "png": return .png
+        case "gif": return .gif
+        case "heic": return .heic
+        case "heif": return .heif
+        default: return UTType(filenameExtension: fileExtension) ?? .data
+        }
     }
 }
