@@ -402,7 +402,6 @@ struct ModelSelectorDropdown: View {
     private var apiServices: FetchedResults<APIServiceEntity>
     
     @State private var isExpanded = false
-    @State private var isHovered = false
     
     private var currentProviderType: String {
         chat.apiService?.type ?? AppConstants.defaultApiType
@@ -485,26 +484,9 @@ struct ModelSelectorDropdown: View {
                         .padding(.leading, 4)
                 }
             }
-            // Compact, self-contained trigger: a single rounded rect boundary, no outer pill.
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(AppConstants.backgroundChrome.opacity(isHovered ? 0.9 : 0.6))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
         .frame(maxWidth: 360)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.16)) {
-                isHovered = hovering
-            }
-        }
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
             // Directly render the full selector content, without an extra nested trigger.
             StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
