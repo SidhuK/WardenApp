@@ -14,7 +14,7 @@ class ClaudeHandler: APIService {
     let baseURL: URL
     private let apiKey: String
     let model: String
-    private let session: URLSession
+    let session: URLSession
 
     init(config: APIServiceConfiguration, session: URLSession) {
         self.name = config.name
@@ -146,7 +146,7 @@ class ClaudeHandler: APIService {
         }
     }
 
-    private func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
+    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
         -> URLRequest
     {
         var request = URLRequest(url: baseURL)
@@ -182,39 +182,7 @@ class ClaudeHandler: APIService {
         return request
     }
 
-    private func handleAPIResponse(_ response: URLResponse?, data: Data?, error: Error?) -> Result<Data?, APIError> {
-        if let error = error {
-            return .failure(.requestFailed(error))
-        }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            return .failure(.invalidResponse)
-        }
-
-        if !(200...299).contains(httpResponse.statusCode) {
-            if let data = data, let errorResponse = String(data: data, encoding: .utf8) {
-                switch httpResponse.statusCode {
-                case 401:
-                    return .failure(.unauthorized)
-                case 429:
-                    return .failure(.rateLimited)
-                case 400:
-                    return .failure(.serverError("Bad Request: \(errorResponse)"))
-                case 404:
-                    return .failure(.serverError("Model not found: \(errorResponse)"))
-                case 500...599:
-                    return .failure(.serverError("Claude API Error: \(errorResponse)"))
-                default:
-                    return .failure(.unknown("HTTP \(httpResponse.statusCode): \(errorResponse)"))
-                }
-            }
-            else {
-                return .failure(.serverError("HTTP Response code: \(httpResponse.statusCode)"))
-            }
-        }
-
-        return .success(data)
-    }
 
     private func parseJSONResponse(data: Data) -> (String, String)? {
         do {

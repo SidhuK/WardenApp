@@ -17,7 +17,7 @@ class MistralHandler: APIService {
     let baseURL: URL
     internal let apiKey: String
     let model: String
-    internal let session: URLSession
+    let session: URLSession
 
     init(config: APIServiceConfiguration, session: URLSession) {
         self.name = config.name
@@ -158,7 +158,7 @@ class MistralHandler: APIService {
         }
     }
 
-    internal func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
+    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
         -> URLRequest
     {
         var request = URLRequest(url: baseURL)
@@ -199,38 +199,7 @@ class MistralHandler: APIService {
         return request
     }
 
-    private func handleAPIResponse(_ response: URLResponse?, data: Data?, error: Error?)
-        -> Result<Data?, APIError>
-    {
-        if let error = error {
-            return .failure(.requestFailed(error))
-        }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            return .failure(.invalidResponse)
-        }
-
-        switch httpResponse.statusCode {
-        case 200...299:
-            return .success(data)
-        case 401:
-            return .failure(.unauthorized)
-        case 429:
-            return .failure(.rateLimited)
-        case 500...599:
-            if let data = data, let errorMessage = String(data: data, encoding: .utf8) {
-                return .failure(.serverError(errorMessage))
-            } else {
-                return .failure(.serverError("Unknown server error"))
-            }
-        default:
-            if let data = data, let errorMessage = String(data: data, encoding: .utf8) {
-                return .failure(.unknown(errorMessage))
-            } else {
-                return .failure(.unknown("Unknown error with status code: \(httpResponse.statusCode)"))
-            }
-        }
-    }
 
     private func parseJSONResponse(data: Data) -> (String?, Float?)? {
         do {
@@ -290,7 +259,4 @@ class MistralHandler: APIService {
         return (false, nil, nil, nil)
     }
     
-    private func isNotSSEComment(_ line: String) -> Bool {
-        return !line.starts(with: ":")
-    }
-} 
+}
