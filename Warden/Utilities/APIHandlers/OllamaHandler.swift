@@ -29,35 +29,7 @@ class OllamaHandler: APIService {
         temperature: Float,
         completion: @escaping (Result<String, APIError>) -> Void
     ) {
-        let request = prepareRequest(
-            requestMessages: requestMessages,
-            model: model,
-            temperature: temperature,
-            stream: false
-        )
-
-        session.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                let result = self.handleAPIResponse(response, data: data, error: error)
-
-                switch result {
-                case .success(let responseData):
-                    if let responseData = responseData {
-                        guard let (messageContent, _) = self.parseJSONResponse(data: responseData) else {
-                            completion(.failure(.decodingFailed("Failed to parse Claude response")))
-                            return
-                        }
-                        completion(.success(messageContent))
-                    }
-                    else {
-                        completion(.failure(.invalidResponse))
-                    }
-
-                case .failure(let error):
-                    completion(.failure(error))
-                }
-            }
-        }.resume()
+        defaultSendMessage(requestMessages, temperature: temperature, completion: completion)
     }
 
     func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
