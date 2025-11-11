@@ -169,25 +169,7 @@ class MessageManager: ObservableObject {
             print("❌ [Citations] Failed to create regex for inline citations")
         }
         
-        print("🔗 [Citations] Adding markdown sources list with \(urls.count) URLs")
-        
-        // Append markdown-formatted Sources section (kept for backward compatibility)
-        // Example:
-        // ---
-        //
-        // **Sources:**
-        //
-        // - [1](https://example.com)
-        // - [2](https://example.org)
-        result += "\n\n---\n\n**Sources:**\n\n"
-        
-        for (index, url) in urls.enumerated() {
-            let citationNumber = index + 1
-            result += "- [\(citationNumber)](\(url))\n"
-            print("🔗 [Citations] Added source [\(citationNumber)]: \(url)")
-        }
-        
-        print("🔗 [Citations] Sources list added, final length: \(result.count)")
+
         
         return result
     }
