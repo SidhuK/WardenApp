@@ -154,34 +154,13 @@ struct WelcomeScreen: View {
 }
 
 struct WelcomeIcon: View {
-    @State private var isHovered = false
-
     var body: some View {
-        ZStack {
-            // Soft, subtle background halo
-            Image("WelcomeIcon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-                .blur(radius: 10)
-                .opacity(0.16)
-
-            // Main icon
-            Image("WelcomeIcon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-        }
-        .frame(width: 120, height: 120)
-        .shadow(
-            color: Color.black.opacity(0.14),
-            radius: 10,
-            x: 0,
-            y: 4
-        )
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        Image("WelcomeIcon")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 80, height: 80)
+            .foregroundColor(AppConstants.textSecondary)
+            .opacity(0.8)
     }
 }
 
