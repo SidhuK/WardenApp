@@ -1,25 +1,22 @@
 # Warden Development Guide for AI Agents
 
-**Warden** is a native macOS AI chat client built with SwiftUI. Creator: Karat Sidhu. Platform: macOS 13.0+.
+**Warden** is a native macOS AI chat client built with SwiftUI supporting 10+ AI providers. Creator: Karat Sidhu. Platform: macOS 13.0+. See `.cursor/rules/warden-development.mdc` for comprehensive development patterns.
 
-## Build & Test Commands
-- **Build**: Open `Warden.xcodeproj` in Xcode and press Cmd+R to build and run
-- **Test All**: Cmd+U in Xcode to run all tests
-- **Test Single**: Right-click on test method in `WardenTests/` or `WardenUITests/` → Run test
-- **Format**: Use `.swift-format` config (120 char line length, 4-space indent)
+## Build & Test
+- **Build/Run**: Open `Warden.xcodeproj` in Xcode and press Cmd+R
+- **Test All**: Cmd+U in Xcode
+- **Test Single**: Right-click test method in `WardenTests/` or `WardenUITests/` → Run Test (or Cmd+U on selected test)
+- **Code Style**: 120 char lines, 4-space indent, follow existing file patterns
 
 ## Architecture
-- **MVVM Pattern**: SwiftUI views + ObservableObject ViewModels
-- **Single Source of Truth**: All Core Data operations go through `Warden/Store/ChatStore.swift`
-- **API Handlers**: All AI providers implement `Warden/Utilities/APIHandlers/APIProtocol.swift`, created via `APIServiceFactory.swift`
-- **Core Data**: Schema in `Warden/Store/warenDataModel.xcdatamodeld` (Chat, Message, Project, Persona entities)
-- **Project Structure**: `WardenApp.swift` (entry) → `UI/` (views) → `Models/` (data) → `Utilities/` (helpers)
+- **MVVM**: SwiftUI views + @ObservableObject ViewModels; see `Warden/UI/` for feature-based structure
+- **Core Data**: Single source of truth through `Warden/Store/ChatStore.swift`; schema in `warenDataModel.xcdatamodeld` (Chat, Message, Persona, APIService entities); use background contexts for heavy ops
+- **AI Integration**: All providers implement `Warden/Utilities/APIHandlers/APIProtocol.swift`; created via `APIServiceFactory.swift`; supports streaming, vision, and reasoning models
+- **Structure**: `WardenApp.swift` → `UI/` (views) → `Models/` (data) → `Utilities/` (helpers) → `Store/` (persistence)
 
-## Code Style Guidelines
-- **Naming**: Views end with `View`, ViewModels end with `ViewModel`/`Store`, Handlers end with `Handler`, all PascalCase
-- **State**: Use `@StateObject` for VM lifecycle, `@ObservedObject` for passed VMs, `@EnvironmentObject` for ChatStore, `@AppStorage` for prefs
-- **Imports**: SwiftUI, CoreData as needed. Check existing files for framework usage before adding new dependencies
-- **Privacy First**: NEVER log API keys, implement zero telemetry, all data local-only
-- **Async**: Use async/await with structured concurrency, proper task cancellation, background processing for heavy ops
-- **Error Handling**: Graceful degradation with user-friendly messages, no suppressing compiler errors without user request
-- **Security**: API keys in secure storage via Keychain, never expose in logs or code
+## Code Style & Practices
+- **Naming**: Views end `View`, ViewModels end `ViewModel`/`Store`, Handlers end `Handler`; all PascalCase; properties/methods camelCase
+- **State**: `@StateObject` (lifecycle), `@ObservedObject` (passed), `@EnvironmentObject` (ChatStore), `@AppStorage` (prefs)
+- **Privacy/Security**: NEVER log API keys; use Keychain for credentials; zero telemetry; all data local-only; graceful error handling with user alerts
+- **Async**: Use async/await with structured concurrency, proper task cancellation, background queues for heavy operations
+- **Imports**: SwiftUI, CoreData as needed; check existing files before adding dependencies; include SwiftUI previews with PreviewStateManager
