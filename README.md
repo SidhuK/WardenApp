@@ -37,6 +37,19 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ---
 
+## 🆕 v0.6 Highlights
+
+**Fresh, smooth, and speedy redesign** with major UI overhaul, performance improvements, and new capabilities:
+
+- **Web Search Integration**: Search the web in real-time with Tavily API support
+- **Redesigned Interface**: Cleaner, more modern UI with better spacing and visual hierarchy
+- **Smooth Animations**: Delightful subtle animations with reduce-motion accessibility support
+- **Performance Boost**: Database optimization, faster backups/restores, and improved stability
+- **Better Error Handling**: Graceful error messages instead of crashes
+- **macOS 26 Support**: Full compatibility with Apple's latest OS features
+
+---
+
 ## 🚀 Features
 
 ### AI Provider Support
@@ -54,16 +67,23 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 - **Deepseek**
 - **Any OpenAI-compatible API**
 
-### Other Features
+### Chat & Interaction Features
 
-- **Code Running**: Use inbuilt SwiftUI code editor to run code.
-- **Searchable Model Selector**: Find models quickly with the new search functionality in API settings
+- **Web Search**: Search the web in real-time with Tavily integration; see clickable sources directly in responses
+- **Code Running**: Use inbuilt SwiftUI code editor to run code
 - **Stop Streaming/Stop Generating**: Cancel ongoing AI responses instantly with dynamic send/stop button functionality
+- **Smooth Animations**: Subtle, delightful animations throughout with reduce-motion support
+- **Searchable Model Selector**: Find models quickly with minimalist interface design
 - **Project-Scoped New Chat**: Create new chats directly within specific projects
-- **Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
+
+### Organization & UX Features
+
 - **Native Swipe Actions**: Intuitive swipe gestures for quick delete, rename, and move operations
 - **Model Visibility Control**: Choose exactly which models appear in your selector via multi-select interface
 - **Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
+- **Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
+- **Redesigned UI**: Modern, flat interface with cleaner spacing and better visual hierarchy
+- **Streamlined Settings**: Easier preference navigation and configuration
 
 ### Projects & Organization
 
@@ -127,13 +147,13 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 ### Option 2: Build from Source (Open Source)
 
 1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/SidhuK/WardenApp.git
-   cd WardenApp
-   ```
+    ```bash
+    git clone https://github.com/SidhuK/WardenApp.git
+    cd WardenApp
+    ```
 2. **Open in Xcode**: Open `Warden.xcodeproj` in Xcode 14.3 or later
 3. **Build and Run**: Press Cmd+R to build and run the app
-4. **Requirements**: macOS 13.0+, Xcode 14.3+
+4. **Requirements**: macOS 13.0+, Xcode 14.3+ (v0.6+ supports macOS 26)
 
 ### Option 3: Gumroad (Pay What You Want)
 
