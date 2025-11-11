@@ -84,15 +84,14 @@ struct ChatListRow: View {
             Button(role: .destructive) {
                 deleteChat(chat)
             } label: {
-                Label("Delete", systemImage: "trash")
+                Image(systemName: "trash")
             }
             
             // Pin/Unpin action
             Button {
                 togglePinChat(chat)
             } label: {
-                Label(chat.isPinned ? "Unpin" : "Pin", 
-                      systemImage: chat.isPinned ? "pin.slash" : "pin")
+                Image(systemName: chat.isPinned ? "pin.slash" : "pin")
             }
             .tint(chat.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
         }
@@ -101,7 +100,7 @@ struct ChatListRow: View {
             Button {
                 showingMoveToProject = true
             } label: {
-                Label("Move to Project", systemImage: "folder.badge.plus")
+                Image(systemName: "folder.badge.plus")
             }
             .tint(Color(.systemGreen).opacity(0.7))
             
@@ -109,7 +108,7 @@ struct ChatListRow: View {
             Button {
                 renameChat(chat)
             } label: {
-                Label("Rename", systemImage: "pencil")
+                Image(systemName: "pencil")
             }
             .tint(Color(.systemTeal).opacity(0.7))
             
@@ -117,7 +116,7 @@ struct ChatListRow: View {
             Button {
                 ChatSharingService.shared.shareChat(chat, format: .markdown)
             } label: {
-                Label("Share", systemImage: "square.and.arrow.up")
+                Image(systemName: "square.and.arrow.up")
             }
             .tint(Color(.systemBlue).opacity(0.7))
             
@@ -125,7 +124,7 @@ struct ChatListRow: View {
             Button {
                 clearChat(chat)
             } label: {
-                Label("Clear", systemImage: "eraser")
+                Image(systemName: "eraser")
             }
             .tint(Color(.systemOrange).opacity(0.6))
             
@@ -134,7 +133,7 @@ struct ChatListRow: View {
                 Button {
                     chatViewModel.regenerateChatName()
                 } label: {
-                    Label("Regenerate", systemImage: "arrow.clockwise")
+                    Image(systemName: "arrow.clockwise")
                 }
                 .tint(Color(.systemPurple).opacity(0.6))
             }
