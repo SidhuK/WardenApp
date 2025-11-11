@@ -52,18 +52,18 @@ struct MarkdownView: View {
                 elements.append(.codeBlock(code: codeBlock.code, language: codeBlock.language))
                 
             case let list as UnorderedList:
-                let items = list.children.compactMap { listItem -> String? in
+                let items = list.children.compactMap { listItem -> NSAttributedString? in
                     if let listItem = listItem as? ListItem {
-                        return extractPlainText(from: listItem.children)
+                        return createAttributedText(from: listItem.children)
                     }
                     return nil
                 }
                 elements.append(.unorderedList(items))
                 
             case let list as OrderedList:
-                let items = list.children.compactMap { listItem -> String? in
+                let items = list.children.compactMap { listItem -> NSAttributedString? in
                     if let listItem = listItem as? ListItem {
-                        return extractPlainText(from: listItem.children)
+                        return createAttributedText(from: listItem.children)
                     }
                     return nil
                 }
@@ -230,9 +230,7 @@ struct MarkdownView: View {
                         Text("•")
                             .foregroundColor(textColor)
                             .font(.system(size: effectiveFontSize))
-                        Text(item)
-                            .foregroundColor(textColor)
-                            .font(.system(size: effectiveFontSize))
+                        AttributedText(item)
                             .textSelection(.enabled)
                         Spacer()
                     }
@@ -248,9 +246,7 @@ struct MarkdownView: View {
                         Text("\(index + 1).")
                             .foregroundColor(textColor)
                             .font(.system(size: effectiveFontSize))
-                        Text(item)
-                            .foregroundColor(textColor)
-                            .font(.system(size: effectiveFontSize))
+                        AttributedText(item)
                             .textSelection(.enabled)
                         Spacer()
                     }
@@ -313,11 +309,11 @@ private struct MarkdownElement: Identifiable {
         MarkdownElement(elementType: .codeBlock(code: code, language: language))
     }
     
-    static func unorderedList(_ items: [String]) -> MarkdownElement {
+    static func unorderedList(_ items: [NSAttributedString]) -> MarkdownElement {
         MarkdownElement(elementType: .unorderedList(items))
     }
     
-    static func orderedList(_ items: [String]) -> MarkdownElement {
+    static func orderedList(_ items: [NSAttributedString]) -> MarkdownElement {
         MarkdownElement(elementType: .orderedList(items))
     }
     
@@ -332,8 +328,8 @@ private enum MarkdownElementType {
     case heading(level: Int, text: String)
     case paragraph(NSAttributedString)
     case codeBlock(code: String, language: String?)
-    case unorderedList([String])
-    case orderedList([String])
+    case unorderedList([NSAttributedString])
+    case orderedList([NSAttributedString])
     case blockQuote(String)
     case thematicBreak
 } 
