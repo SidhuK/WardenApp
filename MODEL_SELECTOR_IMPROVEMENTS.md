@@ -5,6 +5,27 @@ Enhance the model selector experience by combining quick-access patterns, richer
 
 ---
 
+## Implementation Status
+
+### ✅ Phase 1: Recently Used Models (#3) + Smart Sorting (#4) - COMPLETED
+- **RecentModelsManager**: Tracks model usage with timestamps, auto-expiry after 30 days
+- **Smart Sorting**: Models sorted by score (favorites 1000pts + recency decay 100-0pts)
+- **Usage Tracking**: Automatic recording when model is switched
+- Files: `RecentModelsManager.swift`, updated `ModelSelectorDropdown.swift`
+
+### ✅ Phase 2: Quick-Access Bar (#1) + Inline Info (#7) - COMPLETED  
+- **FavoriteQuickAccessBar**: Toolbar shows top 4 favorited models as blue pills
+- **ModelInfoTooltip**: Hover popover displays capabilities, last used date, provider
+- **Integration**: Quick-access buttons instantly switch models and record usage
+- Files: `FavoriteQuickAccessBar.swift`, `ModelInfoTooltip.swift`, updated `ChatView.swift`
+
+### ⏳ Phase 3: Model Metadata (#2) - IN PROGRESS
+- Provider API integration for real-time pricing/capability data
+- Metadata caching with freshness tracking (30-day refresh)
+- Pricing badges and detailed tooltips
+
+---
+
 ## 1. Quick-Access Favorite Bar
 **Goal:** Show top 3-4 favorited models as inline buttons in the toolbar for instant switching.
 

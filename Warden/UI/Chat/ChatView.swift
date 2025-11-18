@@ -169,9 +169,14 @@ struct ChatView: View {
         .toolbarColorScheme(colorScheme, for: .windowToolbar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                // Canonical model selector entrypoint
-                ModelSelectorDropdown(chat: chat)
-                    .padding(.top, 6)
+                HStack(spacing: 12) {
+                    // Quick-access favorite bar
+                    FavoriteQuickAccessBar(chat: chat)
+                    
+                    // Canonical model selector entrypoint
+                    ModelSelectorDropdown(chat: chat)
+                }
+                .padding(.top, 6)
             }
             
             ToolbarItem(placement: .automatic) {

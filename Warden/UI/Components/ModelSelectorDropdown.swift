@@ -8,6 +8,7 @@ struct StandaloneModelSelector: View {
     @StateObject private var modelCache = ModelCacheManager.shared
     @StateObject private var selectedModelsManager = SelectedModelsManager.shared
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
+    @StateObject private var recentModelsManager = RecentModelsManager.shared
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
     @State private var showOnlyFavorites = false
@@ -86,19 +87,36 @@ struct StandaloneModelSelector: View {
             }
         }
         
-        // Sort models within each provider: favorites first, then alphabetically
+        // Smart sorting: favorites → recently used → alphabetical
         return modelsToFilter.map { provider, models in
             let sortedModels = models.sorted { model1, model2 in
-                let isFav1 = favoriteManager.isFavorite(provider: provider, model: model1)
-                let isFav2 = favoriteManager.isFavorite(provider: provider, model: model2)
+                let score1 = calculateModelScore(model1, provider: provider)
+                let score2 = calculateModelScore(model2, provider: provider)
                 
-                if isFav1 != isFav2 {
-                    return isFav1 // Favorites first
+                if score1 != score2 {
+                    return score1 > score2 // Higher score first
                 }
-                return model1 < model2 // Then alphabetically
+                return model1 < model2 // Alphabetical tiebreaker
             }
             return (provider: provider, models: sortedModels)
         }
+    }
+    
+    private func calculateModelScore(_ model: String, provider: String) -> Int {
+        var score = 0
+        
+        // Favorite bonus (highest priority)
+        if favoriteManager.isFavorite(provider: provider, model: model) {
+            score += 1000
+        }
+        
+        // Recently used bonus (recency-based decay)
+        if let lastUsed = recentModelsManager.getLastUsedDate(provider: provider, modelId: model) {
+            let daysSinceUse = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 999
+            score += max(0, 100 - daysSinceUse)
+        }
+        
+        return score
     }
     
     var body: some View {
@@ -308,6 +326,15 @@ struct StandaloneModelSelector: View {
         .onHover { hovering in
             hoveredItem = hovering ? "\(provider)_\(model)" : nil
         }
+        .popover(isPresented: .constant(hoveredItem == "\(provider)_\(model)"), arrowEdge: .leading) {
+            ModelInfoTooltip(
+                provider: provider,
+                model: model,
+                isReasoningModel: isReasoningModel(model),
+                isVisionModel: isVisionModel(provider: provider, model: model),
+                lastUsedDate: recentModelsManager.getLastUsedDate(provider: provider, modelId: model)
+            )
+        }
     }
     
     private func isCurrentlySelected(provider: String, model: String) -> Bool {
@@ -355,6 +382,9 @@ struct StandaloneModelSelector: View {
             print("⚠️ API service \(service.name ?? "Unknown") has invalid URL")
             return
         }
+        
+        // Record usage for recently used models tracking
+        recentModelsManager.recordUsage(provider: providerType, modelId: model)
         
         // Update chat configuration
         chat.apiService = service
