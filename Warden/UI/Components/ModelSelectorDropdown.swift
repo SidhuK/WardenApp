@@ -12,7 +12,6 @@ struct StandaloneModelSelector: View {
     @StateObject private var metadataCache = ModelMetadataCache.shared
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
-    @State private var showOnlyFavorites = false
     @State private var isHovered = false
     
     // Allow parent to control expanded state when used in popover
@@ -75,16 +74,6 @@ struct StandaloneModelSelector: View {
                     provider.lowercased().contains(searchText.lowercased())
                 }
                 return filteredModels.isEmpty ? nil : (provider: provider, models: filteredModels)
-            }
-        }
-        
-        // Apply favorites filter
-        if showOnlyFavorites {
-            modelsToFilter = modelsToFilter.compactMap { provider, models in
-                let favoriteModels = models.filter { model in
-                    favoriteManager.isFavorite(provider: provider, model: model)
-                }
-                return favoriteModels.isEmpty ? nil : (provider: provider, models: favoriteModels)
             }
         }
         
@@ -169,18 +158,15 @@ struct StandaloneModelSelector: View {
     
     private var popoverContent: some View {
         VStack(spacing: 0) {
-            // Subtle top padding to separate from toolbar, no heavy border container.
-            HStack(spacing: 8) {
-                searchBar
-                favoritesToggle
-            }
-            .padding(.horizontal, 8)
-            .padding(.top, 8)
+            // Search bar
+            searchBar
+                .padding(.horizontal, 8)
+                .padding(.top, 8)
             
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0) {
-                    // Favorites Section (only show if not searching and not filtering)
-                    if !searchText.isEmpty == false && !showOnlyFavorites && !favoriteModelsFlat.isEmpty {
+                    // Favorites Section (only show if not searching)
+                    if searchText.isEmpty && !favoriteModelsFlat.isEmpty {
                         sectionHeader("Favorites")
                         
                         ForEach(Array(favoriteModelsFlat.enumerated()), id: \.offset) { idx, fav in
@@ -191,8 +177,8 @@ struct StandaloneModelSelector: View {
                             .padding(.vertical, 4)
                     }
                     
-                    // Recently Used Section (only show if not searching and not filtering)
-                    if !searchText.isEmpty == false && !showOnlyFavorites && !recentlyUsedModelsFlat.isEmpty {
+                    // Recently Used Section (only show if not searching)
+                    if searchText.isEmpty && !recentlyUsedModelsFlat.isEmpty {
                         sectionHeader("Recently Used")
                         
                         ForEach(Array(recentlyUsedModelsFlat.enumerated()), id: \.offset) { idx, recent in
@@ -268,56 +254,7 @@ struct StandaloneModelSelector: View {
         )
     }
     
-    private var favoritesToggle: some View {
-        HStack(spacing: 0) {
-            // All button
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    showOnlyFavorites = false
-                }
-            }) {
-                Text("All")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(!showOnlyFavorites ? .primary : .secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(!showOnlyFavorites ? Color.accentColor.opacity(0.1) : Color.clear)
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            
-            // Favorites button
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    showOnlyFavorites = true
-                }
-            }) {
-                Text("Favorites")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(showOnlyFavorites ? .primary : .secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(showOnlyFavorites ? Color.accentColor.opacity(0.1) : Color.clear)
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(AppConstants.backgroundChrome)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
-                )
-        )
-    }
-    
+
     private func providerSection(provider: String, models: [String]) -> some View {
         VStack(spacing: 0) {
             // Provider header
