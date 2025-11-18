@@ -241,9 +241,13 @@ struct ChatListRow: View {
         alert.accessoryView = textField
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                chat.name = textField.stringValue
+                let newName = textField.stringValue.trimmingCharacters(in: .whitespaces)
+                guard !newName.isEmpty else { return }
+                
+                chat.name = newName
+                chat.updatedDate = Date()
                 do {
-                    try viewContext.save()
+                    try viewContext.saveWithRetry(attempts: 3)
                 }
 
                 catch {

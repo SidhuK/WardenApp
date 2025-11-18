@@ -187,8 +187,8 @@ class MessageManager: ObservableObject {
         print("🔍 [WebSearch] message: \(message)")
         
         var finalMessage = message
-        
-        // Check if web search is enabled (either by toggle or by command)
+         
+         // Check if web search is enabled (either by toggle or by command)
         let searchCheck = isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
         
@@ -224,7 +224,13 @@ class MessageManager: ObservableObject {
                 print("🔍 [WebSearch] Final message prepared with search results")
                 
                 // Pass URLs through to sendMessageStream
-                sendMessageStream(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls, completion: completion)
+                sendMessageStream(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls) { [weak self] result in
+                    // Auto-rename chat if needed after successful search response
+                    if case .success = result {
+                        self?.generateChatNameIfNeeded(chat: chat)
+                    }
+                    completion(result)
+                }
                 return
             } catch {
                 print("❌ [WebSearch] Search failed with error: \(error)")
@@ -236,7 +242,9 @@ class MessageManager: ObservableObject {
             print("🔍 [WebSearch] Search skipped - shouldSearch is false")
         }
         
-        sendMessageStream(finalMessage, in: chat, contextSize: contextSize, completion: completion)
+        sendMessageStream(finalMessage, in: chat, contextSize: contextSize) { result in
+            completion(result)
+        }
     }
 
     @MainActor
@@ -289,7 +297,13 @@ class MessageManager: ObservableObject {
                 print("🔍 [WebSearch NON-STREAM] Final message prepared with search results")
                 
                 // Pass URLs through to sendMessage
-                sendMessage(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls, completion: completion)
+                sendMessage(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls) { [weak self] result in
+                    // Auto-rename chat if needed after successful search response
+                    if case .success = result {
+                        self?.generateChatNameIfNeeded(chat: chat)
+                    }
+                    completion(result)
+                }
                 return
             } catch {
                 print("❌ [WebSearch NON-STREAM] Search failed with error: \(error)")
@@ -301,7 +315,9 @@ class MessageManager: ObservableObject {
             print("🔍 [WebSearch NON-STREAM] Search skipped - shouldSearch is false")
         }
         
-        sendMessage(finalMessage, in: chat, contextSize: contextSize, completion: completion)
+        sendMessage(finalMessage, in: chat, contextSize: contextSize) { result in
+            completion(result)
+        }
     }
     
     func sendMessage(
@@ -324,6 +340,8 @@ class MessageManager: ObservableObject {
                 addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
                 addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
                 self.viewContext.saveWithRetry(attempts: 1)
+                // Auto-rename chat if needed
+                generateChatNameIfNeeded(chat: chat)
                 completion(.success(()))
 
             case .failure(let error):
@@ -432,19 +450,23 @@ class MessageManager: ObservableObject {
                 }
                 
                 // Normal completion path - stream finished successfully
-                guard let lastMessage = chat.lastMessage else {
-                    // If no last message exists, create a new one
-                    print("⚠️ Warning: No last message found after streaming, creating new message")
-                    addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                    addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
-                    completion(.success(()))
-                    return
-                }
-                
-                // Final update: append citations now
-                updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
-                addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
-                completion(.success(()))
+                 guard let lastMessage = chat.lastMessage else {
+                     // If no last message exists, create a new one
+                     print("⚠️ Warning: No last message found after streaming, creating new message")
+                     addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                     addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                     // Auto-rename chat if needed
+                     generateChatNameIfNeeded(chat: chat)
+                     completion(.success(()))
+                     return
+                 }
+                 
+                 // Final update: append citations now
+                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
+                 addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                 // Auto-rename chat if needed
+                 generateChatNameIfNeeded(chat: chat)
+                 completion(.success(()))
             }
             catch is CancellationError {
                 print("⚠️ Streaming cancelled via exception")
@@ -487,9 +509,17 @@ class MessageManager: ObservableObject {
     }
 
     func generateChatNameIfNeeded(chat: ChatEntity, force: Bool = false) {
-        guard force || chat.name == "" || chat.name == "New Chat", chat.messages.count > 0 else {
+        guard force || chat.name == "" || chat.name == "New Chat", chat.messages.count > 1 else {
             #if DEBUG
-                print("Chat name not needed, skipping generation")
+                print("Chat name not needed (requires at least 2 messages), skipping generation")
+            #endif
+            return
+        }
+        
+        // Only generate names if explicitly enabled on the API service
+        guard chat.apiService?.generateChatNames ?? false else {
+            #if DEBUG
+                print("Chat name generation not enabled for this API service, skipping")
             #endif
             return
         }
@@ -499,17 +529,36 @@ class MessageManager: ObservableObject {
             chat: chat,
             contextSize: 3
         )
+        
+        // Use a timeout-based approach to prevent hanging
+        let deadline = Date(timeIntervalSinceNow: 5.0) // 5 second timeout
+        
         apiService.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) {
             [weak self] result in
             guard let self = self else { return }
+            
+            // Skip if deadline has passed
+            guard Date() < deadline else {
+                print("⚠️ Chat name generation timeout, skipping")
+                return
+            }
 
             switch result {
             case .success(let messageBody):
                 let chatName = self.sanitizeChatName(messageBody)
+                guard !chatName.isEmpty else {
+                    print("⚠️ Generated chat name was empty, skipping")
+                    return
+                }
                 chat.name = chatName
+                chat.updatedDate = Date()
                 self.viewContext.saveWithRetry(attempts: 3)
+                print("✅ Chat name generated: \(chatName)")
             case .failure(let error):
-                print("Error generating chat name: \(error)")
+                // Silently skip - chat name generation is optional
+                #if DEBUG
+                    print("ℹ️ Chat name generation skipped: \(error)")
+                #endif
             }
         }
     }
