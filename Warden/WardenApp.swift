@@ -189,6 +189,7 @@ struct WardenApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 800)
+        
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Warden") {
@@ -219,10 +220,7 @@ struct WardenApp: App {
             
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("OpenInlineSettings"),
-                        object: nil
-                    )
+                    SettingsWindowManager.shared.openSettingsWindow()
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }

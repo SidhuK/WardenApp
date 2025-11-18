@@ -128,6 +128,7 @@
 		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
 		C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479718C2EBF3E410097C000 /* MessageListView.swift */; };
+		C49FCBE42ECC2439003B51AF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE32ECC2439003B51AF /* SettingsView.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 /* End PBXBuildFile section */
 
@@ -278,6 +279,7 @@
 		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
 		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
+		C49FCBE32ECC2439003B51AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -401,6 +403,7 @@
 				4A164BB82C95CC450060ECFE /* TabAPIServices */,
 				4AE3CEB62C93A86F00A9CF4C /* TabAPIServicesView.swift */,
 				C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */,
+				C49FCBE32ECC2439003B51AF /* SettingsView.swift */,
 				7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */,
 				4A399CC329BCE67800E98796 /* PreferencesView.swift */,
 				4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */,
@@ -834,6 +837,7 @@
 				7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */,
 				C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */,
 				7F4B74C22DFFC78B00C844A2 /* TabHotkeysView.swift in Sources */,
+				C49FCBE42ECC2439003B51AF /* SettingsView.swift in Sources */,
 				4A471B882C29CD3D00C66926 /* AdaptiveMathView.swift in Sources */,
 				7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */,
 				7F8D7CA12DE9CE2C003E7BCA /* ChatSharingService.swift in Sources */,

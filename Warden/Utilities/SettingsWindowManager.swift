@@ -13,17 +13,17 @@ class SettingsWindowManager: ObservableObject {
     
     func openSettingsWindow() {
         // If window already exists, bring it to front
-        if let existingWindow = settingsWindow {
+        if let existingWindow = settingsWindow, existingWindow.isVisible {
             existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
         
         // Create the settings view
-        let settingsView = PreferencesView()
+        let settingsView = SettingsView()
             .environment(\.managedObjectContext, PersistenceController.shared.container.viewContext)
         
-        // Create and configure the window
+        // Create and configure the window with no title bar
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 900, height: 800),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -35,7 +35,8 @@ class SettingsWindowManager: ObservableObject {
         window.center()
         window.setFrameAutosaveName("SettingsWindow")
         window.isReleasedWhenClosed = false
-        window.title = "Warden Settings"
+        // Set empty title to work with hiddenTitleBar appearance
+        window.title = ""
         
         // Create and set delegate
         let delegate = SettingsWindowDelegate { [weak self] in
@@ -58,11 +59,6 @@ class SettingsWindowManager: ObservableObject {
         settingsWindow = nil
         windowDelegate = nil
     }
-    
-    func windowWillClose() {
-        settingsWindow = nil
-        windowDelegate = nil
-    }
 }
 
 // MARK: - Window Delegate
@@ -73,7 +69,7 @@ private class SettingsWindowDelegate: NSObject, NSWindowDelegate {
         self.onWindowClose = onWindowClose
     }
     
-    public func windowWillClose(_ notification: Notification) {
+    func windowWillClose(_ notification: Notification) {
         onWindowClose()
     }
-} 
+}
