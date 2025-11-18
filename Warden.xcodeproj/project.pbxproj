@@ -133,6 +133,8 @@
 		C49FCBEE2ECC2D99003B51AF /* ModelInfoTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */; };
 		C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */; };
 		C4EB88D62ECC421C00AA0829 /* ModernButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D52ECC421C00AA0829 /* ModernButton.swift */; };
+		C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */; };
+		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 /* End PBXBuildFile section */
 
@@ -288,6 +290,8 @@
 		C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfoTooltip.swift; sourceTree = "<group>"; };
 		C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D52ECC421C00AA0829 /* ModernButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernButton.swift; sourceTree = "<group>"; };
+		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
+		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -495,8 +499,10 @@
 				C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */,
 				C49FCBE72ECC2D42003B51AF /* RecentModelsManager.swift */,
 				C4870E712ECC2EA2003930F7 /* ModelMetadata.swift */,
+				C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
 				C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */,
+				C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */,
 				C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */,
 				C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */,
 				7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */,
@@ -819,6 +825,7 @@
 				4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */,
 				4A254A6F2CEA6A2400F66935 /* CodeViewModel.swift in Sources */,
 				4A2B9E952CE1272E00C8042F /* RequestMessagesTransformer.swift in Sources */,
+				C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */,
 				4AB4B0912D778B1D00CA41B6 /* OpenRouterHandler.swift in Sources */,
 				4A5F64BA29C64F9D000403F7 /* ChatView.swift in Sources */,
 				4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */,
@@ -848,6 +855,7 @@
 				C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
+				C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,
 				7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */,
 				C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */,

@@ -8,5 +8,13 @@
 	<array>
 		<string>FiraCode-VF.ttf</string>
 	</array>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/SidhuK/WardenApp/main/appcast.xml</string>
+	<key>SUShowReleaseNotes</key>
+	<true/>
+	<key>SUAutomaticallyChecksForUpdates</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 </dict>
 </plist>
