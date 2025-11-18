@@ -295,82 +295,104 @@ struct ModelSelectionView: View {
 }
 
 struct ModelSelectionRow: View {
-    let model: AIModel
-    let serviceType: String
-    let isSelected: Bool
-    let onToggle: (Bool) -> Void
-    let onFavoriteToggle: () -> Void
-    
-    @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    
-    private var isFavorite: Bool {
-        favoriteManager.isFavorite(provider: serviceType, model: model.id)
-    }
-    
-    private var isReasoningModel: Bool {
-        AppConstants.openAiReasoningModels.contains(model.id) ||
-        model.id.lowercased().contains("reasoning") ||
-        model.id.lowercased().contains("thinking")
-    }
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            // Selection checkbox
-            Button(action: {
-                onToggle(!isSelected)
-            }) {
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                    .font(.system(size: 14))
-            }
-            .buttonStyle(.plain)
-            
-            // Model info
-            HStack(spacing: 6) {
-                Text(model.id)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.primary)
-                
-                if isReasoningModel {
-                    Text("thinking")
-                        .font(.caption2)
-                        .foregroundColor(.purple.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(.purple.opacity(0.1))
-                        )
-                }
-                
-                Spacer()
-                
-                // Favorite button
-                Button(action: onFavoriteToggle) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .foregroundColor(isFavorite ? .yellow : .secondary)
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(.plain)
-                .help(isFavorite ? "Remove from favorites" : "Add to favorites")
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onToggle(!isSelected)
-        }
-        .background(
-            isSelected ? Color.accentColor.opacity(0.1) : Color.clear
-        )
-        .cornerRadius(4)
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(isFavorite ? Color.yellow.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
-    }
-}
+     let model: AIModel
+     let serviceType: String
+     let isSelected: Bool
+     let onToggle: (Bool) -> Void
+     let onFavoriteToggle: () -> Void
+     
+     @StateObject private var favoriteManager = FavoriteModelsManager.shared
+     @StateObject private var metadataCache = ModelMetadataCache.shared
+     
+     private var isFavorite: Bool {
+         favoriteManager.isFavorite(provider: serviceType, model: model.id)
+     }
+     
+     private var isReasoningModel: Bool {
+         AppConstants.openAiReasoningModels.contains(model.id) ||
+         model.id.lowercased().contains("reasoning") ||
+         model.id.lowercased().contains("thinking")
+     }
+     
+     var body: some View {
+         VStack(alignment: .leading, spacing: 6) {
+             HStack(spacing: 8) {
+                 // Selection checkbox
+                 Button(action: {
+                     onToggle(!isSelected)
+                 }) {
+                     Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                         .foregroundColor(isSelected ? .accentColor : .secondary)
+                         .font(.system(size: 14))
+                 }
+                 .buttonStyle(.plain)
+                 
+                 // Model info
+                 HStack(spacing: 6) {
+                     Text(model.id)
+                         .font(.system(size: 12, design: .monospaced))
+                         .foregroundColor(.primary)
+                     
+                     if isReasoningModel {
+                         Text("thinking")
+                             .font(.caption2)
+                             .foregroundColor(.purple.opacity(0.8))
+                             .padding(.horizontal, 4)
+                             .padding(.vertical, 1)
+                             .background(
+                                 RoundedRectangle(cornerRadius: 3)
+                                     .fill(.purple.opacity(0.1))
+                             )
+                     }
+                     
+                     Spacer()
+                     
+                     // Favorite button
+                     Button(action: onFavoriteToggle) {
+                         Image(systemName: isFavorite ? "star.fill" : "star")
+                             .foregroundColor(isFavorite ? .yellow : .secondary)
+                             .font(.system(size: 12))
+                     }
+                     .buttonStyle(.plain)
+                     .help(isFavorite ? "Remove from favorites" : "Add to favorites")
+                 }
+             }
+             
+             // Pricing info if available
+             if let metadata = metadataCache.getMetadata(provider: serviceType, modelId: model.id),
+                metadata.hasPricing,
+                let pricing = metadata.pricing,
+                let inputPrice = pricing.inputPer1M {
+                 HStack(spacing: 8) {
+                     Text(metadata.costIndicator)
+                         .font(.system(size: 10, weight: .semibold))
+                         .foregroundColor(.orange)
+                     
+                     Text("$\(String(format: "%.5f", inputPrice))/1M")
+                         .font(.system(size: 9, weight: .regular))
+                         .foregroundColor(.secondary)
+                     
+                     Spacer()
+                 }
+                 .padding(.leading, 22)
+             }
+         }
+         .padding(.horizontal, 8)
+         .padding(.vertical, 6)
+         .contentShape(Rectangle())
+         .onTapGesture {
+             onToggle(!isSelected)
+         }
+         .background(
+             isSelected ? Color.accentColor.opacity(0.1) : Color.clear
+         )
+         .cornerRadius(4)
+         .overlay(
+             RoundedRectangle(cornerRadius: 4)
+                 .stroke(isFavorite ? Color.yellow.opacity(0.3) : Color.clear, lineWidth: 1)
+         )
+     }
+ }
 
 #Preview {
     ModelSelectionView(

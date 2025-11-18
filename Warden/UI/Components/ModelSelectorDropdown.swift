@@ -288,50 +288,71 @@ struct StandaloneModelSelector: View {
             handleModelChange(providerType: provider, model: model)
             onDismiss?()
         }) {
-            HStack(spacing: 8) {
-                // Current selection indicator
-                Circle()
-                    .fill(isCurrentlySelected(provider: provider, model: model) ? 
-                          Color.accentColor : Color.clear)
-                    .frame(width: 8, height: 8)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
-                    )
-                
-                Text(model)
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundColor(isCurrentlySelected(provider: provider, model: model) ? .accentColor : AppConstants.textPrimary)
-                    .lineLimit(1)
-                
-                Spacer()
-                
-                HStack(spacing: 6) {
-                    // Favorite star
-                    Button(action: {
-                        favoriteManager.toggleFavorite(provider: provider, model: model)
-                    }) {
-                        Image(systemName: favoriteManager.isFavorite(provider: provider, model: model) ? "star.fill" : "star")
-                            .font(.system(size: 9))
-                            .foregroundColor(favoriteManager.isFavorite(provider: provider, model: model) ? .yellow : .secondary.opacity(0.6))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Toggle favorite")
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    // Current selection indicator
+                    Circle()
+                        .fill(isCurrentlySelected(provider: provider, model: model) ? 
+                              Color.accentColor : Color.clear)
+                        .frame(width: 8, height: 8)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
+                        )
                     
-                    // Model type indicators
-                    if isReasoningModel(model) {
-                        Image(systemName: "brain")
-                            .font(.system(size: 9))
+                    Text(model)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(isCurrentlySelected(provider: provider, model: model) ? .accentColor : AppConstants.textPrimary)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 6) {
+                        // Favorite star
+                        Button(action: {
+                            favoriteManager.toggleFavorite(provider: provider, model: model)
+                        }) {
+                            Image(systemName: favoriteManager.isFavorite(provider: provider, model: model) ? "star.fill" : "star")
+                                .font(.system(size: 9))
+                                .foregroundColor(favoriteManager.isFavorite(provider: provider, model: model) ? .yellow : .secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Toggle favorite")
+                        
+                        // Model type indicators
+                        if isReasoningModel(model) {
+                            Image(systemName: "brain")
+                                .font(.system(size: 9))
+                                .foregroundColor(.orange)
+                                .help("Reasoning model")
+                        }
+                        
+                        if isVisionModel(provider: provider, model: model) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 9))
+                                .foregroundColor(.blue)
+                                .help("Vision model")
+                        }
+                    }
+                }
+                
+                // Pricing info if available
+                if let metadata = metadataCache.getMetadata(provider: provider, modelId: model),
+                   metadata.hasPricing,
+                   let pricing = metadata.pricing,
+                   let inputPrice = pricing.inputPer1M {
+                    HStack(spacing: 8) {
+                        Text(metadata.costIndicator)
+                            .font(.system(size: 9, weight: .semibold))
                             .foregroundColor(.orange)
-                            .help("Reasoning model")
+                        
+                        Text("$\(String(format: "%.5f", inputPrice))/1M")
+                            .font(.system(size: 9, weight: .regular))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
                     }
-                    
-                    if isVisionModel(provider: provider, model: model) {
-                        Image(systemName: "eye")
-                            .font(.system(size: 9))
-                            .foregroundColor(.blue)
-                            .help("Vision model")
-                    }
+                    .padding(.leading, 16)
                 }
             }
             .padding(.horizontal, 12)
