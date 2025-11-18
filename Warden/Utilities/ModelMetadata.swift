@@ -127,4 +127,89 @@ extension PricingInfo {
         outputPer1M: 0.0,
         source: "documentation"
     )
+    
+    /// Mistral pricing
+    static let mistralSmall = PricingInfo(
+        inputPer1M: 0.00014,
+        outputPer1M: 0.00042,
+        source: "mistral-api"
+    )
+    
+    static let mistralMedium = PricingInfo(
+        inputPer1M: 0.00024,
+        outputPer1M: 0.00072,
+        source: "mistral-api"
+    )
+    
+    static let mistralLarge = PricingInfo(
+        inputPer1M: 0.0008,
+        outputPer1M: 0.0024,
+        source: "mistral-api"
+    )
+    
+    /// Google Gemini pricing
+    static let geminiFlash = PricingInfo(
+        inputPer1M: 0.075,
+        outputPer1M: 0.30,
+        source: "google-cloud-pricing"
+    )
+    
+    static let geminipro = PricingInfo(
+        inputPer1M: 0.50,
+        outputPer1M: 1.50,
+        source: "google-cloud-pricing"
+    )
+    
+    /// xAI pricing
+    static let groxPro = PricingInfo(
+        inputPer1M: 0.05,
+        outputPer1M: 0.15,
+        source: "xai-api"
+    )
+    
+    /// Perplexity pricing
+    static let perplexityProOnline = PricingInfo(
+        inputPer1M: 0.003,
+        outputPer1M: 0.003,
+        source: "perplexity-api"
+    )
+    
+    /// DeepSeek pricing
+    static let deepseekChat = PricingInfo(
+        inputPer1M: 0.00014,
+        outputPer1M: 0.00028,
+        source: "deepseek-api"
+    )
+    
+    /// Claude pricing (newer models - January 2025 pricing)
+    static let claudeOpus25 = PricingInfo(
+        inputPer1M: 0.015,
+        outputPer1M: 0.075,
+        source: "anthropic-api"
+    )
+    
+    static let claudeSonnet4 = PricingInfo(
+        inputPer1M: 0.003,
+        outputPer1M: 0.015,
+        source: "anthropic-api"
+    )
+}
+
+// MARK: - Helper for self-hosted/free models
+
+extension ModelMetadata {
+    /// Create free model metadata for self-hosted providers
+    static func freeSelfHosted(modelId: String, provider: String, context: Int?, capabilities: [String] = []) -> ModelMetadata {
+        return ModelMetadata(
+            modelId: modelId,
+            provider: provider,
+            pricing: PricingInfo(inputPer1M: 0.0, outputPer1M: 0.0, source: "self-hosted"),
+            maxContextTokens: context,
+            capabilities: capabilities,
+            latency: nil,
+            costLevel: .cheap,
+            lastUpdated: Date(),
+            source: .providerDocumentation
+        )
+    }
 }

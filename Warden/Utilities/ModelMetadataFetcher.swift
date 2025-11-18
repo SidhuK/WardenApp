@@ -23,6 +23,18 @@ class ModelMetadataFetcherFactory {
             return GoogleMetadataFetcher()
         case "groq":
             return GroqMetadataFetcher()
+        case "openrouter":
+            return OpenRouterMetadataFetcher()
+        case "mistral":
+            return MistralMetadataFetcher()
+        case "xai":
+            return XAIMetadataFetcher()
+        case "perplexity":
+            return PerplexityMetadataFetcher()
+        case "deepseek":
+            return DeepSeekMetadataFetcher()
+        case "ollama", "lmstudio":
+            return LocalModelMetadataFetcher()
         default:
             return GenericMetadataFetcher(provider: provider)
         }
