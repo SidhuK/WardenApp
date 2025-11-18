@@ -50,7 +50,9 @@ struct ContentView: View {
                 showingEditProject: $showingEditProject,
                 projectToEdit: $projectToEdit,
                 onNewChat: newChat,
-                onOpenPreferences: openInlineSettings
+                onOpenPreferences: {
+                    SettingsWindowManager.shared.openSettingsWindow()
+                }
             )
             .navigationSplitViewColumnWidth(
                 min: 180,
