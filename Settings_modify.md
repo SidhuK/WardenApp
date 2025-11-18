@@ -12,11 +12,11 @@
 ## Implementation Plan
 
 ### Phase 1: Window Architecture
-- [ ] Create new `SettingsWindow` or `PreferencesWindow` scene
-- [ ] Create `SettingsView` as root view for new window
-- [ ] Add window group in `WardenApp.swift` to open settings window
-- [ ] Modify settings button to open new window instead of showing modal/sheet
-- [ ] Set window to have no title bar/empty title
+- [x] Create new `SettingsWindow` or `PreferencesWindow` scene
+- [x] Create `SettingsView` as root view for new window
+- [x] Add window group in `WardenApp.swift` to open settings window
+- [x] Modify settings button to open new window instead of showing modal/sheet
+- [x] Set window to have no title bar/empty title
 
 ### Phase 2: Tab Structure & Layout
 - [ ] Identify all current tab views (General, Contributions/Credits, API Settings, etc.)
