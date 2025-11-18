@@ -78,7 +78,6 @@
 		4AE3CEB92C93AEA800A9CF4C /* APIServiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE3CEB82C93AEA200A9CF4C /* APIServiceDetailView.swift */; };
 		4AE8691B2D5696A300E3B3AC /* GeminiHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE8691A2D56969700E3B3AC /* GeminiHandler.swift */; };
 		4AEB7E1B2C8D04A70004818C /* DatabasePatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AEB7E1A2C8D04A30004818C /* DatabasePatcher.swift */; };
-		4AFDEB7C2AFF90C000BA8642 /* TabBackupRestoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFDEB7B2AFF90C000BA8642 /* TabBackupRestoreView.swift */; };
 		4AFDEB7E2AFF90FB00BA8642 /* TabDangerZoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */; };
 		4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7202C472F53006F99FB /* APIProtocol.swift */; };
 		4AFEE7232C472FA1006F99FB /* ChatGPTHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFEE7222C472FA1006F99FB /* ChatGPTHandler.swift */; };
@@ -100,8 +99,6 @@
 		7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */; };
 		7F6BED772DF70308006B9E6E /* MoveToProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */; };
 		7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */; };
-		7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */; };
-		7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */; };
 		7F8C678B2E02908F00147487 /* SettingsWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */; };
 		7F8D7CA12DE9CE2C003E7BCA /* ChatSharingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */; };
 		7F8D7CA32DE9CE66003E7BCA /* ChatShareMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */; };
@@ -129,6 +126,7 @@
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
 		C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479718C2EBF3E410097C000 /* MessageListView.swift */; };
 		C49FCBE42ECC2439003B51AF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE32ECC2439003B51AF /* SettingsView.swift */; };
+		C49FCBE62ECC2535003B51AF /* TabContributionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 /* End PBXBuildFile section */
 
@@ -230,7 +228,6 @@
 		4AE3CEB82C93AEA200A9CF4C /* APIServiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIServiceDetailView.swift; sourceTree = "<group>"; };
 		4AE8691A2D56969700E3B3AC /* GeminiHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiHandler.swift; sourceTree = "<group>"; };
 		4AEB7E1A2C8D04A30004818C /* DatabasePatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabasePatcher.swift; sourceTree = "<group>"; };
-		4AFDEB7B2AFF90C000BA8642 /* TabBackupRestoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBackupRestoreView.swift; sourceTree = "<group>"; };
 		4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabDangerZoneView.swift; sourceTree = "<group>"; };
 		4AFEE7202C472F53006F99FB /* APIProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIProtocol.swift; sourceTree = "<group>"; };
 		4AFEE7222C472FA1006F99FB /* ChatGPTHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTHandler.swift; sourceTree = "<group>"; };
@@ -252,8 +249,6 @@
 		7F6BED722DF701D3006B9E6E /* ProjectSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsView.swift; sourceTree = "<group>"; };
 		7F6BED762DF70308006B9E6E /* MoveToProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveToProjectView.swift; sourceTree = "<group>"; };
 		7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteredInputView.swift; sourceTree = "<group>"; };
-		7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSupportDeveloperView.swift; sourceTree = "<group>"; };
-		7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabCreditsView.swift; sourceTree = "<group>"; };
 		7F8C678A2E02908F00147487 /* SettingsWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowManager.swift; sourceTree = "<group>"; };
 		7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSharingService.swift; sourceTree = "<group>"; };
 		7F8D7CA22DE9CE66003E7BCA /* ChatShareMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatShareMenu.swift; sourceTree = "<group>"; };
@@ -280,6 +275,7 @@
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
 		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
 		C49FCBE32ECC2439003B51AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabContributionsView.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -406,10 +402,8 @@
 				C49FCBE32ECC2439003B51AF /* SettingsView.swift */,
 				7F4B74C12DFFC78B00C844A2 /* TabHotkeysView.swift */,
 				4A399CC329BCE67800E98796 /* PreferencesView.swift */,
+				C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */,
 				4AFDEB7D2AFF90FB00BA8642 /* TabDangerZoneView.swift */,
-				7F8BB0672DED668700FF0837 /* TabSupportDeveloperView.swift */,
-				7F8BB0692DED66AE00FF0837 /* TabCreditsView.swift */,
-				4AFDEB7B2AFF90C000BA8642 /* TabBackupRestoreView.swift */,
 				4A315DB12C8CD8410095ABD1 /* TabAIPersonasView.swift */,
 			);
 			path = Preferences;
@@ -760,7 +754,6 @@
 				4A5F64B829C64E21000403F7 /* ChatBubbleView.swift in Sources */,
 				7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */,
 				4AFEE7232C472FA1006F99FB /* ChatGPTHandler.swift in Sources */,
-				7F8BB0682DED668700FF0837 /* TabSupportDeveloperView.swift in Sources */,
 				4A5F64C129C78B64000403F7 /* SceneKitParticlesView.swift in Sources */,
 				4A27FF942DA1C4640075D730 /* MessageContent.swift in Sources */,
 				7F5CD1E52DF7F2AE003248F9 /* OptimizedCoreDataManager.swift in Sources */,
@@ -784,6 +777,7 @@
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,
 				7F4B74C42DFFC83100C844A2 /* ToastNotification.swift in Sources */,
+				C49FCBE62ECC2535003B51AF /* TabContributionsView.swift in Sources */,
 				4A4918782D9F3C54007EB4A2 /* MessageContentView.swift in Sources */,
 				7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */,
 				7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */,
@@ -801,7 +795,6 @@
 				7F8D7CA92DE9DB13003E7BCA /* MultiAgentMessageManager.swift in Sources */,
 				4AEB7E1B2C8D04A70004818C /* DatabasePatcher.swift in Sources */,
 				4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */,
-				4AFDEB7C2AFF90C000BA8642 /* TabBackupRestoreView.swift in Sources */,
 				4A254A6F2CEA6A2400F66935 /* CodeViewModel.swift in Sources */,
 				4A2B9E952CE1272E00C8042F /* RequestMessagesTransformer.swift in Sources */,
 				4AB4B0912D778B1D00CA41B6 /* OpenRouterHandler.swift in Sources */,
@@ -819,7 +812,6 @@
 				7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */,
 				4A49187A2D9F4186007EB4A2 /* ToolbarButton.swift in Sources */,
 				4A270AE329D4AFE7005E063C /* AppConstants.swift in Sources */,
-				7F8BB06A2DED66AE00FF0837 /* TabCreditsView.swift in Sources */,
 				C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */,
 				4A399C9929BC8FEF00E98796 /* WardenApp.swift in Sources */,
 				4A775A042C1486F3004301D3 /* Extensions.swift in Sources */,

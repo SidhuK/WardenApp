@@ -9,6 +9,8 @@ struct TabGeneralSettingsView: View {
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
+    @State private var exportErrorMessage: String?
+    @State private var showExportError = false
 
     // Font size options for dropdown
     private let fontSizeOptions: [Double] = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
@@ -49,8 +51,8 @@ struct TabGeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Native macOS form layout
+            VStack(alignment: .leading, spacing: 20) {
+                // Appearance Settings
                 VStack(spacing: 20) {
                     // Chat Font Size
                             HStack {
@@ -158,10 +160,131 @@ struct TabGeneralSettingsView: View {
                     }
                 }
                 .padding()
+                
+                Divider()
+                    .padding(.horizontal)
+                
+                // Backup & Restore
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Backup & Restore")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal)
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
+                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .padding(.horizontal)
+
+                        HStack {
+                            Text("Export chats history")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Export to file...") {
+                                Task {
+                                    let result = await store.loadFromCoreData()
+                                    handleExportResult(result)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Material.ultraThinMaterial)
+                                .opacity(0.3)
+                        )
+                        .padding(.horizontal)
+
+                        HStack {
+                            Text("Import chats history")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Button("Import from file...") {
+                                let openPanel = NSOpenPanel()
+                                openPanel.allowedContentTypes = [.json]
+                                openPanel.begin { result in
+                                    guard result == .OK, let url = openPanel.url else { return }
+                                    self.handleImport(from: url)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Material.ultraThinMaterial)
+                                .opacity(0.3)
+                        )
+                        .padding(.horizontal)
+                    }
+                }
             }
+            .padding(.vertical)
         }
         .onAppear {
             self.selectedColorSchemeRaw = self.preferredColorSchemeRaw
+        }
+    }
+    
+    // MARK: - Backup/Restore Helpers
+    private func handleExportResult(_ result: Result<[Chat], Error>) {
+        switch result {
+        case .failure(let error):
+            print("❌ Failed to load chats for export: \(error.localizedDescription)")
+            showErrorAlert("Export Failed", "Failed to load chat data: \(error.localizedDescription)")
+        case .success(let chats):
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            
+            do {
+                let data = try encoder.encode(chats)
+                let savePanel = NSSavePanel()
+                savePanel.allowedContentTypes = [.json]
+                savePanel.nameFieldStringValue = "chats_\(getCurrentFormattedDate()).json"
+                savePanel.begin { result in
+                    guard result == .OK, let url = savePanel.url else { return }
+                    do {
+                        try data.write(to: url)
+                    } catch {
+                        showErrorAlert("Backup Failed", "Failed to write backup file: \(error.localizedDescription)")
+                    }
+                }
+            } catch {
+                showErrorAlert("Backup Failed", "Failed to encode chat data: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func handleImport(from url: URL) {
+        do {
+            let data = try Data(contentsOf: url)
+            let chats = try JSONDecoder().decode([Chat].self, from: data)
+            
+            Task {
+                let result = await store.saveToCoreData(chats: chats)
+                if case .failure(let error) = result {
+                    showErrorAlert("Import Failed", "Failed to save imported chats: \(error.localizedDescription)")
+                }
+            }
+        } catch {
+            print(error)
+        }
+    }
+    
+    private func showErrorAlert(_ title: String, _ message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
         }
     }
 }

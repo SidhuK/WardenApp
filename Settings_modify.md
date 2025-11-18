@@ -26,10 +26,10 @@
 - [x] Test tab switching functionality
 
 ### Phase 3: Content Reorganization
-- [ ] Move Credits section to Contributions tab
-- [ ] Move Backup/Restore to General tab
-- [ ] Verify all settings content is properly placed
-- [ ] Remove old content from original locations
+- [x] Move Credits section to Contributions tab
+- [x] Move Backup/Restore to General tab
+- [x] Verify all settings content is properly placed
+- [x] Remove old content from original locations
 
 ### Phase 4: UI Polish & Cleanup
 - [ ] Remove boundaries/borders around preference items

@@ -9,29 +9,6 @@ struct TabItem: Identifiable {
     let tab: SettingsView.PreferencesTabs
     let icon: String
     let label: String
-    
-    var view: some View {
-        Group {
-            switch tab {
-            case .general:
-                TabGeneralSettingsView()
-            case .apiServices:
-                TabAPIServicesView()
-            case .aiPersonas:
-                TabAIPersonasView()
-            case .webSearch:
-                TabTavilySearchView()
-            case .keyboardShortcuts:
-                TabHotkeysView()
-            case .backupRestore:
-                TabBackupRestoreView()
-            case .supportDeveloper:
-                TabSupportDeveloperView()
-            case .credits:
-                TabCreditsView()
-            }
-        }
-    }
 }
 
 struct SettingsView: View {
@@ -44,9 +21,7 @@ struct SettingsView: View {
         case aiPersonas = "AI Assistants"
         case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
-        case backupRestore = "Backup & Restore"
-        case supportDeveloper = "Support Developer"
-        case credits = "Credits"
+        case contributions = "Contributions"
         
         var icon: String {
             switch self {
@@ -55,9 +30,7 @@ struct SettingsView: View {
             case .aiPersonas: return "person.2"
             case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
-            case .backupRestore: return "arrow.clockwise.icloud"
-            case .supportDeveloper: return "heart.fill"
-            case .credits: return "star.fill"
+            case .contributions: return "star.fill"
             }
         }
     }
@@ -135,6 +108,7 @@ struct SettingsView: View {
                     switch selectedTab {
                     case .general:
                         TabGeneralSettingsView()
+                            .environmentObject(store)
                     case .apiServices:
                         TabAPIServicesView()
                     case .aiPersonas:
@@ -145,13 +119,8 @@ struct SettingsView: View {
                         TabTavilySearchView()
                     case .keyboardShortcuts:
                         TabHotkeysView()
-                    case .backupRestore:
-                        TabBackupRestoreView()
-                            .environmentObject(store)
-                    case .supportDeveloper:
-                        TabSupportDeveloperView()
-                    case .credits:
-                        TabCreditsView()
+                    case .contributions:
+                        TabContributionsView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -23,9 +23,7 @@ struct PreferencesView: View {
         case aiPersonas = "AI Assistants"
         case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
-        case backupRestore = "Backup & Restore"
-        case supportDeveloper = "Support Developer"
-        case credits = "Credits"
+        case contributions = "Contributions"
         
         var icon: String {
             switch self {
@@ -34,9 +32,7 @@ struct PreferencesView: View {
             case .aiPersonas: return "person.2"
             case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
-            case .backupRestore: return "arrow.clockwise.icloud"
-            case .supportDeveloper: return "heart.fill"
-            case .credits: return "star.fill"
+            case .contributions: return "star.fill"
             }
         }
     }
@@ -100,6 +96,7 @@ struct PreferencesView: View {
                 switch selectedTab {
                 case .general:
                     TabGeneralSettingsView()
+                        .environmentObject(store)
                 case .apiServices:
                     TabAPIServicesView()
                 case .aiPersonas:
@@ -110,13 +107,8 @@ struct PreferencesView: View {
                     TabTavilySearchView()
                 case .keyboardShortcuts:
                     TabHotkeysView()
-                case .backupRestore:
-                    TabBackupRestoreView()
-                        .environmentObject(store)
-                case .supportDeveloper:
-                    TabSupportDeveloperView()
-                case .credits:
-                    TabCreditsView()
+                case .contributions:
+                    TabContributionsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -144,9 +136,7 @@ struct InlineSettingsView: View {
         case aiPersonas = "AI Assistants"
         case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
-        case backupRestore = "Backup & Restore"
-        case supportDeveloper = "Support Developer"
-        case credits = "Credits"
+        case contributions = "Contributions"
         
         var icon: String {
             switch self {
@@ -155,9 +145,7 @@ struct InlineSettingsView: View {
             case .aiPersonas: return "person.2"
             case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
-            case .backupRestore: return "arrow.clockwise.icloud"
-            case .supportDeveloper: return "heart.fill"
-            case .credits: return "star.fill"
+            case .contributions: return "star.fill"
             }
         }
     }
@@ -236,6 +224,7 @@ struct InlineSettingsView: View {
                     switch selectedTab {
                     case .general:
                         TabGeneralSettingsView()
+                            .environmentObject(store)
                     case .apiServices:
                         TabAPIServicesView()
                     case .aiPersonas:
@@ -246,13 +235,8 @@ struct InlineSettingsView: View {
                         TabTavilySearchView()
                     case .keyboardShortcuts:
                         TabHotkeysView()
-                    case .backupRestore:
-                        TabBackupRestoreView()
-                            .environmentObject(store)
-                    case .supportDeveloper:
-                        TabSupportDeveloperView()
-                    case .credits:
-                        TabCreditsView()
+                    case .contributions:
+                        TabContributionsView()
                     }
                 }
                 .padding(.horizontal, 24)
