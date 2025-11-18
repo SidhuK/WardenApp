@@ -142,14 +142,14 @@ struct MinimalSuggestionButton: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(isHovered ? .primary : .secondary.opacity(0.8))
             }
-            .padding(.horizontal, 16) // Increased padding
-            .padding(.vertical, 10) // Increased padding
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 10) // Increased corner radius
-                    .fill(.ultraThinMaterial) // Material background
+                RoundedRectangle(cornerRadius: 12) // Modern corner radius
+                    .fill(.ultraThinMaterial)
                     .opacity(0.8)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: 12)
                             .fill(
                                 LinearGradient(
                                     colors: isHovered ? 
@@ -161,7 +161,7 @@ struct MinimalSuggestionButton: View {
                             )
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: 12)
                             .stroke(
                                 isHovered ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08),
                                 lineWidth: isHovered ? 1.0 : 0.5

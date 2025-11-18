@@ -19,10 +19,10 @@ struct ThemeButton: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 12)
                         .fill(tileBackgroundColor)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 12)
                                 .strokeBorder(
                                     isSelected ? Color.accentColor : AppConstants.borderSubtle,
                                     lineWidth: isSelected ? 2 : 1

@@ -38,30 +38,32 @@ struct FavoriteQuickAccessBar: View {
         Button(action: {
             handleModelChange(providerType: provider, model: model)
         }) {
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image("logo_\(provider)")
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
-                    .frame(width: 10, height: 10)
+                    .frame(width: 12, height: 12)
                     .foregroundColor(.white)
                 
                 Text(model)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(isCurrentlySelected(provider: provider, model: model) ? 
-                          Color.accentColor : Color.blue.opacity(0.7))
+                          Color.accentColor : Color.blue.opacity(0.8))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(isCurrentlySelected(provider: provider, model: model) ? 
-                                    Color.accentColor.opacity(0.4) : Color.blue.opacity(0.3), 
-                                    lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isCurrentlySelected(provider: provider, model: model) ? 
+                                    Color.accentColor.opacity(0.6) : Color.blue.opacity(0.4), 
+                                lineWidth: 1.0
+                            )
                     )
             )
             .help("Switch to \(model)")

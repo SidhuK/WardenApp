@@ -31,21 +31,41 @@ struct RephraseButton: View {
         Button(action: {
             rephraseText()
         }) {
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 if rephraseService.isRephrasing {
                     ProgressView()
-                        .scaleEffect(0.6)
-                        .frame(width: 16, height: 16)
+                        .scaleEffect(0.7)
+                        .frame(width: 14, height: 14)
                 } else {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(canRephrase ? .accentColor : .secondary)
+                }
+                
+                if !rephraseService.isRephrasing {
+                    Text("Rephrase")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(canRephrase ? .accentColor : .secondary)
                 }
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(canRephrase ? Color.accentColor.opacity(0.1) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                canRephrase ? Color.accentColor.opacity(0.3) : Color.secondary.opacity(0.2),
+                                lineWidth: 0.5
+                            )
+                    )
+            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .help(rephraseService.isRephrasing ? "Rephrasing..." : "Rephrase for clarity")
         .disabled(!canRephrase)
+        .opacity(canRephrase ? 1.0 : 0.6)
         .alert("Rephrase Error", isPresented: $showingError) {
             Button("OK") { }
         } message: {

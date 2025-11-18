@@ -7,6 +7,7 @@ struct ToolbarButton: View {
     let action: () -> Void
 
     @State private var isHovered = false
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: action) {
@@ -14,7 +15,6 @@ struct ToolbarButton: View {
                 if let icon = icon, !icon.isEmpty {
                     Image(systemName: icon)
                         .font(.system(size: 10, weight: .medium))
-                        .scaleEffect(isHovered ? 1.1 : 1.0)
                 }
 
                 if !text.isEmpty {
@@ -22,20 +22,39 @@ struct ToolbarButton: View {
                         .font(.system(size: 11, weight: .medium))
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(isHovered ? AppConstants.backgroundSubtle : .clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isHovered ? AppConstants.borderSubtle : Color.clear,
+                                lineWidth: 0.5
+                            )
+                    )
             )
             .foregroundColor(isHovered ? AppConstants.textPrimary : AppConstants.textSecondary)
-            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .scaleEffect(isPressed ? 0.97 : (isHovered ? 1.02 : 1.0))
+        .shadow(
+            color: Color.black.opacity(isHovered ? 0.08 : 0.04),
+            radius: isHovered ? 4 : 2,
+            x: 0,
+            y: isHovered ? 2 : 1
+        )
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.16)) {
                 isHovered = hovering
             }
         }
+        .onLongPressGesture(minimumDuration: .infinity, perform: {}, onPressingChanged: { pressing in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        })
     }
 }
