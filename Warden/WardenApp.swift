@@ -1,6 +1,5 @@
 import SwiftUI
 import UserNotifications
-import CoreSpotlight
 import CoreData
 
 class PersistenceController {
@@ -160,9 +159,6 @@ struct WardenApp: App {
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .preferredColorScheme(preferredColorScheme)
                 .environmentObject(store)
-                .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
-                    handleSpotlightSearch(userActivity: userActivity)
-                }
                 .onAppear {
                     // Set initial window size to 85% of screen for first launch
                     if let screen = NSScreen.main {
@@ -327,37 +323,5 @@ struct WardenApp: App {
             print("Error fetching API services for model cache initialization: \(error)")
         }
     }
-    
 
-    
-    // MARK: - Spotlight Search Handling
-    
-    private func handleSpotlightSearch(userActivity: NSUserActivity) {
-        guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
-              let chatId = SpotlightIndexManager.handleSpotlightSelection(with: identifier) else {
-            print("Invalid Spotlight search identifier")
-            return
-        }
-        
-        // Find the chat with the given ID
-        let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
-        fetchRequest.predicate = NSPredicate(format: "id == %@", chatId as CVarArg)
-        
-        do {
-            let chats = try persistenceController.container.viewContext.fetch(fetchRequest)
-            if let chat = chats.first {
-                // Post notification to select the chat
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("SelectChatFromSpotlight"),
-                        object: chat
-                    )
-                }
-            } else {
-                print("Chat not found for Spotlight search: \(chatId)")
-            }
-        } catch {
-            print("Error fetching chat from Spotlight search: \(error)")
-        }
-    }
 }

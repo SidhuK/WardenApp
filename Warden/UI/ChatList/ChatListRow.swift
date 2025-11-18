@@ -216,9 +216,6 @@ struct ChatListRow: View {
                     selectedChat = nil
                 }
                 
-                // Remove from Spotlight index before deleting
-                store.removeChatFromSpotlight(chatId: chat.id)
-                
                 viewContext.delete(chat)
                 DispatchQueue.main.async {
                     do {

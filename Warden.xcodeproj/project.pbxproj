@@ -107,7 +107,6 @@
 		7F8D7CA92DE9DB13003E7BCA /* MultiAgentMessageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */; };
 		7F97AE1B2E0D75000050CAFE /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 7F97AE1A2E0D75000050CAFE /* Markdown */; };
 		7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */; };
-		7FB022A32DE9639000CE4CC8 /* SpotlightIndexManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB022A22DE9639000CE4CC8 /* SpotlightIndexManager.swift */; };
 		7FDDAED02DE8BA5C0072EA51 /* MistralHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */; };
 		7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FE379012DE9A1DA0093DACE /* InteractiveOnboardingView.swift */; };
 		7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */; };
@@ -256,7 +255,6 @@
 		7F8D7CA52DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentServiceSelector.swift; sourceTree = "<group>"; };
 		7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentMessageManager.swift; sourceTree = "<group>"; };
 		7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
-		7FB022A22DE9639000CE4CC8 /* SpotlightIndexManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexManager.swift; sourceTree = "<group>"; };
 		7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MistralHandler.swift; sourceTree = "<group>"; };
 		7FE379012DE9A1DA0093DACE /* InteractiveOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveOnboardingView.swift; sourceTree = "<group>"; };
 		7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCacheManager.swift; sourceTree = "<group>"; };
@@ -494,11 +492,10 @@
 				4ABDBE6529F86B5900661B2D /* MessageParser.swift */,
 				4A775A032C1486F3004301D3 /* Extensions.swift */,
 				4AA6EF5C2C566009003B6D41 /* MessageManager.swift */,
-				7FB022A22DE9639000CE4CC8 /* SpotlightIndexManager.swift */,
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
+				);
+				path = Utilities;
+				sourceTree = "<group>";
+				};
 		4A399C8C29BC8FEF00E98796 = {
 			isa = PBXGroup;
 			children = (
@@ -847,7 +844,6 @@
 				7F8D7CA32DE9CE66003E7BCA /* ChatShareMenu.swift in Sources */,
 				7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */,
 				4ABB86792CFBDBD3004EC7B1 /* HighlightedText.swift in Sources */,
-				7FB022A32DE9639000CE4CC8 /* SpotlightIndexManager.swift in Sources */,
 				4A8A78C82D4C41A00057A6CC /* TabGeneralSettingsView.swift in Sources */,
 				4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */,
 				7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */,

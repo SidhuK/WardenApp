@@ -7,19 +7,12 @@ let migrationKey = "com.example.chatApp.migrationFromJSONCompleted"
 class ChatStore: ObservableObject {
     let persistenceController: PersistenceController
     let viewContext: NSManagedObjectContext
-    private let spotlightManager = SpotlightIndexManager.shared
 
     init(persistenceController: PersistenceController) {
         self.persistenceController = persistenceController
         self.viewContext = persistenceController.container.viewContext
 
         migrateFromJSONIfNeeded()
-        
-        if SpotlightIndexManager.isSpotlightAvailable {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.spotlightManager.indexAllChats(from: self?.viewContext ?? persistenceController.container.viewContext)
-            }
-        }
         
         NotificationCenter.default.addObserver(
             self,
@@ -222,17 +215,12 @@ class ChatStore: ObservableObject {
     }
 
     func deleteAllChats() {
-        deleteEntities(ChatEntity.self, predicate: nil, onDelete: { chat in
-            self.removeChatFromSpotlight(chatId: chat.id)
-        })
-        clearSpotlightIndexes()
+        deleteEntities(ChatEntity.self, predicate: nil)
     }
 
     func deleteSelectedChats(_ chatIDs: Set<UUID>) {
         guard !chatIDs.isEmpty else { return }
-        deleteEntities(ChatEntity.self, predicate: NSPredicate(format: "id IN %@", chatIDs)) { chat in
-            self.removeChatFromSpotlight(chatId: chat.id)
-        }
+        deleteEntities(ChatEntity.self, predicate: NSPredicate(format: "id IN %@", chatIDs))
     }
 
     func deleteAllPersonas() {
@@ -583,45 +571,8 @@ class ChatStore: ObservableObject {
         return 0
     }
 
-    // MARK: - Spotlight Integration Methods
-    
-    func indexChatForSpotlight(_ chatEntity: ChatEntity) {
-        guard SpotlightIndexManager.isSpotlightAvailable else { return }
-        spotlightManager.indexChat(chatEntity)
-    }
-    
-    func removeChatFromSpotlight(chatId: UUID) {
-        guard SpotlightIndexManager.isSpotlightAvailable else { return }
-        spotlightManager.removeChat(withId: chatId)
-    }
-    
-    func regenerateSpotlightIndexes() {
-        guard SpotlightIndexManager.isSpotlightAvailable else { return }
-        spotlightManager.regenerateIndexes(from: viewContext)
-    }
-    
-    func clearSpotlightIndexes() {
-        guard SpotlightIndexManager.isSpotlightAvailable else { return }
-        spotlightManager.clearAllIndexes()
-    }
-
     @objc private func contextDidSave(_ notification: Notification) {
-        guard SpotlightIndexManager.isSpotlightAvailable else { return }
-        
-        let updated = notification.userInfo?[NSUpdatedObjectsKey] as? Set<NSManagedObject> ?? Set()
-        let inserted = notification.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject> ?? Set()
-        let deleted = notification.userInfo?[NSDeletedObjectsKey] as? Set<NSManagedObject> ?? Set()
-        
-        let modifiedObjects = updated.union(inserted)
-        
-        // Index updated/inserted chats and re-index affected chat parents
-        modifiedObjects.compactMap { $0 as? ChatEntity }.forEach { spotlightManager.indexChat($0) }
-        modifiedObjects.compactMap { $0 as? MessageEntity }.forEach { 
-            if let chat = $0.chat { spotlightManager.indexChat(chat) }
-        }
-        
-        // Remove deleted chats
-        deleted.compactMap { $0 as? ChatEntity }.forEach { spotlightManager.removeChat(withId: $0.id) }
+        // No longer needed after Spotlight removal
     }
     
     // MARK: - Performance Optimization Methods

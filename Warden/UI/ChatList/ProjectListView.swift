@@ -594,9 +594,6 @@ struct ProjectChatRow: View {
                 selectedChat = nil
             }
             
-            // Remove from Spotlight index before deleting
-            store.removeChatFromSpotlight(chatId: chat.id)
-            
             viewContext.delete(chat)
             do {
                 try viewContext.save()
@@ -1073,9 +1070,6 @@ struct ProjectChatRowInList: View {
             if selectedChat?.objectID == chat.objectID {
                 selectedChat = nil
             }
-            
-            // Remove from Spotlight index before deleting
-            store.removeChatFromSpotlight(chatId: chat.id)
             
             viewContext.delete(chat)
             do {

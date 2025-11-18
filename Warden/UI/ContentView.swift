@@ -147,16 +147,6 @@ struct ContentView: View {
             
 
             
-            // Handle Spotlight search result selection
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("SelectChatFromSpotlight"),
-                object: nil,
-                queue: .main
-            ) { notification in
-                if let chat = notification.object as? ChatEntity {
-                    selectedChat = chat
-                }
-            }
             
             // Handle chat selection from project summary
             NotificationCenter.default.addObserver(
@@ -267,11 +257,6 @@ struct ContentView: View {
             
             // Select the new chat
             selectedChat = newChat
-            
-            // Index for Spotlight (async to avoid blocking)
-            DispatchQueue.main.async {
-                self.store.indexChatForSpotlight(newChat)
-            }
         }
         catch {
             print("Error saving new chat: \(error.localizedDescription)")

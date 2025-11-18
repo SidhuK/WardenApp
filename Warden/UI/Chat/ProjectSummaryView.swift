@@ -534,9 +534,6 @@ struct ProjectSummaryView: View {
         
         alert.beginSheetModal(for: NSApp.keyWindow!) { response in
             if response == .alertFirstButtonReturn {
-                // Remove from Spotlight index before deleting
-                store.removeChatFromSpotlight(chatId: chat.id)
-                
                 viewContext.delete(chat)
                 do {
                     try viewContext.save()
