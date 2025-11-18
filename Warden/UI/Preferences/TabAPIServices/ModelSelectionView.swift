@@ -304,6 +304,7 @@ struct ModelSelectionRow: View {
      @StateObject private var favoriteManager = FavoriteModelsManager.shared
      @StateObject private var metadataCache = ModelMetadataCache.shared
      
+     // Pre-calculate computed values
      private var isFavorite: Bool {
          favoriteManager.isFavorite(provider: serviceType, model: model.id)
      }
@@ -315,7 +316,9 @@ struct ModelSelectionRow: View {
      }
      
      var body: some View {
-         VStack(alignment: .leading, spacing: 6) {
+         let metadata = metadataCache.getMetadata(provider: serviceType, modelId: model.id)
+         
+         return VStack(alignment: .leading, spacing: 6) {
              HStack(spacing: 8) {
                  // Selection checkbox
                  Button(action: {
@@ -359,7 +362,7 @@ struct ModelSelectionRow: View {
              }
              
              // Pricing info if available
-             if let metadata = metadataCache.getMetadata(provider: serviceType, modelId: model.id),
+             if let metadata = metadata,
                 metadata.hasPricing,
                 let pricing = metadata.pricing,
                 let inputPrice = pricing.inputPer1M {

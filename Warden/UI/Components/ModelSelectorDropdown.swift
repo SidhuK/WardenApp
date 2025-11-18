@@ -68,10 +68,11 @@ struct StandaloneModelSelector: View {
         
         // Apply search filter
         if !searchText.isEmpty {
+            let searchLower = searchText.lowercased()
             modelsToFilter = modelsToFilter.compactMap { provider, models in
                 let filteredModels = models.filter { model in
-                    model.lowercased().contains(searchText.lowercased()) ||
-                    provider.lowercased().contains(searchText.lowercased())
+                    model.lowercased().contains(searchLower) ||
+                    provider.lowercased().contains(searchLower)
                 }
                 return filteredModels.isEmpty ? nil : (provider: provider, models: filteredModels)
             }
@@ -79,15 +80,19 @@ struct StandaloneModelSelector: View {
         
         // Smart sorting: favorites → recently used → alphabetical
         return modelsToFilter.map { provider, models in
-            let sortedModels = models.sorted { model1, model2 in
-                let score1 = calculateModelScore(model1, provider: provider)
-                let score2 = calculateModelScore(model2, provider: provider)
-                
-                if score1 != score2 {
-                    return score1 > score2 // Higher score first
-                }
-                return model1 < model2 // Alphabetical tiebreaker
+            // Pre-calculate all scores in one pass
+            let modelsWithScores = models.map { model in
+                (model: model, score: calculateModelScore(model, provider: provider))
             }
+            
+            let sortedModels = modelsWithScores.sorted { first, second in
+                if first.score != second.score {
+                    return first.score > second.score
+                }
+                return first.model < second.model
+            }
+            .map { $0.model }
+            
             return (provider: provider, models: sortedModels)
         }
     }
@@ -138,12 +143,12 @@ struct StandaloneModelSelector: View {
         // Favorite bonus (highest priority)
         if favoriteManager.isFavorite(provider: provider, model: model) {
             score += 1000
-        }
-        
-        // Recently used bonus (recency-based decay)
-        if let lastUsed = recentModelsManager.getLastUsedDate(provider: provider, modelId: model) {
-            let daysSinceUse = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 999
-            score += max(0, 100 - daysSinceUse)
+        } else {
+            // Recently used bonus (recency-based decay) - only check if not favorite
+            if let lastUsed = recentModelsManager.getLastUsedDate(provider: provider, modelId: model) {
+                let daysSinceUse = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 999
+                score += max(0, 100 - daysSinceUse)
+            }
         }
         
         return score
@@ -284,7 +289,14 @@ struct StandaloneModelSelector: View {
     }
     
     private func modelRow(provider: String, model: String) -> some View {
-        Button(action: {
+        // Pre-calculate values to avoid repeated lookups
+        let isSelected = isCurrentlySelected(provider: provider, model: model)
+        let isFavorite = favoriteManager.isFavorite(provider: provider, model: model)
+        let isReasoning = isReasoningModel(model)
+        let isVision = isVisionModel(provider: provider, model: model)
+        let metadata = metadataCache.getMetadata(provider: provider, modelId: model)
+        
+        return Button(action: {
             handleModelChange(providerType: provider, model: model)
             onDismiss?()
         }) {
@@ -292,8 +304,7 @@ struct StandaloneModelSelector: View {
                 HStack(spacing: 8) {
                     // Current selection indicator
                     Circle()
-                        .fill(isCurrentlySelected(provider: provider, model: model) ? 
-                              Color.accentColor : Color.clear)
+                        .fill(isSelected ? Color.accentColor : Color.clear)
                         .frame(width: 8, height: 8)
                         .overlay(
                             Circle()
@@ -302,7 +313,7 @@ struct StandaloneModelSelector: View {
                     
                     Text(model)
                         .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(isCurrentlySelected(provider: provider, model: model) ? .accentColor : AppConstants.textPrimary)
+                        .foregroundColor(isSelected ? .accentColor : AppConstants.textPrimary)
                         .lineLimit(1)
                     
                     Spacer()
@@ -312,22 +323,22 @@ struct StandaloneModelSelector: View {
                         Button(action: {
                             favoriteManager.toggleFavorite(provider: provider, model: model)
                         }) {
-                            Image(systemName: favoriteManager.isFavorite(provider: provider, model: model) ? "star.fill" : "star")
+                            Image(systemName: isFavorite ? "star.fill" : "star")
                                 .font(.system(size: 9))
-                                .foregroundColor(favoriteManager.isFavorite(provider: provider, model: model) ? .yellow : .secondary.opacity(0.6))
+                                .foregroundColor(isFavorite ? .yellow : .secondary.opacity(0.6))
                         }
                         .buttonStyle(.plain)
                         .help("Toggle favorite")
                         
                         // Model type indicators
-                        if isReasoningModel(model) {
+                        if isReasoning {
                             Image(systemName: "brain")
                                 .font(.system(size: 9))
                                 .foregroundColor(.orange)
                                 .help("Reasoning model")
                         }
                         
-                        if isVisionModel(provider: provider, model: model) {
+                        if isVision {
                             Image(systemName: "eye")
                                 .font(.system(size: 9))
                                 .foregroundColor(.blue)
@@ -337,7 +348,7 @@ struct StandaloneModelSelector: View {
                 }
                 
                 // Pricing info if available
-                if let metadata = metadataCache.getMetadata(provider: provider, modelId: model),
+                if let metadata = metadata,
                    metadata.hasPricing,
                    let pricing = metadata.pricing,
                    let inputPrice = pricing.inputPer1M {
@@ -370,10 +381,10 @@ struct StandaloneModelSelector: View {
             ModelInfoTooltip(
                 provider: provider,
                 model: model,
-                isReasoningModel: isReasoningModel(model),
-                isVisionModel: isVisionModel(provider: provider, model: model),
+                isReasoningModel: isReasoning,
+                isVisionModel: isVision,
                 lastUsedDate: recentModelsManager.getLastUsedDate(provider: provider, modelId: model),
-                metadata: metadataCache.getMetadata(provider: provider, modelId: model)
+                metadata: metadata
             )
         }
     }
