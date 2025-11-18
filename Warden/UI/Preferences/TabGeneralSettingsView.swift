@@ -51,30 +51,34 @@ struct TabGeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 // Appearance Settings
-                VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Appearance")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
                     // Chat Font Size
-                            HStack {
+                    HStack {
                         Text("Chat Font Size:")
-                            .frame(width: 140, alignment: .leading)
+                        
+                        Spacer()
                         
                         Picker("", selection: $chatFontSize) {
                             ForEach(fontSizeOptions, id: \.self) { size in
                                 Text("\(Int(size))pt").tag(size)
                             }
-                            }
+                        }
                         .pickerStyle(.menu)
                         .frame(width: 120)
                         .labelsHidden()
-                        
-                        Spacer()
                     }
                     
                     // Theme
                     HStack {
                         Text("Theme:")
-                            .frame(width: 140, alignment: .leading)
+                        
+                        Spacer()
                         
                         Picker("", selection: $selectedColorSchemeRaw) {
                             Text("System").tag(0)
@@ -96,15 +100,14 @@ struct TabGeneralSettingsView: View {
                                 preferredColorScheme.wrappedValue = nil
                             }
                         }
-                        
-                        Spacer()
                     }
                     
                     // Multi-Agent Mode
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Multi-Agent Mode:")
-                                .frame(width: 140, alignment: .leading)
+                            
+                            Spacer()
                             
                             Picker("", selection: $enableMultiAgentMode) {
                                 Text("Disabled").tag(false)
@@ -113,15 +116,12 @@ struct TabGeneralSettingsView: View {
                             .pickerStyle(.menu)
                             .frame(width: 120)
                             .labelsHidden()
-                            
-                            Spacer()
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
                                 .foregroundColor(.secondary)
                                 .font(.caption)
-                                .padding(.leading, 140)
                             
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.triangle")
@@ -132,7 +132,6 @@ struct TabGeneralSettingsView: View {
                                     .font(.caption)
                                     .fontWeight(.medium)
                             }
-                            .padding(.leading, 140)
                         }
                     }
                     
@@ -140,7 +139,8 @@ struct TabGeneralSettingsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Sidebar Icons:")
-                                .frame(width: 140, alignment: .leading)
+                            
+                            Spacer()
                             
                             Picker("", selection: $showSidebarAIIcons) {
                                 Text("Hidden").tag(false)
@@ -149,34 +149,28 @@ struct TabGeneralSettingsView: View {
                             .pickerStyle(.menu)
                             .frame(width: 120)
                             .labelsHidden()
-                            
-                            Spacer()
                         }
                         
                         Text("Display AI service logos next to chat names in the sidebar")
                             .foregroundColor(.secondary)
                             .font(.caption)
-                        .padding(.leading, 140)
                     }
                 }
-                .padding()
                 
                 Divider()
-                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                 
                 // Backup & Restore
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Backup & Restore")
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .padding(.horizontal)
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
-                            .foregroundColor(.secondary)
-                            .font(.callout)
-                            .padding(.horizontal)
+                    Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
+                        .foregroundColor(.secondary)
+                        .font(.callout)
 
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Export chats history")
                                 .fontWeight(.medium)
@@ -190,14 +184,6 @@ struct TabGeneralSettingsView: View {
                             .buttonStyle(.bordered)
                             .controlSize(.regular)
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
-                        .padding(.horizontal)
 
                         HStack {
                             Text("Import chats history")
@@ -214,18 +200,11 @@ struct TabGeneralSettingsView: View {
                             .buttonStyle(.bordered)
                             .controlSize(.regular)
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
-                        .padding(.horizontal)
                     }
                 }
             }
-            .padding(.vertical)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
         }
         .onAppear {
             self.selectedColorSchemeRaw = self.preferredColorSchemeRaw
@@ -345,26 +324,26 @@ struct InlineTabGeneralSettingsView: View {
             
             VStack(spacing: 20) {
                 // Chat Font Size
-                        HStack {
+                HStack {
                     Text("Chat Font Size:")
-                        .frame(width: 140, alignment: .leading)
+                    
+                    Spacer()
                     
                     Picker("", selection: $chatFontSize) {
                         ForEach(fontSizeOptions, id: \.self) { size in
                             Text("\(Int(size))pt").tag(size)
                         }
-                        }
+                    }
                     .pickerStyle(.menu)
                     .frame(width: 120)
                     .labelsHidden()
-                    
-                    Spacer()
                 }
                 
                 // Theme
                 HStack {
                     Text("Theme:")
-                        .frame(width: 140, alignment: .leading)
+                    
+                    Spacer()
                     
                     Picker("", selection: $selectedColorSchemeRaw) {
                         Text("System").tag(0)
@@ -386,15 +365,14 @@ struct InlineTabGeneralSettingsView: View {
                             preferredColorScheme.wrappedValue = nil
                         }
                     }
-                    
-                    Spacer()
                 }
                 
                 // Multi-Agent Mode
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Multi-Agent Mode:")
-                            .frame(width: 140, alignment: .leading)
+                        
+                        Spacer()
                         
                         Picker("", selection: $enableMultiAgentMode) {
                             Text("Disabled").tag(false)
@@ -403,15 +381,12 @@ struct InlineTabGeneralSettingsView: View {
                         .pickerStyle(.menu)
                         .frame(width: 120)
                         .labelsHidden()
-                        
-                        Spacer()
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
                             .foregroundColor(.secondary)
                             .font(.caption)
-                            .padding(.leading, 140)
                         
                         HStack(spacing: 4) {
                             Image(systemName: "exclamationmark.triangle")
@@ -422,7 +397,6 @@ struct InlineTabGeneralSettingsView: View {
                                 .font(.caption)
                                 .fontWeight(.medium)
                         }
-                        .padding(.leading, 140)
                     }
                 }
                 
@@ -430,7 +404,8 @@ struct InlineTabGeneralSettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Sidebar Icons:")
-                            .frame(width: 140, alignment: .leading)
+                        
+                        Spacer()
                         
                         Picker("", selection: $showSidebarAIIcons) {
                             Text("Hidden").tag(false)
@@ -439,14 +414,11 @@ struct InlineTabGeneralSettingsView: View {
                         .pickerStyle(.menu)
                         .frame(width: 120)
                         .labelsHidden()
-                        
-                        Spacer()
                     }
                     
                     Text("Display AI service logos next to chat names in the sidebar")
                         .foregroundColor(.secondary)
                         .font(.caption)
-                    .padding(.leading, 140)
                 }
             }
         }

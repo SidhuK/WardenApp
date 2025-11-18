@@ -170,10 +170,5 @@ struct TabContributionsView: View {
             content()
         }
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
-        )
     }
 }

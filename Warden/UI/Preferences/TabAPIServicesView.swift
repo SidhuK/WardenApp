@@ -917,14 +917,6 @@ struct InlineTabAPIServicesView: View {
             content()
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(cardBackgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-        )
     }
 }
 

@@ -34,18 +34,13 @@ struct TabHotkeysView: View {
                             .controlSize(.regular)
                             .foregroundColor(.red)
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Material.ultraThinMaterial)
-                                .opacity(0.3)
-                        )
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
                     }
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.vertical, 18)
         }
         .alert("Reset All Shortcuts", isPresented: $showingResetConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -76,8 +71,7 @@ struct TabHotkeysView: View {
                 Spacer()
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.vertical, 12)
             
             // Actions in category
             ForEach(actionsInCategory) { action in
@@ -238,12 +232,6 @@ struct TabHotkeysView: View {
         VStack(spacing: 0) {
             content()
         }
-        .background(Color(NSColor.controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 1)
-        )
     }
 }
 

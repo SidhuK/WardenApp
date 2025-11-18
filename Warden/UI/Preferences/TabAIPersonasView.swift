@@ -63,7 +63,7 @@ struct TabAIPersonasView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.vertical, 18)
         }
         .onChange(of: selectedPersonaID) { _, id in
             selectedPersona = personas.first(where: { $0.objectID == id })
@@ -253,11 +253,6 @@ struct TabAIPersonasView: View {
             content()
         }
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
-        )
     }
 }
 
@@ -511,14 +506,6 @@ struct InlineTabAIPersonasView: View {
             content()
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(cardBackgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-                )
-        )
     }
 }
 
