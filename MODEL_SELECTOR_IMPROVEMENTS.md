@@ -19,10 +19,12 @@ Enhance the model selector experience by combining quick-access patterns, richer
 - **Integration**: Quick-access buttons instantly switch models and record usage
 - Files: `FavoriteQuickAccessBar.swift`, `ModelInfoTooltip.swift`, updated `ChatView.swift`
 
-### ⏳ Phase 3: Model Metadata (#2) - IN PROGRESS
-- Provider API integration for real-time pricing/capability data
-- Metadata caching with freshness tracking (30-day refresh)
-- Pricing badges and detailed tooltips
+### ✅ Phase 3: Model Metadata (#2) - COMPLETED
+- **ModelMetadata**: Structures for pricing, capabilities, context windows
+- **ModelMetadataFetcher**: Protocol + provider implementations (OpenAI, Anthropic, Google, Groq)
+- **ModelMetadataCache**: Local caching with UserDefaults persistence
+- **Integration**: Pricing info, cost indicators, and context displayed in hover tooltips
+- Files: `ModelMetadata.swift`, `ModelMetadataFetcher.swift`, `ModelMetadataCache.swift`, updated `ModelInfoTooltip.swift`, updated `ModelSelectorDropdown.swift`
 
 ---
 

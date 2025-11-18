@@ -9,6 +9,7 @@ struct StandaloneModelSelector: View {
     @StateObject private var selectedModelsManager = SelectedModelsManager.shared
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
     @StateObject private var recentModelsManager = RecentModelsManager.shared
+    @StateObject private var metadataCache = ModelMetadataCache.shared
     @State private var searchText = ""
     @State private var hoveredItem: String? = nil
     @State private var showOnlyFavorites = false
@@ -332,7 +333,8 @@ struct StandaloneModelSelector: View {
                 model: model,
                 isReasoningModel: isReasoningModel(model),
                 isVisionModel: isVisionModel(provider: provider, model: model),
-                lastUsedDate: recentModelsManager.getLastUsedDate(provider: provider, modelId: model)
+                lastUsedDate: recentModelsManager.getLastUsedDate(provider: provider, modelId: model),
+                metadata: metadataCache.getMetadata(provider: provider, modelId: model)
             )
         }
     }

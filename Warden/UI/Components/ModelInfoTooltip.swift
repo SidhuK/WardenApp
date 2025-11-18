@@ -6,6 +6,7 @@ struct ModelInfoTooltip: View {
     let isReasoningModel: Bool
     let isVisionModel: Bool
     let lastUsedDate: Date?
+    let metadata: ModelMetadata?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -47,6 +48,53 @@ struct ModelInfoTooltip: View {
                 Spacer()
             }
             .foregroundColor(.secondary)
+            
+            // Pricing info if available
+            if let meta = metadata, meta.hasPricing {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Pricing")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+                    
+                    HStack(spacing: 12) {
+                        // Cost level indicator
+                        HStack(spacing: 3) {
+                            Text(meta.costIndicator)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.orange)
+                        }
+                        
+                        // Price details
+                        if let input = meta.pricing?.inputPer1M {
+                            Text("$\(String(format: "%.5f", input))/1M")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if meta.isStale {
+                        Text("(Updated >30 days ago)")
+                            .font(.system(size: 8, weight: .regular))
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            
+            // Context window
+            if let context = metadata?.maxContextTokens {
+                HStack(spacing: 4) {
+                    Image(systemName: "rectangle.stack.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(context / 1000)k context")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(.secondary)
+                }
+            }
             
             // Last used
             if let lastUsed = lastUsedDate {
@@ -107,7 +155,18 @@ struct ModelInfoTooltip: View {
             model: "gpt-4-turbo",
             isReasoningModel: true,
             isVisionModel: true,
-            lastUsedDate: Date().addingTimeInterval(-3600)
+            lastUsedDate: Date().addingTimeInterval(-3600),
+            metadata: ModelMetadata(
+                modelId: "gpt-4-turbo",
+                provider: "chatgpt",
+                pricing: PricingInfo.openaiGPT4Turbo,
+                maxContextTokens: 128000,
+                capabilities: ["vision", "function-calling"],
+                latency: .medium,
+                costLevel: .standard,
+                lastUpdated: Date(),
+                source: .apiResponse
+            )
         )
     }
     .padding()
