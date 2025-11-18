@@ -19,11 +19,11 @@
 - [x] Set window to have no title bar/empty title
 
 ### Phase 2: Tab Structure & Layout
-- [ ] Identify all current tab views (General, Contributions/Credits, API Settings, etc.)
-- [ ] Create tab model with icon, title, and view associations
-- [ ] Refactor tab layout to center-aligned vertical stack
-- [ ] Add icon + text display for each tab (with proper spacing)
-- [ ] Test tab switching functionality
+- [x] Identify all current tab views (General, Contributions/Credits, API Settings, etc.)
+- [x] Create tab model with icon, title, and view associations
+- [x] Refactor tab layout to center-aligned vertical stack
+- [x] Add icon + text display for each tab (with proper spacing)
+- [x] Test tab switching functionality
 
 ### Phase 3: Content Reorganization
 - [ ] Move Credits section to Contributions tab
