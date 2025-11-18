@@ -13,11 +13,12 @@ Enhance the model selector experience by combining quick-access patterns, richer
 - **Usage Tracking**: Automatic recording when model is switched
 - Files: `RecentModelsManager.swift`, updated `ModelSelectorDropdown.swift`
 
-### ✅ Phase 2: Quick-Access Bar (#1) + Inline Info (#7) - COMPLETED  
-- **FavoriteQuickAccessBar**: Toolbar shows top 4 favorited models as blue pills
+### ✅ Phase 2: Favorites & Recently Used in Dropdown (#1) + Inline Info (#7) - COMPLETED  
+- **Favorites Section**: Inside dropdown showing all favorited models grouped at top
+- **Recently Used Section**: Inside dropdown showing most recent 3-5 models below favorites
 - **ModelInfoTooltip**: Hover popover displays capabilities, last used date, provider
-- **Integration**: Quick-access buttons instantly switch models and record usage
-- Files: `FavoriteQuickAccessBar.swift`, `ModelInfoTooltip.swift`, updated `ChatView.swift`
+- **Integration**: Sections display within dropdown, instant model switching and usage recording
+- Files: Updated `ModelSelectorDropdown.swift`, `ModelInfoTooltip.swift`
 
 ### ✅ Phase 3: Model Metadata (#2) - COMPLETED
 - **ModelMetadata**: Structures for pricing, capabilities, context windows
@@ -28,27 +29,36 @@ Enhance the model selector experience by combining quick-access patterns, richer
 
 ---
 
-## 1. Quick-Access Favorite Bar
-**Goal:** Show top 3-4 favorited models as inline buttons in the toolbar for instant switching.
+## 1. Favorites & Recently Used Sections in Dropdown
+**Goal:** Show favorites and recently used models inside the dropdown as organized sections for quick discovery.
 
 ### Implementation Details
-- **Location:** Toolbar, to the right of current ModelSelectorDropdown trigger
-- **Display:** Horizontal stack of pill-shaped buttons showing model name
+- **Location:** Top of the dropdown list when opened
+- **Display Structure:**
+  - **Favorites Section** (if any exist):
+    - Header: "Favorites"
+    - All favorited models listed
+    - Visual indicator (⭐ or highlight)
+  - **Recently Used Section** (if any exist):
+    - Header: "Recently Used"
+    - Up to 5 most recent models (sorted by last used date)
+    - Shows last used timestamp on hover
+  - **All Models Section:**
+    - Separator
+    - Remaining models sorted by smart sorting rules
+    
 - **Behavior:** 
   - Click to instantly switch to that model
-  - Show only favorited models (up to 4)
-  - Hide entire bar if no favorites exist
-  - Tooltip on hover showing provider
-- **Design:**
-  - Small icon (provider logo) + model name
-  - Active state highlighting
-  - Compact spacing
+  - Auto-hide sections if empty (no favorites = no Favorites section)
+  - Sections collapse/expand smoothly
+  - Smooth scrolling within dropdown
   
 ### Code Changes Needed
-- Create new `FavoriteQuickAccessBar` component
-- Update `ChatView.swift` toolbar to include it
-- Query `FavoriteModelsManager.shared` for top 4 favorites
-- Add click handler to switch models instantly
+- Update `ModelSelectorDropdown.swift` to render sections within the list
+- Query `FavoriteModelsManager.shared` for favorites
+- Query `RecentModelsManager.shared` for recent models
+- Add section headers and spacing
+- Integrate with smart sorting for non-recent/favorite models
 
 ---
 

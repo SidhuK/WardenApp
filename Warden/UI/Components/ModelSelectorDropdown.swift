@@ -103,6 +103,46 @@ struct StandaloneModelSelector: View {
         }
     }
     
+    // Get all favorite models across all providers
+    private var favoriteModelsFlat: [(provider: String, model: String)] {
+        availableModels.flatMap { provider, models in
+            models.filter { model in
+                favoriteManager.isFavorite(provider: provider, model: model)
+            }
+            .map { model in
+                (provider: provider, model: model)
+            }
+        }
+    }
+    
+    // Get all recently used models across all providers (limited to 5)
+    private var recentlyUsedModelsFlat: [(provider: String, model: String)] {
+        let allRecentModels = recentModelsManager.getRecentModels()
+        // Filter to only available models and limit to 5
+        return allRecentModels.prefix(5).filter { recent in
+            availableModels.contains { provider, models in
+                provider == recent.provider && models.contains(recent.modelId)
+            }
+        }
+        .map { recent in
+            (provider: recent.provider, model: recent.modelId)
+        }
+    }
+    
+    // Get remaining models excluding favorites and recently used
+    private var remainingFilteredModels: [(provider: String, models: [String])] {
+        let favoriteIds = Set(favoriteModelsFlat.map { "\($0.provider)_\($0.model)" })
+        let recentIds = Set(recentlyUsedModelsFlat.map { "\($0.provider)_\($0.model)" })
+        
+        return filteredModels.compactMap { provider, models in
+            let remaining = models.filter { model in
+                !favoriteIds.contains("\(provider)_\(model)") &&
+                !recentIds.contains("\(provider)_\(model)")
+            }
+            return remaining.isEmpty ? nil : (provider: provider, models: remaining)
+        }
+    }
+    
     private func calculateModelScore(_ model: String, provider: String) -> Int {
         var score = 0
         
@@ -139,19 +179,60 @@ struct StandaloneModelSelector: View {
             
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0) {
-                    ForEach(filteredModels, id: \.provider) { providerData in
+                    // Favorites Section (only show if not searching and not filtering)
+                    if !searchText.isEmpty == false && !showOnlyFavorites && !favoriteModelsFlat.isEmpty {
+                        sectionHeader("Favorites")
+                        
+                        ForEach(Array(favoriteModelsFlat.enumerated()), id: \.offset) { idx, fav in
+                            modelRow(provider: fav.provider, model: fav.model)
+                        }
+                        
+                        Divider()
+                            .padding(.vertical, 4)
+                    }
+                    
+                    // Recently Used Section (only show if not searching and not filtering)
+                    if !searchText.isEmpty == false && !showOnlyFavorites && !recentlyUsedModelsFlat.isEmpty {
+                        sectionHeader("Recently Used")
+                        
+                        ForEach(Array(recentlyUsedModelsFlat.enumerated()), id: \.offset) { idx, recent in
+                            modelRow(provider: recent.provider, model: recent.model)
+                        }
+                        
+                        if !remainingFilteredModels.isEmpty {
+                            Divider()
+                                .padding(.vertical, 4)
+                        }
+                    }
+                    
+                    // All Models Section
+                    if !searchText.isEmpty {
+                        sectionHeader("Search Results")
+                    }
+                    
+                    ForEach(remainingFilteredModels, id: \.provider) { providerData in
                         providerSection(provider: providerData.provider, models: providerData.models)
                     }
                 }
-                .padding(.bottom, 4) // Add some bottom padding for smoother scrolling
+                .padding(.bottom, 4)
             }
-            .frame(maxHeight: 280) // Reduced height for better proportion
+            .frame(maxHeight: 280)
         }
         .frame(minWidth: 340, maxWidth: 400)
         .padding(.vertical, 8)
         .background(
             AppConstants.backgroundElevated
         )
+    }
+    
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.clear)
     }
     
     private var searchBar: some View {
