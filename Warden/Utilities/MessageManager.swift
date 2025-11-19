@@ -584,7 +584,7 @@ class MessageManager: ObservableObject {
         )
         
         // Use a timeout-based approach to prevent hanging
-        let deadline = Date(timeIntervalSinceNow: 5.0) // 5 second timeout
+        let deadline = Date(timeIntervalSinceNow: 30.0) // 30 second timeout
         
         apiService.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) {
             [weak self] result in
@@ -603,10 +603,14 @@ class MessageManager: ObservableObject {
                     print("⚠️ Generated chat name was empty, skipping")
                     return
                 }
-                chat.name = chatName
-                chat.updatedDate = Date()
-                self.viewContext.saveWithRetry(attempts: 3)
-                print("✅ Chat name generated: \(chatName)")
+                
+                Task { @MainActor in
+                    chat.name = chatName
+                    chat.updatedDate = Date()
+                    self.viewContext.saveWithRetry(attempts: 3)
+                    print("✅ Chat name generated: \(chatName)")
+                }
+                
             case .failure(let error):
                 // Silently skip - chat name generation is optional
                 #if DEBUG
