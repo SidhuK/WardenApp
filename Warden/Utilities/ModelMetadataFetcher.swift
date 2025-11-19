@@ -52,9 +52,22 @@ class OpenAIMetadataFetcher: ModelMetadataFetcher {
         
         // Common OpenAI models with pricing from https://openai.com/pricing
         let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
+            // Reasoning models
+            "o1": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 200000),
+            "o1-preview": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 128000),
+            "o1-mini": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
+            "o3-mini": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
+            "o3-mini-high": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
+            "o3-mini-2025-01-31": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
+            "o1-preview-2024-09-12": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 128000),
+            "o1-mini-2024-09-12": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
+            "o1-2024-12-17": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 200000),
+            // Vision + function calling models
             "gpt-4-turbo": (PricingInfo.openaiGPT4Turbo, ["vision", "function-calling"], 128000),
             "gpt-4o": (PricingInfo.openaiGPT4o, ["vision", "function-calling"], 128000),
+            "chatgpt-4o-latest": (PricingInfo.openaiGPT4o, ["vision", "function-calling"], 128000),
             "gpt-4o-mini": (PricingInfo.openaiGPT4oMini, ["vision", "function-calling"], 128000),
+            // Standard models
             "gpt-3.5-turbo": (PricingInfo.openaiGPT35Turbo, ["function-calling"], 16385),
         ]
         
@@ -118,9 +131,11 @@ class AnthropicMetadataFetcher: ModelMetadataFetcher {
         
         let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
             "claude-3-opus-20240229": (PricingInfo.claudeOpus, ["vision"], 200000),
+            "claude-3-opus-latest": (PricingInfo.claudeOpus, ["vision"], 200000),
             "claude-3-sonnet-20240229": (PricingInfo.claudeSonnet, ["vision"], 200000),
             "claude-3-haiku-20240307": (PricingInfo.claudeHaiku, ["vision"], 200000),
             "claude-3-5-sonnet-20241022": (PricingInfo.claudeSonnet4, ["vision"], 200000),
+            "claude-3-5-sonnet-latest": (PricingInfo.claudeSonnet4, ["vision"], 200000),
         ]
         
         for (modelId, data) in models {
@@ -363,16 +378,24 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
     private func parseCapabilities(from model: OpenRouterModel) -> [String] {
         var capabilities: [String] = []
         
+        // Parse vision from input modalities
         if model.architecture.input_modalities.contains("image") {
             capabilities.append("vision")
         }
         
+        // Parse reasoning from supported parameters
         if model.supported_parameters.contains("reasoning") {
             capabilities.append("reasoning")
         }
         
+        // Parse function calling from supported parameters
         if model.supported_parameters.contains("tools") {
             capabilities.append("function-calling")
+        }
+        
+        // Debug logging to verify capability parsing
+        if !capabilities.isEmpty {
+            print("📊 OpenRouter model \(model.id) capabilities: \(capabilities.joined(separator: ", "))")
         }
         
         return capabilities
@@ -536,6 +559,10 @@ class PerplexityMetadataFetcher: ModelMetadataFetcher {
         var metadata: [String: ModelMetadata] = [:]
         
         let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
+            "sonar-reasoning": (PricingInfo.perplexityProOnline, ["reasoning"], 128000),
+            "sonar-reasoning-pro": (PricingInfo.perplexityProOnline, ["reasoning"], 128000),
+            "sonar-pro": (PricingInfo.perplexityProOnline, [], 128000),
+            "sonar": (PricingInfo.perplexityProOnline, [], 128000),
             "pplx-pro-online": (PricingInfo.perplexityProOnline, ["vision"], 128000),
             "pplx-70b-online": (PricingInfo.perplexityProOnline, [], 4096),
         ]
@@ -599,6 +626,7 @@ class DeepSeekMetadataFetcher: ModelMetadataFetcher {
         let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
             "deepseek-chat": (PricingInfo.deepseekChat, [], 128000),
             "deepseek-coder": (PricingInfo.deepseekChat, ["function-calling"], 128000),
+            "deepseek-reasoner": (PricingInfo.deepseekChat, ["reasoning"], 128000),
         ]
         
         for (modelId, data) in models {

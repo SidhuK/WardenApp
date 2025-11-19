@@ -292,9 +292,11 @@ struct StandaloneModelSelector: View {
         // Pre-calculate values to avoid repeated lookups
         let isSelected = isCurrentlySelected(provider: provider, model: model)
         let isFavorite = favoriteManager.isFavorite(provider: provider, model: model)
-        let isReasoning = isReasoningModel(model)
-        let isVision = isVisionModel(provider: provider, model: model)
         let metadata = metadataCache.getMetadata(provider: provider, modelId: model)
+        
+        // Use metadata for capability detection, fall back to false if no metadata
+        let isReasoning = metadata?.hasReasoning ?? false
+        let isVision = metadata?.hasVision ?? false
         
         return Button(action: {
             handleModelChange(providerType: provider, model: model)
@@ -386,19 +388,6 @@ struct StandaloneModelSelector: View {
     
     private func isCurrentlySelected(provider: String, model: String) -> Bool {
         return chat.apiService?.type == provider && chat.gptModel == model
-    }
-    
-    private func isReasoningModel(_ model: String) -> Bool {
-        // For now, only use OpenAI reasoning models since other constants don't exist yet
-        return AppConstants.openAiReasoningModels.contains(model) ||
-               model.contains("reasoning") ||
-               model.contains("deepseek-reasoner") ||
-               model.contains("sonar-reasoning")
-    }
-    
-    private func isVisionModel(provider: String, model: String) -> Bool {
-        // This would need to be implemented based on your vision model detection logic
-        return model.contains("vision") || model.contains("4o") || model.contains("claude-3")
     }
     
     private func getProviderDisplayName(_ provider: String) -> String {

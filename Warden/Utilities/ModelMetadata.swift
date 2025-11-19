@@ -73,6 +73,28 @@ struct ModelMetadata: Codable {
     var hasPricing: Bool {
         return pricing != nil && (pricing?.inputPer1M != nil || pricing?.outputPer1M != nil)
     }
+    
+    // MARK: - Capability Helpers
+    
+    /// Check if model has a specific capability
+    func hasCapability(_ capability: String) -> Bool {
+        return capabilities.contains(capability)
+    }
+    
+    /// Check if model has reasoning capability
+    var hasReasoning: Bool {
+        return hasCapability("reasoning")
+    }
+    
+    /// Check if model has vision capability
+    var hasVision: Bool {
+        return hasCapability("vision")
+    }
+    
+    /// Check if model has function calling capability
+    var hasFunctionCalling: Bool {
+        return hasCapability("function-calling")
+    }
 }
 
 /// Convenience initializers for hardcoded pricing data

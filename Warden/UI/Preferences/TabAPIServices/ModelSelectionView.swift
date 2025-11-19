@@ -309,10 +309,12 @@ struct ModelSelectionRow: View {
          favoriteManager.isFavorite(provider: serviceType, model: model.id)
      }
      
+     private var metadata: ModelMetadata? {
+         metadataCache.getMetadata(provider: serviceType, modelId: model.id)
+     }
+     
      private var isReasoningModel: Bool {
-         AppConstants.openAiReasoningModels.contains(model.id) ||
-         model.id.lowercased().contains("reasoning") ||
-         model.id.lowercased().contains("thinking")
+         metadata?.hasReasoning ?? false
      }
      
      var body: some View {
