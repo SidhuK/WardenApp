@@ -235,7 +235,7 @@ struct MessageInputView: View {
                 .foregroundColor(webSearchEnabled ? Color.accentColor : AppConstants.textSecondary)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(webSearchEnabled ? .ultraThinMaterial : Color.clear)
+                        .fill(webSearchEnabled ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
                 )
         }
         .buttonStyle(PlainButtonStyle())
@@ -256,7 +256,7 @@ struct MessageInputView: View {
                 .frame(width: 26, height: 26)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(canSend || isStreaming ? .ultraThinMaterial : Color.clear)
+                        .fill(canSend || isStreaming ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
                 )
         }
         .buttonStyle(PlainButtonStyle())

@@ -122,14 +122,22 @@ class ImageAttachment: Identifiable, ObservableObject {
             guard let self = self, let imageEntity = self.imageEntity else { return }
 
             if let imageData = imageEntity.image, let thumbnailData = imageEntity.thumbnail {
-                let fullImage = NSImage(data: imageData)
-                let thumbnailImage = NSImage(data: thumbnailData)
-
-                DispatchQueue.main.async {
-                    Self.imageCache.setObject(fullImage, forKey: self.id.uuidString as NSString)
-                    self.image = fullImage
-                    self.thumbnail = thumbnailImage
-                    self.isLoading = false
+                if let fullImage = NSImage(data: imageData), let thumbnailImage = NSImage(data: thumbnailData) {
+                    DispatchQueue.main.async {
+                        Self.imageCache.setObject(fullImage, forKey: self.id.uuidString as NSString)
+                        self.image = fullImage
+                        self.thumbnail = thumbnailImage
+                        self.isLoading = false
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.error = NSError(
+                            domain: "ImageAttachment",
+                            code: 3,
+                            userInfo: [NSLocalizedDescriptionKey: "Failed to decode image data"]
+                        )
+                        self.isLoading = false
+                    }
                 }
             }
             else {
