@@ -1,20 +1,243 @@
 import SwiftUI
 import CoreData
+import Combine
+
+// ViewModel to handle heavy lifting of sorting and filtering
+class ModelSelectorViewModel: ObservableObject {
+    @Published var searchText = ""
+    @Published var filteredSections: [ModelSection] = []
+    
+    // Data sources
+    private let modelCache = ModelCacheManager.shared
+    private let selectedModelsManager = SelectedModelsManager.shared
+    private let favoriteManager = FavoriteModelsManager.shared
+    private let recentModelsManager = RecentModelsManager.shared
+    
+    private var apiServices: [APIServiceEntity] = []
+    private var cancellables = Set<AnyCancellable>()
+    
+    struct ModelSection: Identifiable {
+        let id: String
+        let title: String
+        let items: [ModelItem]
+    }
+    
+    struct ModelItem: Identifiable, Equatable {
+        let id: String // "provider_modelId"
+        let provider: String
+        let modelId: String
+        let isFavorite: Bool
+        
+        static func == (lhs: ModelItem, rhs: ModelItem) -> Bool {
+            return lhs.id == rhs.id && lhs.isFavorite == rhs.isFavorite
+        }
+    }
+    
+    init() {
+        // Observe changes that should trigger a refresh
+        favoriteManager.objectWillChange
+            .sink { [weak self] _ in self?.refreshData() }
+            .store(in: &cancellables)
+            
+        recentModelsManager.objectWillChange
+            .sink { [weak self] _ in self?.refreshData() }
+            .store(in: &cancellables)
+            
+        // Debounce search to avoid rapid re-calculations
+        $searchText
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] _ in self?.refreshData() }
+            .store(in: &cancellables)
+    }
+    
+    func updateServices(_ services: [APIServiceEntity]) {
+        self.apiServices = services
+        refreshData()
+    }
+    
+    func refreshData() {
+        // Perform heavy calculation on background thread if needed, 
+        // but for now just doing it efficiently is enough.
+        
+        let availableModels = getAvailableModels()
+        var sections: [ModelSection] = []
+        
+        // 1. Favorites
+        if searchText.isEmpty {
+            let favorites = getFavorites(from: availableModels)
+            if !favorites.isEmpty {
+                sections.append(ModelSection(id: "favorites", title: "Favorites", items: favorites))
+            }
+            
+            let recents = getRecents(from: availableModels)
+            if !recents.isEmpty {
+                sections.append(ModelSection(id: "recents", title: "Recently Used", items: recents))
+            }
+        } else {
+            sections.append(ModelSection(id: "search", title: "Search Results", items: []))
+        }
+        
+        // 2. All Models (Filtered)
+        let filtered = getFilteredModels(from: availableModels)
+        
+        // If searching, we just show one flat list in the "Search Results" section usually, 
+        // or we can keep provider sections. The original code kept provider sections.
+        // Let's stick to the original design: Provider sections.
+        
+        // However, for the "All Models" part, we need to exclude favs/recents if not searching
+        let favIds = Set(sections.first(where: { $0.id == "favorites" })?.items.map { $0.id } ?? [])
+        let recentIds = Set(sections.first(where: { $0.id == "recents" })?.items.map { $0.id } ?? [])
+        let excludeIds = favIds.union(recentIds)
+        
+        var providerSections: [ModelSection] = []
+        
+        for (provider, models) in filtered {
+            let items = models.compactMap { modelId -> ModelItem? in
+                let uniqueId = "\(provider)_\(modelId)"
+                if searchText.isEmpty && excludeIds.contains(uniqueId) {
+                    return nil
+                }
+                return ModelItem(
+                    id: uniqueId,
+                    provider: provider,
+                    modelId: modelId,
+                    isFavorite: favoriteManager.isFavorite(provider: provider, model: modelId)
+                )
+            }
+            
+            if !items.isEmpty {
+                providerSections.append(ModelSection(id: provider, title: getProviderDisplayName(provider), items: items))
+            }
+        }
+        
+        // If searching, we might want to flatten or keep structure. Original kept structure.
+        // But wait, if we have "Search Results" header in original, it was just a header.
+        // The original code:
+        // if !searchText.isEmpty { sectionHeader("Search Results") }
+        // ForEach(remainingFilteredModels) { providerSection... }
+        
+        // So we just append the provider sections to the main list
+        sections.append(contentsOf: providerSections)
+        
+        DispatchQueue.main.async {
+            self.filteredSections = sections
+        }
+    }
+    
+    private func getAvailableModels() -> [(provider: String, models: [String])] {
+        var result: [(provider: String, models: [String])] = []
+        
+        for service in apiServices {
+            guard let serviceType = service.type else { continue }
+            let serviceModels = modelCache.getModels(for: serviceType)
+            
+            let visibleModels = serviceModels.filter { model in
+                if selectedModelsManager.hasCustomSelection(for: serviceType) {
+                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
+                }
+                return true
+            }
+            
+            if !visibleModels.isEmpty {
+                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
+            }
+        }
+        return result
+    }
+    
+    private func getFilteredModels(from available: [(provider: String, models: [String])]) -> [(provider: String, models: [String])] {
+        var modelsToFilter = available
+        
+        // Apply search
+        if !searchText.isEmpty {
+            let searchLower = searchText.lowercased()
+            modelsToFilter = modelsToFilter.compactMap { provider, models in
+                let filtered = models.filter { model in
+                    model.lowercased().contains(searchLower) ||
+                    provider.lowercased().contains(searchLower)
+                }
+                return filtered.isEmpty ? nil : (provider: provider, models: filtered)
+            }
+        }
+        
+        // Sort
+        return modelsToFilter.map { provider, models in
+            let sorted = models.sorted { first, second in
+                // Simple alphabetical sort for the main list, 
+                // as favorites/recents are handled separately.
+                // Original code had a complex score, but mostly for fav/recent.
+                // Since we separate those, alphabetical is fine and FASTER.
+                return first < second
+            }
+            return (provider: provider, models: sorted)
+        }
+    }
+    
+    private func getFavorites(from available: [(provider: String, models: [String])]) -> [ModelItem] {
+        var items: [ModelItem] = []
+        for (provider, models) in available {
+            for model in models {
+                if favoriteManager.isFavorite(provider: provider, model: model) {
+                    items.append(ModelItem(
+                        id: "\(provider)_\(model)",
+                        provider: provider,
+                        modelId: model,
+                        isFavorite: true
+                    ))
+                }
+            }
+        }
+        return items
+    }
+    
+    private func getRecents(from available: [(provider: String, models: [String])]) -> [ModelItem] {
+        let allRecent = recentModelsManager.getRecentModels()
+        return allRecent.prefix(5).compactMap { recent in
+            // Verify it's still available
+            let isAvailable = available.contains { $0.provider == recent.provider && $0.models.contains(recent.modelId) }
+            guard isAvailable else { return nil }
+            
+            return ModelItem(
+                id: "\(recent.provider)_\(recent.modelId)",
+                provider: recent.provider,
+                modelId: recent.modelId,
+                isFavorite: favoriteManager.isFavorite(provider: recent.provider, model: recent.modelId)
+            )
+        }
+    }
+    
+    private func getProviderDisplayName(_ provider: String) -> String {
+        switch provider {
+        case "chatgpt": return "OpenAI"
+        case "claude": return "Anthropic"
+        case "gemini": return "Google"
+        case "xai": return "xAI"
+        case "perplexity": return "Perplexity"
+        case "deepseek": return "DeepSeek"
+        case "groq": return "Groq"
+        case "openrouter": return "OpenRouter"
+        case "ollama": return "Ollama"
+        case "mistral": return "Mistral"
+        default: return provider.capitalized
+        }
+    }
+}
 
 struct StandaloneModelSelector: View {
     @ObservedObject var chat: ChatEntity
     @Environment(\.managedObjectContext) private var viewContext
     
-    @StateObject private var modelCache = ModelCacheManager.shared
-    @StateObject private var selectedModelsManager = SelectedModelsManager.shared
+    // Use the ViewModel
+    @StateObject private var viewModel = ModelSelectorViewModel()
+    
+    // Keep these for direct actions
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
     @StateObject private var recentModelsManager = RecentModelsManager.shared
     @StateObject private var metadataCache = ModelMetadataCache.shared
-    @State private var searchText = ""
-    @State private var hoveredItem: String? = nil
-    @State private var isHovered = false
     
-    // Allow parent to control expanded state when used in popover
+    @State private var hoveredItem: String? = nil
+    
     var isExpanded: Bool = true
     var onDismiss: (() -> Void)? = nil
     
@@ -24,140 +247,16 @@ struct StandaloneModelSelector: View {
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
-    private var currentProvider: String {
-        chat.apiService?.type ?? "chatgpt"
-    }
-    
-    private var currentProviderName: String {
-        chat.apiService?.name ?? "No AI Service"
-    }
-    
-    private var currentModel: String {
-        chat.gptModel.isEmpty ? "No Model" : chat.gptModel
-    }
-    
-    private var availableModels: [(provider: String, models: [String])] {
-        var result: [(provider: String, models: [String])] = []
-        
-        for service in apiServices {
-            guard let serviceType = service.type else { continue }
-            
-            // Get cached models for this service
-            let serviceModels = modelCache.getModels(for: serviceType)
-            
-            // Filter models based on user's visibility preferences
-            let visibleModels = serviceModels.filter { model in
-                // Check if there are custom selections - if not, show all models
-                if selectedModelsManager.hasCustomSelection(for: serviceType) {
-                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
-                } else {
-                    return true  // Show all models if no custom selection
-                }
-            }
-            
-            if !visibleModels.isEmpty {
-                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
-            }
-        }
-        
-        return result
-    }
-    
-    private var filteredModels: [(provider: String, models: [String])] {
-        var modelsToFilter = availableModels
-        
-        // Apply search filter
-        if !searchText.isEmpty {
-            let searchLower = searchText.lowercased()
-            modelsToFilter = modelsToFilter.compactMap { provider, models in
-                let filteredModels = models.filter { model in
-                    model.lowercased().contains(searchLower) ||
-                    provider.lowercased().contains(searchLower)
-                }
-                return filteredModels.isEmpty ? nil : (provider: provider, models: filteredModels)
-            }
-        }
-        
-        // Smart sorting: favorites → recently used → alphabetical
-        return modelsToFilter.map { provider, models in
-            // Pre-calculate all scores in one pass
-            let modelsWithScores = models.map { model in
-                (model: model, score: calculateModelScore(model, provider: provider))
-            }
-            
-            let sortedModels = modelsWithScores.sorted { first, second in
-                if first.score != second.score {
-                    return first.score > second.score
-                }
-                return first.model < second.model
-            }
-            .map { $0.model }
-            
-            return (provider: provider, models: sortedModels)
-        }
-    }
-    
-    // Get all favorite models across all providers
-    private var favoriteModelsFlat: [(provider: String, model: String)] {
-        availableModels.flatMap { provider, models in
-            models.filter { model in
-                favoriteManager.isFavorite(provider: provider, model: model)
-            }
-            .map { model in
-                (provider: provider, model: model)
-            }
-        }
-    }
-    
-    // Get all recently used models across all providers (limited to 5)
-    private var recentlyUsedModelsFlat: [(provider: String, model: String)] {
-        let allRecentModels = recentModelsManager.getRecentModels()
-        // Filter to only available models and limit to 5
-        return allRecentModels.prefix(5).filter { recent in
-            availableModels.contains { provider, models in
-                provider == recent.provider && models.contains(recent.modelId)
-            }
-        }
-        .map { recent in
-            (provider: recent.provider, model: recent.modelId)
-        }
-    }
-    
-    // Get remaining models excluding favorites and recently used
-    private var remainingFilteredModels: [(provider: String, models: [String])] {
-        let favoriteIds = Set(favoriteModelsFlat.map { "\($0.provider)_\($0.model)" })
-        let recentIds = Set(recentlyUsedModelsFlat.map { "\($0.provider)_\($0.model)" })
-        
-        return filteredModels.compactMap { provider, models in
-            let remaining = models.filter { model in
-                !favoriteIds.contains("\(provider)_\(model)") &&
-                !recentIds.contains("\(provider)_\(model)")
-            }
-            return remaining.isEmpty ? nil : (provider: provider, models: remaining)
-        }
-    }
-    
-    private func calculateModelScore(_ model: String, provider: String) -> Int {
-        var score = 0
-        
-        // Favorite bonus (highest priority)
-        if favoriteManager.isFavorite(provider: provider, model: model) {
-            score += 1000
-        } else {
-            // Recently used bonus (recency-based decay) - only check if not favorite
-            if let lastUsed = recentModelsManager.getLastUsedDate(provider: provider, modelId: model) {
-                let daysSinceUse = Calendar.current.dateComponents([.day], from: lastUsed, to: Date()).day ?? 999
-                score += max(0, 100 - daysSinceUse)
-            }
-        }
-        
-        return score
-    }
-    
     var body: some View {
         if isExpanded {
             popoverContent
                 .environment(\.managedObjectContext, viewContext)
+                .onAppear {
+                    viewModel.updateServices(Array(apiServices))
+                }
+                .onChange(of: Array(apiServices)) { services in
+                    viewModel.updateServices(services)
+                }
         }
     }
     
@@ -169,40 +268,23 @@ struct StandaloneModelSelector: View {
                 .padding(.top, 8)
             
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    // Favorites Section (only show if not searching)
-                    if searchText.isEmpty && !favoriteModelsFlat.isEmpty {
-                        sectionHeader("Favorites")
-                        
-                        ForEach(Array(favoriteModelsFlat.enumerated()), id: \.offset) { idx, fav in
-                            modelRow(provider: fav.provider, model: fav.model)
+                LazyVStack(spacing: 0, pinnedViews: []) {
+                    ForEach(viewModel.filteredSections) { section in
+                        if section.id == "favorites" || section.id == "recents" {
+                            sectionHeader(section.title)
+                            ForEach(section.items) { item in
+                                modelRow(item: item)
+                            }
+                            Divider().padding(.vertical, 4)
+                        } else if section.id == "search" {
+                            sectionHeader(section.title)
+                        } else {
+                            // Provider section
+                            providerSectionHeader(title: section.title, provider: section.id)
+                            ForEach(section.items) { item in
+                                modelRow(item: item)
+                            }
                         }
-                        
-                        Divider()
-                            .padding(.vertical, 4)
-                    }
-                    
-                    // Recently Used Section (only show if not searching)
-                    if searchText.isEmpty && !recentlyUsedModelsFlat.isEmpty {
-                        sectionHeader("Recently Used")
-                        
-                        ForEach(Array(recentlyUsedModelsFlat.enumerated()), id: \.offset) { idx, recent in
-                            modelRow(provider: recent.provider, model: recent.model)
-                        }
-                        
-                        if !remainingFilteredModels.isEmpty {
-                            Divider()
-                                .padding(.vertical, 4)
-                        }
-                    }
-                    
-                    // All Models Section
-                    if !searchText.isEmpty {
-                        sectionHeader("Search Results")
-                    }
-                    
-                    ForEach(remainingFilteredModels, id: \.provider) { providerData in
-                        providerSection(provider: providerData.provider, models: providerData.models)
                     }
                 }
                 .padding(.bottom, 4)
@@ -211,9 +293,7 @@ struct StandaloneModelSelector: View {
         }
         .frame(minWidth: 340, maxWidth: 400)
         .padding(.vertical, 8)
-        .background(
-            AppConstants.backgroundElevated
-        )
+        .background(AppConstants.backgroundElevated)
     }
     
     private func sectionHeader(_ title: String) -> some View {
@@ -223,7 +303,25 @@ struct StandaloneModelSelector: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.clear)
+    }
+    
+    private func providerSectionHeader(title: String, provider: String) -> some View {
+        HStack(spacing: 8) {
+            Image("logo_\(provider)")
+                .resizable()
+                .renderingMode(.template)
+                .interpolation(.high)
+                .frame(width: 12, height: 12)
+                .foregroundColor(.secondary)
+            
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
     
     private var searchBar: some View {
@@ -232,14 +330,12 @@ struct StandaloneModelSelector: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
             
-            TextField("Search models...", text: $searchText)
+            TextField("Search models...", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
             
-            if !searchText.isEmpty {
-                Button(action: {
-                    searchText = ""
-                }) {
+            if !viewModel.searchText.isEmpty {
+                Button(action: { viewModel.searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
@@ -259,61 +355,27 @@ struct StandaloneModelSelector: View {
         )
     }
     
-
-    private func providerSection(provider: String, models: [String]) -> some View {
-        VStack(spacing: 0) {
-            // Provider header
-            HStack(spacing: 8) {
-                Image("logo_\(provider)")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .frame(width: 12, height: 12)
-                    .foregroundColor(.secondary)
-                
-                Text(getProviderDisplayName(provider))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.clear)
-            
-            // Models
-            ForEach(models, id: \.self) { model in
-                modelRow(provider: provider, model: model)
-            }
-        }
-    }
-    
-    private func modelRow(provider: String, model: String) -> some View {
-        // Pre-calculate values to avoid repeated lookups
-        let isSelected = isCurrentlySelected(provider: provider, model: model)
-        let isFavorite = favoriteManager.isFavorite(provider: provider, model: model)
-        let metadata = metadataCache.getMetadata(provider: provider, modelId: model)
+    private func modelRow(item: ModelSelectorViewModel.ModelItem) -> some View {
+        // Use local vars to avoid capturing self if possible, but we need managers
+        let isSelected = (chat.apiService?.type == item.provider && chat.gptModel == item.modelId)
+        let metadata = metadataCache.getMetadata(provider: item.provider, modelId: item.modelId)
         
-        // Use metadata for capability detection, fall back to false if no metadata
         let isReasoning = metadata?.hasReasoning ?? false
         let isVision = metadata?.hasVision ?? false
         
         return Button(action: {
-            handleModelChange(providerType: provider, model: model)
+            handleModelChange(providerType: item.provider, model: item.modelId)
             onDismiss?()
         }) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    // Current selection indicator
+                    // Selection Indicator
                     Circle()
                         .fill(isSelected ? Color.accentColor : Color.clear)
                         .frame(width: 8, height: 8)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
-                        )
+                        .overlay(Circle().stroke(Color.primary.opacity(0.2), lineWidth: 0.5))
                     
-                    Text(ModelMetadata.formatModelDisplayName(modelId: model, provider: provider))
+                    Text(ModelMetadata.formatModelDisplayName(modelId: item.modelId, provider: item.provider))
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(isSelected ? .accentColor : AppConstants.textPrimary)
                         .lineLimit(1)
@@ -321,53 +383,43 @@ struct StandaloneModelSelector: View {
                     Spacer()
                     
                     HStack(spacing: 6) {
-                        // Favorite star
+                        // Favorite
                         Button(action: {
-                            favoriteManager.toggleFavorite(provider: provider, model: model)
+                            favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
                         }) {
-                            Image(systemName: isFavorite ? "star.fill" : "star")
+                            Image(systemName: item.isFavorite ? "star.fill" : "star")
                                 .font(.system(size: 9))
-                                .foregroundColor(isFavorite ? .yellow : .secondary.opacity(0.6))
+                                .foregroundColor(item.isFavorite ? .yellow : .secondary.opacity(0.6))
                         }
                         .buttonStyle(.plain)
-                        .help("Toggle favorite")
                         
-                        // Model type indicators
                         if isReasoning {
                             Image(systemName: "brain")
                                 .font(.system(size: 9))
                                 .foregroundColor(.orange)
-                                .help("Reasoning model")
                         }
-                        
                         if isVision {
                             Image(systemName: "eye")
                                 .font(.system(size: 9))
                                 .foregroundColor(.blue)
-                                .help("Vision model")
                         }
                     }
                 }
                 
-                // Pricing info if available
-                if let metadata = metadata,
-                   metadata.hasPricing,
-                   let pricing = metadata.pricing,
-                   let inputPrice = pricing.inputPer1M {
+                // Pricing
+                if let metadata = metadata, metadata.hasPricing, let pricing = metadata.pricing, let inputPrice = pricing.inputPer1M {
                     HStack(spacing: 8) {
                         Text(metadata.costIndicator)
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundColor(.orange)
                         
-                        if let outputPrice = pricing.outputPer1M {
-                            Text("$\(String(format: "%.2f", inputPrice)) → $\(String(format: "%.2f", outputPrice))/1M")
-                                .font(.system(size: 9, weight: .regular))
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("$\(String(format: "%.2f", inputPrice))/1M")
-                                .font(.system(size: 9, weight: .regular))
-                                .foregroundColor(.secondary)
-                        }
+                        let priceText = pricing.outputPer1M != nil 
+                            ? "$\(String(format: "%.2f", inputPrice)) → $\(String(format: "%.2f", pricing.outputPer1M!))/1M"
+                            : "$\(String(format: "%.2f", inputPrice))/1M"
+                            
+                        Text(priceText)
+                            .font(.system(size: 9, weight: .regular))
+                            .foregroundColor(.secondary)
                     }
                     .padding(.leading, 16)
                 }
@@ -376,72 +428,30 @@ struct StandaloneModelSelector: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(hoveredItem == "\(provider)_\(model)" ? AppConstants.backgroundSubtle : Color.clear)
+                    .fill(hoveredItem == item.id ? AppConstants.backgroundSubtle : Color.clear)
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            hoveredItem = hovering ? "\(provider)_\(model)" : nil
-        }
-        // Removed hover popover for performance - all info is already shown inline
-    }
-    
-    private func isCurrentlySelected(provider: String, model: String) -> Bool {
-        return chat.apiService?.type == provider && chat.gptModel == model
-    }
-    
-    private func getProviderDisplayName(_ provider: String) -> String {
-        switch provider {
-        case "chatgpt": return "OpenAI"
-        case "claude": return "Anthropic"
-        case "gemini": return "Google"
-        case "xai": return "xAI"
-        case "perplexity": return "Perplexity"
-        case "deepseek": return "DeepSeek"
-        case "groq": return "Groq"
-        case "openrouter": return "OpenRouter"
-        case "ollama": return "Ollama"
-        case "mistral": return "Mistral"
-        default: return provider.capitalized
+            hoveredItem = hovering ? item.id : nil
         }
     }
     
     private func handleModelChange(providerType: String, model: String) {
-        // Find the API service for this provider type
-        guard let service = apiServices.first(where: { $0.type == providerType }) else {
-            print("⚠️ No API service found for provider type: \(providerType)")
-            return
-        }
+        guard let service = apiServices.first(where: { $0.type == providerType }) else { return }
         
-        // Validate that the service has required configuration
-        guard let serviceUrl = service.url, !serviceUrl.absoluteString.isEmpty else {
-            print("⚠️ API service \(service.name ?? "Unknown") has invalid URL")
-            return
-        }
-        
-        // Record usage for recently used models tracking
         recentModelsManager.recordUsage(provider: providerType, modelId: model)
         
-        // Update chat configuration
         chat.apiService = service
         chat.gptModel = model
         
-        print("🔄 Model changed to \(providerType)/\(model) for chat \(chat.id)")
+        try? viewContext.save()
         
-        do {
-            try viewContext.save()
-            
-            // Send notification that model changed
-            NotificationCenter.default.post(
-                name: NSNotification.Name("RecreateMessageManager"),
-                object: nil,
-                userInfo: ["chatId": chat.id]
-            )
-            
-            print("✅ Model change saved and notification sent")
-        } catch {
-            print("❌ Failed to save model change: \(error)")
-        }
+        NotificationCenter.default.post(
+            name: NSNotification.Name("RecreateMessageManager"),
+            object: nil,
+            userInfo: ["chatId": chat.id]
+        )
     }
 }
 
