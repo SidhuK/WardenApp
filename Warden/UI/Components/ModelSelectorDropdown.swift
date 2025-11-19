@@ -352,16 +352,23 @@ struct StandaloneModelSelector: View {
                    metadata.hasPricing,
                    let pricing = metadata.pricing,
                    let inputPrice = pricing.inputPer1M {
-                    HStack(spacing: 8) {
-                        Text(metadata.costIndicator)
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(metadata.costIndicator)
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.orange)
+                            
+                            Text("In: $\(String(format: "%.5f", inputPrice))/1M")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundColor(.secondary)
+                        }
                         
-                        Text("$\(String(format: "%.5f", inputPrice))/1M")
-                            .font(.system(size: 9, weight: .regular))
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
+                        if let outputPrice = pricing.outputPer1M {
+                            Text("Out: $\(String(format: "%.5f", outputPrice))/1M")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 20) // Align with input price
+                        }
                     }
                     .padding(.leading, 16)
                 }

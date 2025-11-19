@@ -68,10 +68,17 @@ struct ModelInfoTooltip: View {
                         }
                         
                         // Price details
-                        if let input = meta.pricing?.inputPer1M {
-                            Text("$\(String(format: "%.5f", input))/1M")
-                                .font(.system(size: 9, weight: .regular))
-                                .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            if let input = meta.pricing?.inputPer1M {
+                                Text("Input: $\(String(format: "%.5f", input))/1M")
+                                    .font(.system(size: 9, weight: .regular))
+                                    .foregroundColor(.secondary)
+                            }
+                            if let output = meta.pricing?.outputPer1M {
+                                Text("Output: $\(String(format: "%.5f", output))/1M")
+                                    .font(.system(size: 9, weight: .regular))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                     

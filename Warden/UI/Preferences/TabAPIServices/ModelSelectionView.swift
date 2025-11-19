@@ -360,25 +360,31 @@ struct ModelSelectionRow: View {
                      .help(isFavorite ? "Remove from favorites" : "Add to favorites")
                  }
              }
-             
-             // Pricing info if available
-             if let metadata = metadata,
-                metadata.hasPricing,
-                let pricing = metadata.pricing,
-                let inputPrice = pricing.inputPer1M {
-                 HStack(spacing: 8) {
-                     Text(metadata.costIndicator)
-                         .font(.system(size: 10, weight: .semibold))
-                         .foregroundColor(.orange)
-                     
-                     Text("$\(String(format: "%.5f", inputPrice))/1M")
-                         .font(.system(size: 9, weight: .regular))
-                         .foregroundColor(.secondary)
-                     
-                     Spacer()
-                 }
-                 .padding(.leading, 22)
-             }
+                          // Pricing info if available
+              if let metadata = metadata,
+                 metadata.hasPricing,
+                 let pricing = metadata.pricing,
+                 let inputPrice = pricing.inputPer1M {
+                  VStack(alignment: .leading, spacing: 2) {
+                      HStack(spacing: 8) {
+                          Text(metadata.costIndicator)
+                              .font(.system(size: 10, weight: .semibold))
+                              .foregroundColor(.orange)
+                          
+                          Text("In: $\(String(format: "%.5f", inputPrice))/1M")
+                              .font(.system(size: 9, weight: .regular))
+                              .foregroundColor(.secondary)
+                      }
+                      
+                      if let outputPrice = pricing.outputPer1M {
+                          Text("Out: $\(String(format: "%.5f", outputPrice))/1M")
+                              .font(.system(size: 9, weight: .regular))
+                              .foregroundColor(.secondary)
+                              .padding(.leading, 18) // Align with input price
+                      }
+                  }
+                  .padding(.leading, 22)
+              }
          }
          .padding(.horizontal, 8)
          .padding(.vertical, 6)
