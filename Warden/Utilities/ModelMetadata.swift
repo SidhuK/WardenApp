@@ -212,4 +212,56 @@ extension ModelMetadata {
             source: .providerDocumentation
         )
     }
+    
+    // MARK: - Model Name Formatting
+    
+    /// Formats a model ID into a human-readable display name
+    /// Example: "x-ai/grok-code-fast-1" → "Grok Code Fast 1 (xAI)"
+    static func formatModelDisplayName(modelId: String, provider: String? = nil) -> String {
+        // Split by "/" if OpenRouter-style format
+        let parts = modelId.split(separator: "/")
+        let modelName: String
+        let providerPrefix: String?
+        
+        if parts.count == 2 {
+            providerPrefix = String(parts[0])
+            modelName = String(parts[1])
+        } else {
+            providerPrefix = provider
+            modelName = modelId
+        }
+        
+        // Convert kebab-case/snake_case to Title Case
+        let formatted = modelName
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .split(separator: " ")
+            .map { $0.capitalized }
+            .joined(separator: " ")
+        
+        // Add provider suffix if available
+        if let prefix = providerPrefix {
+            let friendlyProvider = Self.mapProviderName(prefix)
+            return "\(formatted) (\(friendlyProvider))"
+        }
+        
+        return formatted
+    }
+    
+    private static func mapProviderName(_ provider: String) -> String {
+        let mapping: [String: String] = [
+            "x-ai": "xAI",
+            "anthropic": "Anthropic",
+            "openai": "OpenAI",
+            "google": "Google",
+            "meta": "Meta",
+            "mistralai": "Mistral AI",
+            "cohere": "Cohere",
+            "perplexity": "Perplexity",
+            "deepseek": "DeepSeek",
+            "qwen": "Qwen",
+            "nvidia": "NVIDIA"
+        ]
+        return mapping[provider.lowercased()] ?? provider.capitalized
+    }
 }

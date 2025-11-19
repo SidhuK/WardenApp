@@ -311,7 +311,7 @@ struct StandaloneModelSelector: View {
                                 .stroke(Color.primary.opacity(0.2), lineWidth: 0.5)
                         )
                     
-                    Text(model)
+                    Text(ModelMetadata.formatModelDisplayName(modelId: model, provider: provider))
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(isSelected ? .accentColor : AppConstants.textPrimary)
                         .lineLimit(1)
