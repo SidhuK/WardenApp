@@ -1,36 +1,88 @@
 
 import SwiftUI
 
+enum ErrorType {
+    case apiError(APIError)
+    case tavilyError(TavilyError)
+    case generic(Error)
+}
+
 struct ErrorMessage {
-    let type: APIError
+    let type: ErrorType
     let timestamp: Date
     var retryCount: Int = 0
 
     var displayTitle: String {
         switch type {
-        case .requestFailed(_):
-            return "Connection Error"
-        case .invalidResponse:
-            return "Invalid Response"
-        case .decodingFailed(_):
-            return "Processing Error"
-        case .unauthorized:
-            return "Authentication Error"
-        case .rateLimited:
-            return "Rate Limited"
-        case .serverError(_):
-            return "Server Error"
-        case .unknown(_):
-            return "Unknown Error"
-        case .noApiService(_):
-            return "No API Service selected"
+        case .apiError(let apiError):
+            return apiErrorTitle(apiError)
+        case .tavilyError:
+            return "Web Search Failed"
+        case .generic:
+            return "Error"
         }
     }
 
     var displayMessage: String {
         switch type {
-        case .requestFailed(let error):
-            return "Failed to connect: \(error.localizedDescription)"
+        case .apiError(let apiError):
+            return apiErrorMessage(apiError)
+        case .tavilyError(let tavilyError):
+            return tavilyError.localizedDescription ?? "An error occurred during search"
+        case .generic(let error):
+            return error.localizedDescription
+        }
+    }
+
+    var canRetry: Bool {
+        switch type {
+        case .apiError(let apiError):
+            if case .unauthorized = apiError { return false }
+            return retryCount < 3
+        case .tavilyError(let tavilyError):
+            if case .unauthorized = tavilyError { return false }
+            return retryCount < 3
+        case .generic:
+            return retryCount < 3
+        }
+    }
+    
+    var isApiKeyError: Bool {
+        switch type {
+        case .apiError(.unauthorized):
+            return true
+        case .tavilyError(.noApiKey), .tavilyError(.unauthorized):
+            return true
+        default:
+            return false
+        }
+    }
+    
+    private func apiErrorTitle(_ error: APIError) -> String {
+        switch error {
+        case .requestFailed:
+            return "Connection Error"
+        case .invalidResponse:
+            return "Invalid Response"
+        case .decodingFailed:
+            return "Processing Error"
+        case .unauthorized:
+            return "Authentication Error"
+        case .rateLimited:
+            return "Rate Limited"
+        case .serverError:
+            return "Server Error"
+        case .unknown:
+            return "Unknown Error"
+        case .noApiService:
+            return "No API Service selected"
+        }
+    }
+    
+    private func apiErrorMessage(_ error: APIError) -> String {
+        switch error {
+        case .requestFailed(let err):
+            return "Failed to connect: \(err.localizedDescription)"
         case .invalidResponse:
             return "Received invalid response from server"
         case .decodingFailed(let message):
@@ -47,11 +99,24 @@ struct ErrorMessage {
             return message
         }
     }
-
-    var canRetry: Bool {
-        switch type {
-        case .unauthorized: return false
-        default: return retryCount < 3
+    
+    // MARK: - Convenience Initializers
+    
+    init(apiError: APIError, timestamp: Date = Date()) {
+        self.init(type: .apiError(apiError), timestamp: timestamp)
+    }
+    
+    init(tavilyError: TavilyError, timestamp: Date = Date()) {
+        self.init(type: .tavilyError(tavilyError), timestamp: timestamp)
+    }
+    
+    init(error: Error, timestamp: Date = Date()) {
+        if let apiError = error as? APIError {
+            self.init(type: .apiError(apiError), timestamp: timestamp)
+        } else if let tavilyError = error as? TavilyError {
+            self.init(type: .tavilyError(tavilyError), timestamp: timestamp)
+        } else {
+            self.init(type: .generic(error), timestamp: timestamp)
         }
     }
 }
@@ -60,6 +125,7 @@ struct ErrorBubbleView: View {
     let error: ErrorMessage
     let onRetry: () -> Void
     let onIgnore: () -> Void
+    let onGoToSettings: (() -> Void)?
 
     @State private var isExpanded = false
 
@@ -79,6 +145,14 @@ struct ErrorBubbleView: View {
                         if error.canRetry {
                             Button(action: onRetry) {
                                 Label("Retry", systemImage: "arrow.clockwise")
+                            }
+                            .clipShape(Capsule())
+                            .frame(height: 12)
+                        }
+                        
+                        if error.isApiKeyError, let goToSettings = onGoToSettings {
+                            Button(action: goToSettings) {
+                                Label("Settings", systemImage: "gear")
                             }
                             .clipShape(Capsule())
                             .frame(height: 12)
@@ -113,29 +187,32 @@ struct ErrorBubbleView: View {
     VStack(spacing: 20) {
         ErrorBubbleView(
             error: ErrorMessage(
-                type: .requestFailed(NSError(domain: "network", code: -1009)),
+                apiError: .requestFailed(NSError(domain: "network", code: -1009)),
                 timestamp: Date()
             ),
             onRetry: {},
-            onIgnore: {}
+            onIgnore: {},
+            onGoToSettings: nil
         )
 
         ErrorBubbleView(
             error: ErrorMessage(
-                type: .unauthorized,
+                apiError: .unauthorized,
                 timestamp: Date()
             ),
             onRetry: {},
-            onIgnore: {}
+            onIgnore: {},
+            onGoToSettings: {}
         )
 
         ErrorBubbleView(
             error: ErrorMessage(
-                type: .serverError("Internal server error occurred"),
+                tavilyError: .noApiKey,
                 timestamp: Date()
             ),
             onRetry: {},
-            onIgnore: {}
+            onIgnore: {},
+            onGoToSettings: {}
         )
     }
     .padding()

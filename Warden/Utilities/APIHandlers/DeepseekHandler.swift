@@ -1,4 +1,4 @@
-
+import Foundation
 
 private struct DeepseekModelsResponse: Codable {
     let data: [DeepseekModel]

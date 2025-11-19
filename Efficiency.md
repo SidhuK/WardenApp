@@ -77,10 +77,10 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Moved `isSearchCommand`, `convertCitationsToLinks`, and citation formatting logic to `TavilySearchService`. Updated all call sites to use `tavilyService` methods.
 **Benefit:** `MessageManager` now delegates search operations, cleaner separation of concerns.
 
-## 16. Enhance `ErrorBubbleView.swift`
-**Problem:** Limited error handling.
-**Solution:** Expand `ErrorBubbleView.swift` to handle search errors and API errors, removing the need for ad-hoc error views.
-**Benefit:** Unified error UI.
+## 16. Enhance `ErrorBubbleView.swift` ✅
+**Problem:** Limited error handling; `SearchErrorView.swift` duplicates error UI.
+**Solution:** Expanded `ErrorBubbleView` to handle API errors, Tavily search errors, and generic errors. Added `isApiKeyError` property and onGoToSettings callback.
+**Benefit:** Unified error UI replaces ad-hoc `SearchErrorView`; single source of truth for error display.
 
 ## 17. Flatten `ChatBubbleView` Hierarchy
 **Problem:** Deep nesting.

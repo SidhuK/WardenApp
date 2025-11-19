@@ -1,4 +1,5 @@
 
+import Foundation
 
 private struct ClaudeModelsResponse: Codable {
     let data: [ClaudeModel]
