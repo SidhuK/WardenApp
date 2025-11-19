@@ -62,7 +62,7 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Move `formattedTimestamp` logic to `Extensions.swift` as `Date` extension.
 **Benefit:** Reusable formatting.
 
-## 13. Audit and Remove Unused Assets
+## 13. Audit and Remove Unused Assets ✅
 **Problem:** Unused images/icons.
 **Solution:** Delete unused items from `Assets.xcassets`.
 **Benefit:** Smaller app bundle.
@@ -92,12 +92,27 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Create a `ViewModifier` in `Extensions.swift` for standard chat font scaling.
 **Benefit:** Consistent typography.
 
-## 19. Remove Redundant Imports
+## 19. Remove Redundant Imports ✅
 **Problem:** Files importing unused modules.
 **Solution:** Scan and remove unused imports (e.g., `UniformTypeIdentifiers` where not needed).
 **Benefit:** Cleaner code.
 
-## 20. Clean Up `MessageParser.swift`
+**Completed changes:**
+- Removed `import SwiftUI` from `ModelMetadataCache.swift` (added back: needed for @AppStorage)
+- Removed `import SwiftUI` from `DatabasePatcher.swift`
+- Removed `import AppKit` from `LMStudioHandler.swift`
+- Removed `import AppKit` and extra blank lines from `MistralHandler.swift`
+- Removed `import AppKit` from `ChatGPTHandler.swift`
+- Removed `import Foundation` from `DeepseekHandler.swift` (added back: needed for Data types)
+- Removed `import Foundation` from `PerplexityHandler.swift` (added back: needed for Data types)
+- Removed `import Foundation` from `GeminiHandler.swift` (added back: needed for URLComponents)
+- Removed `import Foundation` from `ClaudeHandler.swift` (added back: needed for Data types)
+- Removed `import Foundation` from `OpenRouterHandler.swift` (added back: needed for Data types)
+- Removed `import Foundation` from `CodeView.swift` (actually removed - not needed)
+
+## 20. Clean Up `MessageParser.swift` ✅
 **Problem:** Potential duplication with `MessageContentView`.
 **Solution:** Ensure `MessageParser` is the single source of truth for parsing logic; remove any inline parsing in Views.
 **Benefit:** Centralized parsing logic.
+
+**Status:** Already implemented correctly. MessageParser is the sole source for message parsing logic. MessageContentView properly delegates all parsing to MessageParser via `parseMessageFromString()`. No inline parsing found in views. Verification shows only 3 call sites in MessageContentView for partial, full, and background parsing - all properly using the single parser instance.

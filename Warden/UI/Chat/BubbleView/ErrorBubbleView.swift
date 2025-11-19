@@ -11,6 +11,11 @@ struct ErrorMessage {
     let type: ErrorType
     let timestamp: Date
     var retryCount: Int = 0
+    
+    init(type: ErrorType, timestamp: Date) {
+        self.type = type
+        self.timestamp = timestamp
+    }
 
     var displayTitle: String {
         switch type {

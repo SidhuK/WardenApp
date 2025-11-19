@@ -298,7 +298,8 @@ struct ChatBubbleView: View, Equatable {
                         name: NSNotification.Name("IgnoreError"),
                         object: nil
                     )
-                }
+                },
+                onGoToSettings: nil
             )
         }
     }

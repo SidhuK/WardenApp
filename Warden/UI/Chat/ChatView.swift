@@ -481,7 +481,7 @@ extension ChatView {
     func sendMessage(ignoreMessageInput: Bool = false) {
         guard chatViewModel.canSendMessage else {
             currentError = ErrorMessage(
-                type: .noApiService("No API service selected. Select the API service to send your first message"),
+                apiError: .noApiService("No API service selected. Select the API service to send your first message"),
                 timestamp: Date()
             )
             return
@@ -591,7 +591,7 @@ extension ChatView {
                 }
             case .failure(let error):
                 print("Error sending message: \(error)")
-                self.currentError = ErrorMessage(type: self.convertToAPIError(error), timestamp: Date())
+                self.currentError = ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date())
                 self.handleResponseFinished()
             }
         }
@@ -759,7 +759,7 @@ extension ChatView {
     func sendMultiAgentMessage() {
         guard !selectedMultiAgentServices.isEmpty else {
             currentError = ErrorMessage(
-                type: .noApiService("No AI services selected for multi-agent mode. Please select up to 3 services first."),
+                apiError: .noApiService("No AI services selected for multi-agent mode. Please select up to 3 services first."),
                 timestamp: Date()
             )
             return
@@ -804,7 +804,7 @@ extension ChatView {
                     
                 case .failure(let error):
                     print("Error in multi-agent message: \(error)")
-                    self.currentError = ErrorMessage(type: self.convertToAPIError(error), timestamp: Date())
+                    self.currentError = ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date())
                 }
                 
                 self.handleResponseFinished()

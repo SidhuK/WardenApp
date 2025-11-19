@@ -94,6 +94,10 @@ extension View {
     func border(width: CGFloat, edges: [Edge], color: Color) -> some View {
         overlay(EdgeBorder(width: width, edges: edges).foregroundColor(color))
     }
+    
+    func chatFont(size: Double) -> some View {
+        self.font(.system(size: size, weight: .regular))
+    }
 }
 
 struct EdgeBorder: Shape {

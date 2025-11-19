@@ -44,6 +44,10 @@ class MessageManager: ObservableObject {
         self.viewContext = viewContext
     }
     
+    func isSearchCommand(_ message: String) -> (isSearch: Bool, query: String?) {
+        return tavilyService.isSearchCommand(message)
+    }
+    
     func stopStreaming() {
         taskLock.lock()
         let taskToCancel = _currentStreamingTask
