@@ -109,8 +109,8 @@ struct WardenApp: App {
                         }
                     }
                     
-                    // Initialize model cache with all configured API services
-                    initializeModelCache()
+                    // Initialize model cache and metadata cache with all configured API services
+                    initializeModelAndMetadataCache()
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -238,9 +238,9 @@ struct WardenApp: App {
         }
     }
     
-    // MARK: - Model Cache Initialization
+    // MARK: - Model Cache & Metadata Cache Initialization
     
-    private func initializeModelCache() {
+    private func initializeModelAndMetadataCache() {
         // Fetch all API services from Core Data
         let fetchRequest = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
         
@@ -255,8 +255,37 @@ struct WardenApp: App {
             DispatchQueue.global(qos: .userInitiated).async {
                 ModelCacheManager.shared.fetchAllModels(from: apiServices)
             }
+            
+            // Initialize metadata cache for all configured services
+            // This fetches pricing and capability information in the background
+            Task.detached(priority: .background) {
+                await self.initializeMetadataCache(for: apiServices)
+            }
         } catch {
             print("Error fetching API services for model cache initialization: \(error)")
+        }
+    }
+    
+    private func initializeMetadataCache(for apiServices: [APIServiceEntity]) async {
+        for service in apiServices {
+            guard let providerType = service.type else { continue }
+            
+            // Get the API key for this service
+            var apiKey = ""
+            do {
+                apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
+            } catch {
+                print("⚠️ Failed to get token for \(providerType): \(error)")
+                continue
+            }
+            
+            // Skip if no API key (except for providers that don't require it)
+            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" else {
+                continue
+            }
+            
+            // Fetch metadata for this provider
+            await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
         }
     }
 

@@ -199,6 +199,9 @@ class ModelCacheManager: ObservableObject {
                     self.loadingStates[providerType] = false
                     self.fetchErrors[providerType] = nil
                 }
+                
+                // Trigger metadata fetching for this provider now that we have models
+                await triggerMetadataFetch(for: providerType, apiKey: currentAPIKey)
             } catch {
                 DispatchQueue.main.async {
                     self.loadingStates[providerType] = false
@@ -247,5 +250,11 @@ class ModelCacheManager: ObservableObject {
         } catch {
             return false
         }
+    }
+    
+    /// Trigger metadata fetching for a provider
+    /// This is called after models are successfully fetched to ensure metadata is available
+    private func triggerMetadataFetch(for providerType: String, apiKey: String) async {
+        await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
     }
 } 
