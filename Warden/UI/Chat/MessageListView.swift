@@ -32,12 +32,18 @@ struct MessageListView: View {
         // Leading-aligned stack; individual bubbles handle their own horizontal position.
         VStack(alignment: .leading, spacing: 0) {
             if !chat.systemMessage.isEmpty {
-                SystemMessageBubbleView(
-                    message: chat.systemMessage,
-                    color: chat.persona?.color,
-                    newMessage: .constant(""),
-                    editSystemMessage: .constant(false)
-                )
+                ChatBubbleView(
+                    content: ChatBubbleContent(
+                        message: chat.systemMessage,
+                        own: false,
+                        waitingForResponse: nil,
+                        errorMessage: nil,
+                        systemMessage: true,
+                        isStreaming: false,
+                        isLatestMessage: false
+                    ),
+                    color: chat.persona?.color
+               )
                 .id("system_message")
                 .padding(.bottom, 8)
             }

@@ -727,4 +727,5 @@ class MessageManager: ObservableObject {
         }
     }
 
+}
 

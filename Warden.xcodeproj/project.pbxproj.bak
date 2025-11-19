@@ -10,6 +10,7 @@
 		4A0BCBBC2D5199140033AB96 /* ButtonWithStatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0BCBBB2D5199140033AB96 /* ButtonWithStatusIndicator.swift */; };
 		4A0E02852D0F571000D2FAF3 /* PerplexityHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0E02842D0F571000D2FAF3 /* PerplexityHandler.swift */; };
 		4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1614102D430AE300A1EF8D /* ThinkingProcessView.swift */; };
+		4A1614132D46B9BA00A1EF8D /* SystemMessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1614122D46B9BA00A1EF8D /* SystemMessageBubbleView.swift */; };
 		4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1614142D46C86800A1EF8D /* PersonaSelectorView.swift */; };
 		4A194C062C9633BC003C8782 /* EntityListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A194C052C9633BC003C8782 /* EntityListView.swift */; };
 		4A1F0A0A29CEFB7F002A139A /* MessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1F0A0929CEFB7F002A139A /* MessageCell.swift */; };
@@ -173,6 +174,7 @@
 		4A0BCBBB2D5199140033AB96 /* ButtonWithStatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonWithStatusIndicator.swift; sourceTree = "<group>"; };
 		4A0E02842D0F571000D2FAF3 /* PerplexityHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerplexityHandler.swift; sourceTree = "<group>"; };
 		4A1614102D430AE300A1EF8D /* ThinkingProcessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingProcessView.swift; sourceTree = "<group>"; };
+		4A1614122D46B9BA00A1EF8D /* SystemMessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMessageBubbleView.swift; sourceTree = "<group>"; };
 		4A1614142D46C86800A1EF8D /* PersonaSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaSelectorView.swift; sourceTree = "<group>"; };
 		4A194C052C9633BC003C8782 /* EntityListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntityListView.swift; sourceTree = "<group>"; };
 		4A1F0A0929CEFB7F002A139A /* MessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageCell.swift; sourceTree = "<group>"; };
@@ -342,6 +344,7 @@
 			children = (
 				4A4918772D9F3C54007EB4A2 /* MessageContentView.swift */,
 				4A5F64B729C64E21000403F7 /* ChatBubbleView.swift */,
+				4A1614122D46B9BA00A1EF8D /* SystemMessageBubbleView.swift */,
 				4ABB867A2CFC79ED004EC7B1 /* ErrorBubbleView.swift */,
 				4A55DCA629C264BC00A3800C /* TableView.swift */,
 				4A471B872C29CD3D00C66926 /* AdaptiveMathView.swift */,
@@ -854,6 +857,7 @@
 				4AA6EF5B2C565FDF003B6D41 /* APIServiceFactory.swift in Sources */,
 				4AA681C72D3DAB40005C4E6E /* ChatBottomContainerView.swift in Sources */,
 				7F8BB0662DED5DF700FF0837 /* CenteredInputView.swift in Sources */,
+				4A1614132D46B9BA00A1EF8D /* SystemMessageBubbleView.swift in Sources */,
 				4AA6EF592C565F90003B6D41 /* APIServiceConfig.swift in Sources */,
 				4AADF71F2C9CE788001B7A26 /* ClaudeHandler.swift in Sources */,
 				4A27FF912DA1C43E0075D730 /* MessageInputView.swift in Sources */,

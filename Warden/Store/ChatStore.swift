@@ -106,7 +106,7 @@ class ChatStore: ObservableObject {
     func loadFromCoreData() async -> Result<[ChatBackup], Error> {
         let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         
-        return await Task { () -> Result<[Chat], Error> in
+        return await Task { () -> Result<[ChatBackup], Error> in
             return await withCheckedContinuation { continuation in
                 viewContext.perform {
                     do {

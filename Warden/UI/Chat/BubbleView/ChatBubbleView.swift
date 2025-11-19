@@ -235,91 +235,70 @@ struct ChatBubbleView: View, Equatable {
     @ViewBuilder
     private var bubbleView: some View {
         if let error = content.errorMessage {
-            errorBubble(error)
+            unifiedBubble(role: .error(error))
         } else if content.systemMessage {
-            systemBubble
+            unifiedBubble(role: .system)
         } else if content.own {
-            userBubble
+            unifiedBubble(role: .user)
         } else {
-            assistantBubble
+            unifiedBubble(role: .assistant)
         }
     }
-
-    private var userBubble: some View {
+    
+    // MARK: - Unified Bubble Renderer
+    
+    private enum BubbleRole {
+        case user
+        case assistant
+        case system
+        case error(ErrorMessage)
+    }
+    
+    private struct BubbleStyle {
+        let horizontalPadding: CGFloat
+        let verticalPadding: CGFloat
+        let background: AnyView
+        let overlay: AnyView?
+        let shadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
+        let secondaryShadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
+    }
+    
+    @ViewBuilder
+    private func unifiedBubble(role: BubbleRole) -> some View {
+        let style = bubbleStyle(for: role)
+        
         VStack(alignment: .leading, spacing: 4) {
-            // User bubbles never show the assistant thinking indicator here.
+            bubbleContent(for: role)
+        }
+        .padding(.horizontal, style.horizontalPadding)
+        .padding(.vertical, style.verticalPadding)
+        .background(style.background)
+        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
+        .overlay(style.overlay)
+        .modifier(BubbleShadowModifier(
+            shadow: style.shadow,
+            secondaryShadow: style.secondaryShadow
+        ))
+    }
+    
+    @ViewBuilder
+    private func bubbleContent(for role: BubbleRole) -> some View {
+        switch role {
+        case .user:
             if content.waitingForResponse ?? false {
                 messageBody
             } else {
                 messageBody
             }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(
-            ZStack {
-                // Base gradient background matching New Thread button
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.accentColor.opacity(0.85),
-                        Color.accentColor.opacity(0.75)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                
-                // Subtle angled glassy overlay effect
-                LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: .white.opacity(0.15), location: 0.0),
-                        .init(color: .white.opacity(0.05), location: 0.4),
-                        .init(color: .clear, location: 0.6),
-                        .init(color: .black.opacity(0.03), location: 1.0)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.white.opacity(0.2),
-                            Color.accentColor.opacity(0.15)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.5
-                )
-        )
-        .shadow(color: Color.accentColor.opacity(0.15), radius: 2, x: 0, y: 1)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-
-    private var assistantBubble: some View {
-        VStack(alignment: .leading, spacing: 4) {
+            
+        case .assistant:
             if content.waitingForResponse ?? false {
                 thinkingView
             } else {
                 messageBody
             }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-        )
-    }
-
-    private var systemBubble: some View {
-        VStack(alignment: .leading, spacing: 4) {
+            
+        case .system:
             MessageContentView(
                 message: content.message,
                 isStreaming: content.isStreaming,
@@ -329,21 +308,8 @@ struct ChatBubbleView: View, Equatable {
             )
             .italic()
             .foregroundColor(AppConstants.textSecondary)
-        }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .fill(Color.accentColor.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
-                )
-        )
-    }
-
-    private func errorBubble(_ error: ErrorMessage) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+            
+        case .error(let error):
             ErrorBubbleView(
                 error: error,
                 onRetry: {
@@ -360,16 +326,105 @@ struct ChatBubbleView: View, Equatable {
                 }
             )
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .fill(AppConstants.destructive.opacity(0.1))
-                .overlay(
+    }
+    
+    private func bubbleStyle(for role: BubbleRole) -> BubbleStyle {
+        switch role {
+        case .user:
+            return BubbleStyle(
+                horizontalPadding: 12,
+                verticalPadding: 9,
+                background: AnyView(
+                    ZStack {
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.accentColor.opacity(0.85),
+                                Color.accentColor.opacity(0.75)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        
+                        LinearGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .white.opacity(0.15), location: 0.0),
+                                .init(color: .white.opacity(0.05), location: 0.4),
+                                .init(color: .clear, location: 0.6),
+                                .init(color: .black.opacity(0.03), location: 1.0)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+                ),
+                overlay: AnyView(
                     RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(AppConstants.destructive.opacity(0.5), lineWidth: 1)
-                )
-        )
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.2),
+                                    Color.accentColor.opacity(0.15)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
+                        )
+                ),
+                shadow: (Color.accentColor.opacity(0.15), 2, 0, 1),
+                secondaryShadow: (Color.black.opacity(0.05), 4, 0, 2)
+            )
+            
+        case .assistant:
+            return BubbleStyle(
+                horizontalPadding: 12,
+                verticalPadding: 9,
+                background: AnyView(
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                ),
+                overlay: AnyView(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                ),
+                shadow: nil,
+                secondaryShadow: nil
+            )
+            
+        case .system:
+            return BubbleStyle(
+                horizontalPadding: 11,
+                verticalPadding: 8,
+                background: AnyView(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .fill(Color.accentColor.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                                .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
+                        )
+                ),
+                overlay: nil,
+                shadow: nil,
+                secondaryShadow: nil
+            )
+            
+        case .error:
+            return BubbleStyle(
+                horizontalPadding: 11,
+                verticalPadding: 8,
+                background: AnyView(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .fill(AppConstants.destructive.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                                .stroke(AppConstants.destructive.opacity(0.5), lineWidth: 1)
+                        )
+                ),
+                overlay: nil,
+                shadow: nil,
+                secondaryShadow: nil
+            )
+        }
     }
 
     private var messageBody: some View {
@@ -479,6 +534,28 @@ struct PulsatingCircle: ViewModifier {
                     isAnimating = true
                 }
             }
+    }
+}
+
+// MARK: - Bubble Shadow Modifier
+
+struct BubbleShadowModifier: ViewModifier {
+    let shadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
+    let secondaryShadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
+    
+    func body(content: Content) -> some View {
+        if let shadow = shadow {
+            if let secondaryShadow = secondaryShadow {
+                content
+                    .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
+                    .shadow(color: secondaryShadow.color, radius: secondaryShadow.radius, x: secondaryShadow.x, y: secondaryShadow.y)
+            } else {
+                content
+                    .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
+            }
+        } else {
+            content
+        }
     }
 }
 

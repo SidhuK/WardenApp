@@ -22,12 +22,12 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Make the private `extractUUIDs` method `public static` within `MessageContent` and have all extensions use it.
 **Benefit:** DRY compliance within the same file.
 
-## 5. Internal Refactoring of `ChatBubbleView.swift`
+## 5. Internal Refactoring of `ChatBubbleView.swift` ✅
 **Problem:** `ChatBubbleView` is monolithic.
 **Solution:** Extract `UserBubble`, `AssistantBubble`, and `SystemBubble` as `private` views *within* `ChatBubbleView.swift` (at the bottom of the file).
 **Benefit:** Improves readability and separation of concerns without creating new files.
 
-## 6. Delete `SystemMessageBubbleView.swift`
+## 6. Delete `SystemMessageBubbleView.swift` ✅
 **Problem:** It's a redundant wrapper.
 **Solution:** Delete this file. Use `ChatBubbleView(content: ..., systemMessage: true)` directly in `MessageListView.swift`.
 **Benefit:** Reduces file count.
