@@ -15,17 +15,17 @@ struct SearchResultsPreviewView: View {
                 }
             }) {
                 HStack(spacing: 8) {
-                    Image(systemName: \"magnifyingglass.circle.fill\")
+                    Image(systemName: "magnifyingglass.circle.fill")
                         .font(.system(size: 14))
                         .foregroundColor(.accentColor)
                     
-                    Text(\"Web Search Results (\\(sources.count) sources)\")
+                    Text("Web Search Results (\(sources.count) sources)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.primary)
                     
                     Spacer()
                     
-                    Image(systemName: isExpanded ? \"chevron.up\" : \"chevron.down\")
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.secondary)
                 }
@@ -42,7 +42,7 @@ struct SearchResultsPreviewView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(sources.enumerated()), id: \\.offset) { index, source in
+                        ForEach(Array(sources.enumerated()), id: \.offset) { index, source in
                             SearchResultRow(
                                 index: index + 1,
                                 source: source
@@ -87,7 +87,7 @@ struct SearchResultRow: View {
                     .fill(Color.accentColor.opacity(0.1))
                     .frame(width: 24, height: 24)
                 
-                Text(\"\\(index)\")
+                Text("\(index)")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundColor(.accentColor)
             }
@@ -111,7 +111,7 @@ struct SearchResultRow: View {
                     // Relevance score
                     HStack(spacing: 4) {
                         ForEach(0..<5) { starIndex in
-                            Image(systemName: starIndex < relevanceStars ? \"star.fill\" : \"star\")
+                            Image(systemName: starIndex < relevanceStars ? "star.fill" : "star")
                                 .font(.system(size: 8))
                                 .foregroundColor(starIndex < relevanceStars ? .yellow : .gray.opacity(0.3))
                         }
@@ -119,7 +119,7 @@ struct SearchResultRow: View {
                     
                     // Published date
                     if let date = source.publishedDate {
-                        Text(\"•\")
+                        Text("•")
                             .font(.system(size: 8))
                             .foregroundColor(.secondary)
                         
@@ -134,10 +134,10 @@ struct SearchResultRow: View {
                     if isHovered {
                         Button(action: copyURL) {
                             HStack(spacing: 3) {
-                                Image(systemName: showCopiedFeedback ? \"checkmark\" : \"doc.on.doc\")
+                                Image(systemName: showCopiedFeedback ? "checkmark" : "doc.on.doc")
                                     .font(.system(size: 9))
                                 if showCopiedFeedback {
-                                    Text(\"Copied\")
+                                    Text("Copied")
                                         .font(.system(size: 9))
                                 }
                             }
@@ -175,7 +175,7 @@ struct SearchResultRow: View {
         if source.url.count > 60 {
             let startIndex = source.url.index(source.url.startIndex, offsetBy: 0)
             let endIndex = source.url.index(source.url.startIndex, offsetBy: 57)
-            return String(source.url[startIndex..<endIndex]) + \"...\"
+            return String(source.url[startIndex..<endIndex]) + "..."
         }
         return source.url
     }
@@ -207,22 +207,22 @@ struct SearchResultRow: View {
 struct SearchResultsPreviewView_Previews: PreviewProvider {
     static let sampleSources = [
         SearchSource(
-            title: \"OpenAI Announces GPT-4 with Enhanced Capabilities\",
-            url: \"https://www.techcrunch.com/2024/openai-gpt4\",
+            title: "OpenAI Announces GPT-4 with Enhanced Capabilities",
+            url: "https://www.techcrunch.com/2024/openai-gpt4",
             score: 0.95,
-            publishedDate: \"2024-01-15\"
+            publishedDate: "2024-01-15"
         ),
         SearchSource(
-            title: \"The Future of AI: Trends and Predictions\",
-            url: \"https://www.example.com/ai-future\",
+            title: "The Future of AI: Trends and Predictions",
+            url: "https://www.example.com/ai-future",
             score: 0.82,
             publishedDate: nil
         ),
         SearchSource(
-            title: \"Machine Learning Research Paper\",
-            url: \"https://arxiv.org/abs/2024.12345\",
+            title: "Machine Learning Research Paper",
+            url: "https://arxiv.org/abs/2024.12345",
             score: 0.78,
-            publishedDate: \"2024-02-01\"
+            publishedDate: "2024-02-01"
         )
     ]
     
@@ -230,7 +230,7 @@ struct SearchResultsPreviewView_Previews: PreviewProvider {
         VStack(spacing: 16) {
             SearchResultsPreviewView(
                 sources: sampleSources,
-                query: \"latest AI trends\"
+                query: "latest AI trends"
             )
             .frame(width: 500)
         }

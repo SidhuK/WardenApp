@@ -8,7 +8,7 @@ struct CitationBadgeView: View {
     @State private var showTooltip = false
     
     var body: some View {
-        Text(\"\\(number)\")
+        Text("\(number)")
             .font(.system(size: 11, design: .monospaced))
             .fontWeight(.medium)
             .foregroundColor(.white)
@@ -37,7 +37,7 @@ struct CitationBadgeView: View {
     
     private var tooltipText: String {
         if let title = sourceTitle {
-            return \"Source: \\(title)\\n\\(url)\"
+            return "Source: \(title)\n\(url)"
         }
         return url
     }
@@ -64,20 +64,20 @@ struct CitationBadgeView_Previews: PreviewProvider {
         HStack(spacing: 8) {
             CitationBadgeView(
                 number: 1,
-                url: \"https://www.techcrunch.com/ai-trends\",
-                sourceTitle: \"TechCrunch - AI Trends 2024\"
+                url: "https://www.techcrunch.com/ai-trends",
+                sourceTitle: "TechCrunch - AI Trends 2024"
             )
             
             CitationBadgeView(
                 number: 2,
-                url: \"https://www.example.com\",
+                url: "https://www.example.com",
                 sourceTitle: nil
             )
             
             CitationBadgeView(
                 number: 12,
-                url: \"https://www.verylongdomainname.com/article/path\",
-                sourceTitle: \"A Very Long Article Title That Should Be Truncated\"
+                url: "https://www.verylongdomainname.com/article/path",
+                sourceTitle: "A Very Long Article Title That Should Be Truncated"
             )
         }
         .padding()

@@ -113,6 +113,11 @@
 		7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */; };
 		7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */; };
 		7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */; };
+		C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BC12ECDD29000D72DA1 /* SearchModels.swift */; };
+		C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */; };
+		C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */; };
+		C4632BDC2ECDD2DD00D72DA1 /* SearchErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */; };
+		C4632BDD2ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD82ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift */; };
 		C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A502EC200A900326693 /* AnimationModifiers.swift */; };
 		C4642A562EC200C000326693 /* AnimatedStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A532EC200C000326693 /* AnimatedStateView.swift */; };
 		C4642A572EC200C000326693 /* SkeletonLoaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A542EC200C000326693 /* SkeletonLoaderView.swift */; };
@@ -270,6 +275,11 @@
 		7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectorDropdown.swift; sourceTree = "<group>"; };
 		7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteModelsManager.swift; sourceTree = "<group>"; };
 		7FFCDEA22E02C643003E764A /* LMStudioHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMStudioHandler.swift; sourceTree = "<group>"; };
+		C4632BC12ECDD29000D72DA1 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
+		C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
+		C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchErrorView.swift; sourceTree = "<group>"; };
+		C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProgressView.swift; sourceTree = "<group>"; };
+		C4632BD82ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultsPreviewView.swift; sourceTree = "<group>"; };
 		C4642A502EC200A900326693 /* AnimationModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationModifiers.swift; sourceTree = "<group>"; };
 		C4642A532EC200C000326693 /* AnimatedStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedStateView.swift; sourceTree = "<group>"; };
 		C4642A542EC200C000326693 /* SkeletonLoaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoaderView.swift; sourceTree = "<group>"; };
@@ -393,6 +403,7 @@
 		4A272A6729F5CB5300F93D0D /* Chat */ = {
 			isa = PBXGroup;
 			children = (
+				C4632BD92ECDD2DD00D72DA1 /* Components */,
 				4A1614172D46C89F00A1EF8D /* BubbleView */,
 				4A1614162D46C88900A1EF8D /* BottomContainer */,
 				4A1614102D430AE300A1EF8D /* ThinkingProcessView.swift */,
@@ -482,6 +493,7 @@
 			children = (
 				C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */,
 				4A27FF922DA1C4640075D730 /* ImageAttachment.swift */,
+				C4632BC12ECDD29000D72DA1 /* SearchModels.swift */,
 				7F4955A92E06FAFF00516E2D /* FileAttachment.swift */,
 				4A27FF932DA1C4640075D730 /* MessageContent.swift */,
 				7F4B74BF2DFFC75F00C844A2 /* HotkeyModels.swift */,
@@ -619,6 +631,17 @@
 				4AA6EF5A2C565FDF003B6D41 /* APIServiceFactory.swift */,
 			);
 			path = APIHandlers;
+			sourceTree = "<group>";
+		};
+		C4632BD92ECDD2DD00D72DA1 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */,
+				C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */,
+				C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */,
+				C4632BD82ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		C4642A512EC200A900326693 /* Modifiers */ = {
@@ -808,6 +831,10 @@
 				7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */,
 				7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */,
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
+				C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */,
+				C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */,
+				C4632BDC2ECDD2DD00D72DA1 /* SearchErrorView.swift in Sources */,
+				C4632BDD2ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
 				C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */,
 				7F4B74C02DFFC75F00C844A2 /* HotkeyModels.swift in Sources */,
@@ -854,6 +881,7 @@
 				4AE3CEB92C93AEA800A9CF4C /* APIServiceDetailView.swift in Sources */,
 				C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
+				C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */,
 				4A7AFF182B0147A300C34BB4 /* ButtonTestApiTokenAndModel.swift in Sources */,

@@ -161,6 +161,41 @@ struct ChatView: View {
                     .background(Color(nsColor: .controlBackgroundColor))
                 }
                 .background(.clear)
+                .overlay(alignment: .bottom) {
+                    VStack(spacing: 8) {
+                        // Show search error if failed
+                        if case .failed(let error) = chatViewModel.messageManager.searchStatus {
+                            SearchErrorView(
+                                error: error,
+                                onRetry: {
+                                    // Clear error and retry
+                                    chatViewModel.messageManager.searchStatus = nil
+                                    sendMessage()
+                                },
+                                onDismiss: {
+                                    chatViewModel.messageManager.searchStatus = nil
+                                },
+                                onGoToSettings: {
+                                    // Open preferences to Web Search tab
+                                    NotificationCenter.default.post(
+                                        name: NSNotification.Name("OpenPreferences"),
+                                        object: nil,
+                                        userInfo: ["tab": "webSearch"]
+                                    )
+                                    chatViewModel.messageManager.searchStatus = nil
+                                }
+                            )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                        // Show search progress above input when searching
+                        else if let status = chatViewModel.messageManager.searchStatus {
+                            SearchProgressView(status: status)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                        
+                        Spacer()
+                    }
+                }
             }
         }
         .navigationTitle("")

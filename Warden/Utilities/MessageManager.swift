@@ -11,6 +11,9 @@ class MessageManager: ObservableObject {
     private let tavilyService = TavilySearchService()
     private static let citationRegex = try? NSRegularExpression(pattern: #"\[(\d+)\]"#, options: [])
     
+    // Published property for search status updates
+    @Published var searchStatus: SearchStatus?
+    
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
         get {
@@ -60,6 +63,11 @@ class MessageManager: ObservableObject {
     func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
         print("🔍 [WebSearch] executeSearch called with query: \(query)")
         
+        // Update status: starting search
+        await MainActor.run {
+            searchStatus = .searching(query: query)
+        }
+        
         let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
             ?? AppConstants.tavilyDefaultSearchDepth
         let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
@@ -75,6 +83,11 @@ class MessageManager: ObservableObject {
             print("❌ [WebSearch] No API key found!")
         }
         
+        // Update status: fetching results
+        await MainActor.run {
+            searchStatus = .fetchingResults(sources: resultsLimit)
+        }
+        
         let response = try await tavilyService.search(
             query: query,
             searchDepth: searchDepth,
@@ -83,6 +96,26 @@ class MessageManager: ObservableObject {
         )
         
         print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
+        
+        // Update status: processing results
+        await MainActor.run {
+            searchStatus = .processingResults
+        }
+        
+        // Convert to SearchSource models
+        let sources = response.results.map { result in
+            SearchSource(
+                title: result.title,
+                url: result.url,
+                score: result.score,
+                publishedDate: result.publishedDate
+            )
+        }
+        
+        // Update status: completed
+        await MainActor.run {
+            searchStatus = .completed(sources: sources)
+        }
         
         // Extract URLs for citation linking
         let urls = response.results.map { $0.url }
@@ -234,6 +267,12 @@ class MessageManager: ObservableObject {
             } catch {
                 print("❌ [WebSearch] Search failed with error: \(error)")
                 chat.waitingForResponse = false
+                
+                // Update status: failed
+                await MainActor.run {
+                    searchStatus = .failed(error)
+                }
+                
                 completion(.failure(error))
                 return
             }
@@ -307,6 +346,12 @@ class MessageManager: ObservableObject {
             } catch {
                 print("❌ [WebSearch NON-STREAM] Search failed with error: \(error)")
                 chat.waitingForResponse = false
+                
+                // Update status: failed
+                await MainActor.run {
+                    searchStatus = .failed(error)
+                }
+                
                 completion(.failure(error))
                 return
             }

@@ -9,13 +9,13 @@ struct SearchErrorView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Error icon
-            Image(systemName: \"exclamationmark.triangle.fill\")
+            Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 16))
                 .foregroundColor(.orange)
             
             // Error content
             VStack(alignment: .leading, spacing: 6) {
-                Text(\"Web Search Failed\")
+                Text("Web Search Failed")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.primary)
                 
@@ -28,9 +28,9 @@ struct SearchErrorView: View {
                 HStack(spacing: 8) {
                     Button(action: onRetry) {
                         HStack(spacing: 4) {
-                            Image(systemName: \"arrow.clockwise\")
+                            Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 10))
-                            Text(\"Retry\")
+                            Text("Retry")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.accentColor)
@@ -47,9 +47,9 @@ struct SearchErrorView: View {
                     if isApiKeyError, let goToSettings = onGoToSettings {
                         Button(action: goToSettings) {
                             HStack(spacing: 4) {
-                                Image(systemName: \"gear\")
+                                Image(systemName: "gear")
                                     .font(.system(size: 10))
-                                Text(\"Settings\")
+                                Text("Settings")
                                     .font(.system(size: 11, weight: .medium))
                             }
                             .foregroundColor(.accentColor)
@@ -70,12 +70,12 @@ struct SearchErrorView: View {
             
             // Dismiss button
             Button(action: onDismiss) {
-                Image(systemName: \"xmark.circle.fill\")
+                Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 16))
                     .foregroundColor(.secondary.opacity(0.6))
             }
             .buttonStyle(.plain)
-            .help(\"Dismiss\")
+            .help("Dismiss")
         }
         .padding(12)
         .background(
@@ -130,7 +130,7 @@ struct SearchErrorView_Previews: PreviewProvider {
             )
             
             SearchErrorView(
-                error: NSError(domain: \"TestError\", code: -1, userInfo: [NSLocalizedDescriptionKey: \"Network connection failed\"]),
+                error: NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Network connection failed"]),
                 onRetry: {},
                 onDismiss: {},
                 onGoToSettings: nil

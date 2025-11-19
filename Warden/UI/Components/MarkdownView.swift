@@ -133,14 +133,31 @@ struct MarkdownView: View {
             return attributedString
             
         case let link as MarkdownLink:
-            let childrenText = extractPlainText(from: link.children)
-            let text = childrenText.isEmpty ? (link.destination ?? "") : childrenText
+            let text = extractPlainText(from: link.children)
             let attributedString = NSMutableAttributedString(string: text)
             let range = NSRange(location: 0, length: attributedString.length)
-            attributedString.addAttribute(NSAttributedString.Key.foregroundColor, value: own ? NSColor.systemBlue.withAlphaComponent(0.8) : NSColor.systemBlue, range: range)
-            attributedString.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+            
+            // Apply appropriate link styling
+            attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: effectiveFontSize), range: range)
+            attributedString.addAttribute(.foregroundColor, value: own ? NSColor.white : NSColor.linkColor, range: range)
+            
             if let destination = link.destination {
                 attributedString.addAttribute(NSAttributedString.Key.link, value: destination, range: range)
+                
+                // Check if this is a citation link (numeric text with URL)
+                if let textAsInt = Int(text.trimmingCharacters(in: .whitespaces)) {
+                    // This is a citation - add custom attributes
+                    attributedString.addAttribute(.backgroundColor, value: NSColor.controlAccentColor.withAlphaComponent(0.9), range: range)
+                    attributedString.addAttribute(.foregroundColor, value: NSColor.white, range: range)
+                    attributedString.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: effectiveFontSize * 0.85, weight: .medium), range: range)
+                    
+                    // Add padding effect by adding spacing attributes
+                    let paragraphStyle = NSMutableParagraphStyle()
+                    paragraphStyle.firstLineHeadIndent = 2
+                    paragraphStyle.headIndent = 2
+                    paragraphStyle.tailIndent = -2
+                    attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+                }
             }
             return attributedString
             
