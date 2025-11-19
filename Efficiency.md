@@ -82,15 +82,19 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Expanded `ErrorBubbleView` to handle API errors, Tavily search errors, and generic errors. Added `isApiKeyError` property and onGoToSettings callback.
 **Benefit:** Unified error UI replaces ad-hoc `SearchErrorView`; single source of truth for error display.
 
-## 17. Flatten `ChatBubbleView` Hierarchy
+## 17. Flatten `ChatBubbleView` Hierarchy ✅
 **Problem:** Deep nesting.
 **Solution:** Refactor `ChatBubbleView` body to use fewer Stacks, optimizing for SwiftUI rendering.
 **Benefit:** Better performance.
 
-## 18. Font Modifier in `Extensions.swift`
+**Status:** Completed. Extracted `bubbleRow` and `toolbarRow` as private computed properties in `ChatBubbleView.swift`. Main body now cleanly delegates to these properties, reducing nesting depth and improving readability.
+
+## 18. Font Modifier in `Extensions.swift` ✅
 **Problem:** Dynamic font sizing logic repeated.
 **Solution:** Create a `ViewModifier` in `Extensions.swift` for standard chat font scaling.
 **Benefit:** Consistent typography.
+
+**Status:** Completed. Added `chatFont(size:)` extension method to `View` in `Extensions.swift`. Returns a system font with the specified size at regular weight.
 
 ## 19. Remove Redundant Imports ✅
 **Problem:** Files importing unused modules.

@@ -63,33 +63,50 @@ struct ChatBubbleView: View, Equatable {
 
     var body: some View {
         VStack(spacing: 4) {
-            HStack(alignment: .bottom, spacing: 8) {
-                if !content.own && !content.systemMessage {
-                    // AI provider logo on the left for incoming messages
-                    aiProviderLogo
-                        .frame(width: 20, height: 20)
-                }
-                
-                if content.own && !content.systemMessage {
-                    // Push user messages to the trailing edge
-                    Spacer(minLength: 40)
-                }
-
-                // Bubble content
-                bubbleView
-                    .modifier(StreamingPulseModifier(isStreaming: content.isStreaming))
-
-                if content.own && !content.systemMessage {
-                    // User avatar on the right for outgoing messages
-                    userAvatar
-                        .frame(width: 20, height: 20)
-                }
+            bubbleRow
+            toolbarRow
+        }
+        .padding(.vertical, 8)
+        .onHover { isHovered in
+            self.isHovered = isHovered
+        }
+        .alert(isPresented: $showingDeleteConfirmation) {
+            Alert(
+                title: Text("Delete Message"),
+                message: Text("Are you sure you want to delete this message?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteMessage()
+                },
+                secondaryButton: .cancel()
+            )
+        }
+    }
+    
+    private var bubbleRow: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            if !content.own && !content.systemMessage {
+                aiProviderLogo
+                    .frame(width: 20, height: 20)
             }
-            // Ensure the entire row respects role-based horizontal alignment
-            .frame(maxWidth: .infinity, alignment: rowAlignment)
-            // Apply message arrival animation for new messages
-            .messageArrival(duration: 0.35, delay: content.isLatestMessage ? 0 : 0)
+            
+            if content.own && !content.systemMessage {
+                Spacer(minLength: 40)
+            }
 
+            bubbleView
+                .modifier(StreamingPulseModifier(isStreaming: content.isStreaming))
+
+            if content.own && !content.systemMessage {
+                userAvatar
+                    .frame(width: 20, height: 20)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: rowAlignment)
+        .messageArrival(duration: 0.35, delay: content.isLatestMessage ? 0 : 0)
+    }
+    
+    private var toolbarRow: some View {
+        Group {
             if content.errorMessage == nil && !(content.waitingForResponse ?? false) {
                 HStack {
                     if content.own {
@@ -114,20 +131,6 @@ struct ChatBubbleView: View, Equatable {
                     .frame(maxWidth: .infinity, alignment: content.own ? .trailing : .leading)
                     .frame(height: 12)
             }
-        }
-        .padding(.vertical, 8)
-        .onHover { isHovered in
-            self.isHovered = isHovered
-        }
-        .alert(isPresented: $showingDeleteConfirmation) {
-            Alert(
-                title: Text("Delete Message"),
-                message: Text("Are you sure you want to delete this message?"),
-                primaryButton: .destructive(Text("Delete")) {
-                    deleteMessage()
-                },
-                secondaryButton: .cancel()
-            )
         }
     }
 
