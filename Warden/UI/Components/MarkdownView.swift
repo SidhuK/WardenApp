@@ -146,42 +146,43 @@ struct MarkdownView: View {
                 
                 // Check if this is a citation link (numeric text with URL)
                 if let citationNumber = Int(text.trimmingCharacters(in: .whitespaces)) {
-                    // Create SF Symbol-style badge with circle.fill and number
-                    let citationSize = effectiveFontSize * 0.85
+                    // Create prominent circular citation badge
+                    let citationSize = effectiveFontSize * 0.8
                     
-                    // Add SF Symbol circle as background
-                    let symbolAttachment = NSTextAttachment()
-                    let symbolImage = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "Citation")
-                    symbolImage?.isTemplate = true
+                    // Make the badge text with padding spaces for circular appearance
+                    let paddedText = " \(citationNumber) "
+                    let paddedString = NSMutableAttributedString(string: paddedText)
+                    let paddedRange = NSRange(location: 0, length: paddedString.length)
                     
-                    // Tint the symbol
-                    let tintedImage = NSImage(size: NSSize(width: citationSize + 4, height: citationSize + 4))
-                    tintedImage.lockFocus()
-                    let color = own ? NSColor.white.withAlphaComponent(0.3) : NSColor.controlAccentColor.withAlphaComponent(0.2)
-                    color.set()
-                    let rect = NSRect(x: 0, y: 0, width: citationSize + 4, height: citationSize + 4)
-                    NSBezierPath(ovalIn: rect).fill()
-                    tintedImage.unlockFocus()
+                    // Use rounded, bold font for the number
+                    paddedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize, weight: .bold), range: paddedRange)
                     
-                    // Style the number text
-                    attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize * 0.7, weight: .semibold), range: range)
-                    
-                    // Color based on message type
-                    let textColor = own ? NSColor.white : NSColor.controlAccentColor
-                    attributedString.addAttribute(.foregroundColor, value: textColor, range: range)
-                    
-                    // Add circular background
+                    // Strong circular background
                     let bgColor = own 
-                        ? NSColor.white.withAlphaComponent(0.25)
-                        : NSColor.controlAccentColor.withAlphaComponent(0.15)
-                    attributedString.addAttribute(.backgroundColor, value: bgColor, range: range)
+                        ? NSColor.white.withAlphaComponent(0.35)
+                        : NSColor.controlAccentColor.withAlphaComponent(0.2)
+                    paddedString.addAttribute(.backgroundColor, value: bgColor, range: paddedRange)
                     
-                    // Add border/stroke for definition
-                    attributedString.addAttribute(.strokeWidth, value: -1.5, range: range)
-                    attributedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.4), range: range)
+                    // Text color - make it stand out
+                    let textColor = own 
+                        ? NSColor.white
+                        : NSColor.controlAccentColor
+                    paddedString.addAttribute(.foregroundColor, value: textColor, range: paddedRange)
                     
-                    // Slightly raise like superscript
-                    attributedString.addAttribute(.baselineOffset, value: 1, range: range)
+                    // Add prominent border
+                    paddedString.addAttribute(.strokeWidth, value: -2.0, range: paddedRange)
+                    paddedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.5), range: paddedRange)
+                    
+                    // Make it slightly raised like a superscript
+                    paddedString.addAttribute(.baselineOffset, value: 1.5, range: paddedRange)
+                    
+                    // Add the link
+                    paddedString.addAttribute(NSAttributedString.Key.link, value: destination, range: paddedRange)
+                    
+                    // Add corner radius effect
+                    paddedString.addAttribute(.expansion, value: 0.1, range: paddedRange)
+                    
+                    return paddedString
                 }
             }
             return attributedString
