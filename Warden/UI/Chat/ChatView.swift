@@ -158,7 +158,7 @@ struct ChatView: View {
                             // Handle expanded state change if needed
                         }
                     )
-                    .background(.ultraThinMaterial)
+                    .background(Color(nsColor: .controlBackgroundColor))
                 }
                 .background(.clear)
             }

@@ -66,39 +66,39 @@ struct ChatBottomContainerView: View {
                 .frame(maxWidth: .infinity)
 
             // Persona selector integrated into the same chrome
-            if isExpanded {
-                PersonaSelectorView(chat: chat)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .background(.regularMaterial)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+             if isExpanded {
+                 PersonaSelectorView(chat: chat)
+                     .padding(.horizontal, 16)
+                     .padding(.top, 8)
+                     .padding(.bottom, 4)
+                     .background(Color(nsColor: .controlBackgroundColor))
+                     .transition(.move(edge: .bottom).combined(with: .opacity))
+             }
 
-            // Main input area with normalized padding
-            MessageInputView(
-                text: $newMessage,
-                attachedImages: $attachedImages,
-                attachedFiles: $attachedFiles,
-                webSearchEnabled: $webSearchEnabled,
-                chat: chat,
-                imageUploadsAllowed: imageUploadsAllowed,
-                isStreaming: isStreaming,
-                onEnter: onSendMessage,
-                onAddImage: onAddImage,
-                onAddFile: onAddFile,
-                onAddAssistant: {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        isExpanded.toggle()
-                        onExpandedStateChange?(isExpanded)
-                    }
-                },
-                onStopStreaming: onStopStreaming
-            )
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.regularMaterial)
-        }
-        .background(.regularMaterial)
+             // Main input area with normalized padding
+             MessageInputView(
+                 text: $newMessage,
+                 attachedImages: $attachedImages,
+                 attachedFiles: $attachedFiles,
+                 webSearchEnabled: $webSearchEnabled,
+                 chat: chat,
+                 imageUploadsAllowed: imageUploadsAllowed,
+                 isStreaming: isStreaming,
+                 onEnter: onSendMessage,
+                 onAddImage: onAddImage,
+                 onAddFile: onAddFile,
+                 onAddAssistant: {
+                     withAnimation(.easeInOut(duration: 0.18)) {
+                         isExpanded.toggle()
+                         onExpandedStateChange?(isExpanded)
+                     }
+                 },
+                 onStopStreaming: onStopStreaming
+             )
+             .padding(.horizontal, 16)
+             .padding(.vertical, 10)
+             .background(Color(nsColor: .controlBackgroundColor))
+            }
+            .background(Color(nsColor: .controlBackgroundColor))
     }
 }
