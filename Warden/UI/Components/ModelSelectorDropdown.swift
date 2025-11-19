@@ -11,7 +11,6 @@ class ModelSelectorViewModel: ObservableObject {
     private let modelCache = ModelCacheManager.shared
     private let selectedModelsManager = SelectedModelsManager.shared
     private let favoriteManager = FavoriteModelsManager.shared
-    private let recentModelsManager = RecentModelsManager.shared
     
     private var apiServices: [APIServiceEntity] = []
     private var cancellables = Set<AnyCancellable>()
@@ -36,10 +35,6 @@ class ModelSelectorViewModel: ObservableObject {
     init() {
         // Observe changes that should trigger a refresh
         favoriteManager.objectWillChange
-            .sink { [weak self] _ in self?.refreshData() }
-            .store(in: &cancellables)
-            
-        recentModelsManager.objectWillChange
             .sink { [weak self] _ in self?.refreshData() }
             .store(in: &cancellables)
             
@@ -69,11 +64,6 @@ class ModelSelectorViewModel: ObservableObject {
             if !favorites.isEmpty {
                 sections.append(ModelSection(id: "favorites", title: "Favorites", items: favorites))
             }
-            
-            let recents = getRecents(from: availableModels)
-            if !recents.isEmpty {
-                sections.append(ModelSection(id: "recents", title: "Recently Used", items: recents))
-            }
         } else {
             sections.append(ModelSection(id: "search", title: "Search Results", items: []))
         }
@@ -85,10 +75,9 @@ class ModelSelectorViewModel: ObservableObject {
         // or we can keep provider sections. The original code kept provider sections.
         // Let's stick to the original design: Provider sections.
         
-        // However, for the "All Models" part, we need to exclude favs/recents if not searching
+        // However, for the "All Models" part, we need to exclude favs if not searching
         let favIds = Set(sections.first(where: { $0.id == "favorites" })?.items.map { $0.id } ?? [])
-        let recentIds = Set(sections.first(where: { $0.id == "recents" })?.items.map { $0.id } ?? [])
-        let excludeIds = favIds.union(recentIds)
+        let excludeIds = favIds
         
         var providerSections: [ModelSection] = []
         
@@ -110,12 +99,6 @@ class ModelSelectorViewModel: ObservableObject {
                 providerSections.append(ModelSection(id: provider, title: getProviderDisplayName(provider), items: items))
             }
         }
-        
-        // If searching, we might want to flatten or keep structure. Original kept structure.
-        // But wait, if we have "Search Results" header in original, it was just a header.
-        // The original code:
-        // if !searchText.isEmpty { sectionHeader("Search Results") }
-        // ForEach(remainingFilteredModels) { providerSection... }
         
         // So we just append the provider sections to the main list
         sections.append(contentsOf: providerSections)
@@ -165,9 +148,7 @@ class ModelSelectorViewModel: ObservableObject {
         return modelsToFilter.map { provider, models in
             let sorted = models.sorted { first, second in
                 // Simple alphabetical sort for the main list, 
-                // as favorites/recents are handled separately.
-                // Original code had a complex score, but mostly for fav/recent.
-                // Since we separate those, alphabetical is fine and FASTER.
+                // as favorites are handled separately.
                 return first < second
             }
             return (provider: provider, models: sorted)
@@ -189,22 +170,6 @@ class ModelSelectorViewModel: ObservableObject {
             }
         }
         return items
-    }
-    
-    private func getRecents(from available: [(provider: String, models: [String])]) -> [ModelItem] {
-        let allRecent = recentModelsManager.getRecentModels()
-        return allRecent.prefix(5).compactMap { recent in
-            // Verify it's still available
-            let isAvailable = available.contains { $0.provider == recent.provider && $0.models.contains(recent.modelId) }
-            guard isAvailable else { return nil }
-            
-            return ModelItem(
-                id: "\(recent.provider)_\(recent.modelId)",
-                provider: recent.provider,
-                modelId: recent.modelId,
-                isFavorite: favoriteManager.isFavorite(provider: recent.provider, model: recent.modelId)
-            )
-        }
     }
     
     private func getProviderDisplayName(_ provider: String) -> String {
@@ -233,7 +198,6 @@ struct StandaloneModelSelector: View {
     
     // Keep these for direct actions
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    @StateObject private var recentModelsManager = RecentModelsManager.shared
     @StateObject private var metadataCache = ModelMetadataCache.shared
     
     @State private var hoveredItem: String? = nil
@@ -270,7 +234,7 @@ struct StandaloneModelSelector: View {
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0, pinnedViews: []) {
                     ForEach(viewModel.filteredSections) { section in
-                        if section.id == "favorites" || section.id == "recents" {
+                        if section.id == "favorites" {
                             sectionHeader(section.title)
                             ForEach(section.items) { item in
                                 modelRow(item: item)
@@ -439,8 +403,6 @@ struct StandaloneModelSelector: View {
     
     private func handleModelChange(providerType: String, model: String) {
         guard let service = apiServices.first(where: { $0.type == providerType }) else { return }
-        
-        recentModelsManager.recordUsage(provider: providerType, modelId: model)
         
         chat.apiService = service
         chat.gptModel = model

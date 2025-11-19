@@ -7,7 +7,6 @@ struct FavoriteQuickAccessBar: View {
     
     @StateObject private var modelCache = ModelCacheManager.shared
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    @StateObject private var recentModelsManager = RecentModelsManager.shared
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -85,9 +84,6 @@ struct FavoriteQuickAccessBar: View {
             print("⚠️ API service \(service.name ?? "Unknown") has invalid URL")
             return
         }
-        
-        // Record usage for recently used models tracking
-        recentModelsManager.recordUsage(provider: providerType, modelId: model)
         
         chat.apiService = service
         chat.gptModel = model

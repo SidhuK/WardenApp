@@ -133,7 +133,6 @@
 		C4870E742ECC2EBC003930F7 /* ModelMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */; };
 		C49FCBE42ECC2439003B51AF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE32ECC2439003B51AF /* SettingsView.swift */; };
 		C49FCBE62ECC2535003B51AF /* TabContributionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */; };
-		C49FCBE82ECC2D42003B51AF /* RecentModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE72ECC2D42003B51AF /* RecentModelsManager.swift */; };
 		C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */; };
 		C49FCBEE2ECC2D99003B51AF /* ModelInfoTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */; };
 		C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */; };
@@ -295,7 +294,6 @@
 		C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataCache.swift; sourceTree = "<group>"; };
 		C49FCBE32ECC2439003B51AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabContributionsView.swift; sourceTree = "<group>"; };
-		C49FCBE72ECC2D42003B51AF /* RecentModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentModelsManager.swift; sourceTree = "<group>"; };
 		C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteQuickAccessBar.swift; sourceTree = "<group>"; };
 		C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfoTooltip.swift; sourceTree = "<group>"; };
 		C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
@@ -509,7 +507,6 @@
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
 				C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */,
-				C49FCBE72ECC2D42003B51AF /* RecentModelsManager.swift */,
 				C4870E712ECC2EA2003930F7 /* ModelMetadata.swift */,
 				C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
@@ -856,7 +853,6 @@
 				4AB4B0912D778B1D00CA41B6 /* OpenRouterHandler.swift in Sources */,
 				4A5F64BA29C64F9D000403F7 /* ChatView.swift in Sources */,
 				4AFEE7212C472F53006F99FB /* APIProtocol.swift in Sources */,
-				C49FCBE82ECC2D42003B51AF /* RecentModelsManager.swift in Sources */,
 				4A885C542CEA3D960018BBED /* PreviewStateManager.swift in Sources */,
 				4AA6EF5B2C565FDF003B6D41 /* APIServiceFactory.swift in Sources */,
 				4AA681C72D3DAB40005C4E6E /* ChatBottomContainerView.swift in Sources */,
