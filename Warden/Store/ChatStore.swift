@@ -397,41 +397,12 @@ class ChatStore: ObservableObject {
                 return
             }
             
-            // Validate API service has required fields
-            guard let apiUrl = apiServiceEntity.url else {
-                print("❌ API service URL is missing")
-                showError(message: "API service configuration is incomplete (missing URL).")
+            // Create API service configuration using centralized logic
+            guard let apiConfig = APIServiceManager.createAPIConfiguration(for: apiServiceEntity) else {
+                print("❌ Failed to create API configuration")
+                showError(message: "Failed to create API configuration. Please check your API service settings (URL, API Key).")
                 return
             }
-            
-            // Retrieve the actual API key from secure storage
-            guard let serviceIDString = apiServiceEntity.id?.uuidString else {
-                print("❌ API service ID is missing")
-                showError(message: "API service configuration is corrupted (missing ID).")
-                return
-            }
-            
-            let apiKey: String
-            do {
-                apiKey = try TokenManager.getToken(for: serviceIDString) ?? ""
-                if apiKey.isEmpty {
-                    print("❌ API key is empty for service: \(apiServiceEntity.name ?? "unknown")")
-                    showError(message: "API key not found. Please configure your API service in Settings.")
-                    return
-                }
-            } catch {
-                print("❌ Failed to retrieve API key: \(error)")
-                showError(message: "Failed to retrieve API key: \(error.localizedDescription)")
-                return
-            }
-            
-            // Create API service configuration with actual API key
-            let apiConfig = APIServiceConfig(
-                name: apiServiceEntity.name ?? "default",
-                apiUrl: apiUrl,
-                apiKey: apiKey,  // ✅ Use actual API key from TokenManager
-                model: apiServiceEntity.model ?? AppConstants.chatGptDefaultModel
-            )
             
             // Create API service from config
             let apiService = APIServiceFactory.createAPIService(config: apiConfig)

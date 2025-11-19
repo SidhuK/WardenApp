@@ -155,7 +155,7 @@ class APIServiceManager {
     }
     
     /// Creates API configuration for the given service
-    private func createAPIConfiguration(for service: APIServiceEntity) -> APIServiceConfiguration? {
+    static func createAPIConfiguration(for service: APIServiceEntity, modelOverride: String? = nil) -> APIServiceConfiguration? {
         guard let apiServiceUrl = service.url,
               let serviceType = service.type else {
             return nil
@@ -166,21 +166,18 @@ class APIServiceManager {
         do {
             apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
         } catch {
-            print("Error extracting token for summarization: \(error)")
+            print("Error extracting token: \(error)")
             return nil
         }
         
-        // Ensure we have a valid API key
-        guard !apiKey.isEmpty else {
-            print("No API key available for service: \(service.name ?? "Unknown")")
-            return nil
-        }
+        // Ensure we have a valid API key (except for local services like Ollama/LMStudio which might not need one)
+        // But generally we want to return the config and let the handler decide
         
         return APIServiceConfig(
             name: serviceType,
             apiUrl: apiServiceUrl,
             apiKey: apiKey,
-            model: service.model ?? getDefaultModelForService(serviceType)
+            model: modelOverride ?? service.model ?? getDefaultModelForService(serviceType)
         )
     }
     
@@ -233,7 +230,7 @@ class APIServiceManager {
     }
     
     /// Gets default model for a service type
-    private func getDefaultModelForService(_ serviceType: String) -> String {
+    static func getDefaultModelForService(_ serviceType: String) -> String {
         switch serviceType.lowercased() {
         case "chatgpt":
             return AppConstants.chatGptDefaultModel

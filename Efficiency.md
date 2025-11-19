@@ -32,7 +32,7 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Delete this file. Use `ChatBubbleView(content: ..., systemMessage: true)` directly in `MessageListView.swift`.
 **Benefit:** Reduces file count.
 
-## 7. Move HTML Generation to `AppConstants.swift`
+## 7. Move HTML Generation to `AppConstants.swift` ✅
 **Problem:** `CodeView.swift` has a huge HTML string literal.
 **Solution:** Move the static HTML/CSS template string to `Configuration/AppConstants.swift`.
 **Benefit:** Cleans up `CodeView.swift` logic.

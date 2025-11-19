@@ -481,100 +481,13 @@ struct CodeView: View {
     
     private var enhancedHtmlContent: String {
         // Enhanced CSS with device-specific optimizations
-        let modernCSS = """
-        <style>
-        * {
-            box-sizing: border-box;
-        }
+        let modernCSS = AppConstants.getModernCSS(
+            isMobile: selectedDevice == .mobile,
+            isTablet: selectedDevice == .tablet,
+            isDark: colorScheme == .dark
+        )
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: \(selectedDevice == .mobile ? "16px" : "20px");
-            background: \(colorScheme == .dark ? "#1a1a1a" : "#ffffff");
-            color: \(colorScheme == .dark ? "#e4e4e7" : "#1f2937");
-            font-size: \(selectedDevice == .mobile ? "14px" : "16px");
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-            margin-top: 0;
-            margin-bottom: 0.5em;
-            font-weight: 600;
-            line-height: 1.25;
-        }
-        
-        h1 { font-size: \(selectedDevice == .mobile ? "1.8em" : "2.25em"); color: \(colorScheme == .dark ? "#f9fafb" : "#111827"); }
-        h2 { font-size: \(selectedDevice == .mobile ? "1.5em" : "1.875em"); color: \(colorScheme == .dark ? "#f3f4f6" : "#1f2937"); }
-        h3 { font-size: \(selectedDevice == .mobile ? "1.3em" : "1.5em"); color: \(colorScheme == .dark ? "#e5e7eb" : "#374151"); }
-        
-        p { margin-bottom: 1em; }
-        
-        a {
-            color: \(colorScheme == .dark ? "#60a5fa" : "#2563eb");
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        
-        a:hover {
-            color: \(colorScheme == .dark ? "#93c5fd" : "#1d4ed8");
-            text-decoration: underline;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: \(selectedDevice == .mobile ? "12px 20px" : "10px 16px");
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: \(selectedDevice == .mobile ? "14px" : "16px");
-            font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: \(selectedDevice == .mobile ? "12px" : "10px");
-            border: 2px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
-            border-radius: 6px;
-            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
-            color: \(colorScheme == .dark ? "#f9fafb" : "#1f2937");
-            font-size: \(selectedDevice == .mobile ? "16px" : "14px");
-            transition: border-color 0.2s ease;
-        }
-        
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .container {
-            max-width: \(selectedDevice == .mobile ? "100%" : selectedDevice == .tablet ? "90%" : "100%");
-            margin: 0 auto;
-        }
-        
-        .card {
-            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
-            border: 1px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
-            border-radius: 8px;
-            padding: \(selectedDevice == .mobile ? "16px" : "20px");
-            margin: \(selectedDevice == .mobile ? "12px 0" : "16px 0");
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        }
-        </style>
-        """
-        
-        let viewportMeta = """
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        """
+        let viewportMeta = AppConstants.viewportMeta
         
         if code.lowercased().contains("<html") || code.lowercased().contains("<!doctype") {
             var modifiedContent = code

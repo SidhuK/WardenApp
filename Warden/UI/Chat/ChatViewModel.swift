@@ -165,36 +165,15 @@ class ChatViewModel: ObservableObject {
     }
 
     private func loadCurrentAPIConfig() -> APIServiceConfiguration? {
-        guard let apiService = chat.apiService, 
-              let apiServiceUrl: URL = apiService.url,
-              !chat.gptModel.isEmpty else {
-            print("⚠️ Missing required API service configuration: service=\(chat.apiService?.name ?? "nil"), url=\(chat.apiService?.url?.absoluteString ?? "nil"), model=\(chat.gptModel)")
+        guard let apiService = chat.apiService else {
+            print("⚠️ Missing required API service configuration for chat \(chat.id)")
             return nil
         }
 
-        var apiKey = ""
-        do {
-            apiKey = try TokenManager.getToken(for: apiService.id?.uuidString ?? "") ?? ""
-        }
-        catch {
-            print("⚠️ Error extracting token: \(error) for service \(apiService.id?.uuidString ?? "")")
-            // Don't return nil here - some services (like Ollama) might not need API keys
-        }
-
-        let config = APIServiceConfig(
-            name: getApiServiceName(),
-            apiUrl: apiServiceUrl,
-            apiKey: apiKey,
-            model: chat.gptModel
-        )
-        
-        return config
+        let modelOverride = chat.gptModel.isEmpty ? nil : chat.gptModel
+        return APIServiceManager.createAPIConfiguration(for: apiService, modelOverride: modelOverride)
     }
 
-    private func getApiServiceName() -> String {
-        return chat.apiService?.type ?? "chatgpt"
-    }
-    
     func regenerateChatName() {
         messageManager?.generateChatNameIfNeeded(chat: chat, force: true)
     }

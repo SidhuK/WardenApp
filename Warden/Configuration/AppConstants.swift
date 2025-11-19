@@ -634,6 +634,135 @@ Remember that true productivity serves your overall life satisfaction and well-b
     static let tavilySearchDepthKey = TavilyConfig.searchDepthKey
     static let tavilyMaxResultsKey = TavilyConfig.maxResultsKey
     static let tavilyIncludeAnswerKey = TavilyConfig.includeAnswerKey
+    
+    // MARK: - HTML Preview Configuration
+    static let viewportMeta = "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
+    
+    static func getModernCSS(isMobile: Bool, isTablet: Bool, isDark: Bool) -> String {
+        let padding = isMobile ? "16px" : "20px"
+        let bg = isDark ? "#1a1a1a" : "#ffffff"
+        let color = isDark ? "#e4e4e7" : "#1f2937"
+        let fontSize = isMobile ? "14px" : "16px"
+        
+        let h1Size = isMobile ? "1.8em" : "2.25em"
+        let h1Color = isDark ? "#f9fafb" : "#111827"
+        
+        let h2Size = isMobile ? "1.5em" : "1.875em"
+        let h2Color = isDark ? "#f3f4f6" : "#1f2937"
+        
+        let h3Size = isMobile ? "1.3em" : "1.5em"
+        let h3Color = isDark ? "#e5e7eb" : "#374151"
+        
+        let linkColor = isDark ? "#60a5fa" : "#2563eb"
+        let linkHoverColor = isDark ? "#93c5fd" : "#1d4ed8"
+        
+        let btnPadding = isMobile ? "12px 20px" : "10px 16px"
+        let btnFontSize = isMobile ? "14px" : "16px"
+        
+        let inputPadding = isMobile ? "12px" : "10px"
+        let inputBorder = isDark ? "#4b5563" : "#e5e7eb"
+        let inputBg = isDark ? "#374151" : "#ffffff"
+        let inputColor = isDark ? "#f9fafb" : "#1f2937"
+        let inputFontSize = isMobile ? "16px" : "14px"
+        
+        let containerWidth = isMobile ? "100%" : (isTablet ? "90%" : "100%")
+        
+        let cardBg = isDark ? "#374151" : "#ffffff"
+        let cardBorder = isDark ? "#4b5563" : "#e5e7eb"
+        let cardPadding = isMobile ? "16px" : "20px"
+        let cardMargin = isMobile ? "12px 0" : "16px 0"
+
+        return """
+        <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: \(padding);
+            background: \(bg);
+            color: \(color);
+            font-size: \(fontSize);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        h1 { font-size: \(h1Size); color: \(h1Color); }
+        h2 { font-size: \(h2Size); color: \(h2Color); }
+        h3 { font-size: \(h3Size); color: \(h3Color); }
+        
+        p { margin-bottom: 1em; }
+        
+        a {
+            color: \(linkColor);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        a:hover {
+            color: \(linkHoverColor);
+            text-decoration: underline;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: \(btnPadding);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: \(btnFontSize);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: \(inputPadding);
+            border: 2px solid \(inputBorder);
+            border-radius: 6px;
+            background: \(inputBg);
+            color: \(inputColor);
+            font-size: \(inputFontSize);
+            transition: border-color 0.2s ease;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .container {
+            max-width: \(containerWidth);
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: \(cardBg);
+            border: 1px solid \(cardBorder);
+            border-radius: 8px;
+            padding: \(cardPadding);
+            margin: \(cardMargin);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        </style>
+        """
+    }
 }
 
 /// Returns the current date formatted as "yyyy-MM-dd".

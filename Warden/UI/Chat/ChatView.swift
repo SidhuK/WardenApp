@@ -800,7 +800,7 @@ extension ChatView {
         
         // Find the service that generated this response to use for title generation
         if let titleService = selectedMultiAgentServices.first(where: { $0.name == serviceName }) {
-            guard let config = loadAPIConfigForTitleGeneration(for: titleService) else { return }
+            guard let config = APIServiceManager.createAPIConfiguration(for: titleService) else { return }
             let apiService = APIServiceFactory.createAPIService(config: config)
             
             let titleMessages = [
@@ -828,26 +828,6 @@ extension ChatView {
                 }
             }
         }
-    }
-    
-    private func loadAPIConfigForTitleGeneration(for service: APIServiceEntity) -> APIServiceConfiguration? {
-        guard let apiServiceUrl = service.url else {
-            return nil
-        }
-        
-        var apiKey = ""
-        do {
-            apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
-        } catch {
-            print("Error extracting token: \(error) for \(service.id?.uuidString ?? "")")
-        }
-        
-        return APIServiceConfig(
-            name: service.type ?? "chatgpt",
-            apiUrl: apiServiceUrl,
-            apiKey: apiKey,
-            model: service.model ?? AppConstants.chatGptDefaultModel
-        )
     }
     
     // MARK: - Hotkey Action Methods
