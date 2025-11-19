@@ -67,18 +67,15 @@ struct ModelInfoTooltip: View {
                                 .foregroundColor(.orange)
                         }
                         
-                        // Price details
-                        VStack(alignment: .leading, spacing: 3) {
-                            if let input = meta.pricing?.inputPer1M {
-                                Text("Input: $\(String(format: "%.5f", input))/1M")
-                                    .font(.system(size: 9, weight: .regular))
-                                    .foregroundColor(.secondary)
-                            }
-                            if let output = meta.pricing?.outputPer1M {
-                                Text("Output: $\(String(format: "%.5f", output))/1M")
-                                    .font(.system(size: 9, weight: .regular))
-                                    .foregroundColor(.secondary)
-                            }
+                        // Price details - compact single line
+                        if let input = meta.pricing?.inputPer1M, let output = meta.pricing?.outputPer1M {
+                            Text("$\(String(format: "%.2f", input)) → $\(String(format: "%.2f", output))/1M")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundColor(.secondary)
+                        } else if let input = meta.pricing?.inputPer1M {
+                            Text("$\(String(format: "%.2f", input))/1M")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundColor(.secondary)
                         }
                     }
                     
