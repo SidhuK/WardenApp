@@ -122,12 +122,9 @@ struct MessageListView: View {
                 .frame(height: 16)
         }
         .onAppear {
-            // Precompute code block count once per appearance
-            pendingCodeBlocks = sortedMessages.reduce(0) { count, message in
-                count + (message.body.components(separatedBy: "```").count - 1) / 2
-            }
-
+            // Optimize: Only check the last message for pending code blocks since that's what affects scroll-to-bottom
             if let lastMessage = sortedMessages.last {
+                pendingCodeBlocks = (lastMessage.body.components(separatedBy: "```").count - 1) / 2
                 scrollView.scrollTo(lastMessage.id, anchor: .bottom)
             }
 

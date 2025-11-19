@@ -9,7 +9,9 @@ class MessageManager: ObservableObject {
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
     private let tavilyService = TavilySearchService()
-    private static let citationRegex = try? NSRegularExpression(pattern: #"\[(\d+)\]"#, options: [])
+    
+    // Debounce saving to Core Data
+    private var saveDebounceWorkItem: DispatchWorkItem?
     
     // Published property for search status updates
     @Published var searchStatus: SearchStatus?
@@ -50,19 +52,27 @@ class MessageManager: ObservableObject {
         
         // Cancel outside the lock to avoid deadlock
         taskToCancel?.cancel()
+        
+        // Force save if pending
+        if let workItem = saveDebounceWorkItem {
+            workItem.perform()
+            saveDebounceWorkItem?.cancel()
+            saveDebounceWorkItem = nil
+        }
+    }
+    
+    private func debounceSave() {
+        saveDebounceWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.viewContext.saveWithRetry(attempts: 1)
+            }
+        }
+        saveDebounceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
     
     // MARK: - Tavily Search Support
-    
-    func isSearchCommand(_ message: String) -> (isSearch: Bool, query: String?) {
-        for prefix in AppConstants.searchCommandAliases {
-            if message.lowercased().hasPrefix(prefix) {
-                let query = message.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
-                return (true, query.isEmpty ? nil : query)
-            }
-        }
-        return (false, nil)
-    }
     
     func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
         print("🔍 [WebSearch] executeSearch called with query: \(query)")
@@ -130,88 +140,7 @@ class MessageManager: ObservableObject {
         return (tavilyService.formatResultsForContext(response), urls)
     }
     
-    // Convert citations like [1], [2] to inline markdown links using provided URLs.
-    // Also appends a markdown-formatted Sources section for backward compatibility.
-    private func convertCitationsToLinks(_ text: String, urls: [String]) -> String {
-        guard !urls.isEmpty else {
-            return text
-        }
-        
-        var result = text
-        print("🔗 [Citations] Converting inline citations with \(urls.count) URLs")
-        
-        // Regex to match standalone [n] style citations:
-        // - \[(\d+)\] captures the number
-        // - (?=[^\[]|\z) is a light guard to avoid overlapping like [[1]]
-        // We will additionally validate boundaries in code.
-        if let regex = Self.citationRegex {
-            let nsString = result as NSString
-            let matches = regex.matches(in: result, options: [], range: NSRange(location: 0, length: nsString.length))
-            
-            // Replace from the end to preserve indices
-            var mutableResult = result as NSString
-            
-            for match in matches.reversed() {
-                guard match.numberOfRanges >= 2 else { continue }
-                let fullRange = match.range(at: 0)
-                let numberRange = match.range(at: 1)
-                
-                let numberString = nsString.substring(with: numberRange)
-                guard let number = Int(numberString) else { continue }
-                
-                // Map [1] -> urls[0], [2] -> urls[1], etc.
-                let urlIndex = number - 1
-                guard urlIndex >= 0 && urlIndex < urls.count else { continue }
-                
-                // Ensure this [n] is "standalone-ish":
-                // - Preceded by start, whitespace, punctuation, or '('
-                // - Followed by end, whitespace, punctuation, or ')'
-                let start = fullRange.location
-                let end = fullRange.location + fullRange.length
 
-                // Use Swift String indices for safe boundary detection over extended grapheme clusters.
-                let stringStartIndex = result.startIndex
-                let stringEndIndex = result.endIndex
-
-                let startIndex = result.index(stringStartIndex, offsetBy: start)
-                let endIndex = result.index(stringStartIndex, offsetBy: end)
-
-                let prevChar: Character? = (startIndex > stringStartIndex)
-                    ? result[result.index(before: startIndex)]
-                    : nil
-
-                let nextChar: Character? = (endIndex < stringEndIndex)
-                    ? result[endIndex]
-                    : nil
-
-                func isBoundary(_ ch: Character?) -> Bool {
-                    guard let ch = ch else { return true } // Treat start/end as boundary
-                    if ch.isWhitespace { return true }
-
-                    // Delimiters where citations should be considered standalone-ish
-                    let delimiters: Set<Character> = [".", ",", ";", ":", "!", "?", "(", ")", "[", "]"]
-                    return delimiters.contains(ch)
-                }
-                
-                guard isBoundary(prevChar), isBoundary(nextChar) else {
-                    continue
-                }
-                
-                let url = urls[urlIndex]
-                let replacement = "[\(number)](\(url))"
-                mutableResult = mutableResult.replacingCharacters(in: fullRange, with: replacement) as NSString
-                print("🔗 [Citations] Replaced [\(number)] with markdown link -> \(url)")
-            }
-            
-            result = mutableResult as String
-        } else {
-            print("❌ [Citations] Failed to create regex for inline citations")
-        }
-        
-
-        
-        return result
-    }
     
     @MainActor
     func sendMessageStreamWithSearch(
@@ -228,7 +157,7 @@ class MessageManager: ObservableObject {
         var finalMessage = message
          
          // Check if web search is enabled (either by toggle or by command)
-        let searchCheck = isSearchCommand(message)
+        let searchCheck = tavilyService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
         
         print("🔍 [WebSearch] searchCheck.isSearch: \(searchCheck.isSearch)")
@@ -305,12 +234,12 @@ class MessageManager: ObservableObject {
         print("🔍 [WebSearch NON-STREAM] message: \(message)")
         
         var finalMessage = message
-        
-        // Check if web search is enabled (either by toggle or by command)
-        let searchCheck = isSearchCommand(message)
+         
+         // Check if web search is enabled (either by toggle or by command)
+        let searchCheck = tavilyService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
-        
-        print("🔍 [WebSearch NON-STREAM] searchCheck.isSearch: \(searchCheck.isSearch)")
+         
+         print("🔍 [WebSearch NON-STREAM] searchCheck.isSearch: \(searchCheck.isSearch)")
         print("🔍 [WebSearch NON-STREAM] shouldSearch: \(shouldSearch)")
         
         if shouldSearch {
@@ -390,7 +319,7 @@ class MessageManager: ObservableObject {
                 chat.waitingForResponse = false
                 addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
                 addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
-                self.viewContext.saveWithRetry(attempts: 1)
+                self.debounceSave()
                 // Auto-rename chat if needed
                 generateChatNameIfNeeded(chat: chat)
                 completion(.success(()))
@@ -559,7 +488,7 @@ class MessageManager: ObservableObject {
                 Task { @MainActor in
                     chat.name = chatName
                     chat.updatedDate = Date()
-                    self.viewContext.saveWithRetry(attempts: 3)
+                    self.debounceSave()
                     print("✅ Chat name generated: \(chatName)")
                 }
                 
@@ -627,7 +556,7 @@ class MessageManager: ObservableObject {
         // Convert citations to clickable links if we have search URLs
         let finalMessage: String
         if let urls = searchUrls, !urls.isEmpty {
-            finalMessage = convertCitationsToLinks(message, urls: urls)
+            finalMessage = tavilyService.convertCitationsToLinks(message, urls: urls)
         } else {
             finalMessage = message
         }
@@ -649,7 +578,7 @@ class MessageManager: ObservableObject {
 
     private func addNewMessageToRequestMessages(chat: ChatEntity, content: String, role: String) {
         chat.requestMessages.append(["role": role, "content": content])
-        self.viewContext.saveWithRetry(attempts: 1)
+        self.debounceSave()
     }
 
     private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String, searchUrls: [String]? = nil, appendCitations: Bool = false, save: Bool = false) {
@@ -658,7 +587,7 @@ class MessageManager: ObservableObject {
         // Only convert citations at the final update, not during intermediate streaming updates
         let finalMessage: String
         if appendCitations, let urls = searchUrls, !urls.isEmpty {
-            finalMessage = convertCitationsToLinks(accumulatedResponse, urls: urls)
+            finalMessage = tavilyService.convertCitationsToLinks(accumulatedResponse, urls: urls)
         } else {
             finalMessage = accumulatedResponse
         }
@@ -671,11 +600,7 @@ class MessageManager: ObservableObject {
         chat.objectWillChange.send()
 
         if save {
-            Task {
-                await MainActor.run {
-                    self.viewContext.saveWithRetry(attempts: 1)
-                }
-            }
+            self.debounceSave()
         }
     }
 

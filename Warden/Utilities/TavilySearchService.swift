@@ -41,6 +41,7 @@ extension TavilyError: LocalizedError {
 class TavilySearchService {
     private let baseURL = "https://api.tavily.com"
     private let session: URLSession
+    private static let citationRegex = try? NSRegularExpression(pattern: #"\[(\d+)\]"#, options: [])
     
     init(session: URLSession = .shared) {
         self.session = session
@@ -98,6 +99,18 @@ class TavilySearchService {
         }
     }
     
+    // MARK: - Search Command Detection
+    
+    func isSearchCommand(_ message: String) -> (isSearch: Bool, query: String?) {
+        for prefix in AppConstants.searchCommandAliases {
+            if message.lowercased().hasPrefix(prefix) {
+                let query = message.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)
+                return (true, query.isEmpty ? nil : query)
+            }
+        }
+        return (false, nil)
+    }
+    
     // MARK: - Format Results for AI Context
     
     func formatResultsForContext(_ response: TavilySearchResponse) -> String {
@@ -119,6 +132,87 @@ class TavilySearchService {
         }
         
         return formatted
+    }
+    
+    // MARK: - Citation Formatting
+    
+    func convertCitationsToLinks(_ text: String, urls: [String]) -> String {
+        guard !urls.isEmpty else {
+            return text
+        }
+        
+        var result = text
+        print("🔗 [Citations] Converting inline citations with \(urls.count) URLs")
+        
+        // Regex to match standalone [n] style citations:
+        // - \[(\d+)\] captures the number
+        // - (?=[^\[]|\z) is a light guard to avoid overlapping like [[1]]
+        // We will additionally validate boundaries in code.
+        if let regex = Self.citationRegex {
+            let nsString = result as NSString
+            let matches = regex.matches(in: result, options: [], range: NSRange(location: 0, length: nsString.length))
+            
+            // Replace from the end to preserve indices
+            var mutableResult = result as NSString
+            
+            for match in matches.reversed() {
+                guard match.numberOfRanges >= 2 else { continue }
+                let fullRange = match.range(at: 0)
+                let numberRange = match.range(at: 1)
+                
+                let numberString = nsString.substring(with: numberRange)
+                guard let number = Int(numberString) else { continue }
+                
+                // Map [1] -> urls[0], [2] -> urls[1], etc.
+                let urlIndex = number - 1
+                guard urlIndex >= 0 && urlIndex < urls.count else { continue }
+                
+                // Ensure this [n] is "standalone-ish":
+                // - Preceded by start, whitespace, punctuation, or '('
+                // - Followed by end, whitespace, punctuation, or ')'
+                let start = fullRange.location
+                let end = fullRange.location + fullRange.length
+
+                // Use Swift String indices for safe boundary detection over extended grapheme clusters.
+                let stringStartIndex = result.startIndex
+                let stringEndIndex = result.endIndex
+
+                let startIndex = result.index(stringStartIndex, offsetBy: start)
+                let endIndex = result.index(stringStartIndex, offsetBy: end)
+
+                let prevChar: Character? = (startIndex > stringStartIndex)
+                    ? result[result.index(before: startIndex)]
+                    : nil
+
+                let nextChar: Character? = (endIndex < stringEndIndex)
+                    ? result[endIndex]
+                    : nil
+
+                func isBoundary(_ ch: Character?) -> Bool {
+                    guard let ch = ch else { return true } // Treat start/end as boundary
+                    if ch.isWhitespace { return true }
+
+                    // Delimiters where citations should be considered standalone-ish
+                    let delimiters: Set<Character> = [".", ",", ";", ":", "!", "?", "(", ")", "[", "]"]
+                    return delimiters.contains(ch)
+                }
+                
+                guard isBoundary(prevChar), isBoundary(nextChar) else {
+                    continue
+                }
+                
+                let url = urls[urlIndex]
+                let replacement = "[\(number)](\(url))"
+                mutableResult = mutableResult.replacingCharacters(in: fullRange, with: replacement) as NSString
+                print("🔗 [Citations] Replaced [\(number)] with markdown link -> \(url)")
+            }
+            
+            result = mutableResult as String
+        } else {
+            print("❌ [Citations] Failed to create regex for inline citations")
+        }
+        
+        return result
     }
     
     // MARK: - Private Helper Methods

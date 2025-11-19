@@ -58,32 +58,7 @@ struct ChatBubbleView: View, Equatable {
         guard let messageEntity = message,
               let timestamp = messageEntity.timestamp else { return "" }
         
-        let formatter = DateFormatter()
-        let now = Date()
-        let calendar = Calendar.current
-        
-        // Check if it's today
-        if calendar.isDate(timestamp, inSameDayAs: now) {
-            formatter.dateFormat = "HH:mm"
-            return formatter.string(from: timestamp)
-        }
-        
-        // Check if it's yesterday
-        if calendar.isDate(timestamp, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: now) ?? now) {
-            formatter.dateFormat = "HH:mm"
-            return "Yesterday \(formatter.string(from: timestamp))"
-        }
-        
-        // Check if it's within the current week
-        let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: now) ?? now
-        if timestamp > weekAgo {
-            formatter.dateFormat = "E HH:mm"
-            return formatter.string(from: timestamp)
-        }
-        
-        // For older messages, show date and time
-        formatter.dateFormat = "MMM d, HH:mm"
-        return formatter.string(from: timestamp)
+        return timestamp.formattedTimestamp()
     }
 
     var body: some View {

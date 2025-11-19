@@ -99,7 +99,7 @@ class APIServiceManager {
         }
         
         // Create API configuration
-        guard let config = createAPIConfiguration(for: service) else {
+        guard let config = APIServiceManager.createAPIConfiguration(for: service) else {
             throw APIError.noApiService("Failed to create API configuration for summarization")
         }
         

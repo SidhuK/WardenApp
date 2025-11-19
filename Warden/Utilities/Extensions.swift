@@ -29,6 +29,37 @@ extension Data {
     }
 }
 
+extension Date {
+    func formattedTimestamp() -> String {
+        let formatter = DateFormatter()
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Check if it's today
+        if calendar.isDate(self, inSameDayAs: now) {
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: self)
+        }
+        
+        // Check if it's yesterday
+        if calendar.isDate(self, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: now) ?? now) {
+            formatter.dateFormat = "HH:mm"
+            return "Yesterday \(formatter.string(from: self))"
+        }
+        
+        // Check if it's within the current week
+        let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: now) ?? now
+        if self > weekAgo {
+            formatter.dateFormat = "E HH:mm"
+            return formatter.string(from: self)
+        }
+        
+        // For older messages, show date and time
+        formatter.dateFormat = "MMM d, HH:mm"
+        return formatter.string(from: self)
+    }
+}
+
 extension String {
     public func sha256() -> String {
         if let stringData = self.data(using: String.Encoding.utf8) {
@@ -271,3 +302,53 @@ extension ChatEntity {
         return sections.joined(separator: "\n")
     }
 }
+
+struct PreviewHTMLGenerator {
+    static func generate(content: String, colorScheme: ColorScheme, device: PreviewPane.DeviceType) -> String {
+        // Inject modern CSS framework and styling with responsive meta tag
+        let modernCSS = AppConstants.getModernCSS(
+            isMobile: device == .mobile,
+            isTablet: device == .tablet,
+            isDark: colorScheme == .dark
+        )
+        
+        // Enhanced meta viewport for device simulation
+        let viewportMeta = AppConstants.viewportMeta
+        
+        // If the content already has HTML structure, inject our CSS and viewport
+        if content.lowercased().contains("<html") ||
+           content.lowercased().contains("<!doctype") {
+            var modifiedContent = content
+            
+            // Add viewport meta tag
+            if let headRange = modifiedContent.range(of: "<head>", options: .caseInsensitive) {
+                let insertionPoint = modifiedContent.index(headRange.upperBound, offsetBy: 0)
+                modifiedContent.insert(contentsOf: "\n    \(viewportMeta)", at: insertionPoint)
+            }
+            
+            // Add CSS
+            if let headEndRange = modifiedContent.range(of: "</head>", options: .caseInsensitive) {
+                modifiedContent.insert(contentsOf: modernCSS, at: headEndRange.lowerBound)
+            }
+            
+            return modifiedContent
+        }
+        
+        // Otherwise, wrap content in full HTML structure
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            \(viewportMeta)
+            <title>HTML Preview - \(device.rawValue)</title>
+            \(modernCSS)
+        </head>
+        <body>
+            \(content)
+        </body>
+        </html>
+        """
+    }
+}
+

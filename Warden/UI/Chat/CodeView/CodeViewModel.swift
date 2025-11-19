@@ -18,13 +18,24 @@ class CodeViewModel: ObservableObject {
     
     func updateHighlighting(colorScheme: ColorScheme) {
         let theme = colorScheme == .dark ? "monokai-sublime" : "color-brewer"
-        highlightedCode = HighlighterManager.shared.highlight(
-            code: code,
-            language: language,
-            theme: theme,
-            fontSize: chatFontSize,
-            isStreaming: isStreaming
-        )
+        let currentCode = code
+        let currentLanguage = language
+        let currentFontSize = chatFontSize
+        let currentStreaming = isStreaming
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let highlighted = HighlighterManager.shared.highlight(
+                code: currentCode,
+                language: currentLanguage,
+                theme: theme,
+                fontSize: currentFontSize,
+                isStreaming: currentStreaming
+            )
+            
+            DispatchQueue.main.async {
+                self?.highlightedCode = highlighted
+            }
+        }
     }
     
     func copyToClipboard() {

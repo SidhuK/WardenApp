@@ -1,7 +1,5 @@
 
 
-import Foundation
-
 class OpenRouterHandler: ChatGPTHandler {    
     override func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {

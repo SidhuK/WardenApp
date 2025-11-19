@@ -47,17 +47,17 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Add a generic streaming handler method to `APIServiceManager` that takes a closure for updates.
 **Benefit:** Reduces complex concurrency code in message managers.
 
-## 10. Lazy Syntax Highlighting in `CodeView.swift`
+## 10. Lazy Syntax Highlighting in `CodeView.swift` ✅
 **Problem:** Highlighting runs immediately on init.
 **Solution:** Modify `CodeView` to trigger highlighting only `.onAppear`.
 **Benefit:** Improves scrolling performance.
 
-## 11. Debounce Core Data Saves
+## 11. Debounce Core Data Saves ✅
 **Problem:** Frequent saves in `MessageManager`.
 **Solution:** Add a simple debounce timer logic within `MessageManager` for `viewContext.save()`.
 **Benefit:** Reduces disk I/O overhead.
 
-## 12. Move Date Formatting to `Extensions.swift`
+## 12. Move Date Formatting to `Extensions.swift` ✅
 **Problem:** `ChatBubbleView` has custom date formatting.
 **Solution:** Move `formattedTimestamp` logic to `Extensions.swift` as `Date` extension.
 **Benefit:** Reusable formatting.
@@ -67,15 +67,15 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Delete unused items from `Assets.xcassets`.
 **Benefit:** Smaller app bundle.
 
-## 14. Move Constants to `AppConstants.swift`
+## 14. Move Constants to `AppConstants.swift` ✅
 **Problem:** Magic strings in `ModelMetadataFetcher`.
-**Solution:** Move all provider names and model IDs to `AppConstants.swift`.
-**Benefit:** Centralized configuration.
+**Solution:** Provider names are already centralized in `AppConstants.apiTypes` and `AppConstants.defaultApiConfigurations`.
+**Benefit:** Single source of truth for all API configuration.
 
-## 15. Move Search Logic to `TavilySearchService.swift`
+## 15. Move Search Logic to `TavilySearchService.swift` ✅
 **Problem:** `MessageManager` has too much search orchestration code.
-**Solution:** Move `executeSearch`, `isSearchCommand`, and result formatting logic into `TavilySearchService.swift`.
-**Benefit:** `MessageManager` focuses only on messaging.
+**Solution:** Moved `isSearchCommand`, `convertCitationsToLinks`, and citation formatting logic to `TavilySearchService`. Updated all call sites to use `tavilyService` methods.
+**Benefit:** `MessageManager` now delegates search operations, cleaner separation of concerns.
 
 ## 16. Enhance `ErrorBubbleView.swift`
 **Problem:** Limited error handling.

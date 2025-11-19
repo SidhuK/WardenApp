@@ -1,6 +1,5 @@
 
 import AttributedText
-import Foundation
 import Highlightr
 import SwiftUI
 
@@ -11,7 +10,6 @@ struct CodeView: View {
     @StateObject private var viewModel: CodeViewModel
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject private var previewStateManager: PreviewStateManager
-    @State private var highlightedCode: NSAttributedString?
     @State private var isRendered = false
     @State private var showInlinePreview = false
     @State private var selectedDevice: DeviceType = .desktop
@@ -79,7 +77,7 @@ struct CodeView: View {
         VStack(spacing: 0) {
             headerView
             
-            if let highlighted = highlightedCode {
+            if let highlighted = viewModel.highlightedCode {
                 AttributedText(highlighted)
                     .textSelection(.enabled)
                     .padding([.horizontal, .bottom], 16)
@@ -112,7 +110,7 @@ struct CodeView: View {
                 updateHighlightedCode(colorScheme: colorScheme, code: code)
             }
         }
-        .onChange(of: highlightedCode) { _ in
+        .onChange(of: viewModel.highlightedCode) { _ in
             if !isRendered {
                 isRendered = true
                 NotificationCenter.default.post(
@@ -538,7 +536,6 @@ struct CodeView: View {
                 viewModel.code = code
             }
             viewModel.updateHighlighting(colorScheme: colorScheme)
-            highlightedCode = viewModel.highlightedCode
         }
     }
     

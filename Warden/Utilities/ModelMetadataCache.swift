@@ -1,5 +1,4 @@
 import Foundation
-import SwiftUI
 
 /// Manages metadata caching for models with freshness tracking
 class ModelMetadataCache: ObservableObject {

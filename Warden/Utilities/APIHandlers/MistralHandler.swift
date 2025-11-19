@@ -1,8 +1,5 @@
-
-
 import Foundation
 import CoreData
-import AppKit
 
 private struct MistralModelsResponse: Codable {
     let data: [MistralModel]

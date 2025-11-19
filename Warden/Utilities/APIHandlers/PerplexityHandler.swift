@@ -1,7 +1,5 @@
 
 
-import Foundation
-
 class PerplexityHandler: APIService {
     let name: String
     let baseURL: URL

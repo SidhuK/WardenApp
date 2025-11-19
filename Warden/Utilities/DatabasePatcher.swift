@@ -1,7 +1,6 @@
 
 import CoreData
 import Foundation
-import SwiftUI
 
 class DatabasePatcher {
     static func applyPatches(context: NSManagedObjectContext) {
