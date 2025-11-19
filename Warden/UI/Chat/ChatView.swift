@@ -159,6 +159,18 @@ struct ChatView: View {
                         }
                     )
                     .background(Color(nsColor: .controlBackgroundColor))
+                    
+                    // Show search results preview above input when available
+                    if let sources = chatViewModel.messageManager?.lastSearchSources,
+                       let query = chatViewModel.messageManager?.lastSearchQuery,
+                       !sources.isEmpty {
+                        VStack {
+                            Spacer()
+                            SearchResultsPreviewView(sources: sources, query: query)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
+                    }
                 }
                 .background(.clear)
                 .overlay(alignment: .bottom) {

@@ -14,6 +14,10 @@ class MessageManager: ObservableObject {
     // Published property for search status updates
     @Published var searchStatus: SearchStatus?
     
+    // Published property for completed search results
+    @Published var lastSearchSources: [SearchSource]?
+    @Published var lastSearchQuery: String?
+    
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
         get {
@@ -115,6 +119,9 @@ class MessageManager: ObservableObject {
         // Update status: completed
         await MainActor.run {
             searchStatus = .completed(sources: sources)
+            // Store for UI display
+            lastSearchSources = sources
+            lastSearchQuery = query
         }
         
         // Extract URLs for citation linking
