@@ -9,7 +9,7 @@ class ChatViewModel: ObservableObject {
     private let viewContext: NSManagedObjectContext
 
     private var _messageManager: MessageManager?
-    private var messageManager: MessageManager? {
+    var messageManager: MessageManager? {
         get {
             if _messageManager == nil {
                 _messageManager = createMessageManager()
