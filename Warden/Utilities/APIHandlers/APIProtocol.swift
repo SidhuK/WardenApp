@@ -30,6 +30,10 @@ protocol APIService {
     func fetchModels() async throws -> [AIModel]
     
     func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest
+    
+    func parseJSONResponse(data: Data) -> (String, String)?
+    
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?)
 }
 
 protocol APIServiceConfiguration {
@@ -195,6 +199,9 @@ extension APIService {
                 case .success(let responseData):
                     if let responseData = responseData {
                         guard let (messageContent, _) = self.parseJSONResponse(data: responseData) else {
+                            if let responseString = String(data: responseData, encoding: .utf8) {
+                                print("APIProtocol Default Parsing Failed. Handler: \(self.name). Raw Response: \(responseString)")
+                            }
                             completion(.failure(.decodingFailed("Failed to parse response")))
                             return
                         }

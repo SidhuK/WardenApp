@@ -5,26 +5,45 @@ import Foundation
 class OpenRouterHandler: ChatGPTHandler {    
     override func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {
-            #if DEBUG
-                print("Response: \(responseString)")
-            #endif
+            // Always print response for debugging
+            print("OpenRouter Raw Response: \(responseString)")
+            
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
                 if let dict = json as? [String: Any],
                    let choices = dict["choices"] as? [[String: Any]],
                    let lastIndex = choices.indices.last,
                    let message = choices[lastIndex]["message"] as? [String: Any],
-                   let messageRole = message["role"] as? String,
-                   let messageContent = message["content"] as? String
+                   let messageRole = message["role"] as? String
                 {
-                    var finalContent = messageContent
+                    let messageContent = message["content"] as? String
+                    var finalContent = messageContent ?? ""
                     
                     // Handle reasoning content if available
                     if let reasoningContent = message["reasoning"] as? String {
-                        finalContent = "<think>\n\(reasoningContent)\n</think>\n\n\(messageContent)"
+                        finalContent = "<think>\n\(reasoningContent)\n</think>\n\n\(finalContent)"
+                    }
+                    
+                    // If we have neither content nor reasoning, it's a failure
+                    if messageContent == nil && message["reasoning"] == nil {
+                         print("Error: Both content and reasoning are missing in OpenRouter response")
+                         return nil
                     }
                     
                     return (finalContent, messageRole)
+                } else {
+                    print("OpenRouter Parsing Failed: Structure mismatch")
+                    if let dict = json as? [String: Any] {
+                        print("Keys found: \(dict.keys)")
+                        if let choices = dict["choices"] as? [[String: Any]] {
+                            print("Choices count: \(choices.count)")
+                            if let first = choices.first {
+                                print("First choice keys: \(first.keys)")
+                            }
+                        } else {
+                            print("Choices missing or not array of dicts")
+                        }
+                    }
                 }
             } catch {
                 print("Error parsing JSON: \(error.localizedDescription)")

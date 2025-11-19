@@ -125,7 +125,7 @@ class PerplexityHandler: APIService {
         return formattedContent
     }
 
-    private func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
                 print("Response: \(responseString)")
@@ -153,7 +153,7 @@ class PerplexityHandler: APIService {
         return nil
     }
 
-    private func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else {
             print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)

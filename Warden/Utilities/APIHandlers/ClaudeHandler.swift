@@ -156,7 +156,7 @@ class ClaudeHandler: APIService {
 
 
 
-    private func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                 let role = json["role"] as? String,
