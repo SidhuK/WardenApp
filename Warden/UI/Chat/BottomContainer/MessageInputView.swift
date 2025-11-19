@@ -387,7 +387,7 @@ struct MessageInputView: View {
             textInputArea
                 .background(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(nsColor: .controlBackgroundColor))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)

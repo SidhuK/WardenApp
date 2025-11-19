@@ -42,112 +42,129 @@ struct ContentView: View {
     @State private var showingSettings = false
 
     var body: some View {
-        NavigationSplitView {
-            ChatListView(
-                selectedChat: $selectedChat,
-                selectedProject: $selectedProject,
-                showingCreateProject: $showingCreateProject,
-                showingEditProject: $showingEditProject,
-                projectToEdit: $projectToEdit,
-                onNewChat: newChat,
-                onOpenPreferences: {
-                    SettingsWindowManager.shared.openSettingsWindow()
-                }
-            )
-            .navigationSplitViewColumnWidth(
-                min: 180,
-                ideal: 220,
-                max: 400
-            )
-            .background(.ultraThinMaterial)
-        } detail: {
-            detailView
-        }
-        .onAppear(perform: {
-            if let lastOpenedChatId = UUID(uuidString: lastOpenedChatId) {
-                if let lastOpenedChat = chats.first(where: { $0.id == lastOpenedChatId }) {
-                    selectedChat = lastOpenedChat
-                }
-            }
-        })
-        .background(WindowAccessor(window: $window))
-        .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
-        .onAppear {
-            NotificationCenter.default.addObserver(
-                forName: AppConstants.newChatNotification,
-                object: nil,
-                queue: .main
-            ) { notification in
-                let windowId = window?.windowNumber
-                if let sourceWindowId = notification.userInfo?["windowId"] as? Int,
-                    sourceWindowId == windowId
-                {
-                    newChat()
-                }
-            }
-            
+        ZStack {
+            Color(nsColor: .controlBackgroundColor)
+                .ignoresSafeArea()
 
-            
-            
-            // Handle chat selection from project summary
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("SelectChatFromProjectSummary"),
-                object: nil,
-                queue: .main
-            ) { notification in
-                if let chat = notification.object as? ChatEntity {
-                    selectedChat = chat
-                }
-            }
-            
-            // Handle inline settings keyboard shortcut
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("OpenInlineSettings"),
-                object: nil,
-                queue: .main
-            ) { _ in
-                showingSettings = true
+            NavigationSplitView {
+                sidebarContent
+            } detail: {
+                detailView
             }
         }
+        .onAppear(perform: setupInitialState)
+        .background(WindowAccessor(window: $window))
+        .onAppear(perform: setupNotifications)
         .navigationTitle("")
-        .onChange(of: scenePhase) { phase in
-            print("Scene phase changed: \(phase)")
-            if phase == .inactive {
-                print("Saving state...")
-            }
+        .onChange(of: scenePhase) { _, newValue in
+            setupScenePhaseChange(phase: newValue)
         }
         .onChange(of: selectedChat) { oldValue, newValue in
-            if self.openedChatId != newValue?.id.uuidString {
-                self.openedChatId = newValue?.id.uuidString
-                previewStateManager.hidePreview()
-            }
-            // Clear project selection and settings when selecting a chat
-            if newValue != nil {
-                selectedProject = nil
-                showingSettings = false
-            }
+            setupSelectedChatChange(oldValue: oldValue, newValue: newValue)
         }
         .onChange(of: selectedProject) { oldValue, newValue in
-            // Clear chat selection and settings when selecting a project
-            if newValue != nil {
-                selectedChat = nil
-                showingSettings = false
-                previewStateManager.hidePreview()
-            }
+            setupSelectedProjectChange(oldValue: oldValue, newValue: newValue)
         }
         .onChange(of: showingSettings) { oldValue, newValue in
-            // Clear selections when showing settings
-            if newValue {
-                selectedChat = nil
-                selectedProject = nil
-                previewStateManager.hidePreview()
+            setupShowingSettingsChange(oldValue: oldValue, newValue: newValue)
+        }
+        .environmentObject(previewStateManager)
+        .overlay(alignment: .top) {
+            ToastManager()
+        }
+    }
+
+    private var sidebarContent: some View {
+        ChatListView(
+            selectedChat: $selectedChat,
+            selectedProject: $selectedProject,
+            showingCreateProject: $showingCreateProject,
+            showingEditProject: $showingEditProject,
+            projectToEdit: $projectToEdit,
+            onNewChat: newChat,
+            onOpenPreferences: {
+                SettingsWindowManager.shared.openSettingsWindow()
+            }
+        )
+        .navigationSplitViewColumnWidth(
+            min: 180,
+            ideal: 220,
+            max: 400
+        )
+    }
+
+    private func setupInitialState() {
+        if let lastOpenedChatId = UUID(uuidString: lastOpenedChatId) {
+            if let lastOpenedChat = chats.first(where: { $0.id == lastOpenedChatId }) {
+                selectedChat = lastOpenedChat
+            }
+        }
+    }
+
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            forName: AppConstants.newChatNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            let windowId = window?.windowNumber
+            if let sourceWindowId = notification.userInfo?["windowId"] as? Int,
+                sourceWindowId == windowId
+            {
+                newChat()
             }
         }
 
-        .environmentObject(previewStateManager)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) {
-            ToastManager()
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("SelectChatFromProjectSummary"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let chat = notification.object as? ChatEntity {
+                selectedChat = chat
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("OpenInlineSettings"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            showingSettings = true
+        }
+    }
+
+    private func setupScenePhaseChange(phase: ScenePhase) {
+        print("Scene phase changed: \(phase)")
+        if phase == .inactive {
+            print("Saving state...")
+        }
+    }
+
+    private func setupSelectedChatChange(oldValue: ChatEntity?, newValue: ChatEntity?) {
+        if self.openedChatId != newValue?.id.uuidString {
+            self.openedChatId = newValue?.id.uuidString
+            previewStateManager.hidePreview()
+        }
+        if newValue != nil {
+            selectedProject = nil
+            showingSettings = false
+        }
+    }
+
+    private func setupSelectedProjectChange(oldValue: ProjectEntity?, newValue: ProjectEntity?) {
+        if newValue != nil {
+            selectedChat = nil
+            showingSettings = false
+            previewStateManager.hidePreview()
+        }
+    }
+
+    private func setupShowingSettingsChange(oldValue: Bool, newValue: Bool) {
+        if newValue {
+            selectedChat = nil
+            selectedProject = nil
+            previewStateManager.hidePreview()
         }
     }
 
@@ -263,12 +280,10 @@ struct ContentView: View {
                     openPreferencesView: openInlineSettings,
                     newChat: newChat
                 )
-                .background(.ultraThinMaterial)
             }
 
             if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
                 PreviewPane(stateManager: previewStateManager)
-                    .background(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -276,7 +291,6 @@ struct ContentView: View {
                     .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
             }
         }
-        .background(.ultraThinMaterial)
         .overlay(
             Rectangle()
                 .fill(AppConstants.borderSubtle)
@@ -635,7 +649,6 @@ struct PreviewPane: View {
     
     private func rotateDevice() {
         // Swap width and height for device rotation
-        let currentDimensions = selectedDevice.dimensions
         // Note: This is a simplified rotation - in a full implementation, 
         // we might want to track orientation state separately
         refreshTrigger += 1
