@@ -196,13 +196,25 @@ struct ChatView: View {
                             )
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        // Show search progress above input when searching
-                        else if let status = chatViewModel.messageManager?.searchStatus {
+                        // Show search progress above input when searching (not completed)
+                        else if let status = chatViewModel.messageManager?.searchStatus,
+                                !isSearchCompleted(status) {
                             SearchProgressView(status: status)
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
                         
                         Spacer()
+                    }
+                }
+                // Auto-dismiss completed search status
+                .onChange(of: chatViewModel.messageManager?.searchStatus) { oldValue, newValue in
+                    if case .completed = newValue {
+                        // Auto-dismiss after 2 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            if case .completed = chatViewModel.messageManager?.searchStatus {
+                                chatViewModel.messageManager?.searchStatus = nil
+                            }
+                        }
                     }
                 }
             }
@@ -680,6 +692,13 @@ extension ChatView {
         if multiAgentManager.isProcessing {
             multiAgentManager.isProcessing = false
         }
+    }
+    
+    private func isSearchCompleted(_ status: SearchStatus) -> Bool {
+        if case .completed = status {
+            return true
+        }
+        return false
     }
     
     private func stopStreaming() {

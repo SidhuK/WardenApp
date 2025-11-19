@@ -145,17 +145,35 @@ struct MarkdownView: View {
                 attributedString.addAttribute(NSAttributedString.Key.link, value: destination, range: range)
                 
                 // Check if this is a citation link (numeric text with URL)
-                if let textAsInt = Int(text.trimmingCharacters(in: .whitespaces)) {
-                    // This is a citation - add custom attributes
-                    attributedString.addAttribute(.backgroundColor, value: NSColor.controlAccentColor.withAlphaComponent(0.9), range: range)
-                    attributedString.addAttribute(.foregroundColor, value: NSColor.white, range: range)
-                    attributedString.addAttribute(.font, value: NSFont.monospacedSystemFont(ofSize: effectiveFontSize * 0.85, weight: .medium), range: range)
+                if let _ = Int(text.trimmingCharacters(in: .whitespaces)) {
+                    // This is a citation - style it elegantly like a macOS badge
+                    let citationSize = effectiveFontSize * 0.75
                     
-                    // Add padding effect by adding spacing attributes
+                    // Use a smaller, rounder font
+                    attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize, weight: .semibold), range: range)
+                    
+                    // Subtle background color
+                    let bgColor = own 
+                        ? NSColor.white.withAlphaComponent(0.25)
+                        : NSColor.controlAccentColor.withAlphaComponent(0.15)
+                    attributedString.addAttribute(.backgroundColor, value: bgColor, range: range)
+                    
+                    // Text color
+                    let textColor = own 
+                        ? NSColor.white.withAlphaComponent(0.9)
+                        : NSColor.controlAccentColor
+                    attributedString.addAttribute(.foregroundColor, value: textColor, range: range)
+                    
+                    // Add subtle border effect with stroke
+                    attributedString.addAttribute(.strokeWidth, value: -1.0, range: range)
+                    attributedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.3), range: range)
+                    
+                    // Raise the citation slightly like a superscript
+                    attributedString.addAttribute(.baselineOffset, value: 2, range: range)
+                    
+                    // Add subtle corner radius effect via padding
                     let paragraphStyle = NSMutableParagraphStyle()
-                    paragraphStyle.firstLineHeadIndent = 2
-                    paragraphStyle.headIndent = 2
-                    paragraphStyle.tailIndent = -2
+                    paragraphStyle.firstLineHeadIndent = 0
                     attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
                 }
             }
