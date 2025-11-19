@@ -37,12 +37,12 @@ This document outlines 20 specific, actionable ideas to decrease codebase size, 
 **Solution:** Move the static HTML/CSS template string to `Configuration/AppConstants.swift`.
 **Benefit:** Cleans up `CodeView.swift` logic.
 
-## 8. Centralize API Config in `APIServiceManager.swift`
+## 8. Centralize API Config in `APIServiceManager.swift` ✅
 **Problem:** API setup logic is scattered.
 **Solution:** Move all API key retrieval and config creation logic into `APIServiceManager.swift` as static helper methods.
 **Benefit:** Single source of truth for API configuration.
 
-## 9. Shared Streaming Logic in `APIServiceManager.swift`
+## 9. Shared Streaming Logic in `APIServiceManager.swift` ✅
 **Problem:** Streaming loops are duplicated.
 **Solution:** Add a generic streaming handler method to `APIServiceManager` that takes a closure for updates.
 **Benefit:** Reduces complex concurrency code in message managers.

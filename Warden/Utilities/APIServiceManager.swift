@@ -181,6 +181,31 @@ class APIServiceManager {
         )
     }
     
+    /// Handles streaming response from API service with standardized error handling and cancellation support
+    /// - Parameters:
+    ///   - apiService: The API service instance to use
+    ///   - messages: The messages to send
+    ///   - temperature: The temperature setting
+    ///   - onChunk: Closure called with each new chunk and the accumulated response so far
+    /// - Returns: The full accumulated response
+    static func handleStream(
+        apiService: APIService,
+        messages: [[String: String]],
+        temperature: Float,
+        onChunk: @escaping (String, String) async -> Void
+    ) async throws -> String {
+        let stream = try await apiService.sendMessageStream(messages, temperature: temperature)
+        var accumulatedResponse = ""
+        
+        for try await chunk in stream {
+            try Task.checkCancellation()
+            accumulatedResponse += chunk
+            await onChunk(chunk, accumulatedResponse)
+        }
+        
+        return accumulatedResponse
+    }
+    
     /// Prepares messages specifically formatted for summarization requests
     private func prepareSummarizationMessages(prompt: String, model: String) -> [[String: String]] {
         var messages: [[String: String]] = []

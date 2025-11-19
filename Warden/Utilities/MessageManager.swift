@@ -417,96 +417,48 @@ class MessageManager: ObservableObject {
 
         currentStreamingTask = Task { @MainActor in
             var accumulatedResponse = ""
-            var wasStreamingCancelled = false
             
             do {
-                let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
                 chat.waitingForResponse = true
-
-                for try await chunk in stream {
-                    // Check for cancellation immediately
-                    try Task.checkCancellation()
-                    guard !Task.isCancelled else {
-                        print("⚠️ Streaming cancelled before processing chunk")
-                        wasStreamingCancelled = true
-                        break
-                    }
-                    
-                    accumulatedResponse += chunk
-                    
-                    // Double-check cancellation before UI updates
-                    guard !Task.isCancelled else {
-                        print("⚠️ Streaming cancelled before UI update")
-                        wasStreamingCancelled = true
-                        break
-                    }
+                
+                let fullResponse = try await APIServiceManager.handleStream(
+                    apiService: apiService,
+                    messages: requestMessages,
+                    temperature: temperature
+                ) { chunk, accumulated in
+                    accumulatedResponse = accumulated
                     
                     if let lastMessage = chat.lastMessage {
                         if lastMessage.own {
-                            self.addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                            self.addMessageToChat(chat: chat, message: accumulated, searchUrls: searchUrls)
                         }
                         else {
                             let now = Date()
-                            if now.timeIntervalSince(lastUpdateTime) >= updateInterval {
-                                updateLastMessage(
+                            if now.timeIntervalSince(self.lastUpdateTime) >= self.updateInterval {
+                                self.updateLastMessage(
                                     chat: chat,
                                     lastMessage: lastMessage,
-                                    accumulatedResponse: accumulatedResponse,
+                                    accumulatedResponse: accumulated,
                                     searchUrls: searchUrls,
                                     save: false
                                 )
-                                lastUpdateTime = now
+                                self.lastUpdateTime = now
                             }
                         }
-                    }
-                }
-                
-                // Handle cancellation: save partial response to context
-                if wasStreamingCancelled || Task.isCancelled {
-                    print("⚠️ Streaming was cancelled - saving partial response to context")
-                    
-                    // Ensure the partial message is in the UI
-                    if let lastMessage = chat.lastMessage, !lastMessage.own {
-                        updateLastMessage(
-                            chat: chat,
-                            lastMessage: lastMessage,
-                            accumulatedResponse: accumulatedResponse,
-                            searchUrls: searchUrls,
-                            appendCitations: true
-                        )
-                        
-                        // ✅ SAVE PARTIAL RESPONSE TO CONTEXT
-                        if !accumulatedResponse.isEmpty {
-                            addNewMessageToRequestMessages(
-                                chat: chat,
-                                content: accumulatedResponse,
-                                role: AppConstants.defaultRole
-                            )
-                            print("✅ Partial response saved to context (\(accumulatedResponse.count) chars)")
-                        }
                     } else {
-                        // No last message yet - create one with partial content
-                        if !accumulatedResponse.isEmpty {
-                            addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                            addNewMessageToRequestMessages(
-                                chat: chat,
-                                content: accumulatedResponse,
-                                role: AppConstants.defaultRole
-                            )
-                        }
+                         // Handle case where there is no last message yet (first chunk)
+                         if !accumulated.isEmpty {
+                             self.addMessageToChat(chat: chat, message: accumulated, searchUrls: searchUrls)
+                         }
                     }
-                    
-                    chat.waitingForResponse = false
-                    completion(.failure(CancellationError()))
-                    return
                 }
                 
                 // Normal completion path - stream finished successfully
                  guard let lastMessage = chat.lastMessage else {
                      // If no last message exists, create a new one
                      print("⚠️ Warning: No last message found after streaming, creating new message")
-                     addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                     addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                     addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
+                     addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
                      // Auto-rename chat if needed
                      generateChatNameIfNeeded(chat: chat)
                      completion(.success(()))
@@ -514,8 +466,8 @@ class MessageManager: ObservableObject {
                  }
                  
                  // Final update: append citations now
-                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true, save: true)
-                 addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
+                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: fullResponse, searchUrls: searchUrls, appendCitations: true, save: true)
+                 addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
                  // Auto-rename chat if needed
                  generateChatNameIfNeeded(chat: chat)
                  completion(.success(()))

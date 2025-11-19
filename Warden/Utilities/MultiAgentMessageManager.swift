@@ -87,7 +87,7 @@ class MultiAgentMessageManager: ObservableObject {
         for (index, service) in limitedServices.enumerated() {
             dispatchGroup.enter()
             
-            guard let config = loadAPIConfig(for: service) else {
+            guard let config = APIServiceManager.createAPIConfiguration(for: service) else {
                 activeAgents[index].error = APIError.noApiService("Invalid configuration")
                 activeAgents[index].isComplete = true
                 dispatchGroup.leave()
@@ -133,18 +133,14 @@ class MultiAgentMessageManager: ObservableObject {
     ) {
         let task = Task {
             do {
-                let stream = try await apiService.sendMessageStream(requestMessages, temperature: temperature)
-                var accumulatedResponse = ""
-                
-                for try await chunk in stream {
-                    // Check for cancellation
-                    try Task.checkCancellation()
-                    
-                    accumulatedResponse += chunk
-                    
+                let fullResponse = try await APIServiceManager.handleStream(
+                    apiService: apiService,
+                    messages: requestMessages,
+                    temperature: temperature
+                ) { chunk, accumulated in
                     await MainActor.run {
                         if agentIndex < self.activeAgents.count {
-                            self.activeAgents[agentIndex].response = accumulatedResponse
+                            self.activeAgents[agentIndex].response = accumulated
                             self.activeAgents[agentIndex].timestamp = Date()
                         }
                     }
@@ -154,7 +150,7 @@ class MultiAgentMessageManager: ObservableObject {
                 if !Task.isCancelled {
                     await MainActor.run {
                         if agentIndex < self.activeAgents.count {
-                            self.activeAgents[agentIndex].response = accumulatedResponse
+                            self.activeAgents[agentIndex].response = fullResponse
                             self.activeAgents[agentIndex].isComplete = true
                             self.activeAgents[agentIndex].timestamp = Date()
                         }
@@ -215,25 +211,5 @@ class MultiAgentMessageManager: ObservableObject {
         }
     }
     
-    private func loadAPIConfig(for service: APIServiceEntity) -> APIServiceConfiguration? {
-        guard let apiServiceUrl = service.url else {
-            return nil
-        }
-        
-        var apiKey = ""
-        do {
-            apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
-        } catch {
-            print("Error extracting token: \(error) for \(service.id?.uuidString ?? "")")
-        }
-        
-        return APIServiceConfig(
-            name: service.type ?? "chatgpt",
-            apiUrl: apiServiceUrl,
-            apiKey: apiKey,
-            model: service.model ?? AppConstants.chatGptDefaultModel
-        )
-    }
     
-
-} 
+    }
