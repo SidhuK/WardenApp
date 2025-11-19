@@ -116,6 +116,15 @@ struct ChatView: View {
                 // Show normal chat layout for chats with messages
                 VStack(spacing: 0) {
                     mainChatContent
+                    
+                    // Show search results preview above input when available
+                    if let sources = chatViewModel.messageManager?.lastSearchSources,
+                       let query = chatViewModel.messageManager?.lastSearchQuery,
+                       !sources.isEmpty {
+                        SearchResultsPreviewView(sources: sources, query: query)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                    }
 
                     // Chat input container
                     ChatBottomContainerView(
@@ -159,18 +168,6 @@ struct ChatView: View {
                         }
                     )
                     .background(Color(nsColor: .controlBackgroundColor))
-                    
-                    // Show search results preview above input when available
-                    if let sources = chatViewModel.messageManager?.lastSearchSources,
-                       let query = chatViewModel.messageManager?.lastSearchQuery,
-                       !sources.isEmpty {
-                        VStack {
-                            Spacer()
-                            SearchResultsPreviewView(sources: sources, query: query)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
-                        }
-                    }
                 }
                 .background(.clear)
                 .overlay(alignment: .bottom) {

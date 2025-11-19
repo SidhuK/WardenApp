@@ -5,10 +5,12 @@ struct SearchProgressView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Progress indicator
-            ProgressView()
-                .scaleEffect(0.8)
-                .frame(width: 20, height: 20)
+            // Progress indicator - only show when actively searching
+            if !isSearchCompleted {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .frame(width: 20, height: 20)
+            }
             
             // Status content
             VStack(alignment: .leading, spacing: 4) {
@@ -64,6 +66,13 @@ struct SearchProgressView: View {
         )
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+    
+    private var isSearchCompleted: Bool {
+        if case .completed = status {
+            return true
+        }
+        return false
     }
     
     private var statusTitle: String {
