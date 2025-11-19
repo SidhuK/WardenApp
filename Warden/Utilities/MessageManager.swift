@@ -9,6 +9,7 @@ class MessageManager: ObservableObject {
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
     private let tavilyService = TavilySearchService()
+    private static let citationRegex = try? NSRegularExpression(pattern: #"\[(\d+)\]"#, options: [])
     
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
@@ -103,9 +104,7 @@ class MessageManager: ObservableObject {
         // - \[(\d+)\] captures the number
         // - (?=[^\[]|\z) is a light guard to avoid overlapping like [[1]]
         // We will additionally validate boundaries in code.
-        let pattern = #"\[(\d+)\]"#
-        
-        if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+        if let regex = Self.citationRegex {
             let nsString = result as NSString
             let matches = regex.matches(in: result, options: [], range: NSRange(location: 0, length: nsString.length))
             
@@ -401,7 +400,8 @@ class MessageManager: ObservableObject {
                                     chat: chat,
                                     lastMessage: lastMessage,
                                     accumulatedResponse: accumulatedResponse,
-                                    searchUrls: searchUrls
+                                    searchUrls: searchUrls,
+                                    save: false
                                 )
                                 lastUpdateTime = now
                             }
@@ -462,7 +462,7 @@ class MessageManager: ObservableObject {
                  }
                  
                  // Final update: append citations now
-                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true)
+                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: accumulatedResponse, searchUrls: searchUrls, appendCitations: true, save: true)
                  addNewMessageToRequestMessages(chat: chat, content: accumulatedResponse, role: AppConstants.defaultRole)
                  // Auto-rename chat if needed
                  generateChatNameIfNeeded(chat: chat)
@@ -479,7 +479,8 @@ class MessageManager: ObservableObject {
                             lastMessage: lastMessage,
                             accumulatedResponse: accumulatedResponse,
                             searchUrls: searchUrls,
-                            appendCitations: true
+                            appendCitations: true,
+                            save: true
                         )
                         addNewMessageToRequestMessages(
                             chat: chat,
@@ -643,7 +644,7 @@ class MessageManager: ObservableObject {
         self.viewContext.saveWithRetry(attempts: 1)
     }
 
-    private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String, searchUrls: [String]? = nil, appendCitations: Bool = false) {
+    private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String, searchUrls: [String]? = nil, appendCitations: Bool = false, save: Bool = false) {
         print("Streaming chunk received: \(accumulatedResponse.suffix(20))")
         
         // Only convert citations at the final update, not during intermediate streaming updates
@@ -661,9 +662,11 @@ class MessageManager: ObservableObject {
 
         chat.objectWillChange.send()
 
-        Task {
-            await MainActor.run {
-                self.viewContext.saveWithRetry(attempts: 1)
+        if save {
+            Task {
+                await MainActor.run {
+                    self.viewContext.saveWithRetry(attempts: 1)
+                }
             }
         }
     }

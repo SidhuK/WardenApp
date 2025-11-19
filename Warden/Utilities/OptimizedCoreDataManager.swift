@@ -225,16 +225,15 @@ class OptimizedCoreDataManager: ObservableObject {
                 let batchUpdateRequest = NSBatchUpdateRequest(entityName: "ProjectEntity")
                 batchUpdateRequest.predicate = predicate
                 batchUpdateRequest.propertiesToUpdate = propertiesToUpdate
-                batchUpdateRequest.resultType = .updatedObjectsCountResultType
+                batchUpdateRequest.resultType = .updatedObjectIDsResultType
                 
                 do {
                     let result = try self.backgroundContext.execute(batchUpdateRequest) as? NSBatchUpdateResult
                     
-                    // Refresh objects in main context
-                    if let updatedCount = result?.result as? Int, updatedCount > 0 {
-                        DispatchQueue.main.async {
-                            self.viewContext.refreshAllObjects()
-                        }
+                    // Merge changes to main context
+                    if let objectIDs = result?.result as? [NSManagedObjectID], !objectIDs.isEmpty {
+                        let changes = [NSUpdatedObjectsKey: objectIDs]
+                        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.viewContext])
                     }
                     
                     continuation.resume(returning: true)

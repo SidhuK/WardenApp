@@ -111,7 +111,7 @@ struct ChatView: View {
                         self.stopStreaming()
                     }
                 )
-                .background(AppConstants.backgroundWindow)
+                .background(.clear)
             } else {
                 // Show normal chat layout for chats with messages
                 VStack(spacing: 0) {
@@ -158,9 +158,9 @@ struct ChatView: View {
                             // Handle expanded state change if needed
                         }
                     )
-                    .background(AppConstants.backgroundWindow)
+                    .background(.ultraThinMaterial)
                 }
-                .background(AppConstants.backgroundWindow)
+                .background(.clear)
             }
         }
         .navigationTitle("")
@@ -408,7 +408,7 @@ struct ChatView: View {
         }
         .modifier(MeasureModifier(renderTime: $renderTime))
         .padding(.bottom, 8)
-        .background(AppConstants.backgroundWindow)
+        .background(.clear)
         .overlay(alignment: .bottom) {
             LinearGradient(
                 colors: [

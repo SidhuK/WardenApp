@@ -71,7 +71,7 @@ struct ChatBottomContainerView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .padding(.bottom, 4)
-                    .background(AppConstants.backgroundWindow)
+                    .background(.regularMaterial)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -97,8 +97,8 @@ struct ChatBottomContainerView: View {
             )
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(AppConstants.backgroundWindow)
+            .background(.regularMaterial)
         }
-        .background(AppConstants.backgroundWindow)
+        .background(.regularMaterial)
     }
 }

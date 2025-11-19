@@ -248,16 +248,11 @@ struct ChatBubbleView: View, Equatable {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
+        .overlay(
             RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .fill(
-                    Color.accentColor
-                        .opacity(colorScheme == .dark ? 0.22 : 0.16)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
-                )
+                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.12), radius: 3, x: 0, y: 1)
     }
@@ -272,17 +267,11 @@ struct ChatBubbleView: View, Equatable {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
+        .overlay(
             RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .fill(
-                    colorScheme == .dark
-                        ? Color.white.opacity(0.04)
-                        : AppConstants.backgroundElevated
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-                )
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 

@@ -59,71 +59,9 @@ struct ContentView: View {
                 ideal: 220,
                 max: 400
             )
-            .background(AppConstants.backgroundSidebar)
+            .background(.ultraThinMaterial)
         } detail: {
-            HSplitView {
-                if showingSettings {
-                    // Show settings inline in the main content area
-                    InlineSettingsView(onDismiss: {
-                        showingSettings = false
-                    })
-                    .frame(minWidth: 400)
-                } else if showingCreateProject {
-                    // Show create project view inline
-                    CreateProjectView(
-                        onProjectCreated: { project in
-                            selectedProject = project
-                            showingCreateProject = false
-                        },
-                        onCancel: {
-                            showingCreateProject = false
-                        }
-                    )
-                    .frame(minWidth: 400)
-                } else if showingEditProject, let project = projectToEdit {
-                    // Show edit project view inline
-                    ProjectSettingsView(project: project, onComplete: {
-                        showingEditProject = false
-                        projectToEdit = nil
-                    })
-                    .frame(minWidth: 400)
-                } else if let project = selectedProject {
-                    // Show project summary when project is selected
-                    ProjectSummaryView(project: project)
-                        .frame(minWidth: 400)
-                } else if selectedChat != nil {
-                    ChatView(viewContext: viewContext, chat: selectedChat!)
-                        .frame(minWidth: 400)
-                        .id(openedChatId)
-                }
-                else {
-                    WelcomeScreen(
-                        chatsCount: chats.count,
-                        apiServiceIsPresent: apiServices.count > 0,
-                        customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
-                        openPreferencesView: openInlineSettings,
-                        newChat: newChat
-                    )
-                    .background(AppConstants.backgroundWindow)
-                }
-
-                if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
-                    PreviewPane(stateManager: previewStateManager)
-                        .background(AppConstants.backgroundElevated)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppConstants.borderSubtle, lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
-                }
-            }
-            .background(AppConstants.backgroundWindow)
-            .overlay(
-                Rectangle()
-                    .fill(AppConstants.borderSubtle)
-                    .frame(width: 1),
-                alignment: .leading
-            )
+            detailView
         }
         .onAppear(perform: {
             if let lastOpenedChatId = UUID(uuidString: lastOpenedChatId) {
@@ -133,6 +71,7 @@ struct ContentView: View {
             }
         })
         .background(WindowAccessor(window: $window))
+        .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
         .onAppear {
             NotificationCenter.default.addObserver(
                 forName: AppConstants.newChatNotification,
@@ -206,7 +145,7 @@ struct ContentView: View {
         }
 
         .environmentObject(previewStateManager)
-        .background(AppConstants.backgroundWindow)
+        .background(.ultraThinMaterial)
         .overlay(alignment: .top) {
             ToastManager()
         }
@@ -279,6 +218,72 @@ struct ContentView: View {
             return 0
         }
     }
+    
+    private var detailView: some View {
+        HSplitView {
+            if showingSettings {
+                // Show settings inline in the main content area
+                InlineSettingsView(onDismiss: {
+                    showingSettings = false
+                })
+                .frame(minWidth: 400)
+            } else if showingCreateProject {
+                // Show create project view inline
+                CreateProjectView(
+                    onProjectCreated: { project in
+                        selectedProject = project
+                        showingCreateProject = false
+                    },
+                    onCancel: {
+                        showingCreateProject = false
+                    }
+                )
+                .frame(minWidth: 400)
+            } else if showingEditProject, let project = projectToEdit {
+                // Show edit project view inline
+                ProjectSettingsView(project: project, onComplete: {
+                    showingEditProject = false
+                    projectToEdit = nil
+                })
+                .frame(minWidth: 400)
+            } else if let project = selectedProject {
+                // Show project summary when project is selected
+                ProjectSummaryView(project: project)
+                    .frame(minWidth: 400)
+            } else if selectedChat != nil {
+                ChatView(viewContext: viewContext, chat: selectedChat!)
+                    .frame(minWidth: 400)
+                    .id(openedChatId)
+            }
+            else {
+                WelcomeScreen(
+                    chatsCount: chats.count,
+                    apiServiceIsPresent: apiServices.count > 0,
+                    customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
+                    openPreferencesView: openInlineSettings,
+                    newChat: newChat
+                )
+                .background(.ultraThinMaterial)
+            }
+
+            if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
+                PreviewPane(stateManager: previewStateManager)
+                    .background(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
+            }
+        }
+        .background(.ultraThinMaterial)
+        .overlay(
+            Rectangle()
+                .fill(AppConstants.borderSubtle)
+                .frame(width: 1),
+            alignment: .leading
+        )
+    }
 }
 
 struct PreviewPane: View {
@@ -335,7 +340,11 @@ struct PreviewPane: View {
                 if selectedDevice == .desktop {
                     // Full-width desktop view
                     HTMLPreviewView(
-                        htmlContent: enhancedHtmlContent, 
+                        htmlContent: HTMLGenerator.generate(
+                            content: stateManager.previewContent,
+                            colorScheme: colorScheme,
+                            device: selectedDevice
+                        ), 
                         zoomLevel: zoomLevel,
                         refreshTrigger: refreshTrigger,
                         userAgent: selectedDevice.userAgent
@@ -347,7 +356,7 @@ struct PreviewPane: View {
             }
         }
         .background(modernBackgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -389,7 +398,11 @@ struct PreviewPane: View {
                 
                 VStack {
                     HTMLPreviewView(
-                        htmlContent: enhancedHtmlContent,
+                        htmlContent: HTMLGenerator.generate(
+                            content: stateManager.previewContent,
+                            colorScheme: colorScheme,
+                            device: selectedDevice
+                        ),
                         zoomLevel: 1.0, // Handle scaling externally
                         refreshTrigger: refreshTrigger,
                         userAgent: selectedDevice.userAgent
@@ -600,229 +613,8 @@ struct PreviewPane: View {
     
     private var modernBackgroundColor: Color {
         colorScheme == .dark ? 
-            Color(red: 0.12, green: 0.12, blue: 0.14) : 
-            Color(red: 0.99, green: 0.99, blue: 1.0)
-    }
-    
-    private var enhancedHtmlContent: String {
-        // Inject modern CSS framework and styling with responsive meta tag
-        let modernCSS = """
-        <style>
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background: \(colorScheme == .dark ? "#1a1a1a" : "#ffffff");
-            color: \(colorScheme == .dark ? "#e4e4e7" : "#1f2937");
-            font-size: \(selectedDevice == .mobile ? "14px" : "16px");
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-            margin-top: 0;
-            margin-bottom: 0.5em;
-            font-weight: 600;
-            line-height: 1.25;
-        }
-        
-        h1 { font-size: \(selectedDevice == .mobile ? "1.8em" : "2.25em"); color: \(colorScheme == .dark ? "#f9fafb" : "#111827"); }
-        h2 { font-size: \(selectedDevice == .mobile ? "1.5em" : "1.875em"); color: \(colorScheme == .dark ? "#f3f4f6" : "#1f2937"); }
-        h3 { font-size: \(selectedDevice == .mobile ? "1.3em" : "1.5em"); color: \(colorScheme == .dark ? "#e5e7eb" : "#374151"); }
-        
-        p {
-            margin-bottom: 1em;
-        }
-        
-        a {
-            color: \(colorScheme == .dark ? "#60a5fa" : "#2563eb");
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        
-        a:hover {
-            color: \(colorScheme == .dark ? "#93c5fd" : "#1d4ed8");
-            text-decoration: underline;
-        }
-        
-        code {
-            background: \(colorScheme == .dark ? "#374151" : "#f3f4f6");
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-            font-size: 0.9em;
-        }
-        
-        pre {
-            background: \(colorScheme == .dark ? "#1f2937" : "#f9fafb");
-            border: 1px solid \(colorScheme == .dark ? "#374151" : "#e5e7eb");
-            border-radius: 8px;
-            padding: \(selectedDevice == .mobile ? "12px" : "16px");
-            overflow-x: auto;
-            margin: 1em 0;
-            font-size: \(selectedDevice == .mobile ? "12px" : "14px");
-        }
-        
-        pre code {
-            background: none;
-            padding: 0;
-        }
-        
-        .container {
-            max-width: \(selectedDevice == .mobile ? "100%" : selectedDevice == .tablet ? "90%" : "800px");
-            margin: 0 auto;
-            padding: 0 \(selectedDevice == .mobile ? "12px" : "16px");
-        }
-        
-        .card {
-            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
-            border: 1px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
-            border-radius: \(selectedDevice == .mobile ? "8px" : "12px");
-            padding: \(selectedDevice == .mobile ? "16px" : "24px");
-            margin: \(selectedDevice == .mobile ? "12px 0" : "16px 0");
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: \(selectedDevice == .mobile ? "10px 20px" : "12px 24px");
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: \(selectedDevice == .mobile ? "14px" : "16px");
-            font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: \(selectedDevice == .mobile ? "100%" : "auto");
-        }
-        
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: \(selectedDevice == .mobile ? "14px" : "12px");
-            border: 2px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
-            border-radius: 8px;
-            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
-            color: \(colorScheme == .dark ? "#f9fafb" : "#1f2937");
-            font-size: \(selectedDevice == .mobile ? "16px" : "14px"); /* Prevent zoom on iOS */
-            transition: border-color 0.2s ease;
-        }
-        
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1em 0;
-            font-size: \(selectedDevice == .mobile ? "12px" : "14px");
-        }
-        
-        th, td {
-            padding: \(selectedDevice == .mobile ? "8px" : "12px");
-            text-align: left;
-            border-bottom: 1px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
-        }
-        
-        th {
-            background: \(colorScheme == .dark ? "#374151" : "#f9fafb");
-            font-weight: 600;
-        }
-        
-        .modern-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-        }
-        
-        /* Responsive design specific to device type */
-        @media (max-width: 768px) {
-            body {
-                padding: \(selectedDevice == .mobile ? "12px" : "16px");
-            }
-            
-            .container {
-                padding: 0 \(selectedDevice == .mobile ? "8px" : "12px");
-            }
-            
-            .card {
-                padding: \(selectedDevice == .mobile ? "12px" : "16px");
-                margin: \(selectedDevice == .mobile ? "8px 0" : "12px 0");
-            }
-            
-            h1 { font-size: 1.6em; }
-            h2 { font-size: 1.4em; }
-            h3 { font-size: 1.2em; }
-        }
-        
-        /* Touch-friendly styles for mobile */
-        \(selectedDevice == .mobile ? """
-        @media (hover: none) and (pointer: coarse) {
-            button, a, input, select, textarea {
-                min-height: 44px; /* iOS accessibility guidelines */
-            }
-            
-            button {
-                font-size: 16px;
-                padding: 14px 20px;
-            }
-        }
-        """ : "")
-        </style>
-        """
-        
-        // Enhanced meta viewport for device simulation
-        let viewportMeta = """
-        <meta name="viewport" content="width=\(selectedDevice == .mobile ? "375" : selectedDevice == .tablet ? "768" : "1024"), initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        """
-        
-        // If the content already has HTML structure, inject our CSS and viewport
-        if stateManager.previewContent.lowercased().contains("<html") || 
-           stateManager.previewContent.lowercased().contains("<!doctype") {
-            var modifiedContent = stateManager.previewContent
-            
-            // Add viewport meta tag
-            if let headRange = modifiedContent.range(of: "<head>", options: .caseInsensitive) {
-                let insertionPoint = modifiedContent.index(headRange.upperBound, offsetBy: 0)
-                modifiedContent.insert(contentsOf: "\n    \(viewportMeta)", at: insertionPoint)
-            }
-            
-            // Add CSS
-            if let headEndRange = modifiedContent.range(of: "</head>", options: .caseInsensitive) {
-                modifiedContent.insert(contentsOf: modernCSS, at: headEndRange.lowerBound)
-            }
-            
-            return modifiedContent
-        }
-        
-        // Otherwise, wrap content in full HTML structure
-        return """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            \(viewportMeta)
-            <title>HTML Preview - \(selectedDevice.rawValue)</title>
-            \(modernCSS)
-        </head>
-        <body>
-            \(stateManager.previewContent)
-        </body>
-        </html>
-        """
+            Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0.6) : 
+            Color(red: 0.99, green: 0.99, blue: 1.0).opacity(0.6)
     }
     
     private func refreshPreview() {
@@ -857,6 +649,13 @@ struct WindowAccessor: NSViewRepresentable {
         let view = NSView()
         DispatchQueue.main.async {
             self.window = view.window
+            if let window = view.window {
+                window.isOpaque = false
+                window.backgroundColor = .clear
+                window.styleMask.insert(.fullSizeContentView)
+                window.titlebarAppearsTransparent = true
+                window.titleVisibility = .hidden
+            }
         }
         return view
     }
@@ -864,3 +663,244 @@ struct WindowAccessor: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
+struct VisualEffectView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let visualEffectView = NSVisualEffectView()
+        visualEffectView.material = material
+        visualEffectView.blendingMode = blendingMode
+        visualEffectView.state = .active
+        return visualEffectView
+    }
+
+    func updateNSView(_ visualEffectView: NSVisualEffectView, context: Context) {
+        visualEffectView.material = material
+        visualEffectView.blendingMode = blendingMode
+    }
+}
+
+
+struct HTMLGenerator {
+    static func generate(content: String, colorScheme: ColorScheme, device: PreviewPane.DeviceType) -> String {
+        // Inject modern CSS framework and styling with responsive meta tag
+        let modernCSS = """
+        <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: \(colorScheme == .dark ? "#1a1a1a" : "#ffffff");
+            color: \(colorScheme == .dark ? "#e4e4e7" : "#1f2937");
+            font-size: \(device == .mobile ? "14px" : "16px");
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        h1 { font-size: \(device == .mobile ? "1.8em" : "2.25em"); color: \(colorScheme == .dark ? "#f9fafb" : "#111827"); }
+        h2 { font-size: \(device == .mobile ? "1.5em" : "1.875em"); color: \(colorScheme == .dark ? "#f3f4f6" : "#1f2937"); }
+        h3 { font-size: \(device == .mobile ? "1.3em" : "1.5em"); color: \(colorScheme == .dark ? "#e5e7eb" : "#374151"); }
+        
+        p {
+            margin-bottom: 1em;
+        }
+        
+        a {
+            color: \(colorScheme == .dark ? "#60a5fa" : "#2563eb");
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        a:hover {
+            color: \(colorScheme == .dark ? "#93c5fd" : "#1d4ed8");
+            text-decoration: underline;
+        }
+        
+        code {
+            background: \(colorScheme == .dark ? "#374151" : "#f3f4f6");
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: \(colorScheme == .dark ? "#1f2937" : "#f9fafb");
+            border: 1px solid \(colorScheme == .dark ? "#374151" : "#e5e7eb");
+            border-radius: 8px;
+            padding: \(device == .mobile ? "12px" : "16px");
+            overflow-x: auto;
+            margin: 1em 0;
+            font-size: \(device == .mobile ? "12px" : "14px");
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: \(device == .mobile ? "100%" : device == .tablet ? "90%" : "800px");
+            margin: 0 auto;
+            padding: 0 \(device == .mobile ? "12px" : "16px");
+        }
+        
+        .card {
+            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
+            border: 1px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
+            border-radius: \(device == .mobile ? "8px" : "12px");
+            padding: \(device == .mobile ? "16px" : "24px");
+            margin: \(device == .mobile ? "12px 0" : "16px 0");
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: \(device == .mobile ? "10px 20px" : "12px 24px");
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: \(device == .mobile ? "14px" : "16px");
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: \(device == .mobile ? "100%" : "auto");
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: \(device == .mobile ? "14px" : "12px");
+            border: 2px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
+            border-radius: 8px;
+            background: \(colorScheme == .dark ? "#374151" : "#ffffff");
+            color: \(colorScheme == .dark ? "#f9fafb" : "#1f2937");
+            font-size: \(device == .mobile ? "16px" : "14px"); /* Prevent zoom on iOS */
+            transition: border-color 0.2s ease;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: \(device == .mobile ? "12px" : "14px");
+        }
+        
+        th, td {
+            padding: \(device == .mobile ? "8px" : "12px");
+            text-align: left;
+            border-bottom: 1px solid \(colorScheme == .dark ? "#4b5563" : "#e5e7eb");
+        }
+        
+        th {
+            background: \(colorScheme == .dark ? "#374151" : "#f9fafb");
+            font-weight: 600;
+        }
+        
+        .modern-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        /* Responsive design specific to device type */
+        @media (max-width: 768px) {
+            body {
+                padding: \(device == .mobile ? "12px" : "16px");
+            }
+            
+            .container {
+                padding: 0 \(device == .mobile ? "8px" : "12px");
+            }
+            
+            .card {
+                padding: \(device == .mobile ? "12px" : "16px");
+                margin: \(device == .mobile ? "8px 0" : "12px 0");
+            }
+            
+            h1 { font-size: 1.6em; }
+            h2 { font-size: 1.4em; }
+            h3 { font-size: 1.2em; }
+        }
+        
+        /* Touch-friendly styles for mobile */
+        \(device == .mobile ? """
+        @media (hover: none) and (pointer: coarse) {
+            button, a, input, select, textarea {
+                min-height: 44px; /* iOS accessibility guidelines */
+            }
+            
+            button {
+                font-size: 16px;
+                padding: 14px 20px;
+            }
+        }
+        """ : "")
+        </style>
+        """
+        
+        // Enhanced meta viewport for device simulation
+        let viewportMeta = """
+        <meta name="viewport" content="width=\(device == .mobile ? "375" : device == .tablet ? "768" : "1024"), initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        """
+        
+        // If the content already has HTML structure, inject our CSS and viewport
+        if content.lowercased().contains("<html") || 
+           content.lowercased().contains("<!doctype") {
+            var modifiedContent = content
+            
+            // Add viewport meta tag
+            if let headRange = modifiedContent.range(of: "<head>", options: .caseInsensitive) {
+                let insertionPoint = modifiedContent.index(headRange.upperBound, offsetBy: 0)
+                modifiedContent.insert(contentsOf: "\n    \(viewportMeta)", at: insertionPoint)
+            }
+            
+            // Add CSS
+            if let headEndRange = modifiedContent.range(of: "</head>", options: .caseInsensitive) {
+                modifiedContent.insert(contentsOf: modernCSS, at: headEndRange.lowerBound)
+            }
+            
+            return modifiedContent
+        }
+        
+        // Otherwise, wrap content in full HTML structure
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            \(viewportMeta)
+            <title>HTML Preview - \(device.rawValue)</title>
+            \(modernCSS)
+        </head>
+        <body>
+            \(content)
+        </body>
+        </html>
+        """
+    }
+}

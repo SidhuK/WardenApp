@@ -124,18 +124,20 @@ struct ModernButton: View {
         
         case .secondary:
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(isHovered ? AppConstants.backgroundSubtle : .clear)
+                .fill(.regularMaterial)
+                .opacity(isHovered ? 0.8 : 0.5)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .stroke(
-                            isHovered ? AppConstants.borderSubtle : AppConstants.borderSubtle.opacity(0.5),
+                            isHovered ? Color.white.opacity(0.2) : Color.white.opacity(0.1),
                             lineWidth: 1
                         )
                 )
         
         case .tertiary:
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(isHovered ? AppConstants.backgroundSubtle.opacity(0.5) : .clear)
+                .fill(.ultraThinMaterial)
+                .opacity(isHovered ? 0.5 : 0)
         
         case .destructive:
             RoundedRectangle(cornerRadius: cornerRadius)

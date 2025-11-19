@@ -11,6 +11,13 @@ class ImageAttachment: Identifiable, ObservableObject {
     @Published var thumbnail: NSImage?
     @Published var isLoading: Bool = false
     @Published var error: Error?
+    
+    private static let imageCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 50
+        cache.totalCostLimit = 100 * 1024 * 1024 // 100 MB
+        return cache
+    }()
 
     internal var imageEntity: ImageEntity?
     private var managedObjectContext: NSManagedObjectContext?
@@ -47,6 +54,13 @@ class ImageAttachment: Identifiable, ObservableObject {
 
     private func loadImage() {
         isLoading = true
+        
+        // Check cache first
+        if let cachedImage = Self.imageCache.object(forKey: id.uuidString as NSString) {
+            self.image = cachedImage
+            self.isLoading = false
+            return
+        }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self, let url = self.url else { return }
@@ -58,6 +72,7 @@ class ImageAttachment: Identifiable, ObservableObject {
                         self.saveToEntity(image: convertedImage)
 
                         DispatchQueue.main.async {
+                            Self.imageCache.setObject(convertedImage, forKey: self.id.uuidString as NSString)
                             self.image = convertedImage
                             self.convertedToJPEG = true
                             self.isLoading = false
@@ -71,6 +86,7 @@ class ImageAttachment: Identifiable, ObservableObject {
                     self.saveToEntity(image: image)
 
                     DispatchQueue.main.async {
+                        Self.imageCache.setObject(image, forKey: self.id.uuidString as NSString)
                         self.image = image
                         self.isLoading = false
                     }
@@ -94,6 +110,13 @@ class ImageAttachment: Identifiable, ObservableObject {
 
     private func loadFromEntity() {
         isLoading = true
+        
+        // Check cache first
+        if let cachedImage = Self.imageCache.object(forKey: id.uuidString as NSString) {
+            self.image = cachedImage
+            self.isLoading = false
+            return
+        }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self, let imageEntity = self.imageEntity else { return }
@@ -103,6 +126,7 @@ class ImageAttachment: Identifiable, ObservableObject {
                 let thumbnailImage = NSImage(data: thumbnailData)
 
                 DispatchQueue.main.async {
+                    Self.imageCache.setObject(fullImage, forKey: self.id.uuidString as NSString)
                     self.image = fullImage
                     self.thumbnail = thumbnailImage
                     self.isLoading = false
@@ -208,6 +232,16 @@ class ImageAttachment: Identifiable, ObservableObject {
         guard let data = convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
 
         return data.base64EncodedString()
+    }
+    
+    func toBase64Async() async -> String? {
+        guard let image = self.image else { return nil }
+        
+        return await Task.detached(priority: .userInitiated) {
+            let resizedImage = self.resizeImageIfNeeded(image)
+            guard let data = self.convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
+            return data.base64EncodedString()
+        }.value
     }
 
     private func resizeImageIfNeeded(_ image: NSImage) -> NSImage {
