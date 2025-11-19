@@ -384,16 +384,7 @@ struct StandaloneModelSelector: View {
         .onHover { hovering in
             hoveredItem = hovering ? "\(provider)_\(model)" : nil
         }
-        .popover(isPresented: .constant(hoveredItem == "\(provider)_\(model)"), arrowEdge: .leading) {
-            ModelInfoTooltip(
-                provider: provider,
-                model: model,
-                isReasoningModel: isReasoning,
-                isVisionModel: isVision,
-                lastUsedDate: recentModelsManager.getLastUsedDate(provider: provider, modelId: model),
-                metadata: metadata
-            )
-        }
+        // Removed hover popover for performance - all info is already shown inline
     }
     
     private func isCurrentlySelected(provider: String, model: String) -> Bool {
