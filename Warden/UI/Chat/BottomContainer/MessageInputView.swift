@@ -415,7 +415,7 @@ struct MessageInputView: View {
                         .onAppear {
                             dynamicHeight = calculateDynamicHeight(using: geometryText.size.height)
                         }
-                        .onChange(of: geometryText.size) { _ in
+                        .onChange(of: geometryText.size) { _, _ in
                             dynamicHeight = calculateDynamicHeight(using: geometryText.size.height)
                         }
                 }

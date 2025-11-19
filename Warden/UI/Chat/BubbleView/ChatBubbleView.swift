@@ -88,7 +88,13 @@ struct ChatBubbleView: View, Equatable {
 
     var body: some View {
         VStack(spacing: 4) {
-            HStack(alignment: .bottom, spacing: 6) {
+            HStack(alignment: .bottom, spacing: 8) {
+                if !content.own && !content.systemMessage {
+                    // AI provider logo on the left for incoming messages
+                    aiProviderLogo
+                        .frame(width: 20, height: 20)
+                }
+                
                 if content.own && !content.systemMessage {
                     // Push user messages to the trailing edge
                     Spacer(minLength: 40)
@@ -99,7 +105,9 @@ struct ChatBubbleView: View, Equatable {
                     .modifier(StreamingPulseModifier(isStreaming: content.isStreaming))
 
                 if content.own && !content.systemMessage {
-                    Spacer().frame(width: 4)
+                    // User avatar on the right for outgoing messages
+                    userAvatar
+                        .frame(width: 20, height: 20)
                 }
             }
             // Ensure the entire row respects role-based horizontal alignment
@@ -248,7 +256,7 @@ struct ChatBubbleView: View, Equatable {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(.regularMaterial)
+        .background(Color.accentColor.opacity(0.15))
         .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: bubbleCornerRadius)
@@ -353,6 +361,65 @@ struct ChatBubbleView: View, Equatable {
                 .modifier(PulsatingCircle())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var userAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(Color.accentColor)
+            
+            Image(systemName: "person.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white)
+        }
+    }
+    
+    private var aiProviderLogo: some View {
+        ZStack {
+            Circle()
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    Circle()
+                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 0.5)
+                )
+            
+            if let apiService = message?.chat?.apiService,
+               let providerType = apiService.type {
+                Image(systemName: providerIconName(for: providerType))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.accentColor)
+            } else {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+    
+    private func providerIconName(for provider: String) -> String {
+        let lowerProvider = provider.lowercased()
+        switch lowerProvider {
+        case _ where lowerProvider.contains("openai"):
+            return "circle.hexagons.fill"
+        case _ where lowerProvider.contains("anthropic"):
+            return "circle.fill"
+        case _ where lowerProvider.contains("google"):
+            return "g.circle.fill"
+        case _ where lowerProvider.contains("gemini"):
+            return "g.circle.fill"
+        case _ where lowerProvider.contains("claude"):
+            return "circle.fill"
+        case _ where lowerProvider.contains("gpt"):
+            return "circle.hexagons.fill"
+        case _ where lowerProvider.contains("perplexity"):
+            return "p.circle.fill"
+        case _ where lowerProvider.contains("deepseek"):
+            return "d.circle.fill"
+        case _ where lowerProvider.contains("mistral"):
+            return "m.circle.fill"
+        default:
+            return "sparkles"
+        }
     }
 }
 
