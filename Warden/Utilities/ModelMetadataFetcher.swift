@@ -312,8 +312,9 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
         var metadata: [String: ModelMetadata] = [:]
         
         for model in result.data {
-            let inputPrice = Double(model.pricing.prompt) ?? 0
-            let outputPrice = Double(model.pricing.completion) ?? 0
+            // OpenRouter returns per-token pricing, convert to per-1M-tokens
+            let inputPrice = (Double(model.pricing.prompt) ?? 0) * 1_000_000
+            let outputPrice = (Double(model.pricing.completion) ?? 0) * 1_000_000
             
             let pricing = PricingInfo(
                 inputPer1M: inputPrice,
