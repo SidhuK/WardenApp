@@ -256,13 +256,48 @@ struct ChatBubbleView: View, Equatable {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(Color.accentColor.opacity(0.15))
+        .background(
+            ZStack {
+                // Base gradient background matching New Thread button
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.accentColor.opacity(0.85),
+                        Color.accentColor.opacity(0.75)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                
+                // Subtle angled glassy overlay effect
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .white.opacity(0.15), location: 0.0),
+                        .init(color: .white.opacity(0.05), location: 0.4),
+                        .init(color: .clear, location: 0.6),
+                        .init(color: .black.opacity(0.03), location: 1.0)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
         .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.2),
+                            Color.accentColor.opacity(0.15)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
         )
-        .shadow(color: Color.black.opacity(0.12), radius: 3, x: 0, y: 1)
+        .shadow(color: Color.accentColor.opacity(0.15), radius: 2, x: 0, y: 1)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
     private var assistantBubble: some View {
@@ -345,7 +380,7 @@ struct ChatBubbleView: View, Equatable {
             effectiveFontSize: effectiveFontSize,
             colorScheme: colorScheme
         )
-        .foregroundColor(AppConstants.textPrimary)
+        .foregroundColor(content.own ? .white : AppConstants.textPrimary)
         .multilineTextAlignment(.leading)
     }
 
