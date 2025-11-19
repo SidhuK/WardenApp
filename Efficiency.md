@@ -2,22 +2,22 @@
 
 This document outlines 20 specific, actionable ideas to decrease codebase size, reduce redundancy, and improve efficiency in the WardenApp. **Strict Constraint: No new files will be created.** All changes will involve refactoring existing files or deleting redundant ones.
 
-## 1. Consolidate Message Logic to `Extensions.swift`
+## 1. Consolidate Message Logic to `Extensions.swift` ✅
 **Problem:** `MessageManager.swift` and `MultiAgentMessageManager.swift` duplicate `constructRequestMessages` and `buildSystemMessageWithProjectContext`.
 **Solution:** Move this shared logic into `Extensions.swift` as an extension on `ChatEntity`.
 **Benefit:** Removes ~100 lines of duplicated code; both managers simply call `chat.constructRequestMessages(...)`.
 
-## 2. Purge Hardcoded Model Metadata
+## 2. Purge Hardcoded Model Metadata ✅
 **Problem:** `ModelMetadataFetcher.swift` contains massive, out-of-date dictionaries for pricing and capabilities.
 **Solution:** **Delete** these hardcoded lists entirely. Rely on the `OpenRouterMetadataFetcher` (which fetches from API) and generic fallbacks for other providers.
 **Benefit:** Drastically reduces file size and removes maintenance burden.
 
-## 3. Remove Legacy Data Models
+## 3. Remove Legacy Data Models ✅
 **Problem:** `Models.swift` contains `struct Chat` and `struct Message` marked as legacy.
 **Solution:** Delete these structs. They are no longer needed if migration is complete.
 **Benefit:** Removes ~60 lines of dead code.
 
-## 4. Centralize UUID Logic in `MessageContent.swift`
+## 4. Centralize UUID Logic in `MessageContent.swift` ✅
 **Problem:** UUID extraction logic is duplicated in `MessageContent.swift` (private) and extensions.
 **Solution:** Make the private `extractUUIDs` method `public static` within `MessageContent` and have all extensions use it.
 **Benefit:** DRY compliance within the same file.

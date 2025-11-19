@@ -47,45 +47,9 @@ class OpenAIMetadataFetcher: ModelMetadataFetcher {
     private let baseURL = URL(string: "https://api.openai.com/v1")!
     
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // OpenAI doesn't expose pricing via API, use hardcoded from docs
-        var metadata: [String: ModelMetadata] = [:]
-        
-        // Common OpenAI models with pricing from https://openai.com/pricing
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            // Reasoning models
-            "o1": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 200000),
-            "o1-preview": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 128000),
-            "o1-mini": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
-            "o3-mini": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
-            "o3-mini-high": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
-            "o3-mini-2025-01-31": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
-            "o1-preview-2024-09-12": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 128000),
-            "o1-mini-2024-09-12": (PricingInfo.openaiGPT4oMini, ["reasoning"], 128000),
-            "o1-2024-12-17": (PricingInfo.openaiGPT4Turbo, ["reasoning"], 200000),
-            // Vision + function calling models
-            "gpt-4-turbo": (PricingInfo.openaiGPT4Turbo, ["vision", "function-calling"], 128000),
-            "gpt-4o": (PricingInfo.openaiGPT4o, ["vision", "function-calling"], 128000),
-            "chatgpt-4o-latest": (PricingInfo.openaiGPT4o, ["vision", "function-calling"], 128000),
-            "gpt-4o-mini": (PricingInfo.openaiGPT4oMini, ["vision", "function-calling"], 128000),
-            // Standard models
-            "gpt-3.5-turbo": (PricingInfo.openaiGPT35Turbo, ["function-calling"], 16385),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "chatgpt",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .medium,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // OpenAI metadata fetching via API is not implemented in this lightweight version.
+        // We rely on the user typing the model name or using OpenRouter.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -125,34 +89,8 @@ class OpenAIMetadataFetcher: ModelMetadataFetcher {
 
 class AnthropicMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Anthropic doesn't expose pricing via API, use hardcoded from docs
-        // See: https://docs.claude.com/en/docs/about-claude/pricing
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            "claude-3-opus-20240229": (PricingInfo.claudeOpus, ["vision"], 200000),
-            "claude-3-opus-latest": (PricingInfo.claudeOpus, ["vision"], 200000),
-            "claude-3-sonnet-20240229": (PricingInfo.claudeSonnet, ["vision"], 200000),
-            "claude-3-haiku-20240307": (PricingInfo.claudeHaiku, ["vision"], 200000),
-            "claude-3-5-sonnet-20241022": (PricingInfo.claudeSonnet4, ["vision"], 200000),
-            "claude-3-5-sonnet-latest": (PricingInfo.claudeSonnet4, ["vision"], 200000),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "claude",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .medium,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // Anthropic metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -191,31 +129,8 @@ class AnthropicMetadataFetcher: ModelMetadataFetcher {
 
 class GoogleMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Google doesn't expose pricing via API, use hardcoded from Cloud Pricing
-        // See: https://ai.google.dev/pricing
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo?, capabilities: [String], context: Int?)] = [
-            "gemini-2.0-flash": (PricingInfo.geminiFlash, ["vision"], 1000000),
-            "gemini-2.0-pro": (PricingInfo.geminipro, ["vision"], 1000000),
-            "gemini-1.5-pro": (PricingInfo.geminipro, ["vision"], 1000000),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "gemini",
-                pricing: data.0,
-                maxContextTokens: data.context,
-                capabilities: data.1,
-                latency: .fast,
-                costLevel: getCostLevel(for: data.0),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // Google metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -254,30 +169,8 @@ class GoogleMetadataFetcher: ModelMetadataFetcher {
 
 class GroqMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Groq models are free tier
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (capabilities: [String], context: Int?)] = [
-            "mixtral-8x7b-32768": ([], 32768),
-            "llama-3.1-70b-versatile": ([], 131072),
-            "llama-3.3-70b-versatile": ([], 131072),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "groq",
-                pricing: PricingInfo.groqFree,
-                maxContextTokens: data.context,
-                capabilities: data.0,
-                latency: .fast,
-                costLevel: .cheap,
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // Groq metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -427,32 +320,8 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
 
 class MistralMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Mistral doesn't expose pricing via public API
-        // Using documented pricing from https://mistral.ai/pricing
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            "mistral-small": (PricingInfo.mistralSmall, [], 32000),
-            "mistral-medium": (PricingInfo.mistralMedium, [], 32000),
-            "mistral-large": (PricingInfo.mistralLarge, [], 32000),
-            "mistral-large-latest": (PricingInfo.mistralLarge, [], 128000),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "mistral",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .medium,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // Mistral metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -491,32 +360,8 @@ class MistralMetadataFetcher: ModelMetadataFetcher {
 
 class XAIMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // xAI pricing from https://docs.x.ai/docs/models
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            "grok-code-fast-1": (PricingInfo.groxPro, ["function-calling"], 256000),
-            "grok-4-fast-reasoning": (PricingInfo.groxPro, ["reasoning"], 2000000),
-            "grok-4-fast-non-reasoning": (PricingInfo.groxPro, [], 2000000),
-            "grok-3": (PricingInfo.groxPro, [], 131072),
-            "grok-3-mini": (PricingInfo.groxPro, [], 131072),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "xai",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .fast,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // xAI metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -555,33 +400,8 @@ class XAIMetadataFetcher: ModelMetadataFetcher {
 
 class PerplexityMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Perplexity pricing from their API docs
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            "sonar-reasoning": (PricingInfo.perplexityProOnline, ["reasoning"], 128000),
-            "sonar-reasoning-pro": (PricingInfo.perplexityProOnline, ["reasoning"], 128000),
-            "sonar-pro": (PricingInfo.perplexityProOnline, [], 128000),
-            "sonar": (PricingInfo.perplexityProOnline, [], 128000),
-            "pplx-pro-online": (PricingInfo.perplexityProOnline, ["vision"], 128000),
-            "pplx-70b-online": (PricingInfo.perplexityProOnline, [], 4096),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "perplexity",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .medium,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // Perplexity metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
@@ -620,30 +440,8 @@ class PerplexityMetadataFetcher: ModelMetadataFetcher {
 
 class DeepSeekMetadataFetcher: ModelMetadataFetcher {
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // DeepSeek pricing from their API documentation
-        var metadata: [String: ModelMetadata] = [:]
-        
-        let models: [String: (pricing: PricingInfo, capabilities: [String], context: Int?)] = [
-            "deepseek-chat": (PricingInfo.deepseekChat, [], 128000),
-            "deepseek-coder": (PricingInfo.deepseekChat, ["function-calling"], 128000),
-            "deepseek-reasoner": (PricingInfo.deepseekChat, ["reasoning"], 128000),
-        ]
-        
-        for (modelId, data) in models {
-            metadata[modelId] = ModelMetadata(
-                modelId: modelId,
-                provider: "deepseek",
-                pricing: data.pricing,
-                maxContextTokens: data.context,
-                capabilities: data.capabilities,
-                latency: .medium,
-                costLevel: getCostLevel(for: data.pricing),
-                lastUpdated: Date(),
-                source: .providerDocumentation
-            )
-        }
-        
-        return metadata
+        // DeepSeek metadata fetching via API is not implemented.
+        return [:]
     }
     
     func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {

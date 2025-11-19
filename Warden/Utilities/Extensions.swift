@@ -172,3 +172,102 @@ extension PersistenceController {
         return result
     }()
 }
+
+extension ChatEntity {
+    func constructRequestMessages(forUserMessage userMessage: String?, contextSize: Int) -> [[String: String]] {
+        var messages: [[String: String]] = []
+
+        // Build comprehensive system message with project context
+        let systemMessage = buildSystemMessageWithProjectContext()
+        
+        #if DEBUG
+        print("🤖 Persona: \(self.persona?.name ?? "None")")
+        print("🗂️ Project: \(self.project?.name ?? "None")")
+        print("📝 System Message: \(systemMessage)")
+        #endif
+
+        if !AppConstants.openAiReasoningModels.contains(self.gptModel) {
+            messages.append([
+                "role": "system",
+                "content": systemMessage,
+            ])
+        }
+        else {
+            // Models like o1-mini and o1-preview don't support "system" role. However, we can pass the system message with "user" role instead.
+            messages.append([
+                "role": "user",
+                "content": "Take this message as the system message: \(systemMessage)",
+            ])
+        }
+
+        let sortedMessages = self.messagesArray
+            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+            .suffix(contextSize)
+
+        // Add conversation history
+        for message in sortedMessages {
+            messages.append([
+                "role": message.own ? "user" : "assistant",
+                "content": message.body,
+            ])
+        }
+
+        // Add new user message if provided
+        let lastMessage = messages.last?["content"] ?? ""
+        if lastMessage != userMessage {
+            if let userMessage = userMessage {
+                messages.append([
+                    "role": "user",
+                    "content": userMessage,
+                ])
+            }
+        }
+
+        return messages
+    }
+    
+    /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
+    /// Uses clear delimiters and hierarchy for better AI comprehension
+    /// Handles instruction precedence: project-specific > project context > base instructions
+    private func buildSystemMessageWithProjectContext() -> String {
+        var sections: [String] = []
+        
+        // Section 1: Base System Instructions (general behavior)
+        let baseSystemMessage = self.persona?.systemMessage ?? self.systemMessage
+        if !baseSystemMessage.isEmpty {
+            sections.append("""
+            === BASE INSTRUCTIONS ===
+            \(baseSystemMessage)
+            ========================
+            """)
+        }
+        
+        // Section 2: Project Context (if applicable)
+        if let project = self.project {
+            // Provide basic project info
+            let projectInfo = """
+            
+            PROJECT CONTEXT:
+            You are working within the "\(project.name ?? "Untitled Project")" project.
+            """
+            if let description = project.projectDescription, !description.isEmpty {
+                sections.append(projectInfo + " Project description: \(description)")
+            } else {
+                sections.append(projectInfo)
+            }
+            
+            // Section 3: Project-specific custom instructions
+            if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
+                let projectInstructions = """
+                
+                PROJECT-SPECIFIC INSTRUCTIONS:
+                \(customInstructions)
+                """
+                sections.append(projectInstructions)
+            }
+        }
+        
+        // Combine all components into final system message
+        return sections.joined(separator: "\n")
+    }
+}

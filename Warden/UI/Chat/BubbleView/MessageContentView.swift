@@ -31,13 +31,7 @@ struct MessageContentView: View {
     }
 
     private func containsImageData(_ message: String) -> Bool {
-        if message.contains("<image-uuid>") {
-            return true
-        }
-        if message.contains("<file-uuid>") {
-            return true
-        }
-        return false
+        return message.containsAttachment
     }
 
     @ViewBuilder
@@ -188,8 +182,8 @@ struct MessageContentView: View {
         // Don't use MarkdownView if MessageParser should handle these
         if text.contains("```") || // Code blocks - handled by MessageParser
            text.contains("<think>") || // Thinking blocks - handled by MessageParser
-           text.contains("<image-uuid>") || // Images - handled by MessageParser
-           text.contains("<file-uuid>") || // Files - handled by MessageParser
+           text.contains(MessageContent.imageTagStart) || // Images - handled by MessageParser
+           text.contains(MessageContent.fileTagStart) || // Files - handled by MessageParser
            text.contains("\\[") || text.contains("\\]") || // LaTeX - handled by MessageParser
            text.first == "|" { // Tables - handled by MessageParser
             return false

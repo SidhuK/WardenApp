@@ -103,7 +103,7 @@ class ChatStore: ObservableObject {
         }
     }
 
-    func loadFromCoreData() async -> Result<[Chat], Error> {
+    func loadFromCoreData() async -> Result<[ChatBackup], Error> {
         let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         
         return await Task { () -> Result<[Chat], Error> in
@@ -111,7 +111,7 @@ class ChatStore: ObservableObject {
                 viewContext.perform {
                     do {
                         let chatEntities = try self.viewContext.fetch(fetchRequest)
-                        let chats = chatEntities.map { Chat(chatEntity: $0) }
+                        let chats = chatEntities.map { ChatBackup(chatEntity: $0) }
                         continuation.resume(returning: .success(chats))
                     } catch {
                         continuation.resume(returning: .failure(error))
@@ -121,7 +121,7 @@ class ChatStore: ObservableObject {
         }.value
     }
 
-    func saveToCoreData(chats: [Chat]) async -> Result<Int, Error> {
+    func saveToCoreData(chats: [ChatBackup]) async -> Result<Int, Error> {
         return await Task { () -> Result<Int, Error> in
             return await withCheckedContinuation { continuation in
                 viewContext.perform {
@@ -173,7 +173,7 @@ class ChatStore: ObservableObject {
         return try? self.viewContext.existingObject(with: objectID) as? APIServiceEntity
     }
     
-    private func attachAPIService(to chat: ChatEntity, from oldChat: Chat, default defaultService: APIServiceEntity?) {
+    private func attachAPIService(to chat: ChatEntity, from oldChat: ChatBackup, default defaultService: APIServiceEntity?) {
         guard let apiServiceName = oldChat.apiServiceName, let apiServiceType = oldChat.apiServiceType else {
             chat.apiService = defaultService
             return
@@ -200,7 +200,7 @@ class ChatStore: ObservableObject {
         chat.persona = personas.first
     }
     
-    private func addMessages(to chat: ChatEntity, from messages: [Message]) {
+    private func addMessages(to chat: ChatEntity, from messages: [MessageBackup]) {
         for oldMessage in messages {
             let messageEntity = MessageEntity(context: self.viewContext)
             messageEntity.id = Int64(oldMessage.id)
@@ -288,7 +288,7 @@ class ChatStore: ObservableObject {
         do {
             let fileURL = try ChatStore.fileURL()
             let data = try Data(contentsOf: fileURL)
-            let oldChats = try JSONDecoder().decode([Chat].self, from: data)
+            let oldChats = try JSONDecoder().decode([ChatBackup].self, from: data)
 
             Task {
                 let result = await saveToCoreData(chats: oldChats)

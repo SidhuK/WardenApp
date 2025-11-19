@@ -176,7 +176,7 @@ class ChatSharingService {
     }
     
     private func formatAsJSON(_ chat: ChatEntity) -> String {
-        let legacyChat = Chat(chatEntity: chat)
+        let legacyChat = ChatBackup(chatEntity: chat)
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
         encoder.dateEncodingStrategy = .iso8601

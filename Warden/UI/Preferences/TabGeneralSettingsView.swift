@@ -212,7 +212,7 @@ struct TabGeneralSettingsView: View {
     }
     
     // MARK: - Backup/Restore Helpers
-    private func handleExportResult(_ result: Result<[Chat], Error>) {
+    private func handleExportResult(_ result: Result<[ChatBackup], Error>) {
         switch result {
         case .failure(let error):
             print("❌ Failed to load chats for export: \(error.localizedDescription)")
@@ -243,7 +243,7 @@ struct TabGeneralSettingsView: View {
     private func handleImport(from url: URL) {
         do {
             let data = try Data(contentsOf: url)
-            let chats = try JSONDecoder().decode([Chat].self, from: data)
+            let chats = try JSONDecoder().decode([ChatBackup].self, from: data)
             
             Task {
                 let result = await store.saveToCoreData(chats: chats)

@@ -66,11 +66,11 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var chat: ChatEntity?
 }
 
-/// Legacy Chat struct, used for migration from old storage, for exporting and importing data in JSON
-struct Chat: Codable {
+/// Data Transfer Object for Chat backup and export/import
+struct ChatBackup: Codable {
     var id: UUID
-    var messagePreview: Message?
-    var messages: [Message] = []
+    var messagePreview: MessageBackup?
+    var messages: [MessageBackup] = []
     var requestMessages = [["role": "user", "content": ""]]
     var newChat: Bool = true
     var temperature: Float64?
@@ -99,16 +99,16 @@ struct Chat: Codable {
         self.apiServiceType = chatEntity.apiService?.type
         self.personaName = chatEntity.persona?.name
         
-        self.messages = chatEntity.messagesArray.map { Message(messageEntity: $0) }
+        self.messages = chatEntity.messagesArray.map { MessageBackup(messageEntity: $0) }
 
         if chatEntity.lastMessage != nil {
-            self.messagePreview = Message(messageEntity: chatEntity.lastMessage!)
+            self.messagePreview = MessageBackup(messageEntity: chatEntity.lastMessage!)
         }
     }
 }
 
-/// Legacy Message struct, used for migration from old storage, for exporting and importing data in JSON
-struct Message: Codable, Equatable {
+/// Data Transfer Object for Message backup and export/import
+struct MessageBackup: Codable, Equatable {
     var id: Int
     var name: String
     var body: String

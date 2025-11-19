@@ -8,25 +8,34 @@ struct MessageContent {
     var imageAttachment: ImageAttachment?
     var fileAttachment: FileAttachment?
 
+    // MARK: - Constants
+    static let imageTagStart = "<image-uuid>"
+    static let imageTagEnd = "</image-uuid>"
+    static let fileTagStart = "<file-uuid>"
+    static let fileTagEnd = "</file-uuid>"
+    
+    static let imageRegexPattern = "\(imageTagStart)(.*?)\(imageTagEnd)"
+    static let fileRegexPattern = "\(fileTagStart)(.*?)\(fileTagEnd)"
+
     init(text: String) {
         self.content = text
     }
 
     init(imageUUID: UUID) {
-        self.content = "<image-uuid>\(imageUUID.uuidString)</image-uuid>"
+        self.content = "\(Self.imageTagStart)\(imageUUID.uuidString)\(Self.imageTagEnd)"
     }
 
     init(imageAttachment: ImageAttachment) {
-        self.content = "<image-uuid>\(imageAttachment.id.uuidString)</image-uuid>"
+        self.content = "\(Self.imageTagStart)\(imageAttachment.id.uuidString)\(Self.imageTagEnd)"
         self.imageAttachment = imageAttachment
     }
     
     init(fileUUID: UUID) {
-        self.content = "<file-uuid>\(fileUUID.uuidString)</file-uuid>"
+        self.content = "\(Self.fileTagStart)\(fileUUID.uuidString)\(Self.fileTagEnd)"
     }
     
     init(fileAttachment: FileAttachment) {
-        self.content = "<file-uuid>\(fileAttachment.id.uuidString)</file-uuid>"
+        self.content = "\(Self.fileTagStart)\(fileAttachment.id.uuidString)\(Self.fileTagEnd)"
         self.fileAttachment = fileAttachment
     }
 }
@@ -51,17 +60,18 @@ extension Array where Element == MessageContent {
     }
 
     var textContent: String {
-        map { $0.content.replacingOccurrences(of: "<image-uuid>.*?</image-uuid>|<file-uuid>.*?</file-uuid>", with: "", options: .regularExpression) }
+        let pattern = "\(MessageContent.imageRegexPattern)|\(MessageContent.fileRegexPattern)"
+        return map { $0.content.replacingOccurrences(of: pattern, with: "", options: .regularExpression) }
             .joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var imageUUIDs: [UUID] {
-        flatMap { extractUUIDs(from: $0.content, pattern: "<image-uuid>(.*?)</image-uuid>") }
+        flatMap { extractUUIDs(from: $0.content, pattern: MessageContent.imageRegexPattern) }
     }
     
     var fileUUIDs: [UUID] {
-        flatMap { extractUUIDs(from: $0.content, pattern: "<file-uuid>(.*?)</file-uuid>") }
+        flatMap { extractUUIDs(from: $0.content, pattern: MessageContent.fileRegexPattern) }
     }
 }
 
@@ -71,10 +81,14 @@ extension String {
     }
 
     func extractImageUUIDs() -> [UUID] {
-        extractUUIDs(from: self, pattern: "<image-uuid>(.*?)</image-uuid>")
+        extractUUIDs(from: self, pattern: MessageContent.imageRegexPattern)
     }
     
     func extractFileUUIDs() -> [UUID] {
-        extractUUIDs(from: self, pattern: "<file-uuid>(.*?)</file-uuid>")
+        extractUUIDs(from: self, pattern: MessageContent.fileRegexPattern)
+    }
+    
+    var containsAttachment: Bool {
+        contains(MessageContent.imageTagStart) || contains(MessageContent.fileTagStart)
     }
 }

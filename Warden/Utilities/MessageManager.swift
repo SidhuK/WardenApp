@@ -665,7 +665,7 @@ class MessageManager: ObservableObject {
     }
 
     private func prepareRequestMessages(userMessage: String, chat: ChatEntity, contextSize: Int) -> [[String: String]] {
-        return constructRequestMessages(chat: chat, forUserMessage: userMessage, contextSize: contextSize)
+        return chat.constructRequestMessages(forUserMessage: userMessage, contextSize: contextSize)
     }
 
     private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil) {
@@ -727,117 +727,4 @@ class MessageManager: ObservableObject {
         }
     }
 
-    private func constructRequestMessages(chat: ChatEntity, forUserMessage userMessage: String?, contextSize: Int)
-        -> [[String: String]]
-    {
-        var messages: [[String: String]] = []
 
-        // Build comprehensive system message with project context
-        let systemMessage = buildSystemMessageWithProjectContext(for: chat)
-        
-        #if DEBUG
-        print("🤖 Persona: \(chat.persona?.name ?? "None")")
-        print("🗂️ Project: \(chat.project?.name ?? "None")")
-        print("📝 System Message: \(systemMessage)")
-        #endif
-
-        if !AppConstants.openAiReasoningModels.contains(chat.gptModel) {
-            messages.append([
-                "role": "system",
-                "content": systemMessage,
-            ])
-        }
-        else {
-            // Models like o1-mini and o1-preview don't support "system" role. However, we can pass the system message with "user" role instead.
-            messages.append([
-                "role": "user",
-                "content": "Take this message as the system message: \(systemMessage)",
-            ])
-        }
-
-        let sortedMessages = chat.messagesArray
-            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
-            .suffix(contextSize)
-
-        // Add conversation history
-        for message in sortedMessages {
-            messages.append([
-                "role": message.own ? "user" : "assistant",
-                "content": message.body,
-            ])
-        }
-
-        // Add new user message if provided
-        let lastMessage = messages.last?["content"] ?? ""
-        if lastMessage != userMessage {
-            if let userMessage = userMessage {
-                messages.append([
-                    "role": "user",
-                    "content": userMessage,
-                ])
-            }
-        }
-
-        return messages
-    }
-    
-    /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
-    /// Uses clear delimiters and hierarchy for better AI comprehension
-    /// Handles instruction precedence: project-specific > project context > base instructions
-    private func buildSystemMessageWithProjectContext(for chat: ChatEntity) -> String {
-        var sections: [String] = []
-        
-        // Section 1: Base System Instructions (general behavior)
-        let baseSystemMessage = chat.persona?.systemMessage ?? chat.systemMessage
-        if !baseSystemMessage.isEmpty {
-            sections.append("""
-            === BASE INSTRUCTIONS ===
-            \(baseSystemMessage)
-            ========================
-            """)
-        }
-        
-        // Section 2: Project Context (if applicable)
-        if let project = chat.project {
-            var projectSection = """
-            
-            === PROJECT CONTEXT ===
-            You are working within the "\(project.name ?? "Untitled Project")" project.
-            """
-            
-            if let description = project.projectDescription, !description.isEmpty {
-                projectSection += "\n\nProject Description:\n\(description)"
-            }
-            
-            projectSection += "\n======================="
-            sections.append(projectSection)
-            
-            // Section 3: Project-Specific Instructions (highest priority)
-            if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
-                sections.append("""
-                
-                === PROJECT-SPECIFIC INSTRUCTIONS ===
-                The following instructions are specific to this project and should take precedence when relevant:
-                
-                \(customInstructions)
-                =====================================
-                """)
-            }
-        }
-        
-        // Add instruction priority note if multiple sections exist
-        if sections.count > 1 {
-            sections.append("""
-            
-            === INSTRUCTION PRIORITY ===
-            When instructions conflict:
-            1. Project-specific instructions take highest priority
-            2. Project context provides domain knowledge
-            3. Base instructions provide general behavior guidelines
-            ============================
-            """)
-        }
-        
-        return sections.joined(separator: "\n")
-    }
-}

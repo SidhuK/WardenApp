@@ -68,7 +68,7 @@ class MultiAgentMessageManager: ObservableObject {
         activeAgents = []
         activeTasks.removeAll() // Clear any previous tasks
         
-        let requestMessages = constructRequestMessages(chat: chat, forUserMessage: message, contextSize: contextSize)
+        let requestMessages = chat.constructRequestMessages(forUserMessage: message, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
         
         let dispatchGroup = DispatchGroup()
@@ -235,86 +235,5 @@ class MultiAgentMessageManager: ObservableObject {
         )
     }
     
-    private func constructRequestMessages(chat: ChatEntity, forUserMessage userMessage: String?, contextSize: Int) -> [[String: String]] {
-        var messages: [[String: String]] = []
-        
-        // Build comprehensive system message with project context - same logic as MessageManager
-        let systemMessage = buildSystemMessageWithProjectContext(for: chat)
-        
-        if !AppConstants.openAiReasoningModels.contains(chat.gptModel) {
-            messages.append([
-                "role": "system",
-                "content": systemMessage,
-            ])
-        } else {
-            // Models like o1-mini and o1-preview don't support "system" role
-            messages.append([
-                "role": "user",
-                "content": "Take this message as the system message: \(systemMessage)",
-            ])
-        }
-        
-        let sortedMessages = chat.messagesArray
-            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
-            .suffix(contextSize)
-        
-        // Add conversation history
-        for message in sortedMessages {
-            messages.append([
-                "role": message.own ? "user" : "assistant",
-                "content": message.body,
-            ])
-        }
-        
-        // Add the new user message
-        if let userMessage = userMessage {
-            messages.append([
-                "role": "user",
-                "content": userMessage,
-            ])
-        }
-        
-        return messages
-    }
-    
-    /// Builds a comprehensive system message that includes project context, project instructions, and persona instructions
-    /// Handles instruction precedence: project instructions + persona instructions + chat-specific instructions
-    /// This mirrors the same method in MessageManager for consistency
-    private func buildSystemMessageWithProjectContext(for chat: ChatEntity) -> String {
-        var systemMessageComponents: [String] = []
-        
-        // 1. Start with base persona system message or chat system message
-        let baseSystemMessage = chat.persona?.systemMessage ?? chat.systemMessage
-        if !baseSystemMessage.isEmpty {
-            systemMessageComponents.append(baseSystemMessage)
-        }
-        
-        // 2. Add project context if available
-        if let project = chat.project {
-            // Provide basic project info
-            let projectInfo = """
-            
-            PROJECT CONTEXT:
-            You are working within the "\(project.name ?? "Untitled Project")" project.
-            """
-            if let description = project.projectDescription, !description.isEmpty {
-                systemMessageComponents.append(projectInfo + " Project description: \(description)")
-            } else {
-                systemMessageComponents.append(projectInfo)
-            }
-            
-            // 3. Add project-specific custom instructions
-            if let customInstructions = project.customInstructions, !customInstructions.isEmpty {
-                let projectInstructions = """
-                
-                PROJECT-SPECIFIC INSTRUCTIONS:
-                \(customInstructions)
-                """
-                systemMessageComponents.append(projectInstructions)
-            }
-        }
-        
-        // 4. Combine all components into final system message
-        return systemMessageComponents.joined(separator: "\n")
-    }
+
 } 
