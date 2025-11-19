@@ -13,6 +13,13 @@ class ChatViewModel: ObservableObject {
         get {
             if _messageManager == nil {
                 _messageManager = createMessageManager()
+                // Restore cached search results if available
+                if let cachedSources = cachedSearchSources {
+                    _messageManager?.lastSearchSources = cachedSources
+                }
+                if let cachedQuery = cachedSearchQuery {
+                    _messageManager?.lastSearchQuery = cachedQuery
+                }
             }
             return _messageManager
         }
@@ -20,6 +27,10 @@ class ChatViewModel: ObservableObject {
             _messageManager = newValue
         }
     }
+    
+    // Cache search results at ChatViewModel level to persist across message manager recreation
+    private var cachedSearchSources: [SearchSource]?
+    private var cachedSearchQuery: String?
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -27,6 +38,23 @@ class ChatViewModel: ObservableObject {
         self.chat = chat
         self.messages = chat.messages
         self.viewContext = viewContext
+        
+        // Subscribe to search results changes to cache them
+        setupSearchResultsCaching()
+    }
+    
+    private func setupSearchResultsCaching() {
+        // Observe changes to search results and cache them
+        messageManager?.objectWillChange
+            .sink { [weak self] _ in
+                if let sources = self?.messageManager?.lastSearchSources {
+                    self?.cachedSearchSources = sources
+                }
+                if let query = self?.messageManager?.lastSearchQuery {
+                    self?.cachedSearchQuery = query
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func sendMessage(_ message: String, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) {

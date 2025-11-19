@@ -145,36 +145,43 @@ struct MarkdownView: View {
                 attributedString.addAttribute(NSAttributedString.Key.link, value: destination, range: range)
                 
                 // Check if this is a citation link (numeric text with URL)
-                if let _ = Int(text.trimmingCharacters(in: .whitespaces)) {
-                    // This is a citation - style it elegantly like a macOS badge
-                    let citationSize = effectiveFontSize * 0.75
+                if let citationNumber = Int(text.trimmingCharacters(in: .whitespaces)) {
+                    // Create SF Symbol-style badge with circle.fill and number
+                    let citationSize = effectiveFontSize * 0.85
                     
-                    // Use a smaller, rounder font
-                    attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize, weight: .semibold), range: range)
+                    // Add SF Symbol circle as background
+                    let symbolAttachment = NSTextAttachment()
+                    let symbolImage = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "Citation")
+                    symbolImage?.isTemplate = true
                     
-                    // Subtle background color
+                    // Tint the symbol
+                    let tintedImage = NSImage(size: NSSize(width: citationSize + 4, height: citationSize + 4))
+                    tintedImage.lockFocus()
+                    let color = own ? NSColor.white.withAlphaComponent(0.3) : NSColor.controlAccentColor.withAlphaComponent(0.2)
+                    color.set()
+                    let rect = NSRect(x: 0, y: 0, width: citationSize + 4, height: citationSize + 4)
+                    NSBezierPath(ovalIn: rect).fill()
+                    tintedImage.unlockFocus()
+                    
+                    // Style the number text
+                    attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize * 0.7, weight: .semibold), range: range)
+                    
+                    // Color based on message type
+                    let textColor = own ? NSColor.white : NSColor.controlAccentColor
+                    attributedString.addAttribute(.foregroundColor, value: textColor, range: range)
+                    
+                    // Add circular background
                     let bgColor = own 
                         ? NSColor.white.withAlphaComponent(0.25)
                         : NSColor.controlAccentColor.withAlphaComponent(0.15)
                     attributedString.addAttribute(.backgroundColor, value: bgColor, range: range)
                     
-                    // Text color
-                    let textColor = own 
-                        ? NSColor.white.withAlphaComponent(0.9)
-                        : NSColor.controlAccentColor
-                    attributedString.addAttribute(.foregroundColor, value: textColor, range: range)
+                    // Add border/stroke for definition
+                    attributedString.addAttribute(.strokeWidth, value: -1.5, range: range)
+                    attributedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.4), range: range)
                     
-                    // Add subtle border effect with stroke
-                    attributedString.addAttribute(.strokeWidth, value: -1.0, range: range)
-                    attributedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.3), range: range)
-                    
-                    // Raise the citation slightly like a superscript
-                    attributedString.addAttribute(.baselineOffset, value: 2, range: range)
-                    
-                    // Add subtle corner radius effect via padding
-                    let paragraphStyle = NSMutableParagraphStyle()
-                    paragraphStyle.firstLineHeadIndent = 0
-                    attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+                    // Slightly raise like superscript
+                    attributedString.addAttribute(.baselineOffset, value: 1, range: range)
                 }
             }
             return attributedString
