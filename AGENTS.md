@@ -1,22 +1,22 @@
-# Warden Development Guide for AI Agents
+# Warden Development Guide
 
-**Warden** is a native macOS AI chat client built with SwiftUI supporting 10+ AI providers. Creator: Karat Sidhu. Platform: macOS 13.0+. See `.cursor/rules/warden-development.mdc` for comprehensive development patterns.
+**Warden** is a native macOS AI chat client (SwiftUI, Core Data) supporting 10+ AI providers.
+**Rules**: See `.cursor/rules/warden-development.mdc` for comprehensive patterns.
 
 ## Build & Test
-- **Build/Run**: Open `Warden.xcodeproj` in Xcode and press Cmd+R
-- **Test All**: Cmd+U in Xcode
-- **Test Single**: Right-click test method in `WardenTests/` or `WardenUITests/` → Run Test (or Cmd+U on selected test)
-- **Code Style**: 120 char lines, 4-space indent, follow existing file patterns
+- **Run**: Open `Warden.xcodeproj` in Xcode, press Cmd+R.
+- **Test**: Press Cmd+U in Xcode.
+- **CLI Test**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS'`
+- **Style**: 120 char lines, 4-space indent. Follow existing patterns.
 
 ## Architecture
-- **MVVM**: SwiftUI views + @ObservableObject ViewModels; see `Warden/UI/` for feature-based structure
-- **Core Data**: Single source of truth through `Warden/Store/ChatStore.swift`; schema in `warenDataModel.xcdatamodeld` (Chat, Message, Persona, APIService entities); use background contexts for heavy ops
-- **AI Integration**: All providers implement `Warden/Utilities/APIHandlers/APIProtocol.swift`; created via `APIServiceFactory.swift`; supports streaming, vision, and reasoning models
-- **Structure**: `WardenApp.swift` → `UI/` (views) → `Models/` (data) → `Utilities/` (helpers) → `Store/` (persistence)
+- **Structure**: `UI/` (Views) → `Models/` (Data) → `Utilities/` (Helpers) → `Store/` (Persistence).
+- **Pattern**: MVVM. `ChatStore.swift` is the single source of truth (Core Data).
+- **AI**: `Utilities/APIHandlers/` implements `APIProtocol`. Handlers created via `APIServiceFactory`.
+- **Data**: Local-only (Privacy First). Schema in `warenDataModel.xcdatamodeld`.
 
-## Code Style & Practices
-- **Naming**: Views end `View`, ViewModels end `ViewModel`/`Store`, Handlers end `Handler`; all PascalCase; properties/methods camelCase
-- **State**: `@StateObject` (lifecycle), `@ObservedObject` (passed), `@EnvironmentObject` (ChatStore), `@AppStorage` (prefs)
-- **Privacy/Security**: NEVER log API keys; use Keychain for credentials; zero telemetry; all data local-only; graceful error handling with user alerts
-- **Async**: Use async/await with structured concurrency, proper task cancellation, background queues for heavy operations
-- **Imports**: SwiftUI, CoreData as needed; check existing files before adding dependencies; include SwiftUI previews with PreviewStateManager
+## Code Style & Conventions
+- **Naming**: `*View`, `*ViewModel`, `*Handler`. PascalCase types, camelCase properties.
+- **State**: Use `@StateObject` (lifecycle), `@ObservedObject` (passed), `@EnvironmentObject` (global).
+- **Concurrency**: Use `async`/`await`. Perform heavy ops on background queues.
+- **Security**: NEVER log API keys. Use Keychain. NO telemetry/analytics.
