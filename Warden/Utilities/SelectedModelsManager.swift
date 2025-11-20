@@ -10,12 +10,6 @@ class SelectedModelsManager: ObservableObject {
     
     private init() {}
     
-    /// Check if there are any models selected for this service type
-    func hasAnySelectedModels(for serviceType: String) -> Bool {
-        guard let selection = customSelections[serviceType] else { return false }
-        return !selection.isEmpty
-    }
-    
     /// Get the selected model IDs for a service
     func getSelectedModelIds(for serviceType: String) -> Set<String> {
         return customSelections[serviceType] ?? Set()
@@ -24,7 +18,6 @@ class SelectedModelsManager: ObservableObject {
     /// Set custom model selection for a service
     func setSelectedModels(for serviceType: String, modelIds: Set<String>) {
         customSelections[serviceType] = modelIds
-        saveToUserDefaults()
     }
     
     /// Add a model to the custom selection
@@ -33,38 +26,20 @@ class SelectedModelsManager: ObservableObject {
             customSelections[serviceType] = Set()
         }
         customSelections[serviceType]?.insert(modelId)
-        saveToUserDefaults()
     }
     
     /// Remove a model from the custom selection
     func removeModel(for serviceType: String, modelId: String) {
         customSelections[serviceType]?.remove(modelId)
-        saveToUserDefaults()
     }
     
     /// Clear custom selection for a service (show all models)
     func clearCustomSelection(for serviceType: String) {
         customSelections[serviceType] = nil
-        saveToUserDefaults()
     }
     
-    /// Check if a service has custom model selection
-    func hasCustomSelection(for serviceType: String) -> Bool {
-        guard let selection = customSelections[serviceType] else { return false }
-        return !selection.isEmpty
-    }
-    
-    /// Check if a service has any custom selection defined (even if empty)
-    func hasAnyCustomSelection(for serviceType: String) -> Bool {
-        return customSelections[serviceType] != nil
-    }
-    
-    /// Load selections from UserDefaults and Core Data
+    /// Load selections from Core Data
     func loadSelections(from apiServices: [APIServiceEntity]) {
-        // First, load from UserDefaults (legacy support)
-        loadFromUserDefaults()
-        
-        // Then, load from Core Data (preferred)
         for service in apiServices {
             if let serviceType = service.type,
                let selectedModelsData = service.selectedModels as? Data {
@@ -95,11 +70,7 @@ class SelectedModelsManager: ObservableObject {
             service.selectedModels = nil
         }
         
-        do {
-            try context.save()
-        } catch {
-            print("Failed to save selected models to Core Data: \(error)")
-        }
+        // Note: Context save is handled by the caller
     }
     
     /// Save all selections to Core Data for all services
@@ -107,22 +78,12 @@ class SelectedModelsManager: ObservableObject {
         for service in apiServices {
             saveToService(service, context: context)
         }
-    }
-    
-    // MARK: - UserDefaults Support (Legacy)
-    
-    private func saveToUserDefaults() {
-        let data = try? JSONEncoder().encode(customSelections)
-        UserDefaults.standard.set(data, forKey: "customModelSelections")
-    }
-    
-    private func loadFromUserDefaults() {
-        guard let data = UserDefaults.standard.data(forKey: "customModelSelections"),
-              let selections = try? JSONDecoder().decode([String: Set<String>].self, from: data) else {
-            return
-        }
         
-        customSelections = selections
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save selected models to Core Data: \(error)")
+        }
     }
 }
 
@@ -154,4 +115,5 @@ extension APIServiceEntity {
             }
         }
     }
-} 
+}
+ 

@@ -9,95 +9,15 @@ private struct ChatGPTModel: Codable {
     let id: String
 }
 
-class ChatGPTHandler: APIService {
-    let name: String
-    let baseURL: URL
-    internal let apiKey: String
-    let model: String
-    internal let session: URLSession
+class ChatGPTHandler: BaseAPIHandler {
     internal let dataLoader = BackgroundDataLoader()
 
-    init(config: APIServiceConfiguration, session: URLSession) {
-        self.name = config.name
-        self.baseURL = config.apiUrl
-        self.apiKey = config.apiKey
-        self.model = config.model
-        self.session = session
+    override init(config: APIServiceConfiguration, session: URLSession) {
+        super.init(config: config, session: session)
     }
 
-    func sendMessage(
-        _ requestMessages: [[String: String]],
-        temperature: Float,
-        completion: @escaping (Result<String, APIError>) -> Void
-    ) {
-        defaultSendMessage(requestMessages, temperature: temperature, completion: completion)
-    }
 
-    func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
-        -> AsyncThrowingStream<String, Error>
-    {
-        return AsyncThrowingStream { continuation in
-            let request = self.prepareRequest(
-                requestMessages: requestMessages,
-                model: model,
-                temperature: temperature,
-                stream: true
-            )
-
-            Task {
-                do {
-                    let (stream, response) = try await session.bytes(for: request)
-                    let result = self.handleAPIResponse(response, data: nil, error: nil)
-                    switch result {
-                    case .failure(let error):
-                        var data = Data()
-                        for try await byte in stream {
-                            data.append(byte)
-                        }
-                        let error = APIError.serverError(
-                            String(data: data, encoding: .utf8) ?? error.localizedDescription
-                        )
-                        continuation.finish(throwing: error)
-                        return
-                    case .success:
-                        break
-                    }
-
-                    for try await line in stream.lines {
-                        if line.data(using: .utf8) != nil && isNotSSEComment(line) {
-                            let prefix = "data: "
-                            var index = line.startIndex
-                            if line.starts(with: prefix) {
-                                index = line.index(line.startIndex, offsetBy: prefix.count)
-                            }
-                            let jsonData = String(line[index...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            if let jsonData = jsonData.data(using: .utf8) {
-                                let (finished, error, messageData, _) = parseDeltaJSONResponse(data: jsonData)
-
-                                if error != nil {
-                                    continuation.finish(throwing: error)
-                                }
-                                else {
-                                    if messageData != nil {
-                                        continuation.yield(messageData!)
-                                    }
-                                    if finished {
-                                        continuation.finish()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    continuation.finish()
-                }
-                catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-        }
-    }
-
-    func fetchModels() async throws -> [AIModel] {
+    override func fetchModels() async throws -> [AIModel] {
         let modelsURL = baseURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("models")
 
         var request = URLRequest(url: modelsURL)
@@ -127,7 +47,7 @@ class ChatGPTHandler: APIService {
         }
     }
 
-    internal func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
+    override internal func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
         -> URLRequest
     {
         var request = URLRequest(url: baseURL)
@@ -238,7 +158,7 @@ class ChatGPTHandler: APIService {
 
 
 
-    internal func parseJSONResponse(data: Data) -> (String, String)? {
+    override internal func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
                 print("Response: \(responseString)")
@@ -264,7 +184,7 @@ class ChatGPTHandler: APIService {
         return nil
     }
 
-    internal func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    override internal func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else {
             print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)

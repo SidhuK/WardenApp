@@ -9,94 +9,9 @@ private struct MistralModel: Codable {
     let id: String
 }
 
-class MistralHandler: APIService {
-    let name: String
-    let baseURL: URL
-    internal let apiKey: String
-    let model: String
-    let session: URLSession
-
-    init(config: APIServiceConfiguration, session: URLSession) {
-        self.name = config.name
-        self.baseURL = config.apiUrl
-        self.apiKey = config.apiKey
-        self.model = config.model
-        self.session = session
-    }
-
-    func sendMessage(
-        _ requestMessages: [[String: String]],
-        temperature: Float,
-        completion: @escaping (Result<String, APIError>) -> Void
-    ) {
-        defaultSendMessage(requestMessages, temperature: temperature, completion: completion)
-    }
-
-    func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
-        -> AsyncThrowingStream<String, Error>
-    {
-        return AsyncThrowingStream { continuation in
-            let request = self.prepareRequest(
-                requestMessages: requestMessages,
-                model: model,
-                temperature: temperature,
-                stream: true
-            )
-
-            Task {
-                do {
-                    let (stream, response) = try await session.bytes(for: request)
-                    let result = self.handleAPIResponse(response, data: nil, error: nil)
-                    switch result {
-                    case .failure(let error):
-                        var data = Data()
-                        for try await byte in stream {
-                            data.append(byte)
-                        }
-                        let error = APIError.serverError(
-                            String(data: data, encoding: .utf8) ?? error.localizedDescription
-                        )
-                        continuation.finish(throwing: error)
-                        return
-                    case .success:
-                        break
-                    }
-
-                    for try await line in stream.lines {
-                        if line.data(using: .utf8) != nil && isNotSSEComment(line) {
-                            let prefix = "data: "
-                            var index = line.startIndex
-                            if line.starts(with: prefix) {
-                                index = line.index(line.startIndex, offsetBy: prefix.count)
-                            }
-                            let jsonData = String(line[index...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            if let jsonData = jsonData.data(using: .utf8) {
-                                let (finished, error, messageData, _) = parseDeltaJSONResponse(data: jsonData)
-
-                                if error != nil {
-                                    continuation.finish(throwing: error)
-                                }
-                                else {
-                                    if messageData != nil {
-                                        continuation.yield(messageData!)
-                                    }
-                                    if finished {
-                                        continuation.finish()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    continuation.finish()
-                }
-                catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-        }
-    }
-
-    func fetchModels() async throws -> [AIModel] {
+class MistralHandler: BaseAPIHandler {
+    
+    override func fetchModels() async throws -> [AIModel] {
         let modelsURL = baseURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("models")
 
         var request = URLRequest(url: modelsURL)
@@ -126,9 +41,7 @@ class MistralHandler: APIService {
         }
     }
 
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
-        -> URLRequest
-    {
+    override func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -167,9 +80,7 @@ class MistralHandler: APIService {
         return request
     }
 
-
-
-    private func parseJSONResponse(data: Data) -> (String?, Float?)? {
+    override func parseJSONResponse(data: Data) -> (String, String)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let choices = json["choices"] as? [[String: Any]],
@@ -177,13 +88,8 @@ class MistralHandler: APIService {
                let message = firstChoice["message"] as? [String: Any],
                let content = message["content"] as? String
             {
-                var usageTokens: Float?
-                if let usage = json["usage"] as? [String: Any],
-                   let totalTokens = usage["total_tokens"] as? Int
-                {
-                    usageTokens = Float(totalTokens)
-                }
-                return (content, usageTokens)
+                // Note: Usage tokens are currently ignored by BaseAPIHandler signature
+                return (content, "assistant")
             }
         } catch {
             print("Error parsing JSON response: \(error)")
@@ -191,7 +97,9 @@ class MistralHandler: APIService {
         return nil
     }
 
-    private func parseDeltaJSONResponse(data: Data) -> (Bool, Error?, String?, Float?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+        guard let data = data else { return (false, nil, nil, nil) }
+        
         do {
             // Check for [DONE] message
             if let string = String(data: data, encoding: .utf8), string == "[DONE]" {
@@ -199,25 +107,18 @@ class MistralHandler: APIService {
             }
 
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                var usageTokens: Float?
-                if let usage = json["usage"] as? [String: Any],
-                   let totalTokens = usage["total_tokens"] as? Int
-                {
-                    usageTokens = Float(totalTokens)
-                }
-                
                 if let choices = json["choices"] as? [[String: Any]],
                    let firstChoice = choices.first
                 {
                     if let delta = firstChoice["delta"] as? [String: Any],
                        let content = delta["content"] as? String
                     {
-                        return (false, nil, content, usageTokens)
+                        return (false, nil, content, "assistant")
                     }
                     
                     // If there's a finish_reason, we're done
                     if let finishReason = firstChoice["finish_reason"] as? String, !finishReason.isEmpty {
-                        return (true, nil, nil, usageTokens)
+                        return (true, nil, nil, nil)
                     }
                 }
             }
@@ -226,5 +127,4 @@ class MistralHandler: APIService {
         }
         return (false, nil, nil, nil)
     }
-    
 }

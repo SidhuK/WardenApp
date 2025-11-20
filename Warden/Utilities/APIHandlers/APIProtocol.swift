@@ -143,28 +143,20 @@ extension APIService {
                         break
                     }
 
-                    for try await line in stream.lines {
-                        if line.data(using: .utf8) != nil && isNotSSEComment(line) {
-                            let prefix = "data: "
-                            var index = line.startIndex
-                            if line.starts(with: prefix) {
-                                index = line.index(line.startIndex, offsetBy: prefix.count)
+                    try await SSEStreamParser.parse(stream: stream) { dataString in
+                        
+                        if let jsonData = dataString.data(using: .utf8) {
+                            let (finished, error, messageData, _) = self.parseDeltaJSONResponse(data: jsonData)
+
+                            if let error = error {
+                                throw error
+                            } else if let messageData = messageData {
+                                continuation.yield(messageData)
                             }
-                            let jsonData = String(line[index...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            if let jsonData = jsonData.data(using: .utf8) {
-                                let (finished, error, messageData, _) = parseDeltaJSONResponse(data: jsonData)
 
-                                if let error = error {
-                                    continuation.finish(throwing: error)
-                                    return
-                                } else if let messageData = messageData {
-                                    continuation.yield(messageData)
-                                }
-
-                                if finished {
-                                    continuation.finish()
-                                    return
-                                }
+                            if finished {
+                                continuation.finish()
+                                return
                             }
                         }
                     }

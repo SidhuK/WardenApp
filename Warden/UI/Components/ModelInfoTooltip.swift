@@ -163,7 +163,7 @@ struct ModelInfoTooltip: View {
             metadata: ModelMetadata(
                 modelId: "gpt-4-turbo",
                 provider: "chatgpt",
-                pricing: PricingInfo.openaiGPT4Turbo,
+                pricing: PricingInfo(inputPer1M: 10.0, outputPer1M: 30.0, source: "preview"),
                 maxContextTokens: 128000,
                 capabilities: ["vision", "function-calling"],
                 latency: .medium,

@@ -49,6 +49,70 @@ class TavilySearchService {
     
     // MARK: - Main Search Function
     
+    /// Performs a complete search operation including status updates
+    /// - Parameters:
+    ///   - query: The search query
+    ///   - onStatusUpdate: Callback for status updates (called on MainActor)
+    /// - Returns: Tuple containing formatted context string, list of URLs, and source objects
+    func performSearch(
+        query: String,
+        onStatusUpdate: @MainActor @escaping (SearchStatus) -> Void
+    ) async throws -> (context: String, urls: [String], sources: [SearchSource]) {
+        print("🔍 [WebSearch] performSearch called with query: \(query)")
+        
+        // Update status: starting search
+        await onStatusUpdate(.searching(query: query))
+        
+        let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
+            ?? AppConstants.tavilyDefaultSearchDepth
+        let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
+        let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
+        let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
+        
+        print("🔍 [WebSearch] Search settings - depth: \(searchDepth), maxResults: \(resultsLimit), includeAnswer: \(includeAnswer)")
+        
+        // Check if API key exists
+        if let apiKey = getApiKey() {
+            print("🔍 [WebSearch] API key found: \(String(apiKey.prefix(10)))...")
+        } else {
+            print("❌ [WebSearch] No API key found!")
+        }
+        
+        // Update status: fetching results
+        await onStatusUpdate(.fetchingResults(sources: resultsLimit))
+        
+        let response = try await search(
+            query: query,
+            searchDepth: searchDepth,
+            maxResults: resultsLimit,
+            includeAnswer: includeAnswer
+        )
+        
+        print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
+        
+        // Update status: processing results
+        await onStatusUpdate(.processingResults)
+        
+        // Convert to SearchSource models
+        let sources = response.results.map { result in
+            SearchSource(
+                title: result.title,
+                url: result.url,
+                score: result.score,
+                publishedDate: result.publishedDate
+            )
+        }
+        
+        // Update status: completed
+        await onStatusUpdate(.completed(sources: sources))
+        
+        // Extract URLs for citation linking
+        let urls = response.results.map { $0.url }
+        let context = formatResultsForContext(response)
+        
+        return (context, urls, sources)
+    }
+
     func search(
         query: String,
         searchDepth: String = "basic",

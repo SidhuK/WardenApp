@@ -18,7 +18,7 @@ struct ModelSelectionView: View {
     }
     
     private var hasCustomSelection: Bool {
-        selectedModelsManager.hasAnyCustomSelection(for: serviceType)
+        !selectedModelsManager.getSelectedModelIds(for: serviceType).isEmpty
     }
     
     private var filteredModels: [AIModel] {

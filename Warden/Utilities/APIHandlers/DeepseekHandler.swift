@@ -90,10 +90,8 @@ class DeepseekHandler: ChatGPTHandler {
 
         return (false, nil, nil, nil)
     }
-
-        override func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
-        -> AsyncThrowingStream<String, Error>
-    {
+    
+    override func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws -> AsyncThrowingStream<String, Error> {
         return AsyncThrowingStream { continuation in
             let request = self.prepareRequest(
                 requestMessages: requestMessages,
@@ -103,7 +101,6 @@ class DeepseekHandler: ChatGPTHandler {
             )
 
             Task {
-                var accumulatedReasoning = ""
                 var isInReasoningBlock = false
                 
                 do {
@@ -124,41 +121,36 @@ class DeepseekHandler: ChatGPTHandler {
                         break
                     }
 
-                    for try await line in stream.lines {
-                        if line.data(using: .utf8) != nil && isNotSSEComment(line) {
-                            let prefix = "data: "
-                            var index = line.startIndex
-                            if line.starts(with: prefix) {
-                                index = line.index(line.startIndex, offsetBy: prefix.count)
-                            }
-                            let jsonData = String(line[index...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            if let jsonData = jsonData.data(using: .utf8) {
-                                let (finished, error, messageData, role) = parseDeltaJSONResponse(data: jsonData)
+                    try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
+                        guard let self = self else { return }
+                        
+                        if let jsonData = dataString.data(using: .utf8) {
+                            let (finished, error, messageData, role) = self.parseDeltaJSONResponse(data: jsonData)
 
-                                if let error = error {
-                                    continuation.finish(throwing: error)
-                                } else if let messageData = messageData {
-                                    if role == "reasoning" {
-                                        if !isInReasoningBlock {
-                                            isInReasoningBlock = true
-                                            continuation.yield("<think>\n")
-                                        }
-                                        continuation.yield(messageData)
-                                    } else {
-                                        if isInReasoningBlock {
-                                            isInReasoningBlock = false
-                                            continuation.yield("\n</think>\n\n")
-                                        }
-                                        continuation.yield(messageData)
+                            if let error = error {
+                                throw error
+                            } else if let messageData = messageData {
+                                if role == "reasoning" {
+                                    if !isInReasoningBlock {
+                                        isInReasoningBlock = true
+                                        continuation.yield("<think>\n")
                                     }
-                                }
-                                
-                                if finished {
+                                    continuation.yield(messageData)
+                                } else {
                                     if isInReasoningBlock {
+                                        isInReasoningBlock = false
                                         continuation.yield("\n</think>\n\n")
                                     }
-                                    continuation.finish()
+                                    continuation.yield(messageData)
                                 }
+                            }
+                            
+                            if finished {
+                                if isInReasoningBlock {
+                                    continuation.yield("\n</think>\n\n")
+                                }
+                                continuation.finish()
+                                return
                             }
                         }
                     }

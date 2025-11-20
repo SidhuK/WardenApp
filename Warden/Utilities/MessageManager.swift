@@ -79,72 +79,17 @@ class MessageManager: ObservableObject {
     // MARK: - Tavily Search Support
     
     func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
-        print("🔍 [WebSearch] executeSearch called with query: \(query)")
-        
-        // Update status: starting search
-        await MainActor.run {
-            searchStatus = .searching(query: query)
+        let (context, urls, sources) = try await tavilyService.performSearch(query: query) { [weak self] status in
+            self?.searchStatus = status
+            if case .completed(let sources) = status {
+                self?.lastSearchSources = sources
+                self?.lastSearchQuery = query
+            } else if case .failed(let error) = status {
+                 // Handle error if needed, though performSearch throws
+            }
         }
-        
-        let searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
-            ?? AppConstants.tavilyDefaultSearchDepth
-        let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
-        let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
-        let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
-        
-        print("🔍 [WebSearch] Search settings - depth: \(searchDepth), maxResults: \(resultsLimit), includeAnswer: \(includeAnswer)")
-        
-        // Check if API key exists
-        if let apiKey = TavilyKeyManager.shared.getApiKey() {
-            print("🔍 [WebSearch] API key found: \(String(apiKey.prefix(10)))...")
-        } else {
-            print("❌ [WebSearch] No API key found!")
-        }
-        
-        // Update status: fetching results
-        await MainActor.run {
-            searchStatus = .fetchingResults(sources: resultsLimit)
-        }
-        
-        let response = try await tavilyService.search(
-            query: query,
-            searchDepth: searchDepth,
-            maxResults: resultsLimit,
-            includeAnswer: includeAnswer
-        )
-        
-        print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
-        
-        // Update status: processing results
-        await MainActor.run {
-            searchStatus = .processingResults
-        }
-        
-        // Convert to SearchSource models
-        let sources = response.results.map { result in
-            SearchSource(
-                title: result.title,
-                url: result.url,
-                score: result.score,
-                publishedDate: result.publishedDate
-            )
-        }
-        
-        // Update status: completed
-        await MainActor.run {
-            searchStatus = .completed(sources: sources)
-            // Store for UI display
-            lastSearchSources = sources
-            lastSearchQuery = query
-        }
-        
-        // Extract URLs for citation linking
-        let urls = response.results.map { $0.url }
-        
-        return (tavilyService.formatResultsForContext(response), urls)
+        return (context, urls)
     }
-    
-
     
     @MainActor
     func sendMessageStreamWithSearch(
@@ -155,17 +100,12 @@ class MessageManager: ObservableObject {
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
         print("🔍 [WebSearch] sendMessageStreamWithSearch called")
-        print("🔍 [WebSearch] useWebSearch: \(useWebSearch)")
-        print("🔍 [WebSearch] message: \(message)")
         
         var finalMessage = message
          
          // Check if web search is enabled (either by toggle or by command)
         let searchCheck = tavilyService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
-        
-        print("🔍 [WebSearch] searchCheck.isSearch: \(searchCheck.isSearch)")
-        print("🔍 [WebSearch] shouldSearch: \(shouldSearch)")
         
         if shouldSearch {
             let query: String
@@ -175,15 +115,10 @@ class MessageManager: ObservableObject {
                 query = message
             }
             
-            print("🔍 [WebSearch] Executing search with query: \(query)")
-            
             chat.waitingForResponse = true
             
             do {
                 let (searchResults, urls) = try await executeSearch(query)
-                print("🔍 [WebSearch] Search completed successfully")
-                print("🔍 [WebSearch] Results length: \(searchResults.count) characters")
-                print("🔍 [WebSearch] Got \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -192,8 +127,6 @@ class MessageManager: ObservableObject {
                 
                 Based on the search results above, please provide a comprehensive answer to the user's question. Include relevant citations using the source numbers [1], [2], etc.
                 """
-                
-                print("🔍 [WebSearch] Final message prepared with search results")
                 
                 // Pass URLs through to sendMessageStream
                 sendMessageStream(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls) { [weak self] result in
@@ -216,8 +149,6 @@ class MessageManager: ObservableObject {
                 completion(.failure(error))
                 return
             }
-        } else {
-            print("🔍 [WebSearch] Search skipped - shouldSearch is false")
         }
         
         sendMessageStream(finalMessage, in: chat, contextSize: contextSize) { result in
@@ -234,17 +165,12 @@ class MessageManager: ObservableObject {
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
         print("🔍 [WebSearch NON-STREAM] sendMessageWithSearch called")
-        print("🔍 [WebSearch NON-STREAM] useWebSearch: \(useWebSearch)")
-        print("🔍 [WebSearch NON-STREAM] message: \(message)")
         
         var finalMessage = message
          
          // Check if web search is enabled (either by toggle or by command)
         let searchCheck = tavilyService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
-         
-         print("🔍 [WebSearch NON-STREAM] searchCheck.isSearch: \(searchCheck.isSearch)")
-        print("🔍 [WebSearch NON-STREAM] shouldSearch: \(shouldSearch)")
         
         if shouldSearch {
             let query: String
@@ -254,15 +180,10 @@ class MessageManager: ObservableObject {
                 query = message
             }
             
-            print("🔍 [WebSearch NON-STREAM] Executing search with query: \(query)")
-            
             chat.waitingForResponse = true
             
             do {
                 let (searchResults, urls) = try await executeSearch(query)
-                print("🔍 [WebSearch NON-STREAM] Search completed successfully")
-                print("🔍 [WebSearch NON-STREAM] Results length: \(searchResults.count) characters")
-                print("🔍 [WebSearch NON-STREAM] Got \(urls.count) URLs for citation linking")
                 
                 finalMessage = """
                 User asked: \(query)
@@ -271,8 +192,6 @@ class MessageManager: ObservableObject {
                 
                 Based on the search results above, please provide a comprehensive answer to the user's question. Include relevant citations using the source numbers [1], [2], etc.
                 """
-                
-                print("🔍 [WebSearch NON-STREAM] Final message prepared with search results")
                 
                 // Pass URLs through to sendMessage
                 sendMessage(finalMessage, in: chat, contextSize: contextSize, searchUrls: urls) { [weak self] result in
@@ -295,8 +214,6 @@ class MessageManager: ObservableObject {
                 completion(.failure(error))
                 return
             }
-        } else {
-            print("🔍 [WebSearch NON-STREAM] Search skipped - shouldSearch is false")
         }
         
         sendMessage(finalMessage, in: chat, contextSize: contextSize) { result in
@@ -315,7 +232,11 @@ class MessageManager: ObservableObject {
         chat.waitingForResponse = true
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
 
-        apiService.sendMessage(requestMessages, temperature: temperature) { [weak self] result in
+        ChatService.shared.sendMessage(
+            apiService: apiService,
+            messages: requestMessages,
+            temperature: temperature
+        ) { [weak self] result in
             guard let self = self else { return }
 
             switch result {
@@ -354,7 +275,7 @@ class MessageManager: ObservableObject {
             do {
                 chat.waitingForResponse = true
                 
-                let fullResponse = try await APIServiceManager.handleStream(
+                let fullResponse = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     temperature: temperature

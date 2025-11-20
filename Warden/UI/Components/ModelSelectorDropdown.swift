@@ -116,7 +116,7 @@ class ModelSelectorViewModel: ObservableObject {
             let serviceModels = modelCache.getModels(for: serviceType)
             
             let visibleModels = serviceModels.filter { model in
-                if selectedModelsManager.hasCustomSelection(for: serviceType) {
+                if !selectedModelsManager.getSelectedModelIds(for: serviceType).isEmpty {
                     return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
                 }
                 return true

@@ -16,23 +16,23 @@ class ModelMetadataFetcherFactory {
     static func createFetcher(for provider: String) -> ModelMetadataFetcher {
         switch provider {
         case "chatgpt":
-            return OpenAIMetadataFetcher()
+            return GenericMetadataFetcher(provider: "chatgpt")
         case "claude":
-            return AnthropicMetadataFetcher()
+            return GenericMetadataFetcher(provider: "claude")
         case "gemini":
-            return GoogleMetadataFetcher()
+            return GenericMetadataFetcher(provider: "gemini")
         case "groq":
             return GroqMetadataFetcher()
         case "openrouter":
             return OpenRouterMetadataFetcher()
         case "mistral":
-            return MistralMetadataFetcher()
+            return GenericMetadataFetcher(provider: "mistral")
         case "xai":
-            return XAIMetadataFetcher()
+            return GenericMetadataFetcher(provider: "xai")
         case "perplexity":
-            return PerplexityMetadataFetcher()
+            return GenericMetadataFetcher(provider: "perplexity")
         case "deepseek":
-            return DeepSeekMetadataFetcher()
+            return GenericMetadataFetcher(provider: "deepseek")
         case "ollama", "lmstudio":
             return LocalModelMetadataFetcher()
         default:
@@ -41,129 +41,11 @@ class ModelMetadataFetcherFactory {
     }
 }
 
-// MARK: - OpenAI Fetcher
 
-class OpenAIMetadataFetcher: ModelMetadataFetcher {
-    private let baseURL = URL(string: "https://api.openai.com/v1")!
-    
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // OpenAI metadata fetching via API is not implemented in this lightweight version.
-        // We rely on the user typing the model name or using OpenRouter.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        // Fallback for unknown models
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "chatgpt",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
-// MARK: - Anthropic Fetcher
 
-class AnthropicMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Anthropic metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "claude",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
-// MARK: - Google Gemini Fetcher
 
-class GoogleMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Google metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "gemini",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo?) -> CostLevel? {
-        guard let pricing = pricing, let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
 // MARK: - Groq Fetcher
 
@@ -316,165 +198,13 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
     }
 }
 
-// MARK: - Mistral Fetcher (No public pricing API, use docs)
 
-class MistralMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Mistral metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "mistral",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
-// MARK: - xAI Fetcher (Grok)
 
-class XAIMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // xAI metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "xai",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
-// MARK: - Perplexity Fetcher
 
-class PerplexityMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // Perplexity metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "perplexity",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
-// MARK: - DeepSeek Fetcher
 
-class DeepSeekMetadataFetcher: ModelMetadataFetcher {
-    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
-        // DeepSeek metadata fetching via API is not implemented.
-        return [:]
-    }
-    
-    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
-        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
-        
-        if let metadata = allMetadata[modelId] {
-            return metadata
-        }
-        
-        return ModelMetadata(
-            modelId: modelId,
-            provider: "deepseek",
-            pricing: nil,
-            maxContextTokens: nil,
-            capabilities: [],
-            latency: nil,
-            costLevel: nil,
-            lastUpdated: Date(),
-            source: .unknown
-        )
-    }
-    
-    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
-        guard let inputCost = pricing.inputPer1M else { return nil }
-        if inputCost < 1.0 {
-            return .cheap
-        } else if inputCost < 10.0 {
-            return .standard
-        } else {
-            return .expensive
-        }
-    }
-}
 
 // MARK: - Local Model Fetcher (Ollama, LMStudio)
 

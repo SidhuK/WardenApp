@@ -9,22 +9,13 @@ private struct ClaudeModel: Codable {
     let id: String
 }
 
-class ClaudeHandler: APIService {
-    let name: String
-    let baseURL: URL
-    private let apiKey: String
-    let model: String
-    let session: URLSession
-
-    init(config: APIServiceConfiguration, session: URLSession) {
-        self.name = config.name
-        self.baseURL = config.apiUrl
-        self.apiKey = config.apiKey
-        self.model = config.model
-        self.session = session
+class ClaudeHandler: BaseAPIHandler {
+    
+    override init(config: APIServiceConfiguration, session: URLSession) {
+        super.init(config: config, session: session)
     }
 
-    func fetchModels() async throws -> [AIModel] {
+    override func fetchModels() async throws -> [AIModel] {
         let modelsURL = baseURL.deletingLastPathComponent().appendingPathComponent("models")
         
         var request = URLRequest(url: modelsURL)
@@ -54,71 +45,7 @@ class ClaudeHandler: APIService {
         }
     }
 
-    func sendMessage(
-        _ requestMessages: [[String: String]],
-        temperature: Float,
-        completion: @escaping (Result<String, APIError>) -> Void
-    ) {
-        defaultSendMessage(requestMessages, temperature: temperature, completion: completion)
-    }
-
-    func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
-        -> AsyncThrowingStream<String, Error>
-    {
-        return AsyncThrowingStream { continuation in
-            let request = self.prepareRequest(
-                requestMessages: requestMessages,
-                model: model,
-                temperature: temperature,
-                stream: true
-            )
-
-            Task {
-                do {
-                    let (stream, response) = try await session.bytes(for: request)
-                    let result = self.handleAPIResponse(response, data: nil, error: nil)
-
-                    switch result {
-                    case .failure(let error):
-                        var data = Data()
-                        for try await byte in stream {
-                            data.append(byte)
-                        }
-                        let error = APIError.serverError(
-                            String(data: data, encoding: .utf8) ?? error.localizedDescription
-                        )
-                        continuation.finish(throwing: error)
-                        return
-                    case .success:
-                        break
-                    }
-
-                    for try await line in stream.lines {
-                        let (finished, error, content, _) = self.parseSSEEvent(line)
-
-                        if let error = error {
-                            continuation.finish(throwing: APIError.decodingFailed(error.localizedDescription))
-                            break
-                        }
-
-                        if let content = content, !content.isEmpty {
-                            continuation.yield(content)
-                        }
-
-                        if finished {
-                            continuation.finish()
-                            break
-                        }
-                    }
-                }
-                catch {
-                    continuation.finish(throwing: APIError.requestFailed(error))
-                }
-            }
-        }
-    }
-
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
+    override func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
         -> URLRequest
     {
         var request = URLRequest(url: baseURL)
@@ -156,7 +83,7 @@ class ClaudeHandler: APIService {
 
 
 
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String, String)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                 let role = json["role"] as? String,
@@ -183,34 +110,27 @@ class ClaudeHandler: APIService {
         return nil
     }
 
-    private func parseSSEEvent(_ event: String) -> (Bool, Error?, String?, String?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+        guard let data = data else {
+            return (false, nil, nil, nil)
+        }
+        
         var isFinished = false
         var textContent = ""
         var parseError: Error?
-        var jsonString: String?
-
-        if event.hasPrefix("data: ") {
-            jsonString = event.replacingOccurrences(of: "data: ", with: "")
-        }
-
-        guard let jsonString = jsonString else {
-            return (isFinished, parseError, nil, nil)
-        }
-
-        guard let jsonData = jsonString.data(using: .utf8),
-            let json = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any]
-        else {
+        
+        guard let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
             parseError = NSError(
                 domain: "SSEParsing",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to parse JSON: \(jsonString)"]
+                userInfo: [NSLocalizedDescriptionKey: "Failed to parse JSON"]
             )
             return (isFinished, parseError, nil, nil)
         }
 
         if let eventType = json["type"] as? String {
             switch eventType {
-            case "contenxt_block_start":
+            case "content_block_start":
                 if let contentBlock = json["content_block"] as? [String: Any],
                     let text = contentBlock["text"] as? String
                 {
@@ -234,7 +154,8 @@ class ClaudeHandler: APIService {
                 // Ignore ping events
                 break
             default:
-                print("Unhandled event type: \(eventType)")
+                // Ignore other events
+                break
             }
         }
         return (isFinished, parseError, textContent.isEmpty ? nil : textContent, nil)

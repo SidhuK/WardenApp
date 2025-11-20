@@ -133,7 +133,7 @@ class MultiAgentMessageManager: ObservableObject {
     ) {
         let task = Task {
             do {
-                let fullResponse = try await APIServiceManager.handleStream(
+                let fullResponse = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     temperature: temperature
@@ -188,7 +188,11 @@ class MultiAgentMessageManager: ObservableObject {
         agentIndex: Int,
         dispatchGroup: DispatchGroup
     ) {
-        apiService.sendMessage(requestMessages, temperature: temperature) { [weak self] result in
+        ChatService.shared.sendMessage(
+            apiService: apiService,
+            messages: requestMessages,
+            temperature: temperature
+        ) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self, agentIndex < self.activeAgents.count else {
                     dispatchGroup.leave()
@@ -202,7 +206,7 @@ class MultiAgentMessageManager: ObservableObject {
                     self.activeAgents[agentIndex].timestamp = Date()
                     
                 case .failure(let error):
-                    self.activeAgents[agentIndex].error = error
+                    self.activeAgents[agentIndex].error = error as? APIError ?? APIError.unknown(error.localizedDescription)
                     self.activeAgents[agentIndex].isComplete = true
                 }
                 
