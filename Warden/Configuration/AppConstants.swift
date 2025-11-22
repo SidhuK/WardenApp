@@ -133,7 +133,7 @@ struct AppConstants {
             case technical = "Technical", research = "Research", personal = "Personal"
             
             var icon: String {
-                ["briefcase", "graduationcap", "paintbrush", "terminal", "magnifyingglass", "person"][self.hashValue % 6]
+                ["briefcase", "graduationcap", "paintbrush", "terminal", "magnifyingglass", "person"][abs(self.hashValue) % 6]
             }
         }
         

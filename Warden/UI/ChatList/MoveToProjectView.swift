@@ -89,11 +89,16 @@ struct MoveToProjectView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
+            // Footer
+            footerSection
         }
         .padding(.vertical, 12)
         .background(AppConstants.backgroundElevated)
         .frame(minWidth: 420, idealWidth: 480, maxWidth: 520,
                minHeight: 420, idealHeight: 520, maxHeight: 640)
+        .onAppear {
+            selectedProject = currentProject
+        }
         .sheet(isPresented: $showingCreateProject) {
             CreateProjectView(
                 onProjectCreated: { project in
@@ -107,6 +112,36 @@ struct MoveToProjectView: View {
             )
             .frame(minWidth: 520, idealWidth: 640, maxWidth: 720,
                    minHeight: 520, idealHeight: 620, maxHeight: 720)
+        }
+    }
+    
+    private var footerSection: some View {
+        HStack {
+            Button("Cancel") {
+                dismiss()
+            }
+            .keyboardShortcut(.cancelAction)
+            
+            Spacer()
+            
+            Button(action: moveChatsToProject) {
+                Text(moveButtonTitle)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 8)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canMove)
+            .keyboardShortcut(.defaultAction)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+    }
+
+    private var moveButtonTitle: String {
+        if selectedProject == nil && currentProject != nil {
+            return "Remove from Project"
+        } else {
+            return "Move to \(selectedProject?.name ?? "Project")"
         }
     }
     
