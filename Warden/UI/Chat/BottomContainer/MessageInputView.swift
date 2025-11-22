@@ -32,7 +32,7 @@ struct MessageInputView: View {
     @State private var inputPulseAnimation = false
     private let maxInputHeight = 160.0
     private let initialInputSize = 16.0
-    private let inputPadding = 8.0
+    private let inputPadding = 12.0
     private let lineWidthOnBlur = 1.0
     private let lineWidthOnFocus = 1.8
     private let lineColorOnBlur = AppConstants.borderSubtle

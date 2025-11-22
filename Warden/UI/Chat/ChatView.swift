@@ -364,7 +364,7 @@ struct ChatView: View {
                     },
                     scrollView: scrollView
                 )
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 40)
                 .padding(.top, 16)
                 .padding(.bottom, 24)
                 .onAppear {

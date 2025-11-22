@@ -95,7 +95,7 @@ struct ChatBottomContainerView: View {
                  },
                  onStopStreaming: onStopStreaming
              )
-             .padding(.horizontal, 16)
+             .padding(.horizontal, 36)
              .padding(.vertical, 10)
              .background(Color(nsColor: .controlBackgroundColor))
             }

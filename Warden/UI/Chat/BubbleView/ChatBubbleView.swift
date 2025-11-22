@@ -37,9 +37,9 @@ struct ChatBubbleView: View, Equatable {
     @Environment(\.managedObjectContext) private var viewContext
 
     // MARK: - Bubble Metrics
-    private let bubbleCornerRadius: CGFloat = 13
-    private let verticalSpacingCompact: CGFloat = 4   // for same author
-    private let verticalSpacingSeparated: CGFloat = 12 // between authors
+    private let bubbleCornerRadius: CGFloat = 18 // Increased for rounder look
+    private let verticalSpacingCompact: CGFloat = 4
+    private let verticalSpacingSeparated: CGFloat = 12
     @State private var isHovered = false
     @State private var showingDeleteConfirmation = false
     @State private var isCopied = false
@@ -86,7 +86,7 @@ struct ChatBubbleView: View, Equatable {
         HStack(alignment: .bottom, spacing: 8) {
             if !content.own && !content.systemMessage {
                 aiProviderLogo
-                    .frame(width: 20, height: 20)
+                    .frame(width: 24, height: 24) // Slightly larger avatar
             }
             
             if content.own && !content.systemMessage {
@@ -97,8 +97,13 @@ struct ChatBubbleView: View, Equatable {
                 .modifier(StreamingPulseModifier(isStreaming: content.isStreaming))
 
             if content.own && !content.systemMessage {
+                // No user avatar for iMessage style, just the bubble on the right
+                // But we can keep it if desired, or remove it to be more like iMessage
+                // User request said "like iMessage", which doesn't show user avatar usually.
+                // But let's keep it consistent with the app for now, maybe smaller or hidden?
+                // The image shows user avatar. So we keep it.
                 userAvatar
-                    .frame(width: 20, height: 20)
+                    .frame(width: 24, height: 24)
             }
         }
         .frame(maxWidth: .infinity, alignment: rowAlignment)
@@ -230,33 +235,37 @@ struct ChatBubbleView: View, Equatable {
         case assistant
         case system
         case error(ErrorMessage)
-    }
-    
-    private struct BubbleStyle {
-        let horizontalPadding: CGFloat
-        let verticalPadding: CGFloat
-        let background: AnyView
-        let overlay: AnyView?
-        let shadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
-        let secondaryShadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
+        
+        var isUser: Bool {
+            if case .user = self { return true }
+            return false
+        }
     }
     
     @ViewBuilder
     private func unifiedBubble(role: BubbleRole) -> some View {
-        let style = bubbleStyle(for: role)
-        
         VStack(alignment: .leading, spacing: 4) {
             bubbleContent(for: role)
         }
-        .padding(.horizontal, style.horizontalPadding)
-        .padding(.vertical, style.verticalPadding)
-        .background(style.background)
-        .clipShape(RoundedRectangle(cornerRadius: bubbleCornerRadius))
-        .overlay(style.overlay)
-        .modifier(BubbleShadowModifier(
-            shadow: style.shadow,
-            secondaryShadow: style.secondaryShadow
-        ))
+        .padding(.horizontal, 14) // Slightly increased padding
+        .padding(.vertical, 10)
+        .background(bubbleBackground(for: role))
+        .clipShape(BubbleShape(myMessage: role.isUser)) // Custom shape
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+    
+    @ViewBuilder
+    private func bubbleBackground(for role: BubbleRole) -> some View {
+        switch role {
+        case .user:
+            Color.accentColor
+        case .assistant:
+            Color(nsColor: .controlBackgroundColor) // Grayish/System background
+        case .system:
+            Color.accentColor.opacity(0.1)
+        case .error:
+            AppConstants.destructive.opacity(0.1)
+        }
     }
     
     @ViewBuilder
@@ -265,8 +274,10 @@ struct ChatBubbleView: View, Equatable {
         case .user:
             if content.waitingForResponse ?? false {
                 messageBody
+                    .foregroundColor(.white)
             } else {
                 messageBody
+                    .foregroundColor(.white)
             }
             
         case .assistant:
@@ -274,6 +285,7 @@ struct ChatBubbleView: View, Equatable {
                 thinkingView
             } else {
                 messageBody
+                    .foregroundColor(AppConstants.textPrimary)
             }
             
         case .system:
@@ -306,105 +318,6 @@ struct ChatBubbleView: View, Equatable {
             )
         }
     }
-    
-    private func bubbleStyle(for role: BubbleRole) -> BubbleStyle {
-        switch role {
-        case .user:
-            return BubbleStyle(
-                horizontalPadding: 12,
-                verticalPadding: 9,
-                background: AnyView(
-                    ZStack {
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.accentColor.opacity(0.85),
-                                Color.accentColor.opacity(0.75)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        
-                        LinearGradient(
-                            gradient: Gradient(stops: [
-                                .init(color: .white.opacity(0.15), location: 0.0),
-                                .init(color: .white.opacity(0.05), location: 0.4),
-                                .init(color: .clear, location: 0.6),
-                                .init(color: .black.opacity(0.03), location: 1.0)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    }
-                ),
-                overlay: AnyView(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.white.opacity(0.2),
-                                    Color.accentColor.opacity(0.15)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 0.5
-                        )
-                ),
-                shadow: (Color.accentColor.opacity(0.15), 2, 0, 1),
-                secondaryShadow: (Color.black.opacity(0.05), 4, 0, 2)
-            )
-            
-        case .assistant:
-            return BubbleStyle(
-                horizontalPadding: 12,
-                verticalPadding: 9,
-                background: AnyView(
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                ),
-                overlay: AnyView(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                ),
-                shadow: nil,
-                secondaryShadow: nil
-            )
-            
-        case .system:
-            return BubbleStyle(
-                horizontalPadding: 11,
-                verticalPadding: 8,
-                background: AnyView(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .fill(Color.accentColor.opacity(0.08))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                                .stroke(Color.accentColor.opacity(0.25), lineWidth: 0.9)
-                        )
-                ),
-                overlay: nil,
-                shadow: nil,
-                secondaryShadow: nil
-            )
-            
-        case .error:
-            return BubbleStyle(
-                horizontalPadding: 11,
-                verticalPadding: 8,
-                background: AnyView(
-                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                        .fill(AppConstants.destructive.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: bubbleCornerRadius)
-                                .stroke(AppConstants.destructive.opacity(0.5), lineWidth: 1)
-                        )
-                ),
-                overlay: nil,
-                shadow: nil,
-                secondaryShadow: nil
-            )
-        }
-    }
 
     private var messageBody: some View {
         MessageContentView(
@@ -414,7 +327,6 @@ struct ChatBubbleView: View, Equatable {
             effectiveFontSize: effectiveFontSize,
             colorScheme: colorScheme
         )
-        .foregroundColor(content.own ? .white : AppConstants.textPrimary)
         .multilineTextAlignment(.leading)
     }
 
@@ -438,7 +350,7 @@ struct ChatBubbleView: View, Equatable {
                 .fill(Color.accentColor)
             
             Image(systemName: "person.fill")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white)
         }
     }
@@ -457,18 +369,18 @@ struct ChatBubbleView: View, Equatable {
                 let iconName = providerIconName(for: providerType)
                 if iconName == "sparkles" {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.accentColor)
                 } else {
                     Image(iconName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 12, height: 12)
+                        .frame(width: 14, height: 14)
                         .foregroundColor(.accentColor)
                 }
             } else {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.accentColor)
             }
         }
@@ -511,6 +423,45 @@ struct ChatBubbleView: View, Equatable {
     }
 }
 
+struct BubbleShape: Shape {
+    var myMessage: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let width = rect.width
+        let height = rect.height
+        
+        return Path { path in
+            if !myMessage {
+                path.move(to: CGPoint(x: 20, y: height))
+                path.addLine(to: CGPoint(x: width - 15, y: height))
+                path.addCurve(to: CGPoint(x: width, y: height - 15), control1: CGPoint(x: width - 8, y: height), control2: CGPoint(x: width, y: height - 8))
+                path.addLine(to: CGPoint(x: width, y: 15))
+                path.addCurve(to: CGPoint(x: width - 15, y: 0), control1: CGPoint(x: width, y: 8), control2: CGPoint(x: width - 8, y: 0))
+                path.addLine(to: CGPoint(x: 20, y: 0))
+                path.addCurve(to: CGPoint(x: 5, y: 15), control1: CGPoint(x: 12, y: 0), control2: CGPoint(x: 5, y: 8))
+                path.addLine(to: CGPoint(x: 5, y: height - 10))
+                path.addCurve(to: CGPoint(x: 0, y: height), control1: CGPoint(x: 5, y: height - 1), control2: CGPoint(x: 0, y: height))
+                path.addLine(to: CGPoint(x: -1, y: height))
+                path.addCurve(to: CGPoint(x: 12, y: height - 4), control1: CGPoint(x: 4, y: height + 1), control2: CGPoint(x: 8, y: height - 1))
+                path.addCurve(to: CGPoint(x: 20, y: height), control1: CGPoint(x: 15, y: height), control2: CGPoint(x: 20, y: height))
+            } else {
+                path.move(to: CGPoint(x: width - 20, y: height))
+                path.addLine(to: CGPoint(x: 15, y: height))
+                path.addCurve(to: CGPoint(x: 0, y: height - 15), control1: CGPoint(x: 8, y: height), control2: CGPoint(x: 0, y: height - 8))
+                path.addLine(to: CGPoint(x: 0, y: 15))
+                path.addCurve(to: CGPoint(x: 15, y: 0), control1: CGPoint(x: 0, y: 8), control2: CGPoint(x: 8, y: 0))
+                path.addLine(to: CGPoint(x: width - 20, y: 0))
+                path.addCurve(to: CGPoint(x: width - 5, y: 15), control1: CGPoint(x: width - 12, y: 0), control2: CGPoint(x: width - 5, y: 8))
+                path.addLine(to: CGPoint(x: width - 5, y: height - 10))
+                path.addCurve(to: CGPoint(x: width, y: height), control1: CGPoint(x: width - 5, y: height - 1), control2: CGPoint(x: width, y: height))
+                path.addLine(to: CGPoint(x: width + 1, y: height))
+                path.addCurve(to: CGPoint(x: width - 12, y: height - 4), control1: CGPoint(x: width - 4, y: height + 1), control2: CGPoint(x: width - 8, y: height - 1))
+                path.addCurve(to: CGPoint(x: width - 20, y: height), control1: CGPoint(x: width - 15, y: height), control2: CGPoint(x: width - 20, y: height))
+            }
+        }
+    }
+}
+
 struct PulsatingCircle: ViewModifier {
     @State private var isAnimating = false
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -532,28 +483,6 @@ struct PulsatingCircle: ViewModifier {
                     isAnimating = true
                 }
             }
-    }
-}
-
-// MARK: - Bubble Shadow Modifier
-
-struct BubbleShadowModifier: ViewModifier {
-    let shadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
-    let secondaryShadow: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)?
-    
-    func body(content: Content) -> some View {
-        if let shadow = shadow {
-            if let secondaryShadow = secondaryShadow {
-                content
-                    .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
-                    .shadow(color: secondaryShadow.color, radius: secondaryShadow.radius, x: secondaryShadow.x, y: secondaryShadow.y)
-            } else {
-                content
-                    .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
-            }
-        } else {
-            content
-        }
     }
 }
 
