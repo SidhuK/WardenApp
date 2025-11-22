@@ -224,9 +224,9 @@ struct ChatView: View {
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbarColorScheme(colorScheme, for: .windowToolbar)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .principal) {
                 ModelSelectorDropdown(chat: chat)
-                    .padding(.top, 6)
+                    .buttonStyle(.plain)
             }
             
             ToolbarItem(placement: .automatic) {

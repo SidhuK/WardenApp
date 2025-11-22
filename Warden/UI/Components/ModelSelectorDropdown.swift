@@ -440,6 +440,7 @@ struct ModelSelectorDropdown: View {
     private var apiServices: FetchedResults<APIServiceEntity>
     
     @State private var isExpanded = false
+    @State private var isHovered = false
     
     private var currentProviderType: String {
         chat.apiService?.type ?? AppConstants.defaultApiType
@@ -488,42 +489,58 @@ struct ModelSelectorDropdown: View {
                 triggerModelFetchIfNeeded()
             }
         }) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 // Provider logo
                 Image("logo_\(currentProviderType)")
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
                     .frame(width: 14, height: 14)
-                    .foregroundColor(AppConstants.textSecondary)
-                    .opacity(chat.apiService == nil ? 0.6 : 1.0)
+                    .foregroundColor(.primary)
+                    .opacity(0.7)
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 0) {
                     // Current model
                     Text(currentModelLabel)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(AppConstants.textPrimary)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
 
                     // Provider / hint
                     Text(currentProviderDisplayName)
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundColor(AppConstants.textSecondary)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
+                .padding(.leading, 2)
 
                 // Chevron only if there are choices; keeps UI lightweight.
                 if hasMultipleVisibleModels {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(AppConstants.textSecondary)
-                        .padding(.leading, 4)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 2)
                 }
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(isHovered ? Color.primary.opacity(0.05) : Color.clear)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isHovered = hovering
+            }
+        }
         .frame(maxWidth: 360)
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
             // Directly render the full selector content, without an extra nested trigger.
