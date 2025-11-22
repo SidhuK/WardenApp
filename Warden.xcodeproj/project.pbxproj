@@ -141,6 +141,9 @@
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 		DAD2E19560A64CC290850A1D /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C5F31F2F664B9BBD13C0CC /* ChatService.swift */; };
+		7F0000012E00000100000002 /* GlobalHotkeyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000012E00000100000001 /* GlobalHotkeyHandler.swift */; };
+		7F0000022E00000100000002 /* FloatingPanelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000022E00000100000001 /* FloatingPanelManager.swift */; };
+		7F0000032E00000100000002 /* QuickChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000032E00000100000001 /* QuickChatView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -303,6 +306,9 @@
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
+		7F0000012E00000100000001 /* GlobalHotkeyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyHandler.swift; sourceTree = "<group>"; };
+		7F0000022E00000100000001 /* FloatingPanelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelManager.swift; sourceTree = "<group>"; };
+		7F0000032E00000100000001 /* QuickChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickChatView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -417,6 +423,7 @@
 				7F8D7CA42DE9DAF4003E7BCA /* MultiAgentResponseView.swift */,
 				7F8D7CA52DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift */,
 				4A27FF8E2DA1C41B0075D730 /* ZoomableImageView.swift */,
+				7F0000032E00000100000001 /* QuickChatView.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -530,6 +537,8 @@
 				4ABDBE6529F86B5900661B2D /* MessageParser.swift */,
 				4A775A032C1486F3004301D3 /* Extensions.swift */,
 				4AA6EF5C2C566009003B6D41 /* MessageManager.swift */,
+				7F0000012E00000100000001 /* GlobalHotkeyHandler.swift */,
+				7F0000022E00000100000001 /* FloatingPanelManager.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -913,6 +922,9 @@
 				7F5A91C82DF937BB00A18860 /* SelectedModelsManager.swift in Sources */,
 				7F8C678B2E02908F00147487 /* SettingsWindowManager.swift in Sources */,
 				4AE8691B2D5696A300E3B3AC /* GeminiHandler.swift in Sources */,
+				7F0000012E00000100000002 /* GlobalHotkeyHandler.swift in Sources */,
+				7F0000022E00000100000002 /* FloatingPanelManager.swift in Sources */,
+				7F0000032E00000100000002 /* QuickChatView.swift in Sources */,
 			);
 		};
 		4A399CA229BC8FF200E98796 /* Sources */ = {

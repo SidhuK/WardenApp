@@ -180,6 +180,14 @@ class HotkeyManager: ObservableObject {
                 defaultShortcut: AppConstants.DefaultHotkeys.newChat,
                 notificationName: AppConstants.newChatHotkeyNotification.rawValue,
                 category: .navigation
+            ),
+            HotkeyAction(
+                id: "quickChat",
+                name: "Quick Chat Window",
+                description: "Toggle the floating chat window",
+                defaultShortcut: AppConstants.DefaultHotkeys.quickChat,
+                notificationName: AppConstants.toggleQuickChatNotification.rawValue,
+                category: .chat
             )
         ]
     }
@@ -197,6 +205,13 @@ class HotkeyManager: ObservableObject {
     func updateShortcut(for actionId: String, shortcut: KeyboardShortcut) {
         shortcuts[actionId] = shortcut
         UserDefaults.standard.set(shortcut.displayString, forKey: "hotkey_\(actionId)")
+        
+        // If this is the global quick chat hotkey, update the global registration
+        if actionId == "quickChat" {
+            GlobalHotkeyHandler.shared.register(shortcut: shortcut) {
+                FloatingPanelManager.shared.togglePanel()
+            }
+        }
     }
     
     func getShortcut(for actionId: String) -> KeyboardShortcut? {

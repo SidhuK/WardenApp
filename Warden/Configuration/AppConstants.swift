@@ -599,16 +599,19 @@ Remember that true productivity serves your overall life satisfaction and well-b
     static let exportChatNotification = Notification.Name("exportChatNotification")
     static let copyLastUserMessageNotification = Notification.Name("copyLastUserMessageNotification")
     static let newChatHotkeyNotification = Notification.Name("newChatHotkeyNotification")
+    static let toggleQuickChatNotification = Notification.Name("toggleQuickChatNotification")
     
     // MARK: - Hotkey Settings
     struct HotkeyKeys {
        static let copyLastResponse = "hotkey_copy_last_response", copyChat = "hotkey_copy_chat", exportChat = "hotkey_export_chat"
        static let copyLastUserMessage = "hotkey_copy_last_user_message", newChat = "hotkey_new_chat"
+       static let quickChat = "hotkey_quick_chat"
     }
     
     struct DefaultHotkeys {
         static let copyLastResponse = "⌘⇧C", copyChat = "⌘⇧A", exportChat = "⌘⇧E"
         static let copyLastUserMessage = "⌘⇧U", newChat = "⌘N"
+        static let quickChat = "⌘⇧Space"
     }
     
     // MARK: - Tavily Search Configuration

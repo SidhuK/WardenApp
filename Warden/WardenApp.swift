@@ -111,6 +111,12 @@ struct WardenApp: App {
                     
                     // Initialize model cache and metadata cache with all configured API services
                     initializeModelAndMetadataCache()
+                    
+                    // Setup Global Hotkeys
+                    setupGlobalHotkeys()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: AppConstants.toggleQuickChatNotification)) { _ in
+                    FloatingPanelManager.shared.togglePanel()
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -286,6 +292,15 @@ struct WardenApp: App {
             
             // Fetch metadata for this provider
             await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
+        }
+    }
+    
+    private func setupGlobalHotkeys() {
+        // Register the Quick Chat hotkey
+        if let shortcut = HotkeyManager.shared.getShortcut(for: "quickChat") {
+            GlobalHotkeyHandler.shared.register(shortcut: shortcut) {
+                FloatingPanelManager.shared.togglePanel()
+            }
         }
     }
 
