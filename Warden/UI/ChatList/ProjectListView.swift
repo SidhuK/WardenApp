@@ -696,7 +696,7 @@ struct ProjectRowInList: View {
                         .animation(.easeInOut(duration: 0.2), value: isExpanded)
                         .padding(.trailing, 8)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
@@ -881,23 +881,14 @@ struct ProjectChatRowInList: View {
         HStack(spacing: 12) {
             // AI service logo (conditionally shown) - aligned with project folder icons
             if showSidebarAIIcons {
-                if let apiServiceName = chat.apiService?.name,
-                   let image = getServiceLogo(for: apiServiceName) {
-                    image
-                        .resizable()
-                        .renderingMode(.template)
-                        .interpolation(.high)
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
-                        .padding(.leading, 8) // Align with project folder and regular chat icons
-                } else {
-                    Image(systemName: "message")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 16, height: 16)
-                        .padding(.leading, 8) // Align with project folder and regular chat icons
-                }
+                Image("logo_\(chat.apiService?.type ?? "")")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
+                    .padding(.leading, 8) // Align with project folder and regular chat icons
             }
             
             // Chat info
