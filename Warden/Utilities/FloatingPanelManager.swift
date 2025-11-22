@@ -9,6 +9,10 @@ class QuickChatPanel: NSPanel {
     override var canBecomeMain: Bool {
         return true
     }
+    
+    override func cancelOperation(_ sender: Any?) {
+        FloatingPanelManager.shared.closePanel()
+    }
 }
 
 class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
@@ -43,6 +47,9 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.makeKey()
+        
+        // Reset chat state
+        NotificationCenter.default.post(name: Notification.Name("ResetQuickChat"), object: nil)
     }
     
     func closePanel() {

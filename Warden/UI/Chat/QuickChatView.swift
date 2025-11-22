@@ -38,15 +38,27 @@ struct QuickChatView: View {
             
             footerActions
         }
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+        .background(
+            VisualEffectView(material: .popover, blendingMode: .behindWindow)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(LinearGradient(
+                            colors: [.white.opacity(0.4), .white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ), lineWidth: 1)
+                )
+                // Drag handle on the entire background
+                .gesture(WindowDragGesture())
         )
+        .cornerRadius(24)
+        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
         .onAppear {
             checkClipboard()
             ensureQuickChatEntity()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetQuickChat"))) { _ in
+            resetChat()
         }
     }
     
@@ -65,6 +77,9 @@ struct QuickChatView: View {
                 .font(.system(size: 16))
                 .onSubmit {
                     submitQuery()
+                }
+                .onExitCommand {
+                    FloatingPanelManager.shared.closePanel()
                 }
             
             if !text.isEmpty {
@@ -118,7 +133,6 @@ struct QuickChatView: View {
         .padding(16)
         // Main background acts as drag handle where empty
         .background(VisualEffectView(material: .hudWindow, blendingMode: .behindWindow))
-        .gesture(WindowDragGesture())
     }
     
     @ViewBuilder
@@ -417,6 +431,60 @@ struct QuickChatView: View {
         }
     }
     
+    private func resetChat() {
+        // Create a new fresh chat entity
+        if let chat = quickChatEntity {
+            viewContext.delete(chat)
+        }
+        
+        let newChat = ChatEntity(context: viewContext)
+        newChat.id = UUID()
+        newChat.name = "Quick Chat"
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+        newChat.gptModel = selectedModel.isEmpty ? AppConstants.chatGptDefaultModel : selectedModel
+        // Try to find the service for the selected model or default
+        fallbackServiceSelectionFor(chat: newChat)
+        
+        quickChatEntity = newChat
+        try? viewContext.save()
+        
+        // Clear UI state
+        text = ""
+        isStreaming = false
+        responseText = ""
+        
+        // Reset window height
+        DispatchQueue.main.async {
+            FloatingPanelManager.shared.updateHeight(80)
+        }
+        
+        // Check clipboard again
+        checkClipboard()
+    }
+    
+    private func fallbackServiceSelectionFor(chat: ChatEntity) {
+        // Logic to set API service based on selected model or default
+        let request = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
+        
+        do {
+            let services = try viewContext.fetch(request)
+            
+            // 1. Try to find service supporting current model
+            if !selectedModel.isEmpty {
+                // This is a bit tricky without full map, but we can try
+                // For now, just default logic
+            }
+            
+            // 2. Default to OpenAI or first
+            if let service = services.first(where: { $0.type == "chatgpt" }) ?? services.first {
+                chat.apiService = service
+            }
+        } catch {
+            print("Error fetching services: \(error)")
+        }
+    }
+    
     private func openInMainApp() {
         guard let chat = quickChatEntity else { return }
         
@@ -471,7 +539,6 @@ struct WindowDragGesture: Gesture {
     var body: some Gesture {
         DragGesture()
             .onChanged { value in
-                // Simplistic drag handling; relies on the key window being the panel
                 if let window = NSApp.keyWindow {
                     let currentFrame = window.frame
                     let newOrigin = CGPoint(
