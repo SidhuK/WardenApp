@@ -55,9 +55,13 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         
         if panel.frame.height != clampedHeight {
             var frame = panel.frame
-            let diff = clampedHeight - frame.height
+            // Grow UPWARDS: Increase height, keep origin.y constant?
+            // Cocoa coordinate system: (0,0) is bottom-left.
+            // frame.origin.y is the bottom edge.
+            // To grow UP, we just increase height. The bottom edge (y) stays same. The top edge (y+h) moves up.
+            
             frame.size.height = clampedHeight
-            frame.origin.y -= diff // Grow upwards
+            // DO NOT change frame.origin.y if we want to anchor bottom.
             
             panel.setFrame(frame, display: true, animate: true)
         }

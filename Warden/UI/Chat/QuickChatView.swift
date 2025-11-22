@@ -24,11 +24,17 @@ struct QuickChatView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            inputArea
+            // Reversed Order: Chat Content Top, Input Bottom
+            chatContentArea
+            
+            // Separator
+            if quickChatEntity?.messages.count ?? 0 > 0 {
+                Divider()
+            }
             
             clipboardIndicator
             
-            chatContentArea
+            inputArea
             
             footerActions
         }
@@ -141,10 +147,13 @@ struct QuickChatView: View {
     @ViewBuilder
     private var chatContentArea: some View {
         if let chat = quickChatEntity, (chat.messages.count > 0 || isStreaming) {
-            Divider()
+            // No top divider needed if it's at the top
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Spacer to push messages to bottom if few
+                        Spacer(minLength: 0)
+                        
                         ForEach(chat.messagesArray, id: \.id) { message in
                             let bubbleContent = ChatBubbleContent(
                                 message: message.body,
@@ -409,12 +418,52 @@ struct QuickChatView: View {
     }
     
     private func openInMainApp() {
-        // Open main window and navigate to this chat
-        NSApp.activate(ignoringOtherApps: true)
-        // Notification to open specific chat
-        // We might want to "promote" this quick chat to a real chat if it isn't one
-        // But currently it is a real ChatEntity named "Quick Chat"
-        // Just open it.
+        guard let chat = quickChatEntity else { return }
+        
+        // 1. Create a new permanent chat
+        let newChat = ChatEntity(context: viewContext)
+        newChat.id = UUID()
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+        newChat.name = chat.name == "Quick Chat" ? "New Conversation" : chat.name
+        newChat.systemMessage = chat.systemMessage
+        newChat.gptModel = chat.gptModel
+        newChat.apiService = chat.apiService
+        newChat.temperature = chat.temperature
+        
+        // 2. Copy messages
+        for message in chat.messagesArray {
+            let newMessage = MessageEntity(context: viewContext)
+            newMessage.id = message.id
+            newMessage.body = message.body
+            newMessage.own = message.own
+            newMessage.timestamp = message.timestamp
+            newMessage.waitingForResponse = message.waitingForResponse
+            newMessage.chat = newChat
+            newChat.addToMessages(newMessage)
+        }
+        
+        // 3. Save and Notify
+        do {
+            try viewContext.save()
+            
+            // Clear Quick Chat
+            viewContext.delete(chat)
+            try? viewContext.save()
+            
+            // Close Panel
+            FloatingPanelManager.shared.closePanel()
+            
+            // Open Main Window and Select Chat
+            NSApp.activate(ignoringOtherApps: true)
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SelectChatFromProjectSummary"), // Reusing this as it takes a ChatEntity
+                object: newChat
+            )
+            
+        } catch {
+            print("Error promoting quick chat: \(error)")
+        }
     }
 }
 
