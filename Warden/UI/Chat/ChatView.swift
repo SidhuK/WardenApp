@@ -344,116 +344,119 @@ struct ChatView: View {
     }
     
     private var mainChatContent: some View {
-        ScrollView {
-            ScrollViewReader { scrollView in
-                MessageListView(
-                    chat: chat,
-                    sortedMessages: chatViewModel.sortedMessages,
-                    isStreaming: isStreaming,
-                    currentError: currentError,
-                    enableMultiAgentMode: enableMultiAgentMode,
-                    isMultiAgentMode: isMultiAgentMode,
-                    multiAgentManager: multiAgentManager,
-                    userIsScrolling: $userIsScrolling,
-                    onRetryMessage: {
-                        // Retry last failed or pending message using existing logic
-                        sendMessage(ignoreMessageInput: true)
-                    },
-                    onIgnoreError: {
-                        currentError = nil
-                    },
-                    scrollView: scrollView
-                )
-                .padding(.horizontal, 40)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
-                .onAppear {
-                    pendingCodeBlocks = chatViewModel.sortedMessages.reduce(0) { count, message in
-                        count + (message.body.components(separatedBy: "```").count - 1) / 2
-                    }
+        GeometryReader { geometry in
+            ScrollView {
+                ScrollViewReader { scrollView in
+                    MessageListView(
+                        chat: chat,
+                        sortedMessages: chatViewModel.sortedMessages,
+                        isStreaming: isStreaming,
+                        currentError: currentError,
+                        enableMultiAgentMode: enableMultiAgentMode,
+                        isMultiAgentMode: isMultiAgentMode,
+                        multiAgentManager: multiAgentManager,
+                        userIsScrolling: $userIsScrolling,
+                        onRetryMessage: {
+                            // Retry last failed or pending message using existing logic
+                            sendMessage(ignoreMessageInput: true)
+                        },
+                        onIgnoreError: {
+                            currentError = nil
+                        },
+                        scrollView: scrollView,
+                        viewWidth: geometry.size.width
+                    )
+                    .padding(.horizontal, 40)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+                    .onAppear {
+                        pendingCodeBlocks = chatViewModel.sortedMessages.reduce(0) { count, message in
+                            count + (message.body.components(separatedBy: "```").count - 1) / 2
+                        }
 
-                    if let lastMessage = chatViewModel.sortedMessages.last {
-                        scrollView.scrollTo(lastMessage.id, anchor: .bottom)
-                    }
+                        if let lastMessage = chatViewModel.sortedMessages.last {
+                            scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                        }
 
-                    if pendingCodeBlocks == 0 {
-                        codeBlocksRendered = true
+                        if pendingCodeBlocks == 0 {
+                            codeBlocksRendered = true
+                        }
                     }
-                }
-                .onSwipe { event in
-                    switch event.direction {
-                    case .up:
-                        userIsScrolling = true
-                    case .none:
-                        break
-                    case .down:
-                        break
-                    case .left:
-                        break
-                    case .right:
-                        break
+                    .onSwipe { event in
+                        switch event.direction {
+                        case .up:
+                            userIsScrolling = true
+                        case .none:
+                            break
+                        case .down:
+                            break
+                        case .left:
+                            break
+                        case .right:
+                            break
+                        }
                     }
-                }
-                .onChange(of: chatViewModel.sortedMessages.last?.body) { oldValue, newValue in
-                    if isStreaming && !userIsScrolling {
-                        scrollDebounceWorkItem?.cancel()
+                    .onChange(of: chatViewModel.sortedMessages.last?.body) { oldValue, newValue in
+                        if isStreaming && !userIsScrolling {
+                            scrollDebounceWorkItem?.cancel()
 
-                        let workItem = DispatchWorkItem {
-                            if let lastMessage = chatViewModel.sortedMessages.last {
-                                withAnimation(.easeOut(duration: 1)) {
+                            let workItem = DispatchWorkItem {
+                                if let lastMessage = chatViewModel.sortedMessages.last {
+                                    withAnimation(.easeOut(duration: 1)) {
+                                        scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                                    }
+                                }
+                            }
+
+                            scrollDebounceWorkItem = workItem
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+                        }
+                    }
+                    .onReceive([chat.messages.count].publisher) { newCount in
+                        DispatchQueue.main.async {
+                            if waitingForResponse || currentError != nil {
+                                withAnimation {
+                                    scrollView.scrollTo(-1)
+                                }
+                            }
+                            else if newCount > self.messageCount {
+                                self.messageCount = newCount
+
+                                let sortedMessages = chatViewModel.sortedMessages
+                                if let lastMessage = sortedMessages.last {
                                     scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                                 }
                             }
                         }
-
-                        scrollDebounceWorkItem = workItem
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
                     }
-                }
-                .onReceive([chat.messages.count].publisher) { newCount in
-                    DispatchQueue.main.async {
-                        if waitingForResponse || currentError != nil {
-                            withAnimation {
-                                scrollView.scrollTo(-1)
-                            }
-                        }
-                        else if newCount > self.messageCount {
-                            self.messageCount = newCount
-
-                            let sortedMessages = chatViewModel.sortedMessages
-                            if let lastMessage = sortedMessages.last {
-                                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) {
+                        _ in
+                        if pendingCodeBlocks > 0 {
+                            pendingCodeBlocks -= 1
+                            if pendingCodeBlocks == 0 {
+                                codeBlocksRendered = true
+                                if let lastMessage = chatViewModel.sortedMessages.last {
+                                    scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                                }
                             }
                         }
                     }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) {
-                    _ in
-                    if pendingCodeBlocks > 0 {
-                        pendingCodeBlocks -= 1
-                        if pendingCodeBlocks == 0 {
-                            codeBlocksRendered = true
-                            if let lastMessage = chatViewModel.sortedMessages.last {
-                                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
-                            }
-                        }
+                    // MARK: - Hotkey Notification Handlers
+                    .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastResponseNotification)) { _ in
+                        copyLastAIResponse()
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyChatNotification)) { _ in
+                        copyEntireChat()
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: AppConstants.exportChatNotification)) { _ in
+                        exportChat()
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastUserMessageNotification)) { _ in
+                        copyLastUserMessage()
                     }
                 }
-                // MARK: - Hotkey Notification Handlers
-                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastResponseNotification)) { _ in
-                    copyLastAIResponse()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyChatNotification)) { _ in
-                    copyEntireChat()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: AppConstants.exportChatNotification)) { _ in
-                    exportChat()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: AppConstants.copyLastUserMessageNotification)) { _ in
-                    copyLastUserMessage()
-                }
+                .id("chatContainer")
             }
-            .id("chatContainer")
         }
         .padding(.bottom, 8)
         .background(.clear)

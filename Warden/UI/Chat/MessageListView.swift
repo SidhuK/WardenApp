@@ -23,6 +23,7 @@ struct MessageListView: View {
 
     // We accept a ScrollViewProxy via closure-style usage in ChatView
     let scrollView: ScrollViewProxy
+    let viewWidth: CGFloat
 
     @State private var pendingCodeBlocks: Int = 0
     @State private var codeBlocksRendered: Bool = false
@@ -49,27 +50,30 @@ struct MessageListView: View {
             }
 
             if !sortedMessages.isEmpty {
-                ForEach(sortedMessages.indices, id: \.self) { index in
-                    let messageEntity = sortedMessages[index]
-                    let previous = index > 0 ? sortedMessages[index - 1] : nil
-                    let sameAuthorAsPrevious = previous?.own == messageEntity.own
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(sortedMessages.indices, id: \.self) { index in
+                        let messageEntity = sortedMessages[index]
+                        let previous = index > 0 ? sortedMessages[index - 1] : nil
+                        let sameAuthorAsPrevious = previous?.own == messageEntity.own
 
-                    let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 12
+                        let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 12
 
-                    let bubbleContent = ChatBubbleContent(
-                        message: messageEntity.body,
-                        own: messageEntity.own,
-                        waitingForResponse: messageEntity.waitingForResponse,
-                        errorMessage: nil,
-                        systemMessage: false,
-                        isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
-                        isLatestMessage: messageEntity.id == sortedMessages.last?.id
-                    )
+                        let bubbleContent = ChatBubbleContent(
+                            message: messageEntity.body,
+                            own: messageEntity.own,
+                            waitingForResponse: messageEntity.waitingForResponse,
+                            errorMessage: nil,
+                            systemMessage: false,
+                            isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
+                            isLatestMessage: messageEntity.id == sortedMessages.last?.id
+                        )
 
-                    ChatBubbleView(content: bubbleContent, message: messageEntity)
-                        .id(messageEntity.id)
-                        .padding(.top, topPadding)
-                        .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
+                        ChatBubbleView(content: bubbleContent, message: messageEntity)
+                            .id(messageEntity.id)
+                            .padding(.top, topPadding)
+                            .frame(maxWidth: viewWidth * 0.75, alignment: messageEntity.own ? .trailing : .leading)
+                            .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
+                    }
                 }
             }
 
