@@ -294,6 +294,8 @@ struct QuickChatView: View {
         text = ""
         isStreaming = true
         
+        // Window will auto-expand based on GeometryReader in chatContentArea
+        
         // Create AI Message Entity
         let aiMessage = MessageEntity(context: viewContext)
         aiMessage.id = Int64(chat.messages.count + 1)
@@ -316,7 +318,25 @@ struct QuickChatView: View {
         }
         
         let handler = APIServiceFactory.createAPIService(config: config)
-        let messages = [["role": "user", "content": message]]
+        
+        // Build full conversation history for context
+        var messages: [[String: String]] = []
+        
+        // Add system message if present
+        if !chat.systemMessage.isEmpty {
+            messages.append(["role": "system", "content": chat.systemMessage])
+        }
+        
+        // Add all previous messages for context
+        let sortedMessages = chat.messagesArray.sorted { 
+            ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast)
+        }
+        for msg in sortedMessages {
+            let role = msg.own ? "user" : "assistant"
+            if !msg.body.isEmpty {
+                messages.append(["role": role, "content": msg.body])
+            }
+        }
         
         Task {
             do {
