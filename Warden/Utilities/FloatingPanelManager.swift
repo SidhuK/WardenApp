@@ -58,11 +58,11 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     func updateHeight(_ height: CGFloat) {
         guard let panel = panel else { return }
-        let clampedHeight = min(max(height, 80), 600) // Min 80, Max 600
+        let clampedHeight = min(max(height, 70), 600) // Min 70, Max 600
         
         if panel.frame.height != clampedHeight {
             var frame = panel.frame
-            // Grow UPWARDS: Increase height, keep origin.y constant?
+            // Grow UPWARDS: Increase height, keep origin.y constant
             // Cocoa coordinate system: (0,0) is bottom-left.
             // frame.origin.y is the bottom edge.
             // To grow UP, we just increase height. The bottom edge (y) stays same. The top edge (y+h) moves up.
@@ -76,7 +76,7 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     private func createPanel() {
         let panel = QuickChatPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 80), // Height will adjust
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 70), // Wider for better pill integration
             styleMask: [.titless, .nonactivatingPanel, .fullSizeContentView], 
             backing: .buffered,
             defer: false
@@ -118,8 +118,8 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         let screenRect = screen.visibleFrame
         
         // Calculate position: Top-center (like Spotlight)
-        let width: CGFloat = 600
-        let height: CGFloat = panel.frame.height // Dynamic height from view?
+        let width: CGFloat = 600 // Match panel width
+        let height: CGFloat = panel.frame.height // Dynamic height from view
         
         let x = screenRect.midX - (width / 2)
         let y = screenRect.maxY - 300 // 300px from top

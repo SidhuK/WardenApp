@@ -65,74 +65,40 @@ struct QuickChatView: View {
     // MARK: - Subviews
     
     private var inputArea: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 18))
-                .foregroundColor(.accentColor)
-                // Drag handle on the icon
-                .gesture(WindowDragGesture())
-            
-            TextField("Ask AI...", text: $text)
-                .textFieldStyle(.plain)
-                .font(.system(size: 16))
-                .onSubmit {
+        ZStack(alignment: .trailing) {
+            // Main input
+            MessageInputView(
+                text: $text,
+                attachedImages: .constant([]),
+                attachedFiles: .constant([]),
+                webSearchEnabled: .constant(false),
+                chat: quickChatEntity,
+                imageUploadsAllowed: quickChatEntity?.apiService?.imageUploadsAllowed ?? false,
+                isStreaming: isStreaming,
+                onEnter: {
                     submitQuery()
-                }
-                .onExitCommand {
-                    FloatingPanelManager.shared.closePanel()
-                }
+                },
+                onAddImage: {},
+                onAddFile: {},
+                onAddAssistant: nil,
+                onStopStreaming: nil,
+                inputPlaceholderText: "Ask AI...",
+                cornerRadius: 12.0
+            )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             
-            if !text.isEmpty {
-                Button(action: { text = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
+            // Model selector pill overlaid on the right side, vertically centered
+            if let chat = quickChatEntity {
+                ModelSelectorDropdown(chat: chat)
+                    .buttonStyle(.plain)
+                    .frame(width: 200) // Fixed width, no scaling
+                    .padding(.trailing, 60) // More padding to avoid icon overflow
             }
-            
-            // Model Selector (Native Menu)
-            Menu {
-                ForEach(apiServices, id: \.self) { service in
-                    if let type = service.type {
-                        Section(header: Text(service.name ?? "Unknown")) {
-                            ForEach(modelCache.getModelsSorted(for: type), id: \.id) { model in
-                                Button(action: {
-                                    updateSelectedModel(service: service, modelId: model.id)
-                                }) {
-                                    if selectedModel == model.id {
-                                        Label(model.id, systemImage: "checkmark")
-                                    } else {
-                                        Text(model.id)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Text(selectedModel)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.secondary.opacity(0.1))
-                .cornerRadius(4)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            
-            sendButton
         }
-        .padding(16)
-        // Main background acts as drag handle where empty
-        .background(VisualEffectView(material: .hudWindow, blendingMode: .behindWindow))
+        .onExitCommand {
+            FloatingPanelManager.shared.closePanel()
+        }
     }
     
     @ViewBuilder
@@ -191,7 +157,7 @@ struct QuickChatView: View {
                                 // Update window height based on content
                                 DispatchQueue.main.async {
                                     // Base height (input + divider) + content height
-                                    let newHeight = 80 + height
+                                    let newHeight = 70 + height
                                     FloatingPanelManager.shared.updateHeight(newHeight)
                                 }
                             }
@@ -236,26 +202,6 @@ struct QuickChatView: View {
             }
             .padding(10)
             .background(Color(NSColor.controlBackgroundColor))
-        }
-    }
-    
-    // Send Button (for when Enter doesn't work)
-    private var sendButton: some View {
-        Button(action: { submitQuery() }) {
-            Image(systemName: isStreaming ? "stop.fill" : "paperplane.fill")
-                .foregroundColor(isStreaming ? .red : .accentColor)
-                .font(.system(size: 14))
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut(.return, modifiers: []) // Explicit keyboard shortcut attempt
-    }
-    
-    private func updateSelectedModel(service: APIServiceEntity, modelId: String) {
-        selectedModel = modelId
-        if let chat = quickChatEntity {
-            chat.gptModel = modelId
-            chat.apiService = service
-            try? viewContext.save()
         }
     }
     
@@ -456,7 +402,7 @@ struct QuickChatView: View {
         
         // Reset window height
         DispatchQueue.main.async {
-            FloatingPanelManager.shared.updateHeight(80)
+            FloatingPanelManager.shared.updateHeight(70)
         }
         
         // Check clipboard again
