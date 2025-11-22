@@ -29,94 +29,150 @@ struct CenteredInputView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
-                Spacer()
+            ZStack {
+                // Subtle background gradient for depth
+                LinearGradient(
+                    colors: [
+                        Color.accentColor.opacity(0.03),
+                        Color.clear,
+                        Color.accentColor.opacity(0.02)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                // Enhanced welcome content with better typography hierarchy
-                VStack(spacing: 56) { // Increased from 48
+                VStack(spacing: 0) {
+                    Spacer()
                     
-                    // Input section with increased spacing and material effects
-                    VStack(spacing: 24) { // Increased from 6 to 24
-                        // Enhanced input field with material background
-                        MessageInputView(
-                            text: $newMessage,
-                            attachedImages: $attachedImages,
-                            attachedFiles: $attachedFiles,
-                            webSearchEnabled: $webSearchEnabled,
-                            chat: chat,
-                            imageUploadsAllowed: imageUploadsAllowed,
-                            isStreaming: isStreaming,
-                            onEnter: onSendMessage,
-                            onAddImage: onAddImage,
-                            onAddFile: onAddFile,
-                            onAddAssistant: onAddAssistant,
-                            onStopStreaming: onStopStreaming,
-                            inputPlaceholderText: "Ask me anything...",
-                            cornerRadius: 12.0
-                        )
-                        .frame(maxWidth: 580)
-                        .background(
-                            // Material background effect
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.ultraThinMaterial)
-                                .opacity(0.6)
-                        )
-                        .shadow(
-                            color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1),
-                            radius: isInputFocused ? 12 : 8,
-                            x: 0,
-                            y: isInputFocused ? 4 : 2
-                        )
-                        .scaleEffect(isInputFocused ? 1.02 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
-                        .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidBeginEditingNotification)) { _ in
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                isInputFocused = true
-                            }
+                    VStack(spacing: 40) {
+                        // Greeting Header
+                        VStack(spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 32))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.accentColor, .accentColor.opacity(0.6)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .padding(.bottom, 4)
+                            
+                            Text("What can I help you with?")
+                                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.primary)
+                            
+                            Text("Ask anything, generate code, or create content.")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
-                        .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidEndEditingNotification)) { _ in
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                isInputFocused = false
-                            }
-                        }
+                        .padding(.bottom, 10)
                         
-                        // Quick suggestions with more spacing
-                        if attachedImages.isEmpty && attachedFiles.isEmpty && newMessage.isEmpty {
-                            HStack(spacing: 20) { // Increased from 16
-                                MinimalSuggestionButton(
-                                    icon: "lightbulb",
-                                    text: "Ideas",
-                                    action: {
-                                        newMessage = "Give me some creative ideas for "
-                                    }
-                                )
-                                
-                                MinimalSuggestionButton(
-                                    icon: "doc.text",
-                                    text: "Write",
-                                    action: {
-                                        newMessage = "Help me write "
-                                    }
-                                )
-                                
-                                MinimalSuggestionButton(
-                                    icon: "questionmark.circle",
-                                    text: "Explain",
-                                    action: {
-                                        newMessage = "Can you explain "
-                                    }
-                                )
+                        // Input Section
+                        VStack(spacing: 24) {
+                            // Enhanced Input Container
+                            MessageInputView(
+                                text: $newMessage,
+                                attachedImages: $attachedImages,
+                                attachedFiles: $attachedFiles,
+                                webSearchEnabled: $webSearchEnabled,
+                                chat: chat,
+                                imageUploadsAllowed: imageUploadsAllowed,
+                                isStreaming: isStreaming,
+                                onEnter: onSendMessage,
+                                onAddImage: onAddImage,
+                                onAddFile: onAddFile,
+                                onAddAssistant: onAddAssistant,
+                                onStopStreaming: onStopStreaming,
+                                inputPlaceholderText: "Type a message...",
+                                cornerRadius: 16.0
+                            )
+                            .frame(maxWidth: 640)
+                            .padding(6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(nsColor: .controlBackgroundColor))
+                                    .shadow(
+                                        color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08),
+                                        radius: isInputFocused ? 16 : 8,
+                                        x: 0,
+                                        y: isInputFocused ? 6 : 2
+                                    )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.accentColor.opacity(isInputFocused ? 0.4 : 0.1),
+                                                Color.accentColor.opacity(isInputFocused ? 0.2 : 0.05)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .scaleEffect(isInputFocused ? 1.01 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
+                            .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidBeginEditingNotification)) { _ in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isInputFocused = true
+                                }
                             }
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidEndEditingNotification)) { _ in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isInputFocused = false
+                                }
+                            }
+                            
+                            // Suggestion Cards
+                            if attachedImages.isEmpty && attachedFiles.isEmpty && newMessage.isEmpty {
+                                HStack(spacing: 12) {
+                                    SuggestionCard(
+                                        icon: "lightbulb.max",
+                                        title: "Brainstorm",
+                                        subtitle: "Creative ideas",
+                                        color: .yellow,
+                                        action: { newMessage = "Give me some creative ideas for " }
+                                    )
+                                    
+                                    SuggestionCard(
+                                        icon: "doc.text.image",
+                                        title: "Summarize",
+                                        subtitle: "Long documents",
+                                        color: .blue,
+                                        action: { newMessage = "Summarize this text: " }
+                                    )
+                                    
+                                    SuggestionCard(
+                                        icon: "chevron.left.forwardslash.chevron.right",
+                                        title: "Code",
+                                        subtitle: "Write & debug",
+                                        color: .purple,
+                                        action: { newMessage = "Write a function that " }
+                                    )
+                                    
+                                    SuggestionCard(
+                                        icon: "paintpalette",
+                                        title: "Design",
+                                        subtitle: "UI/UX concepts",
+                                        color: .pink,
+                                        action: { newMessage = "Design a user interface for " }
+                                    )
+                                }
+                                .frame(maxWidth: 640)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            }
                         }
                     }
+                    
+                    Spacer()
+                    Spacer()
                 }
-                
-                Spacer()
-                Spacer()
+                .padding(.horizontal, 32)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 32)
         }
         .animation(.easeInOut(duration: 0.25), value: newMessage.isEmpty)
         .animation(.easeInOut(duration: 0.25), value: attachedImages.isEmpty)
@@ -124,60 +180,64 @@ struct CenteredInputView: View {
     }
 }
 
-struct MinimalSuggestionButton: View {
+struct SuggestionCard: View {
     let icon: String
-    let text: String
+    let title: String
+    let subtitle: String
+    let color: Color
     let action: () -> Void
     
     @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(isHovered ? .primary : .secondary.opacity(0.8))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.system(size: 18))
+                        .foregroundStyle(color)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(color.opacity(0.1))
+                        )
+                    
+                    Spacer()
+                }
                 
-                Text(text)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isHovered ? .primary : .secondary.opacity(0.8))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12) // Modern corner radius
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: isHovered ? 
-                                        [Color.accentColor.opacity(0.1), Color.accentColor.opacity(0.05)] :
-                                        [Color.primary.opacity(0.04), Color.clear],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                isHovered ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08),
-                                lineWidth: isHovered ? 1.0 : 0.5
-                            )
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .shadow(
+                        color: Color.black.opacity(isHovered ? 0.1 : 0.05),
+                        radius: isHovered ? 8 : 4,
+                        x: 0,
+                        y: isHovered ? 4 : 2
                     )
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        isHovered ? color.opacity(0.3) : Color.primary.opacity(0.05),
+                        lineWidth: 1
+                    )
+            )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
         }
         .buttonStyle(.plain)
-        .scaleEffect(isHovered ? 1.05 : 1.0) // Increased scale effect
-        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isHovered)
-        .shadow(
-            color: isHovered ? Color.accentColor.opacity(0.2) : Color.black.opacity(0.05),
-            radius: isHovered ? 6 : 2,
-            x: 0,
-            y: isHovered ? 3 : 1
-        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -210,4 +270,5 @@ struct MinimalSuggestionButton: View {
         onStopStreaming: {}
     )
     .environmentObject(PreviewStateManager.shared)
+    .frame(width: 800, height: 600)
 } 
