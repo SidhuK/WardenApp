@@ -89,11 +89,10 @@ struct QuickChatView: View {
             .padding(.vertical, 12)
             
             // Model selector pill overlaid on the right side, vertically centered
+            // Compact logo-only version for Quick Chat
             if let chat = quickChatEntity {
-                ModelSelectorDropdown(chat: chat)
-                    .buttonStyle(.plain)
-                    .frame(width: 200) // Fixed width, no scaling
-                    .padding(.trailing, 60) // More padding to avoid icon overflow
+                CompactModelSelector(chat: chat)
+                    .padding(.trailing, 95) // Increased padding to avoid globe/send icons
             }
         }
         .onExitCommand {
@@ -497,3 +496,62 @@ struct WindowDragGesture: Gesture {
     }
 }
 
+// Compact model selector - shows only the logo for Quick Chat
+struct CompactModelSelector: View {
+    @ObservedObject var chat: ChatEntity
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    @StateObject private var modelCache = ModelCacheManager.shared
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
+        animation: .default
+    )
+    private var apiServices: FetchedResults<APIServiceEntity>
+    
+    @State private var isExpanded = false
+    @State private var isHovered = false
+    
+    private var currentProviderType: String {
+        chat.apiService?.type ?? AppConstants.defaultApiType
+    }
+    
+    var body: some View {
+        Button(action: {
+            isExpanded = true
+            // Lazy-load models when opening
+            let services = Array(apiServices)
+            if !services.isEmpty {
+                modelCache.fetchAllModels(from: services)
+            }
+        }) {
+            Image("logo_\(currentProviderType)")
+                .resizable()
+                .renderingMode(.template)
+                .interpolation(.high)
+                .frame(width: 18, height: 18)
+                .foregroundColor(.primary)
+                .opacity(isHovered ? 1.0 : 0.7)
+                .padding(8)
+                .background(
+                    Circle()
+                        .fill(isHovered ? Color.primary.opacity(0.08) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isHovered = hovering
+            }
+        }
+        .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+            StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
+                withAnimation(.easeInOut(duration: 0.05)) {
+                    isExpanded = false
+                }
+            })
+                .environment(\.managedObjectContext, viewContext)
+                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
+        }
+        .help("Select AI Model")
+    }
+}
