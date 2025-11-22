@@ -454,9 +454,18 @@ struct ChatBubbleView: View, Equatable {
             
             if let apiService = message?.chat?.apiService,
                let providerType = apiService.type {
-                Image(systemName: providerIconName(for: providerType))
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.accentColor)
+                let iconName = providerIconName(for: providerType)
+                if iconName == "sparkles" {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.accentColor)
+                } else {
+                    Image(iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(.accentColor)
+                }
             } else {
                 Image(systemName: "sparkles")
                     .font(.system(size: 10, weight: .semibold))
@@ -469,23 +478,33 @@ struct ChatBubbleView: View, Equatable {
         let lowerProvider = provider.lowercased()
         switch lowerProvider {
         case _ where lowerProvider.contains("openai"):
-            return "circle.hexagons.fill"
+            return "logo_chatgpt"
         case _ where lowerProvider.contains("anthropic"):
-            return "circle.fill"
+            return "logo_claude"
         case _ where lowerProvider.contains("google"):
-            return "g.circle.fill"
+            return "logo_gemini"
         case _ where lowerProvider.contains("gemini"):
-            return "g.circle.fill"
+            return "logo_gemini"
         case _ where lowerProvider.contains("claude"):
-            return "circle.fill"
+            return "logo_claude"
         case _ where lowerProvider.contains("gpt"):
-            return "circle.hexagons.fill"
+            return "logo_chatgpt"
         case _ where lowerProvider.contains("perplexity"):
-            return "p.circle.fill"
+            return "logo_perplexity"
         case _ where lowerProvider.contains("deepseek"):
-            return "d.circle.fill"
+            return "logo_deepseek"
         case _ where lowerProvider.contains("mistral"):
-            return "m.circle.fill"
+            return "logo_mistral"
+        case _ where lowerProvider.contains("ollama"):
+            return "logo_ollama"
+        case _ where lowerProvider.contains("openrouter"):
+            return "logo_openrouter"
+        case _ where lowerProvider.contains("groq"):
+            return "logo_groq"
+        case _ where lowerProvider.contains("lmstudio"):
+            return "logo_lmstudio"
+        case _ where lowerProvider.contains("xai"):
+            return "logo_xai"
         default:
             return "sparkles"
         }
