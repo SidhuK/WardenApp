@@ -250,6 +250,13 @@ struct QuickChatView: View {
     }
     
     private func ensureQuickChatEntity() {
+        // Cleanup empty chats first
+        if let existing = quickChatEntity, existing.messages.count == 0 {
+            viewContext.delete(existing)
+            try? viewContext.save()
+            quickChatEntity = nil
+        }
+        
         if quickChatEntity == nil {
             // Always create a new chat for a new session
             let newChat = ChatEntity(context: viewContext)
@@ -389,6 +396,9 @@ struct QuickChatView: View {
                 await MainActor.run {
                     isStreaming = false
                     try? viewContext.save()
+                    
+                    // Auto-rename chat
+                    generateChatNameIfNeeded(chat: chat, apiService: apiService)
                 }
             } catch {
                 await MainActor.run {
@@ -397,6 +407,35 @@ struct QuickChatView: View {
                     isStreaming = false
                     try? viewContext.save()
                 }
+            }
+        }
+    }
+    
+    private func generateChatNameIfNeeded(chat: ChatEntity, apiService: APIServiceEntity) {
+        // Only generate if name is default and we have enough messages
+        guard chat.name == "Quick Chat" || chat.name == "New Chat", chat.messages.count >= 2 else { return }
+        
+        // Check if generation is enabled (default to true if not set)
+        guard apiService.generateChatNames else { return }
+        
+        guard let config = APIServiceManager.createAPIConfiguration(for: apiService) else { return }
+        let handler = APIServiceFactory.createAPIService(config: config)
+        
+        let instruction = AppConstants.chatGptGenerateChatInstruction
+        let requestMessages = chat.constructRequestMessages(forUserMessage: instruction, contextSize: 3)
+        
+        handler.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) { result in
+            switch result {
+            case .success(let name):
+                DispatchQueue.main.async {
+                    let sanitized = name.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !sanitized.isEmpty {
+                        chat.name = sanitized
+                        try? viewContext.save()
+                    }
+                }
+            case .failure(let error):
+                print("Failed to generate chat name: \(error)")
             }
         }
     }
@@ -419,6 +458,11 @@ struct QuickChatView: View {
     }
     
     private func resetChat() {
+        // Cleanup empty chats first
+        if let existing = quickChatEntity, existing.messages.count == 0 {
+            viewContext.delete(existing)
+        }
+        
         // Create a completely new chat entity for the new session
         // The old chat entity remains in Core Data (and thus in the sidebar)
         
