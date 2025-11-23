@@ -251,29 +251,16 @@ struct QuickChatView: View {
     
     private func ensureQuickChatEntity() {
         if quickChatEntity == nil {
-            let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
-            fetchRequest.predicate = NSPredicate(format: "name == %@", "Quick Chat")
-            fetchRequest.fetchLimit = 1
-            
-            do {
-                let results = try viewContext.fetch(fetchRequest)
-                if let existing = results.first {
-                    quickChatEntity = existing
-                    selectedModel = existing.gptModel
-                } else {
-                    let newChat = ChatEntity(context: viewContext)
-                    newChat.id = UUID()
-                    newChat.name = "Quick Chat"
-                    newChat.createdDate = Date()
-                    newChat.updatedDate = Date()
-                    newChat.gptModel = AppConstants.chatGptDefaultModel
-                    quickChatEntity = newChat
-                    selectedModel = AppConstants.chatGptDefaultModel
-                    try? viewContext.save()
-                }
-            } catch {
-                print("Error fetching Quick Chat: \(error)")
-            }
+            // Always create a new chat for a new session
+            let newChat = ChatEntity(context: viewContext)
+            newChat.id = UUID()
+            newChat.name = "Quick Chat"
+            newChat.createdDate = Date()
+            newChat.updatedDate = Date()
+            newChat.gptModel = AppConstants.chatGptDefaultModel
+            quickChatEntity = newChat
+            selectedModel = AppConstants.chatGptDefaultModel
+            try? viewContext.save()
         }
     }
     
@@ -432,18 +419,18 @@ struct QuickChatView: View {
     }
     
     private func resetChat() {
-        if let chat = quickChatEntity {
-            // Delete all messages instead of deleting the chat entity
-            let messages = chat.messagesArray
-            for message in messages {
-                viewContext.delete(message)
-            }
-            chat.updatedDate = Date()
-        } else {
-            // Should not happen, but ensure we have a chat
-            ensureQuickChatEntity()
-        }
+        // Create a completely new chat entity for the new session
+        // The old chat entity remains in Core Data (and thus in the sidebar)
         
+        let newChat = ChatEntity(context: viewContext)
+        newChat.id = UUID()
+        newChat.name = "Quick Chat"
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+        newChat.gptModel = selectedModel.isEmpty ? AppConstants.chatGptDefaultModel : selectedModel
+        fallbackServiceSelectionFor(chat: newChat)
+        
+        quickChatEntity = newChat
         try? viewContext.save()
         
         text = ""
