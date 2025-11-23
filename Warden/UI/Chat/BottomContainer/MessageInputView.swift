@@ -61,20 +61,28 @@ struct MessageInputView: View {
         VStack(spacing: 0) {
             attachmentPreviewsSection
             
-            // New layout: Plus button, Input box, Web Search toggle, Send button
-            HStack(spacing: 8) {
-                // Plus button on the left
+            // Unified Input Bar
+            HStack(spacing: 12) {
+                // Paperclip Icon (Menu)
                 plusButtonMenu
                 
-                // Main input container (without action buttons inside)
-                mainInputContainer
+                // Text Input
+                textInputArea
                 
-                // Web search toggle button
+                Spacer()
+                
+                // Web Search Toggle
                 webSearchToggleButton
-                
-                // Send button on the right
-                sendButton
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 5)
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
             return handleDrop(providers: providers)
@@ -118,8 +126,8 @@ struct MessageInputView: View {
                     }
                 }
             }
-            .padding(.horizontal, 2)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
         }
         .frame(height: hasAttachments ? 80 : 0)
     }
@@ -128,18 +136,13 @@ struct MessageInputView: View {
         Button(action: {
             showingPlusMenu.toggle()
         }) {
-            Image(systemName: "plus")
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 24, height: 24)
-                .foregroundColor(AppConstants.textSecondary)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(.ultraThinMaterial)
-                )
+            Image(systemName: "paperclip")
+                .font(.system(size: 18, weight: .regular))
+                .foregroundColor(.secondary)
         }
         .buttonStyle(PlainButtonStyle())
-        .help("More options")
-        .popover(isPresented: $showingPlusMenu, arrowEdge: .top) {
+        .help("Add attachments")
+        .popover(isPresented: $showingPlusMenu, arrowEdge: .bottom) {
             VStack(spacing: 8) {
                 // Rephrase option
                 Button(action: {
@@ -221,7 +224,7 @@ struct MessageInputView: View {
                 }
             }
             .padding(.vertical, 8)
-            .frame(minWidth: 150)
+            .frame(minWidth: 160)
         }
     }
     
@@ -230,38 +233,11 @@ struct MessageInputView: View {
             webSearchEnabled.toggle()
         }) {
             Image(systemName: "globe")
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 24, height: 24)
-                .foregroundColor(webSearchEnabled ? Color.accentColor : AppConstants.textSecondary)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(webSearchEnabled ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
-                )
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(webSearchEnabled ? Color.accentColor : .secondary)
         }
         .buttonStyle(PlainButtonStyle())
-        .help(webSearchEnabled ? "Web search enabled - your messages may use web results" : "Web search disabled")
-    }
-    
-    private var sendButton: some View {
-        Button(action: {
-            if isStreaming {
-                onStopStreaming?()
-            } else {
-                onEnter()
-            }
-        }) {
-            Image(systemName: isStreaming ? "stop.fill" : "paperplane.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(isStreaming ? AppConstants.destructive : (canSend ? .accentColor : AppConstants.textSecondary))
-                .frame(width: 26, height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(canSend || isStreaming ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(!isStreaming && !canSend)
-        .help(isStreaming ? "Stop generating" : "Send message")
+        .help(webSearchEnabled ? "Web search enabled" : "Web search disabled")
     }
     
     private func rephraseText() {
@@ -295,7 +271,7 @@ struct MessageInputView: View {
                     case .serverError(let message):
                         errorText = "Server error: \(message)"
                     case .noApiService(let message):
-                        errorText = message
+                        errorText = "No API service available: \(message)"
                     case .unknown(let message):
                         errorText = "Error: \(message)"
                     case .requestFailed(let underlyingError):
@@ -380,68 +356,25 @@ struct MessageInputView: View {
         return min(calculatedHeight, maxInputHeight)
     }
 
-    private var mainInputContainer: some View {
-        ZStack {
-            textSizingBackground
-
-            textInputArea
-                .background(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(
-                            isHoveringDropZone
-                                ? Color.accentColor.opacity(0.55)
-                                : (isFocused == .focused ? lineColorOnFocus : lineColorOnBlur),
-                            lineWidth: isHoveringDropZone
-                                ? 2 : (isFocused == .focused ? lineWidthOnFocus : lineWidthOnBlur)
-                        )
-                )
-                .onTapGesture {
-                    isFocused = .focused
-                }
-        }
-    }
-    
-    private var textSizingBackground: some View {
-        Text(text.isEmpty ? inputPlaceholderText : text)
-            .font(.system(size: effectiveFontSize))
-            .lineLimit(10)
-            .background(
-                GeometryReader { geometryText in
-                    Color.clear
-                        .onAppear {
-                            dynamicHeight = calculateDynamicHeight(using: geometryText.size.height)
-                        }
-                        .onChange(of: geometryText.size) { _, _ in
-                            dynamicHeight = calculateDynamicHeight(using: geometryText.size.height)
-                        }
-                }
-            )
-            .padding(inputPadding)
-            .hidden()
-    }
-    
     private var textInputArea: some View {
-        ScrollView {
-            VStack {
-                OmenTextField(
-                    inputPlaceholderText,
-                    text: $text,
-                    isFocused: $isFocused.equalTo(.focused),
-                    returnKeyType: frontReturnKeyType,
-                    fontSize: effectiveFontSize,
-                    onCommit: {
+        ZStack(alignment: .leading) {
+            if text.isEmpty {
+                Text(inputPlaceholderText)
+                    .font(.system(size: effectiveFontSize))
+                    .foregroundColor(.secondary)
+                    .allowsHitTesting(false)
+            }
+            
+            TextField("", text: $text)
+                .textFieldStyle(.plain)
+                .font(.system(size: effectiveFontSize))
+                .foregroundColor(.primary)
+                .onSubmit {
+                    if canSend {
                         onEnter()
                     }
-                )
-                .foregroundColor(AppConstants.textPrimary)
-            }
+                }
         }
-        .padding(inputPadding)
-        .frame(height: dynamicHeight)
     }
 }
 
