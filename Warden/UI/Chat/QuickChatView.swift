@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import UniformTypeIdentifiers
 
 struct QuickChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -16,6 +17,14 @@ struct QuickChatView: View {
     @State private var quickChatEntity: ChatEntity?
     @StateObject private var modelCache = ModelCacheManager.shared
     
+    // Paperclip Menu State
+    @State private var showingPlusMenu = false
+    @State private var attachedImages: [ImageAttachment] = []
+    @State private var attachedFiles: [FileAttachment] = []
+    @StateObject private var rephraseService = RephraseService()
+    @State private var showingRephraseError = false
+    @State private var rephraseErrorMessage = ""
+    
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
@@ -29,30 +38,46 @@ struct QuickChatView: View {
         VStack(spacing: 0) {
             // Chat Content (only if there are messages)
             if let chat = quickChatEntity, chat.messages.count > 0 || isStreaming {
-                chatContentArea
-                    .frame(maxHeight: 400)
+                QuickChatContentView(
+                    chat: chat,
+                    isStreaming: isStreaming,
+                    onHeightChange: { height in
+                        updateWindowHeight(contentHeight: height)
+                    }
+                )
+                .frame(maxHeight: 400)
                 
                 Divider()
-                    .background(Color.white.opacity(0.1))
+                    .background(Color.primary.opacity(0.1))
+            }
+            
+            // Attachment Previews
+            if !attachedImages.isEmpty || !attachedFiles.isEmpty {
+                attachmentPreviewsSection
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
             }
             
             // Main Input Area
             HStack(spacing: 12) {
-                // Paperclip Icon
+                // Paperclip Icon (Menu)
                 Button(action: {
-                    // Future: Attachments
+                    showingPlusMenu.toggle()
                 }) {
                     Image(systemName: "paperclip")
                         .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
+                .popover(isPresented: $showingPlusMenu, arrowEdge: .bottom) {
+                    paperclipMenu
+                }
                 
                 // Text Input
                 TextField("", text: $text)
                     .textFieldStyle(.plain)
                     .font(.system(size: 16))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary) // Adaptive color
                     .focused($isInputFocused)
                     .onSubmit {
                         submitQuery()
@@ -61,7 +86,7 @@ struct QuickChatView: View {
                         if text.isEmpty {
                             Text("Message \(selectedModelName)")
                                 .font(.system(size: 16))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.secondary)
                                 .allowsHitTesting(false)
                         }
                     }
@@ -81,9 +106,9 @@ struct QuickChatView: View {
         .cornerRadius(20) // High corner radius
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.3), radius: 15, x: 0, y: 5)
+        .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 5)
         // Drag handle on the entire background
         .gesture(WindowDragGesture())
         .onAppear {
@@ -93,6 +118,11 @@ struct QuickChatView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetQuickChat"))) { _ in
             resetChat()
+        }
+        .alert("Rephrase Error", isPresented: $showingRephraseError) {
+            Button("OK") { }
+        } message: {
+            Text(rephraseErrorMessage)
         }
     }
     
@@ -106,68 +136,106 @@ struct QuickChatView: View {
     
     // MARK: - Subviews
     
-    @ViewBuilder
-    private var chatContentArea: some View {
-        if let chat = quickChatEntity {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(chat.messagesArray, id: \.id) { message in
-                            HStack {
-                                if message.own {
-                                    Spacer()
-                                    Text(message.body)
-                                        .padding(10)
-                                        .background(Color.blue.opacity(0.7))
-                                        .foregroundColor(.white)
-                                        .cornerRadius(12)
-                                } else {
-                                    Text(message.body)
-                                        .padding(10)
-                                        .background(Color.white.opacity(0.1))
-                                        .foregroundColor(.white)
-                                        .cornerRadius(12)
-                                    Spacer()
-                                }
+    private var paperclipMenu: some View {
+        VStack(spacing: 8) {
+            // Rephrase option
+            Button(action: {
+                showingPlusMenu = false
+                rephraseText()
+            }) {
+                HStack {
+                    if rephraseService.isRephrasing {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .frame(width: 14, height: 14)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                    }
+                    Text("Rephrase")
+                    Spacer()
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(text.isEmpty)
+            
+            // Add Image option
+            Button(action: {
+                showingPlusMenu = false
+                selectAndAddImages()
+            }) {
+                HStack {
+                    Image(systemName: "photo.badge.plus")
+                        .font(.system(size: 14))
+                    Text("Add Image")
+                    Spacer()
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Add File option
+            Button(action: {
+                showingPlusMenu = false
+                selectAndAddFiles()
+            }) {
+                HStack {
+                    Image(systemName: "doc.badge.plus")
+                        .font(.system(size: 14))
+                    Text("Add File")
+                    Spacer()
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.vertical, 8)
+        .frame(minWidth: 160)
+    }
+    
+    private var attachmentPreviewsSection: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(attachedImages) { attachment in
+                    ImagePreviewView(attachment: attachment) { _ in
+                        if let index = attachedImages.firstIndex(where: { $0.id == attachment.id }) {
+                            withAnimation {
+                                attachedImages.remove(at: index)
                             }
-                            .padding(.horizontal, 16)
-                            .id(message.id)
-                        }
-                        
-                        if isStreaming {
-                            HStack {
-                                ProgressView()
-                                    .scaleEffect(0.5)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
                         }
                     }
-                    .padding(.vertical, 12)
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear.onChange(of: geo.size.height) { _, height in
-                                updateWindowHeight(contentHeight: height)
-                            }
-                        }
-                    )
                 }
-                .onChange(of: chat.messagesArray.last?.body) { _, _ in
-                    if let lastId = chat.messagesArray.last?.id {
-                        withAnimation {
-                            proxy.scrollTo(lastId, anchor: .bottom)
+                ForEach(attachedFiles) { attachment in
+                    FilePreviewView(attachment: attachment) { _ in
+                        if let index = attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
+                            withAnimation {
+                                attachedFiles.remove(at: index)
+                            }
                         }
                     }
                 }
             }
+            .padding(.bottom, 6)
         }
+        .frame(height: 80)
     }
     
     private func updateWindowHeight(contentHeight: CGFloat) {
         DispatchQueue.main.async {
-            // Base height (input) + content height
-            // Input is roughly 50-60px
-            let newHeight = 60 + contentHeight
+            // Base height (input) + content height + attachment height
+            var baseHeight: CGFloat = 60
+            if !attachedImages.isEmpty || !attachedFiles.isEmpty {
+                baseHeight += 90
+            }
+            
+            let newHeight = baseHeight + contentHeight
             FloatingPanelManager.shared.updateHeight(newHeight)
         }
     }
@@ -211,7 +279,7 @@ struct QuickChatView: View {
     }
     
     private func submitQuery() {
-        guard !text.isEmpty, let chat = quickChatEntity else { return }
+        guard !text.isEmpty || !attachedImages.isEmpty || !attachedFiles.isEmpty, let _ = quickChatEntity else { return }
         
         isStreaming = true
         responseText = ""
@@ -239,10 +307,32 @@ struct QuickChatView: View {
         
         guard let apiService = chat.apiService else { return }
         
+        // Prepare message content (text + attachments)
+        var messageContents: [MessageContent] = []
+        if !message.isEmpty {
+            messageContents.append(MessageContent(text: message))
+        }
+        
+        for attachment in attachedImages {
+            if attachment.imageEntity == nil {
+                attachment.saveToEntity(context: viewContext)
+            }
+            messageContents.append(MessageContent(imageAttachment: attachment))
+        }
+        
+        for attachment in attachedFiles {
+            if attachment.fileEntity == nil {
+                attachment.saveToEntity(context: viewContext)
+            }
+            messageContents.append(MessageContent(fileAttachment: attachment))
+        }
+        
+        let messageBody = messageContents.toString()
+        
         // Create User Message Entity
         let userMessage = MessageEntity(context: viewContext)
         userMessage.id = Int64(chat.messages.count + 1)
-        userMessage.body = message
+        userMessage.body = messageBody
         userMessage.timestamp = Date()
         userMessage.own = true
         userMessage.chat = chat
@@ -252,6 +342,8 @@ struct QuickChatView: View {
         
         // Clear input
         text = ""
+        attachedImages = []
+        attachedFiles = []
         
         // Create AI Message Entity
         let aiMessage = MessageEntity(context: viewContext)
@@ -359,6 +451,8 @@ struct QuickChatView: View {
         text = ""
         isStreaming = false
         responseText = ""
+        attachedImages = []
+        attachedFiles = []
         
         DispatchQueue.main.async {
             FloatingPanelManager.shared.updateHeight(60)
@@ -376,6 +470,272 @@ struct QuickChatView: View {
             }
         } catch {
             print("Error fetching services: \(error)")
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func rephraseText() {
+        guard let apiService = quickChatEntity?.apiService else {
+            rephraseErrorMessage = "No AI service selected."
+            showingRephraseError = true
+            return
+        }
+        
+        rephraseService.rephraseText(text, using: apiService) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let rephrased):
+                    withAnimation {
+                        self.text = rephrased
+                    }
+                case .failure(let error):
+                    self.rephraseErrorMessage = error.localizedDescription
+                    self.showingRephraseError = true
+                }
+            }
+        }
+    }
+    
+    private func selectAndAddImages() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.image]
+        
+        panel.begin { response in
+            if response == .OK {
+                for url in panel.urls {
+                    let attachment = ImageAttachment(url: url, context: viewContext)
+                    attachedImages.append(attachment)
+                }
+            }
+        }
+    }
+    
+    private func selectAndAddFiles() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.data]
+        
+        panel.begin { response in
+            if response == .OK {
+                for url in panel.urls {
+                    let attachment = FileAttachment(url: url, context: viewContext)
+                    attachedFiles.append(attachment)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Subviews
+
+struct QuickChatContentView: View {
+    @ObservedObject var chat: ChatEntity
+    var isStreaming: Bool
+    var onHeightChange: (CGFloat) -> Void
+    
+    @FetchRequest var messages: FetchedResults<MessageEntity>
+    
+    init(chat: ChatEntity, isStreaming: Bool, onHeightChange: @escaping (CGFloat) -> Void) {
+        self.chat = chat
+        self.isStreaming = isStreaming
+        self.onHeightChange = onHeightChange
+        
+        let request = NSFetchRequest<MessageEntity>(entityName: "MessageEntity")
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \MessageEntity.timestamp, ascending: true)]
+        let chatId = chat.id
+        request.predicate = NSPredicate(format: "chat.id == %@", chatId as CVarArg)
+        _messages = FetchRequest(fetchRequest: request, animation: .default)
+    }
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(messages, id: \.self) { message in
+                        HStack(alignment: .bottom, spacing: 8) {
+                            // AI Avatar (Left)
+                            if !message.own {
+                                QuickChatProviderLogo(chat: chat)
+                                    .frame(width: 24, height: 24)
+                            }
+                            
+                            // Message Bubble
+                            HStack {
+                                if message.own {
+                                    Spacer()
+                                    Text(message.body)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 10)
+                                        .background(Color.accentColor)
+                                        .foregroundColor(.white)
+                                        .clipShape(QuickChatBubbleShape(myMessage: true))
+                                } else {
+                                    Text(message.body)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 10)
+                                        .background(Color(nsColor: .controlBackgroundColor))
+                                        .foregroundColor(.primary)
+                                        .clipShape(QuickChatBubbleShape(myMessage: false))
+                                    Spacer()
+                                }
+                            }
+                            
+                            // User Avatar (Right)
+                            if message.own {
+                                QuickChatUserAvatar()
+                                    .frame(width: 24, height: 24)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .id(message.id)
+                    }
+                    
+                    if isStreaming {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+                .padding(.vertical, 12)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.onChange(of: geo.size.height) { _, height in
+                            onHeightChange(height)
+                        }
+                    }
+                )
+            }
+            .onChange(of: messages.count) { _, _ in
+                if let lastMessage = messages.last {
+                    withAnimation {
+                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                    }
+                }
+            }
+            .onChange(of: messages.last?.body) { _, _ in
+                if let lastMessage = messages.last {
+                    withAnimation {
+                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct QuickChatUserAvatar: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.accentColor)
+            
+            Image(systemName: "person.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+        }
+    }
+}
+
+struct QuickChatProviderLogo: View {
+    @ObservedObject var chat: ChatEntity
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    Circle()
+                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 0.5)
+                )
+            
+            if let apiService = chat.apiService,
+               let providerType = apiService.type {
+                let iconName = providerIconName(for: providerType)
+                if iconName == "sparkles" {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.accentColor)
+                } else {
+                    Image(iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(.accentColor)
+                }
+            } else {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+    
+    private func providerIconName(for provider: String) -> String {
+        let lowerProvider = provider.lowercased()
+        switch lowerProvider {
+        case _ where lowerProvider.contains("openai"): return "logo_chatgpt"
+        case _ where lowerProvider.contains("anthropic"): return "logo_claude"
+        case _ where lowerProvider.contains("google"): return "logo_gemini"
+        case _ where lowerProvider.contains("gemini"): return "logo_gemini"
+        case _ where lowerProvider.contains("claude"): return "logo_claude"
+        case _ where lowerProvider.contains("gpt"): return "logo_chatgpt"
+        case _ where lowerProvider.contains("perplexity"): return "logo_perplexity"
+        case _ where lowerProvider.contains("deepseek"): return "logo_deepseek"
+        case _ where lowerProvider.contains("mistral"): return "logo_mistral"
+        case _ where lowerProvider.contains("ollama"): return "logo_ollama"
+        case _ where lowerProvider.contains("openrouter"): return "logo_openrouter"
+        case _ where lowerProvider.contains("groq"): return "logo_groq"
+        case _ where lowerProvider.contains("lmstudio"): return "logo_lmstudio"
+        case _ where lowerProvider.contains("xai"): return "logo_xai"
+        default: return "sparkles"
+        }
+    }
+}
+
+struct QuickChatBubbleShape: Shape {
+    var myMessage: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let width = rect.width
+        let height = rect.height
+        
+        return Path { path in
+            if !myMessage {
+                path.move(to: CGPoint(x: 20, y: height))
+                path.addLine(to: CGPoint(x: width - 15, y: height))
+                path.addCurve(to: CGPoint(x: width, y: height - 15), control1: CGPoint(x: width - 8, y: height), control2: CGPoint(x: width, y: height - 8))
+                path.addLine(to: CGPoint(x: width, y: 15))
+                path.addCurve(to: CGPoint(x: width - 15, y: 0), control1: CGPoint(x: width, y: 8), control2: CGPoint(x: width - 8, y: 0))
+                path.addLine(to: CGPoint(x: 20, y: 0))
+                path.addCurve(to: CGPoint(x: 5, y: 15), control1: CGPoint(x: 12, y: 0), control2: CGPoint(x: 5, y: 8))
+                path.addLine(to: CGPoint(x: 5, y: height - 10))
+                path.addCurve(to: CGPoint(x: 0, y: height), control1: CGPoint(x: 5, y: height - 1), control2: CGPoint(x: 0, y: height))
+                path.addLine(to: CGPoint(x: -1, y: height))
+                path.addCurve(to: CGPoint(x: 12, y: height - 4), control1: CGPoint(x: 4, y: height + 1), control2: CGPoint(x: 8, y: height - 1))
+                path.addCurve(to: CGPoint(x: 20, y: height), control1: CGPoint(x: 15, y: height), control2: CGPoint(x: 20, y: height))
+            } else {
+                path.move(to: CGPoint(x: width - 20, y: height))
+                path.addLine(to: CGPoint(x: 15, y: height))
+                path.addCurve(to: CGPoint(x: 0, y: height - 15), control1: CGPoint(x: 8, y: height), control2: CGPoint(x: 0, y: height - 8))
+                path.addLine(to: CGPoint(x: 0, y: 15))
+                path.addCurve(to: CGPoint(x: 15, y: 0), control1: CGPoint(x: 0, y: 8), control2: CGPoint(x: 8, y: 0))
+                path.addLine(to: CGPoint(x: width - 20, y: 0))
+                path.addCurve(to: CGPoint(x: width - 5, y: 15), control1: CGPoint(x: width - 12, y: 0), control2: CGPoint(x: width - 5, y: 8))
+                path.addLine(to: CGPoint(x: width - 5, y: height - 10))
+                path.addCurve(to: CGPoint(x: width, y: height), control1: CGPoint(x: width - 5, y: height - 1), control2: CGPoint(x: width, y: height))
+                path.addLine(to: CGPoint(x: width + 1, y: height))
+                path.addCurve(to: CGPoint(x: width - 12, y: height - 4), control1: CGPoint(x: width - 4, y: height + 1), control2: CGPoint(x: width - 8, y: height - 1))
+                path.addCurve(to: CGPoint(x: width - 20, y: height), control1: CGPoint(x: width - 15, y: height), control2: CGPoint(x: width - 20, y: height))
+            }
         }
     }
 }
