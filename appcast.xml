@@ -6,27 +6,30 @@
         <description>Most recent version of Warden</description>
         <language>en</language>
         
-        <!-- Template for new releases - copy and fill in details -->
-        <!-- 
         <item>
             <title>Version 0.7</title>
             <description><![CDATA[
                 <ul>
-                <li>Bug fixes and improvements</li>
+                <li>Smart model icons (reasoning/vision) from API metadata</li>
+                <li>Real pricing information with input/output rates</li>
+                <li>Automatic hourly update checks</li>
+                <li>Web search with real-time progress and citations</li>
+                <li>Persona customization</li>
+                <li>Visual improvements to message bubbles</li>
+                <li>Model selector optimization</li>
+                <li>Code cleanup and performance improvements</li>
                 </ul>
             ]]></description>
-            <pubDate>Tue, 18 Nov 2025 00:00:00 +0000</pubDate>
+            <pubDate>Sun, 23 Nov 2025 00:00:00 +0000</pubDate>
             <sparkle:version>0.7</sparkle:version>
             <sparkle:shortVersionString>0.7</sparkle:shortVersionString>
-            <sparkle:criticalUpdate sparkle:version="0.7.1" />
-            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.7/Warden.dmg"
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.7/Warden.zip"
                        sparkle:version="0.7"
                        sparkle:shortVersionString="0.7"
-                       type="application/octet-stream"
-                       length="FILESIZE_IN_BYTES"
-                       sparkle:edSignature="SIGNATURE_HERE" />
+                       type="application/zip"
+                       length="11467346"
+                       sparkle:edSignature="b7lld+OKLJpvasNXusGwEA8nElp2g3j/BCrV+mGQ5c9MhP8N6r7ZzwGFxAkwU+bXAmrLnNWOUEUTBtwXDIwuBw==" />
         </item>
-        -->
         
     </channel>
 </rss>
