@@ -108,7 +108,7 @@ struct QuickChatView: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 5)
+
         // Drag handle on the entire background
         .gesture(WindowDragGesture())
         .onAppear {

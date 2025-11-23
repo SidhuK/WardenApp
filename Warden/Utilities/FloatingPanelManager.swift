@@ -98,7 +98,7 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         panel.standardWindowButton(.zoomButton)?.isHidden = true
         
         panel.backgroundColor = .clear
-        panel.hasShadow = false // We draw our own shadow in SwiftUI for better control
+        panel.hasShadow = true // We draw our own shadow in SwiftUI for better control
         panel.delegate = self
         
         // Hosting Controller
