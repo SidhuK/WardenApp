@@ -16,5 +16,7 @@
 	<true/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUPublicEDKey</key>
+	<string>MCowBQYDK2VwAyEAz0OohmXPBih553EsOz9k1o1qowDn4PdirI+Cxvskcug=</string>
 </dict>
 </plist>
