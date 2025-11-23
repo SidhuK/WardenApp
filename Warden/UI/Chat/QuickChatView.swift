@@ -112,7 +112,6 @@ struct QuickChatView: View {
         // Drag handle on the entire background
         .gesture(WindowDragGesture())
         .onAppear {
-            checkClipboard()
             ensureQuickChatEntity()
             isInputFocused = true
         }
@@ -457,8 +456,6 @@ struct QuickChatView: View {
         DispatchQueue.main.async {
             FloatingPanelManager.shared.updateHeight(60)
         }
-        
-        checkClipboard()
     }
     
     private func fallbackServiceSelectionFor(chat: ChatEntity) {
@@ -566,23 +563,61 @@ struct QuickChatContentView: View {
                             }
                             
                             // Message Bubble
-                            HStack {
-                                if message.own {
-                                    Spacer()
-                                    Text(message.body)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 10)
-                                        .background(Color.accentColor)
-                                        .foregroundColor(.white)
-                                        .clipShape(QuickChatBubbleShape(myMessage: true))
-                                } else {
-                                    Text(message.body)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 10)
-                                        .background(Color(nsColor: .controlBackgroundColor))
-                                        .foregroundColor(.primary)
-                                        .clipShape(QuickChatBubbleShape(myMessage: false))
-                                    Spacer()
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    if message.own {
+                                        Spacer()
+                                        Text(message.body)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 10)
+                                            .background(Color.accentColor)
+                                            .foregroundColor(.white)
+                                            .clipShape(QuickChatBubbleShape(myMessage: true))
+                                    } else {
+                                        Text(message.body)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 10)
+                                            .background(Color(nsColor: .controlBackgroundColor))
+                                            .foregroundColor(.primary)
+                                            .clipShape(QuickChatBubbleShape(myMessage: false))
+                                        Spacer()
+                                    }
+                                }
+                                
+                                // Action Buttons for AI Messages
+                                if !message.own && !message.waitingForResponse {
+                                    HStack(spacing: 12) {
+                                        // Copy Button
+                                        Button(action: {
+                                            let pasteboard = NSPasteboard.general
+                                            pasteboard.clearContents()
+                                            pasteboard.setString(message.body, forType: .string)
+                                        }) {
+                                            Image(systemName: "doc.on.doc")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Copy to clipboard")
+                                        
+                                        // Open in Main App Button
+                                        Button(action: {
+                                            // Activate main app
+                                            NSApp.activate(ignoringOtherApps: true)
+                                            // Post notification to open chat
+                                            NotificationCenter.default.post(
+                                                name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                                object: chat
+                                            )
+                                        }) {
+                                            Image(systemName: "arrow.up.right.square")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Open in Main App")
+                                    }
+                                    .padding(.leading, 8)
                                 }
                             }
                             
