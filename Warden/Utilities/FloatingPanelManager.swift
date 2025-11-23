@@ -58,7 +58,7 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     func updateHeight(_ height: CGFloat) {
         guard let panel = panel else { return }
-        let clampedHeight = min(max(height, 70), 600) // Min 70, Max 600
+        let clampedHeight = min(max(height, 60), 600) // Min 60, Max 600
         
         if panel.frame.height != clampedHeight {
             var frame = panel.frame
@@ -76,8 +76,8 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     private func createPanel() {
         let panel = QuickChatPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 70), // Wider for better pill integration
-            styleMask: [.titless, .nonactivatingPanel, .fullSizeContentView], 
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 60), // Wider for better pill integration
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView], 
             backing: .buffered,
             defer: false
         )
@@ -98,7 +98,7 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         panel.standardWindowButton(.zoomButton)?.isHidden = true
         
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        panel.hasShadow = false // We draw our own shadow in SwiftUI for better control
         panel.delegate = self
         
         // Hosting Controller
@@ -130,11 +130,5 @@ class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     // Close when focus is lost
     func windowDidResignKey(_ notification: Notification) {
         closePanel()
-    }
-}
-
-extension NSWindow.StyleMask {
-    static var titless: NSWindow.StyleMask {
-        return [.borderless, .fullSizeContentView]
     }
 }

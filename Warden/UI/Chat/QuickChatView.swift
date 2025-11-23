@@ -10,7 +10,7 @@ struct QuickChatView: View {
     @State private var selectedModel: String = AppConstants.chatGptDefaultModel
     @State private var clipboardContext: String?
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
-    @State private var contentHeight: CGFloat = 80
+    @State private var contentHeight: CGFloat = 60 // Initial compact height
     
     // We'll use a dedicated ChatEntity for quick chat
     @State private var quickChatEntity: ChatEntity?
@@ -22,148 +22,136 @@ struct QuickChatView: View {
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
+    // Focus state for the custom input
+    @FocusState private var isInputFocused: Bool
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Reversed Order: Chat Content Top, Input Bottom
-            chatContentArea
-            
-            // Separator
-            if quickChatEntity?.messages.count ?? 0 > 0 {
+            // Chat Content (only if there are messages)
+            if let chat = quickChatEntity, chat.messages.count > 0 || isStreaming {
+                chatContentArea
+                    .frame(maxHeight: 400)
+                
                 Divider()
+                    .background(Color.white.opacity(0.1))
             }
             
-            clipboardIndicator
-            
-            inputArea
-            
-            footerActions
+            // Main Input Area
+            HStack(spacing: 12) {
+                // Paperclip Icon
+                Button(action: {
+                    // Future: Attachments
+                }) {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(.plain)
+                
+                // Text Input
+                TextField("", text: $text)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                    .focused($isInputFocused)
+                    .onSubmit {
+                        submitQuery()
+                    }
+                    .overlay(alignment: .leading) {
+                        if text.isEmpty {
+                            Text("Message \(selectedModelName)")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                
+                Spacer()
+                
+                // Model Selector
+                if let chat = quickChatEntity {
+                    CompactModelSelector(chat: chat)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color(nsColor: .windowBackgroundColor)) // Dark background
         }
-        .background(
-            VisualEffectView(material: .popover, blendingMode: .behindWindow)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(LinearGradient(
-                            colors: [.white.opacity(0.4), .white.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ), lineWidth: 1)
-                )
-                // Drag handle on the entire background
-                .gesture(WindowDragGesture())
+        .background(Color(nsColor: .windowBackgroundColor))
+        .cornerRadius(20) // High corner radius
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
-        .cornerRadius(24)
-        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
+        .shadow(color: .black.opacity(0.3), radius: 15, x: 0, y: 5)
+        // Drag handle on the entire background
+        .gesture(WindowDragGesture())
         .onAppear {
             checkClipboard()
             ensureQuickChatEntity()
+            isInputFocused = true
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetQuickChat"))) { _ in
             resetChat()
         }
     }
     
+    private var selectedModelName: String {
+        // Simple mapping or just use the ID
+        if selectedModel.contains("gpt-4") { return "ChatGPT 4" }
+        if selectedModel.contains("gpt-3.5") { return "ChatGPT 3.5" }
+        if selectedModel.contains("claude") { return "Claude" }
+        return "AI"
+    }
+    
     // MARK: - Subviews
-    
-    private var inputArea: some View {
-        ZStack(alignment: .trailing) {
-            // Main input
-            MessageInputView(
-                text: $text,
-                attachedImages: .constant([]),
-                attachedFiles: .constant([]),
-                webSearchEnabled: .constant(false),
-                chat: quickChatEntity,
-                imageUploadsAllowed: quickChatEntity?.apiService?.imageUploadsAllowed ?? false,
-                isStreaming: isStreaming,
-                onEnter: {
-                    submitQuery()
-                },
-                onAddImage: {},
-                onAddFile: {},
-                onAddAssistant: nil,
-                onStopStreaming: nil,
-                inputPlaceholderText: "Ask AI...",
-                cornerRadius: 12.0
-            )
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            
-            // Model selector pill overlaid on the right side, vertically centered
-            // Compact logo-only version for Quick Chat
-            if let chat = quickChatEntity {
-                CompactModelSelector(chat: chat)
-                    .padding(.trailing, 95) // Increased padding to avoid globe/send icons
-            }
-        }
-        .onExitCommand {
-            FloatingPanelManager.shared.closePanel()
-        }
-    }
-    
-    @ViewBuilder
-    private var clipboardIndicator: some View {
-        if let context = clipboardContext {
-            HStack {
-                Image(systemName: "doc.on.clipboard")
-                    .font(.caption)
-                Text("Context: \(context.prefix(50))...")
-                    .font(.caption)
-                    .lineLimit(1)
-                Spacer()
-                Button(action: { clipboardContext = nil }) {
-                    Image(systemName: "xmark")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.accentColor.opacity(0.1))
-            .foregroundColor(.accentColor)
-        }
-    }
     
     @ViewBuilder
     private var chatContentArea: some View {
-        if let chat = quickChatEntity, (chat.messages.count > 0 || isStreaming) {
-            // No top divider needed if it's at the top
+        if let chat = quickChatEntity {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 0) {
-                        // Spacer to push messages to bottom if few
-                        Spacer(minLength: 0)
-                        
+                    VStack(spacing: 12) {
                         ForEach(chat.messagesArray, id: \.id) { message in
-                            let bubbleContent = ChatBubbleContent(
-                                message: message.body,
-                                own: message.own,
-                                waitingForResponse: message.waitingForResponse,
-                                errorMessage: nil,
-                                systemMessage: false,
-                                isStreaming: isStreaming && message == chat.messagesArray.last,
-                                isLatestMessage: message == chat.messagesArray.last
-                            )
-                            
-                            ChatBubbleView(content: bubbleContent, message: message)
-                                .id(message.id)
-                                .padding(.horizontal, 16)
+                            HStack {
+                                if message.own {
+                                    Spacer()
+                                    Text(message.body)
+                                        .padding(10)
+                                        .background(Color.blue.opacity(0.7))
+                                        .foregroundColor(.white)
+                                        .cornerRadius(12)
+                                } else {
+                                    Text(message.body)
+                                        .padding(10)
+                                        .background(Color.white.opacity(0.1))
+                                        .foregroundColor(.white)
+                                        .cornerRadius(12)
+                                    Spacer()
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .id(message.id)
+                        }
+                        
+                        if isStreaming {
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.5)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
                         }
                     }
                     .padding(.vertical, 12)
                     .background(
                         GeometryReader { geo in
                             Color.clear.onChange(of: geo.size.height) { _, height in
-                                // Update window height based on content
-                                DispatchQueue.main.async {
-                                    // Base height (input + divider) + content height
-                                    let newHeight = 70 + height
-                                    FloatingPanelManager.shared.updateHeight(newHeight)
-                                }
+                                updateWindowHeight(contentHeight: height)
                             }
                         }
                     )
                 }
-                .frame(maxHeight: 500) // Max scrollable area within window
                 .onChange(of: chat.messagesArray.last?.body) { _, _ in
                     if let lastId = chat.messagesArray.last?.id {
                         withAnimation {
@@ -172,35 +160,15 @@ struct QuickChatView: View {
                     }
                 }
             }
-            .transition(.opacity)
         }
     }
     
-    @ViewBuilder
-    private var footerActions: some View {
-        if let chat = quickChatEntity, chat.messages.count > 0 {
-            Divider()
-            HStack {
-                Button("Copy") {
-                    if let lastMessage = chat.messagesArray.last?.body {
-                        let pasteboard = NSPasteboard.general
-                        pasteboard.clearContents()
-                        pasteboard.setString(lastMessage, forType: .string)
-                    }
-                }
-                .buttonStyle(.plain)
-                .font(.caption)
-                
-                Spacer()
-                
-                Button("Open in App") {
-                    openInMainApp()
-                }
-                .buttonStyle(.plain)
-                .font(.caption)
-            }
-            .padding(10)
-            .background(Color(NSColor.controlBackgroundColor))
+    private func updateWindowHeight(contentHeight: CGFloat) {
+        DispatchQueue.main.async {
+            // Base height (input) + content height
+            // Input is roughly 50-60px
+            let newHeight = 60 + contentHeight
+            FloatingPanelManager.shared.updateHeight(newHeight)
         }
     }
     
@@ -208,8 +176,6 @@ struct QuickChatView: View {
         // If clipboard has text, show it as context
         let pasteboard = NSPasteboard.general
         if let string = pasteboard.string(forType: .string), !string.isEmpty {
-            // Only use if it's reasonably short (e.g. < 5000 chars) to avoid clutter
-            // User can dismiss it
             if string.count < 5000 {
                 self.clipboardContext = string
             }
@@ -218,8 +184,6 @@ struct QuickChatView: View {
     
     private func ensureQuickChatEntity() {
         if quickChatEntity == nil {
-            // Create a temporary entity
-            // Or fetch existing "Quick Chat"
             let fetchRequest = ChatEntity.fetchRequest() as! NSFetchRequest<ChatEntity>
             fetchRequest.predicate = NSPredicate(format: "name == %@", "Quick Chat")
             fetchRequest.fetchLimit = 1
@@ -228,7 +192,6 @@ struct QuickChatView: View {
                 let results = try viewContext.fetch(fetchRequest)
                 if let existing = results.first {
                     quickChatEntity = existing
-                    // Pre-select model from entity
                     selectedModel = existing.gptModel
                 } else {
                     let newChat = ChatEntity(context: viewContext)
@@ -236,7 +199,7 @@ struct QuickChatView: View {
                     newChat.name = "Quick Chat"
                     newChat.createdDate = Date()
                     newChat.updatedDate = Date()
-                    newChat.gptModel = AppConstants.chatGptDefaultModel // Default
+                    newChat.gptModel = AppConstants.chatGptDefaultModel
                     quickChatEntity = newChat
                     selectedModel = AppConstants.chatGptDefaultModel
                     try? viewContext.save()
@@ -253,31 +216,28 @@ struct QuickChatView: View {
         isStreaming = true
         responseText = ""
         
-        // Construct message with context
         var fullPrompt = text
         if let context = clipboardContext {
             fullPrompt += "\n\nContext:\n\(context)"
         }
         
-        // We need to use an APIService.
-        // Let's get the selected service or default.
-        // Ideally, we fetch the APIServiceEntity matching 'selectedModel' or type.
-        
-        // For MVP, we'll use the default service configured in AppConstants or stored
-        // This part is tricky without reusing full ChatViewModel logic.
-        
-        // I'll assume we can get a service.
-        // To avoid huge complexity, I'll just use the first available service in Core Data for now
-        // or find one by model name.
-        
         fetchServiceAndSend(message: fullPrompt)
     }
     
     private func fetchServiceAndSend(message: String) {
-        guard let chat = quickChatEntity, let apiService = chat.apiService else {
-            // ... error handling ...
-            return
+        // Ensure chat exists
+        guard let chat = quickChatEntity else { return }
+        
+        // Ensure API service exists
+        if chat.apiService == nil {
+             fallbackServiceSelection()
+             if chat.apiService == nil {
+                 isStreaming = false
+                 return
+             }
         }
+        
+        guard let apiService = chat.apiService else { return }
         
         // Create User Message Entity
         let userMessage = MessageEntity(context: viewContext)
@@ -292,9 +252,6 @@ struct QuickChatView: View {
         
         // Clear input
         text = ""
-        isStreaming = true
-        
-        // Window will auto-expand based on GeometryReader in chatContentArea
         
         // Create AI Message Entity
         let aiMessage = MessageEntity(context: viewContext)
@@ -308,7 +265,6 @@ struct QuickChatView: View {
         chat.addToMessages(aiMessage)
         try? viewContext.save()
         
-        // Create config
         guard let config = APIServiceManager.createAPIConfiguration(for: apiService) else {
             aiMessage.body = "Error: Invalid Configuration"
             aiMessage.waitingForResponse = false
@@ -319,16 +275,12 @@ struct QuickChatView: View {
         
         let handler = APIServiceFactory.createAPIService(config: config)
         
-        // Build full conversation history for context
         var messages: [[String: String]] = []
-        
-        // Add system message if present
         if !chat.systemMessage.isEmpty {
             messages.append(["role": "system", "content": chat.systemMessage])
         }
         
-        // Add all previous messages for context
-        let sortedMessages = chat.messagesArray.sorted { 
+        let sortedMessages = chat.messagesArray.sorted {
             ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast)
         }
         for msg in sortedMessages {
@@ -342,7 +294,6 @@ struct QuickChatView: View {
             do {
                 let stream = try await handler.sendMessageStream(messages, temperature: 0.7)
                 
-                // Start streaming
                 await MainActor.run {
                     aiMessage.waitingForResponse = false
                     try? viewContext.save()
@@ -353,8 +304,6 @@ struct QuickChatView: View {
                     await MainActor.run {
                         currentBody += chunk
                         aiMessage.body = currentBody
-                        // Force UI update if needed, though CoreData observation should handle it
-                        // saving frequently might be heavy, consider batching if laggy
                         try? viewContext.save()
                     }
                 }
@@ -376,16 +325,11 @@ struct QuickChatView: View {
     
     private func fallbackServiceSelection() {
         guard let chat = quickChatEntity else { return }
-        
-        // Try to find a service that supports the current 'selectedModel'
-        // Or just pick the first available one
         let request = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
-        
         do {
             let services = try viewContext.fetch(request)
             if let service = services.first(where: { $0.type == "chatgpt" }) ?? services.first {
                 chat.apiService = service
-                // if model is not set, set it
                 if chat.gptModel.isEmpty {
                     chat.gptModel = AppConstants.chatGptDefaultModel
                 }
@@ -397,7 +341,6 @@ struct QuickChatView: View {
     }
     
     private func resetChat() {
-        // Create a new fresh chat entity
         if let chat = quickChatEntity {
             viewContext.delete(chat)
         }
@@ -408,94 +351,31 @@ struct QuickChatView: View {
         newChat.createdDate = Date()
         newChat.updatedDate = Date()
         newChat.gptModel = selectedModel.isEmpty ? AppConstants.chatGptDefaultModel : selectedModel
-        // Try to find the service for the selected model or default
         fallbackServiceSelectionFor(chat: newChat)
         
         quickChatEntity = newChat
         try? viewContext.save()
         
-        // Clear UI state
         text = ""
         isStreaming = false
         responseText = ""
         
-        // Reset window height
         DispatchQueue.main.async {
-            FloatingPanelManager.shared.updateHeight(70)
+            FloatingPanelManager.shared.updateHeight(60)
         }
         
-        // Check clipboard again
         checkClipboard()
     }
     
     private func fallbackServiceSelectionFor(chat: ChatEntity) {
-        // Logic to set API service based on selected model or default
         let request = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
-        
         do {
             let services = try viewContext.fetch(request)
-            
-            // 1. Try to find service supporting current model
-            if !selectedModel.isEmpty {
-                // This is a bit tricky without full map, but we can try
-                // For now, just default logic
-            }
-            
-            // 2. Default to OpenAI or first
             if let service = services.first(where: { $0.type == "chatgpt" }) ?? services.first {
                 chat.apiService = service
             }
         } catch {
             print("Error fetching services: \(error)")
-        }
-    }
-    
-    private func openInMainApp() {
-        guard let chat = quickChatEntity else { return }
-        
-        // 1. Create a new permanent chat
-        let newChat = ChatEntity(context: viewContext)
-        newChat.id = UUID()
-        newChat.createdDate = Date()
-        newChat.updatedDate = Date()
-        newChat.name = chat.name == "Quick Chat" ? "New Conversation" : chat.name
-        newChat.systemMessage = chat.systemMessage
-        newChat.gptModel = chat.gptModel
-        newChat.apiService = chat.apiService
-        newChat.temperature = chat.temperature
-        
-        // 2. Copy messages
-        for message in chat.messagesArray {
-            let newMessage = MessageEntity(context: viewContext)
-            newMessage.id = message.id
-            newMessage.body = message.body
-            newMessage.own = message.own
-            newMessage.timestamp = message.timestamp
-            newMessage.waitingForResponse = message.waitingForResponse
-            newMessage.chat = newChat
-            newChat.addToMessages(newMessage)
-        }
-        
-        // 3. Save and Notify
-        do {
-            try viewContext.save()
-            
-            // Clear Quick Chat
-            viewContext.delete(chat)
-            try? viewContext.save()
-            
-            // Close Panel
-            FloatingPanelManager.shared.closePanel()
-            
-            // Open Main Window and Select Chat
-            NSApp.activate(ignoringOtherApps: true)
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SelectChatFromProjectSummary"), // Reusing this as it takes a ChatEntity
-                object: newChat
-            )
-            
-        } catch {
-            print("Error promoting quick chat: \(error)")
         }
     }
 }
