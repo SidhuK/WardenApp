@@ -84,7 +84,7 @@ struct QuickChatView: View {
                     }
                     .overlay(alignment: .leading) {
                         if text.isEmpty {
-                            Text("Message \(selectedModelName)")
+                            Text("Start typing here to ask your question...")
                                 .font(.system(size: 16))
                                 .foregroundColor(.secondary)
                                 .allowsHitTesting(false)
@@ -433,18 +433,17 @@ struct QuickChatView: View {
     
     private func resetChat() {
         if let chat = quickChatEntity {
-            viewContext.delete(chat)
+            // Delete all messages instead of deleting the chat entity
+            let messages = chat.messagesArray
+            for message in messages {
+                viewContext.delete(message)
+            }
+            chat.updatedDate = Date()
+        } else {
+            // Should not happen, but ensure we have a chat
+            ensureQuickChatEntity()
         }
         
-        let newChat = ChatEntity(context: viewContext)
-        newChat.id = UUID()
-        newChat.name = "Quick Chat"
-        newChat.createdDate = Date()
-        newChat.updatedDate = Date()
-        newChat.gptModel = selectedModel.isEmpty ? AppConstants.chatGptDefaultModel : selectedModel
-        fallbackServiceSelectionFor(chat: newChat)
-        
-        quickChatEntity = newChat
         try? viewContext.save()
         
         text = ""
