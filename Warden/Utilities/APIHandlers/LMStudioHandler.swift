@@ -18,7 +18,8 @@ class LMStudioHandler: ChatGPTHandler {
     
     /// Override the prepare request to handle LM Studio specific requirements
     override internal func prepareRequest(
-        requestMessages: [[String: String]], 
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
         model: String, 
         temperature: Float, 
         stream: Bool

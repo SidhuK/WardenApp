@@ -859,8 +859,9 @@ extension ChatView {
             apiService.sendMessage(titleMessages, temperature: 0.3) { result in
                 DispatchQueue.main.async {
                     switch result {
-                    case .success(let title):
-                        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                    case .success(let (titleText, _)):
+                        guard let titleText = titleText else { return }
+                        let cleanTitle = titleText.trimmingCharacters(in: .whitespacesAndNewlines)
                             .replacingOccurrences(of: "\"", with: "")
                             .replacingOccurrences(of: "Title: ", with: "")
                         

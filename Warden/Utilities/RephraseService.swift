@@ -54,7 +54,12 @@ Rephrase the following sentence to improve clarity and readability, without chan
                 self?.isRephrasing = false
                 
                 switch result {
-                case .success(let rephrasedText):
+                case .success(let (rephrasedText, _)):
+                    guard let rephrasedText = rephrasedText else {
+                        completion(.failure(.invalidResponse))
+                        return
+                    }
+                    
                     // Clean up the response - remove quotes if the AI wrapped the response
                     let cleanedText = rephrasedText
                         .trimmingCharacters(in: .whitespacesAndNewlines)

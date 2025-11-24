@@ -3,6 +3,7 @@ import SwiftUI
 struct MCPSettingsView: View {
     @StateObject private var manager = MCPManager.shared
     @State private var showingAddSheet = false
+    @State private var selectedConfig: MCPServerConfig?
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -33,6 +34,10 @@ struct MCPSettingsView: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedConfig = config
+                            }
                             
                             Spacer()
                             
@@ -44,6 +49,9 @@ struct MCPSettingsView: View {
                         }
                         .padding(.vertical, 4)
                         .contextMenu {
+                            Button("Edit") {
+                                selectedConfig = config
+                            }
                             Button("Delete", role: .destructive) {
                                 manager.deleteConfig(id: config.id)
                             }
@@ -59,7 +67,10 @@ struct MCPSettingsView: View {
         }
         .padding()
         .sheet(isPresented: $showingAddSheet) {
-            AddMCPAgentSheet(manager: manager)
+            AddMCPAgentSheet(manager: manager, configToEdit: nil)
+        }
+        .sheet(item: $selectedConfig) { config in
+            AddMCPAgentSheet(manager: manager, configToEdit: config)
         }
     }
 }

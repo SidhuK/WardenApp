@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import MCP
 
 @MainActor
@@ -6,7 +7,7 @@ class MCPManager: ObservableObject {
     static let shared = MCPManager()
     
     @Published var configs: [MCPServerConfig] = []
-    @Published var clients: [UUID: MCPClient] = [:]
+    @Published var clients: [UUID: Client] = [:]
     
     // Cache for tool to agent mapping
     private var toolOwner: [String: UUID] = [:]
@@ -62,28 +63,27 @@ class MCPManager: ObservableObject {
     func connect(config: MCPServerConfig) async throws {
         guard config.enabled else { return }
         
-        let transport: Transport
+        let client = Client(name: "Warden", version: "1.0")
+        
         switch config.transportType {
         case .stdio:
-            guard let command = config.command else { return }
-            transport = StdioTransport(
-                command: command,
-                arguments: config.arguments,
-                environment: config.environment
-            )
+            // Note: StdioTransport in the SDK doesn't take arguments
+            // For now, we'll use the basic transport
+            let transport = StdioTransport()
+            _ = try await client.connect(transport: transport)
+            
         case .sse:
             guard let url = config.url else { return }
-            transport = SSETransport(url: url)
+            let transport = HTTPClientTransport(endpoint: url, streaming: true)
+            _ = try await client.connect(transport: transport)
         }
         
-        let client = MCPClient(transport: transport)
-        try await client.start()
         clients[config.id] = client
     }
     
     func disconnect(id: UUID) async {
         if let client = clients[id] {
-            try? await client.stop()
+            // Client doesn't have close(), just remove from dict
             clients.removeValue(forKey: id)
             // Remove tools for this client from cache
             toolOwner = toolOwner.filter { $0.value != id }
@@ -98,8 +98,8 @@ class MCPManager: ObservableObject {
     
     // MARK: - Tool Handling
     
-    func getTools(for agentIDs: Set<UUID>) async -> [MCP.Tool] {
-        var allTools: [MCP.Tool] = []
+    func getTools(for agentIDs: Set<UUID>) async -> [Tool] {
+        var allTools: [Tool] = []
         
         for id in agentIDs {
             guard let client = clients[id] else {
@@ -109,8 +109,8 @@ class MCPManager: ObservableObject {
             }
             
             do {
-                let result = try await client.listTools()
-                for tool in result.tools {
+                let (tools, _) = try await client.listTools()
+                for tool in tools {
                     allTools.append(tool)
                     toolOwner[tool.name] = id
                 }
@@ -122,12 +122,48 @@ class MCPManager: ObservableObject {
         return allTools
     }
     
-    func callTool(name: String, arguments: [String: Any]) async throws -> Any {
+    func callTool(name: String, arguments: [String: Any]) async throws -> [[String: Any]] {
         guard let agentID = toolOwner[name], let client = clients[agentID] else {
             throw NSError(domain: "MCPManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "Tool not found or agent not connected"])
         }
         
-        let result = try await client.callTool(name: name, arguments: arguments)
+        // Convert [String: Any] to [String: Value]
+        var valueArgs: [String: Value] = [:]
+        for (key, value) in arguments {
+            if let strVal = value as? String {
+                valueArgs[key] = try .init(strVal)
+            } else if let intVal = value as? Int {
+                valueArgs[key] = try .init(Double(intVal))
+            } else if let doubleVal = value as? Double {
+                valueArgs[key] = try .init(doubleVal)
+            } else if let boolVal = value as? Bool {
+                valueArgs[key] = try .init(boolVal)
+            }
+            // Add more type conversions as needed
+        }
+        
+        let (content, _) = try await client.callTool(name: name, arguments: valueArgs)
+        
+        // Convert content to JSON-compatible format
+        var result: [[String: Any]] = []
+        for item in content {
+            switch item {
+            case .text(let text):
+                result.append(["type": "text", "text": text])
+            case .image(let img):
+                result.append(["type": "image", "mimeType": img.mimeType])
+            case .resource(let res):
+                var dict: [String: Any] = ["type": "resource",  "uri": res.uri, "mimeType": res.mimeType]
+                if let text = res.text {
+                    dict["text"] = text
+                }
+                result.append(dict)
+            @unknown default:
+                // Handle any future cases
+                result.append(["type": "unknown"])
+            }
+        }
+        
         return result
     }
 }

@@ -41,7 +41,7 @@ class MistralHandler: BaseAPIHandler {
         }
     }
 
-    override func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -80,7 +80,7 @@ class MistralHandler: BaseAPIHandler {
         return request
     }
 
-    override func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let choices = json["choices"] as? [[String: Any]],
@@ -97,7 +97,7 @@ class MistralHandler: BaseAPIHandler {
         return nil
     }
 
-    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else { return (false, nil, nil, nil) }
         
         do {

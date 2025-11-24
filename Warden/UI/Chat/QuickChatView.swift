@@ -387,9 +387,11 @@ struct QuickChatView: View {
                 var currentBody = ""
                 for try await chunk in stream {
                     await MainActor.run {
-                        currentBody += chunk
-                        aiMessage.body = currentBody
-                        try? viewContext.save()
+                        if let text = chunk.0 {
+                            currentBody += text
+                            aiMessage.body = currentBody
+                            try? viewContext.save()
+                        }
                     }
                 }
                 
@@ -425,17 +427,18 @@ struct QuickChatView: View {
         let requestMessages = chat.constructRequestMessages(forUserMessage: instruction, contextSize: 3)
         
         handler.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) { result in
-            switch result {
-            case .success(let name):
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let (messageText, _)):
+                    guard let name = messageText else { return }
                     let sanitized = name.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
                     if !sanitized.isEmpty {
                         chat.name = sanitized
                         try? viewContext.save()
                     }
+                case .failure(let error):
+                    print("Failed to generate chat name: \(error)")
                 }
-            case .failure(let error):
-                print("Failed to generate chat name: \(error)")
             }
         }
     }

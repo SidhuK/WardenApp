@@ -238,14 +238,15 @@ class MessageManager: ObservableObject {
             let selectedAgents = viewModel.selectedMCPAgents
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
             
-            // Convert MCP tools to OpenAI format
+            // Convert MCP ServerTool to OpenAI format
             let toolDefinitions = tools.map { tool -> [String: Any] in
+                // inputSchema is already [String: Any] compatible
                 return [
                     "type": "function",
                     "function": [
                         "name": tool.name,
                         "description": tool.description ?? "",
-                        "parameters": tool.inputSchema
+                        "parameters": tool.inputSchema ?? [:]
                     ]
                 ]
             }
@@ -465,14 +466,14 @@ class MessageManager: ObservableObject {
             do {
                 if let argsData = arguments.data(using: .utf8),
                    let argsDict = try? JSONSerialization.jsonObject(with: argsData, options: []) as? [String: Any] {
-                    let result = try await MCPManager.shared.callTool(name: functionName, arguments: argsDict)
+                    let contentArray = try await MCPManager.shared.callTool(name: functionName, arguments: argsDict)
                     
-                    // Convert result to JSON string
-                    if let resultData = try? JSONSerialization.data(withJSONObject: result, options: []),
+                    // contentArray is already in JSON-compatible format [[String: Any]]
+                    if let resultData = try? JSONSerialization.data(withJSONObject: contentArray, options: []),
                        let resultJson = String(data: resultData, encoding: .utf8) {
                         resultString = resultJson
                     } else {
-                        resultString = "\(result)"
+                        resultString = "{\"result\": \"success\"}"
                     }
                 } else {
                     resultString = "{\"error\": \"Invalid arguments JSON\"}"
@@ -505,10 +506,10 @@ class MessageManager: ObservableObject {
             guard let self = self else { return }
             
             switch result {
-            case .success(let (messageBody, _)):
-                if let messageBody = messageBody {
-                    self.addMessageToChat(chat: chat, message: messageBody, searchUrls: nil)
-                    self.addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
+            case .success(let (fullMessage, toolCalls)):
+                if let messageText = fullMessage {
+                    self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil)
+                    self.addNewMessageToRequestMessages(chat: chat, content: messageText, role: AppConstants.defaultRole)
                 }
                 self.debounceSave()
                 self.generateChatNameIfNeeded(chat: chat)
@@ -556,8 +557,13 @@ class MessageManager: ObservableObject {
             }
 
             switch result {
-            case .success(let messageBody):
-                let chatName = self.sanitizeChatName(messageBody)
+            case .success(let (messageText, _)):
+                guard let messageText = messageText else {
+                    print("⚠️ Generated message was empty, skipping")
+                    return
+                }
+                
+                let chatName = self.sanitizeChatName(messageText)
                 guard !chatName.isEmpty else {
                     print("⚠️ Generated chat name was empty, skipping")
                     return

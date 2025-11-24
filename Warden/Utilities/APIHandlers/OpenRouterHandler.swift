@@ -1,7 +1,7 @@
 import Foundation
 
 class OpenRouterHandler: ChatGPTHandler {    
-    override func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {
             // Always print response for debugging
             print("OpenRouter Raw Response: \(responseString)")
@@ -51,7 +51,7 @@ class OpenRouterHandler: ChatGPTHandler {
         return nil
     }
     
-    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else {
             print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)
@@ -102,12 +102,13 @@ class OpenRouterHandler: ChatGPTHandler {
         return (false, nil, nil, nil)
     }
 
-    override func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
+    func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
         -> AsyncThrowingStream<String, Error>
     {
         return AsyncThrowingStream { continuation in
             let request = self.prepareRequest(
                 requestMessages: requestMessages,
+                tools: nil,
                 model: model,
                 temperature: temperature,
                 stream: true
@@ -176,7 +177,7 @@ class OpenRouterHandler: ChatGPTHandler {
         }
     }
     
-    override internal func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override internal func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
             var newMessage = message
             if let content = message["content"] {
@@ -185,7 +186,7 @@ class OpenRouterHandler: ChatGPTHandler {
             return newMessage
         }
         
-        var request = super.prepareRequest(requestMessages: filteredMessages, model: model, temperature: temperature, stream: stream)
+        var request = super.prepareRequest(requestMessages: filteredMessages, tools: tools, model: model, temperature: temperature, stream: stream)
         
         // Add OpenRouter specific headers
         request.setValue("https://github.com/SidhuK/WardenApp", forHTTPHeaderField: "HTTP-Referer")

@@ -3,6 +3,7 @@ import SwiftUI
 struct AddMCPAgentSheet: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var manager: MCPManager
+    var configToEdit: MCPServerConfig?
     
     @State private var name: String = ""
     @State private var transportType: MCPServerConfig.TransportType = .stdio
@@ -45,8 +46,8 @@ struct AddMCPAgentSheet: View {
             }
             
             Section {
-                Button("Add Agent") {
-                    addAgent()
+                Button(configToEdit != nil ? "Save Changes" : "Add Agent") {
+                    saveAgent()
                 }
                 .disabled(name.isEmpty || (transportType == .stdio && command.isEmpty) || (transportType == .sse && urlString.isEmpty))
                 
@@ -57,17 +58,42 @@ struct AddMCPAgentSheet: View {
         }
         .padding()
         .frame(width: 400, height: 500)
+        .onAppear {
+            if let config = configToEdit {
+                name = config.name
+                transportType = config.transportType
+                
+                if let cmd = config.command {
+                    command = cmd
+                }
+                
+                arguments = config.arguments.joined(separator: " ")
+                
+                environment = config.environment.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+                
+                if let url = config.url {
+                    urlString = url.absoluteString
+                }
+            }
+        }
     }
     
-    private func addAgent() {
-        var config = MCPServerConfig(
-            name: name,
-            transportType: transportType
-        )
+    private func saveAgent() {
+        var config: MCPServerConfig
+        
+        if let existingConfig = configToEdit {
+            config = existingConfig
+            config.name = name
+            config.transportType = transportType
+        } else {
+            config = MCPServerConfig(
+                name: name,
+                transportType: transportType
+            )
+        }
         
         if transportType == .stdio {
             config.command = command
-            // Simple argument parsing (splitting by space, respecting quotes would be better but keeping simple)
             config.arguments = arguments.split(separator: " ").map(String.init)
             
             var envDict: [String: String] = [:]
@@ -78,11 +104,19 @@ struct AddMCPAgentSheet: View {
                 }
             }
             config.environment = envDict
+            config.url = nil
         } else {
             config.url = URL(string: urlString)
+            config.command = nil
+            config.arguments = []
+            config.environment = [:]
         }
         
-        manager.addConfig(config)
+        if configToEdit != nil {
+            manager.updateConfig(config)
+        } else {
+            manager.addConfig(config)
+        }
         dismiss()
     }
 }

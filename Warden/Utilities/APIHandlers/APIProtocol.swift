@@ -12,22 +12,6 @@ enum APIError: Error {
     case noApiService(String)
 }
 
-    case noApiService(String)
-}
-
-struct Tool: Codable {
-    let type: String
-    let function: Function
-    
-    struct Function: Codable {
-        let name: String
-        let description: String?
-        let parameters: [String: AnyCodable] // We'll use a simplified approach or AnyCodable if available. 
-        // For now, we'll assume parameters are passed as [String: Any] and handled manually in handlers.
-        // So we won't use this struct in the protocol signature, but use [[String: Any]].
-    }
-}
-
 struct ToolCall: Codable {
     let id: String
     let type: String
@@ -260,7 +244,7 @@ extension APIService {
     /// Hook method for preparing stream requests
     /// Handlers can override if they need custom stream request building
     func prepareStreamRequest(_ requestMessages: [[String: String]], model: String, temperature: Float) -> URLRequest {
-        return prepareRequest(requestMessages: requestMessages, model: model, temperature: temperature, stream: true)
+        return prepareRequest(requestMessages: requestMessages, tools: nil, model: model, temperature: temperature, stream: true)
     }
 
     /// Generic streaming implementation - consolidates shared SSE handling logic
@@ -318,6 +302,40 @@ extension APIService {
     /// Default implementation of non-streaming message sending
     /// Consolidates shared request/response handling across all handlers
     /// Handlers only need to override parseJSONResponse for their specific format
+    func sendMessage(_ requestMessages: [[String: String]], tools: [[String: Any]]? = nil, temperature: Float) async throws -> (String?, [ToolCall]?) {
+        let request = prepareRequest(
+            requestMessages: requestMessages,
+            tools: tools,
+            model: model,
+            temperature: temperature,
+            stream: false
+        )
+
+        let (data, response) = try await session.data(for: request)
+        let result = self.handleAPIResponse(response, data: data, error: nil)
+
+        switch result {
+        case .success(let responseData):
+            if let responseData = responseData {
+                guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
+                    if let responseString = String(data: responseData, encoding: .utf8) {
+                        print("APIProtocol Default Parsing Failed. Handler: \(self.name). Raw Response: \(responseString)")
+                    }
+                    throw APIError.decodingFailed("Failed to parse response")
+                }
+                return (messageContent, toolCalls)
+            } else {
+                throw APIError.invalidResponse
+            }
+
+        case .failure(let error):
+            throw error
+        }
+    }
+
+    /// Default implementation of non-streaming message sending
+    /// Consolidates shared request/response handling across all handlers
+    /// Handlers only need to override parseJSONResponse for their specific format
     func defaultSendMessage(
         _ requestMessages: [[String: String]],
         temperature: Float,
@@ -325,6 +343,7 @@ extension APIService {
     ) {
         let request = prepareRequest(
             requestMessages: requestMessages,
+            tools: nil,
             model: model,
             temperature: temperature,
             stream: false

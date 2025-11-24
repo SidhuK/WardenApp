@@ -118,8 +118,12 @@ class APIServiceManager {
         return try await withCheckedThrowingContinuation { continuation in
             apiServiceInstance.sendMessage(requestMessages, temperature: temperature) { result in
                 switch result {
-                case .success(let response):
-                    let cleanedResponse = self.cleanSummarizationResponse(response)
+                case .success(let (messageContent, _)):
+                    guard let messageContent = messageContent else {
+                         continuation.resume(throwing: APIError.invalidResponse)
+                         return
+                    }
+                    let cleanedResponse = self.cleanSummarizationResponse(messageContent)
                     continuation.resume(returning: cleanedResponse)
                 case .failure(let error):
                     continuation.resume(throwing: error)
@@ -199,7 +203,7 @@ class APIServiceManager {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
         var accumulatedResponse = ""
         
-        for try await (chunk, toolCalls) in stream {
+        for try await (chunk, _) in stream {
             try Task.checkCancellation()
             
             if let chunk = chunk {

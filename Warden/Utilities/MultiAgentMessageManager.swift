@@ -200,8 +200,8 @@ class MultiAgentMessageManager: ObservableObject {
                 }
                 
                 switch result {
-                case .success(let response):
-                    self.activeAgents[agentIndex].response = response
+                case .success(let (responseText, _)):
+                    self.activeAgents[agentIndex].response = responseText ?? "No response"
                     self.activeAgents[agentIndex].isComplete = true
                     self.activeAgents[agentIndex].timestamp = Date()
                     

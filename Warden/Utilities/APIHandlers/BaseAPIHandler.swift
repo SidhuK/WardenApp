@@ -25,7 +25,16 @@ class BaseAPIHandler: APIService {
         temperature: Float,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
-        defaultSendMessage(requestMessages, tools: tools, temperature: temperature, completion: completion)
+        Task {
+            do {
+                let result = try await sendMessage(requestMessages, tools: tools, temperature: temperature)
+                completion(.success(result))
+            } catch let error as APIError {
+                completion(.failure(error))
+            } catch {
+                completion(.failure(.requestFailed(error)))
+            }
+        }
     }
     
     func sendMessageStream(

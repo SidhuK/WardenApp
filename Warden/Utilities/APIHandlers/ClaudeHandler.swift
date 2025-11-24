@@ -45,7 +45,7 @@ class ClaudeHandler: BaseAPIHandler {
         }
     }
 
-    override func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
+    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
         -> URLRequest
     {
         var request = URLRequest(url: baseURL)
@@ -83,7 +83,7 @@ class ClaudeHandler: BaseAPIHandler {
 
 
 
-    override func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                 let role = json["role"] as? String,
@@ -110,7 +110,7 @@ class ClaudeHandler: BaseAPIHandler {
         return nil
     }
 
-    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else {
             return (false, nil, nil, nil)
         }

@@ -2,7 +2,7 @@ import Foundation
 
 class PerplexityHandler: BaseAPIHandler {
 
-    override func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -34,7 +34,7 @@ class PerplexityHandler: BaseAPIHandler {
         return formattedContent
     }
 
-    override func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String, String)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
                 print("Response: \(responseString)")
@@ -62,7 +62,7 @@ class PerplexityHandler: BaseAPIHandler {
         return nil
     }
 
-    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
         guard let data = data else {
             print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)

@@ -145,11 +145,6 @@
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 		DAD2E19560A64CC290850A1D /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C5F31F2F664B9BBD13C0CC /* ChatService.swift */; };
-		FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */; };
-		83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C86128DDF04984BD311C41 /* MCPManager.swift */; };
-		7669725253364D3D81FDD060 /* AddMCPAgentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442D774F210E4BC89CB19BDF /* AddMCPAgentSheet.swift */; };
-		F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E14DF97A8974C028719A178 /* MCPSettingsView.swift */; };
-		1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -315,11 +310,6 @@
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
-		5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServerConfig.swift; sourceTree = "<group>"; };
-		87C86128DDF04984BD311C41 /* MCPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPManager.swift; sourceTree = "<group>"; };
-		442D774F210E4BC89CB19BDF /* AddMCPAgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMCPAgentSheet.swift; sourceTree = "<group>"; };
-		1E14DF97A8974C028719A178 /* MCPSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPSettingsView.swift; sourceTree = "<group>"; };
-		8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPAgentSelector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -420,7 +410,6 @@
 		4A272A6729F5CB5300F93D0D /* Chat */ = {
 			isa = PBXGroup;
 			children = (
-				8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */,
 				C4632BD92ECDD2DD00D72DA1 /* Components */,
 				4A1614172D46C89F00A1EF8D /* BubbleView */,
 				4A1614162D46C88900A1EF8D /* BottomContainer */,
@@ -444,7 +433,6 @@
 		4A272A6929F5CD4700F93D0D /* Preferences */ = {
 			isa = PBXGroup;
 			children = (
-				18635C04530B43A6B66EB008 /* MCP */,
 				4A8A78C72D4C41980057A6CC /* TabGeneralSettingsView.swift */,
 				4A164BB82C95CC450060ECFE /* TabAPIServices */,
 				4AE3CEB62C93A86F00A9CF4C /* TabAPIServicesView.swift */,
@@ -581,7 +569,6 @@
 		4A399C9729BC8FEF00E98796 /* Warden */ = {
 			isa = PBXGroup;
 			children = (
-				336F6CC4AD25452685B45E48 /* Core */,
 				4A4F204A2D62650800D1F57F /* FiraCode-VF.ttf */,
 				4A399C9C29BC8FF100E98796 /* Assets.xcassets */,
 				4A399CA029BC8FF100E98796 /* Preview Assets.xcassets */,
@@ -674,32 +661,6 @@
 				C4642A502EC200A900326693 /* AnimationModifiers.swift */,
 			);
 			path = Modifiers;
-			sourceTree = "<group>";
-		};
-		336F6CC4AD25452685B45E48 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				3FEDB8CE0AA544B3A9853424 /* MCP */,
-			);
-			path = Core;
-			sourceTree = "<group>";
-		};
-		3FEDB8CE0AA544B3A9853424 /* MCP */ = {
-			isa = PBXGroup;
-			children = (
-				5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */,
-				87C86128DDF04984BD311C41 /* MCPManager.swift */,
-			);
-			path = MCP;
-			sourceTree = "<group>";
-		};
-		18635C04530B43A6B66EB008 /* MCP */ = {
-			isa = PBXGroup;
-			children = (
-				442D774F210E4BC89CB19BDF /* AddMCPAgentSheet.swift */,
-				1E14DF97A8974C028719A178 /* MCPSettingsView.swift */,
-			);
-			path = MCP;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -968,12 +929,7 @@
 				7F0000012E00000100000002 /* GlobalHotkeyHandler.swift in Sources */,
 				7F0000022E00000100000002 /* FloatingPanelManager.swift in Sources */,
 				7F0000032E00000100000002 /* QuickChatView.swift in Sources */,
-							FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */,
-				83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */,
-				7669725253364D3D81FDD060 /* AddMCPAgentSheet.swift in Sources */,
-				F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */,
-				1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */,
-);
+			);
 		};
 		4A399CA229BC8FF200E98796 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
