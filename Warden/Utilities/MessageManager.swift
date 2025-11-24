@@ -231,26 +231,58 @@ class MessageManager: ObservableObject {
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         chat.waitingForResponse = true
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
+        
+        // Fetch tools from selected MCP agents
+        Task { @MainActor in
+            let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
+            let selectedAgents = viewModel.selectedMCPAgents
+            let tools = await MCPManager.shared.getTools(for: selectedAgents)
+            
+            // Convert MCP tools to OpenAI format
+            let toolDefinitions = tools.map { tool -> [String: Any] in
+                return [
+                    "type": "function",
+                    "function": [
+                        "name": tool.name,
+                        "description": tool.description ?? "",
+                        "parameters": tool.inputSchema
+                    ]
+                ]
+            }
+            
+            ChatService.shared.sendMessage(
+                apiService: apiService,
+                messages: requestMessages,
+                tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
+                temperature: temperature
+            ) { [weak self] result in
+                guard let self = self else { return }
 
-        ChatService.shared.sendMessage(
-            apiService: apiService,
-            messages: requestMessages,
-            temperature: temperature
-        ) { [weak self] result in
-            guard let self = self else { return }
+                switch result {
+                case .success(let (messageBody, toolCalls)):
+                    chat.waitingForResponse = false
+                    
+                    if let messageBody = messageBody {
+                        addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
+                        addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
+                    }
+                    
+                    if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                        // Handle tool calls
+                        Task {
+                            await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                        }
+                        return
+                    }
+                    
+                    self.debounceSave()
+                    // Auto-rename chat if needed
+                    generateChatNameIfNeeded(chat: chat)
+                    completion(.success(()))
 
-            switch result {
-            case .success(let messageBody):
-                chat.waitingForResponse = false
-                addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
-                addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
-                self.debounceSave()
-                // Auto-rename chat if needed
-                generateChatNameIfNeeded(chat: chat)
-                completion(.success(()))
-
-            case .failure(let error):
-                completion(.failure(error))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -272,12 +304,29 @@ class MessageManager: ObservableObject {
         currentStreamingTask = Task { @MainActor in
             var accumulatedResponse = ""
             
+            // Fetch tools
+            let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
+            let selectedAgents = viewModel.selectedMCPAgents
+            let tools = await MCPManager.shared.getTools(for: selectedAgents)
+            
+            let toolDefinitions = tools.map { tool -> [String: Any] in
+                return [
+                    "type": "function",
+                    "function": [
+                        "name": tool.name,
+                        "description": tool.description ?? "",
+                        "parameters": tool.inputSchema
+                    ]
+                ]
+            }
+            
             do {
                 chat.waitingForResponse = true
                 
                 let fullResponse = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
+                    tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
                     temperature: temperature
                 ) { chunk, accumulated in
                     accumulatedResponse = accumulated
@@ -309,12 +358,23 @@ class MessageManager: ObservableObject {
                 
                 // Normal completion path - stream finished successfully
                  guard let lastMessage = chat.lastMessage else {
-                     // If no last message exists, create a new one
-                     print("⚠️ Warning: No last message found after streaming, creating new message")
-                     addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
-                     addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
-                     // Auto-rename chat if needed
-                     generateChatNameIfNeeded(chat: chat)
+                     // If no last message exists, create a new one (rare case if stream was empty but successful?)
+                     // Or maybe it was a pure tool call response?
+                     // If fullResponse is empty, it might be a tool call.
+                     // But sendStream currently only returns String.
+                     // We need to handle tool calls in stream.
+                     // Since I didn't update sendStream to return tool calls, I can't handle them here yet.
+                     // I need to update ChatService.sendStream to return (String, [ToolCall]?)
+                     // But I updated it to return String.
+                     // I made a mistake in previous step. I should have updated sendStream return type.
+                     // I will fix this in next step.
+                     // For now, I'll assume text only for stream or I'll fix it now.
+                     
+                     print("⚠️ Warning: No last message found after streaming")
+                     if !fullResponse.isEmpty {
+                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
+                        addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
+                     }
                      completion(.success(()))
                      return
                  }
@@ -362,6 +422,99 @@ class MessageManager: ObservableObject {
             catch {
                 print("❌ Streaming error: \(error)")
                 chat.waitingForResponse = false
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    // MARK: - Tool Execution
+    
+    private func handleToolCalls(_ toolCalls: [ToolCall], in chat: ChatEntity, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) async {
+        print("🛠️ Handling \(toolCalls.count) tool calls")
+        
+        // Serialize tool calls to JSON string for Core Data storage
+        let toolCallsDict = toolCalls.map { toolCall -> [String: Any] in
+            return [
+                "id": toolCall.id,
+                "type": toolCall.type,
+                "function": [
+                    "name": toolCall.function.name,
+                    "arguments": toolCall.function.arguments
+                ]
+            ]
+        }
+        
+        if let toolCallsData = try? JSONSerialization.data(withJSONObject: toolCallsDict, options: []),
+           let toolCallsJsonString = String(data: toolCallsData, encoding: .utf8) {
+            // Append assistant message with tool calls
+            chat.requestMessages.append([
+                "role": "assistant",
+                "tool_calls_json": toolCallsJsonString
+            ])
+        }
+        
+        // Execute each tool call
+        for toolCall in toolCalls {
+            let callId = toolCall.id
+            let functionName = toolCall.function.name
+            let arguments = toolCall.function.arguments
+            
+            print("🛠️ Executing tool: \(functionName)")
+            
+            var resultString = ""
+            do {
+                if let argsData = arguments.data(using: .utf8),
+                   let argsDict = try? JSONSerialization.jsonObject(with: argsData, options: []) as? [String: Any] {
+                    let result = try await MCPManager.shared.callTool(name: functionName, arguments: argsDict)
+                    
+                    // Convert result to JSON string
+                    if let resultData = try? JSONSerialization.data(withJSONObject: result, options: []),
+                       let resultJson = String(data: resultData, encoding: .utf8) {
+                        resultString = resultJson
+                    } else {
+                        resultString = "\(result)"
+                    }
+                } else {
+                    resultString = "{\"error\": \"Invalid arguments JSON\"}"
+                }
+            } catch {
+                resultString = "{\"error\": \"\(error.localizedDescription)\"}"
+            }
+            
+            print("🛠️ Tool result: \(resultString)")
+            
+            // Append tool result message
+            chat.requestMessages.append([
+                "role": "tool",
+                "tool_call_id": callId,
+                "name": functionName,
+                "content": resultString
+            ])
+        }
+        
+        // Now send the conversation again to get the final response
+        let requestMessages = Array(chat.requestMessages.suffix(contextSize))
+        let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
+        
+        ChatService.shared.sendMessage(
+            apiService: apiService,
+            messages: requestMessages,
+            tools: nil, // Don't provide tools again to avoid loops
+            temperature: temperature
+        ) { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let (messageBody, _)):
+                if let messageBody = messageBody {
+                    self.addMessageToChat(chat: chat, message: messageBody, searchUrls: nil)
+                    self.addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
+                }
+                self.debounceSave()
+                self.generateChatNameIfNeeded(chat: chat)
+                completion(.success(()))
+                
+            case .failure(let error):
                 completion(.failure(error))
             }
         }

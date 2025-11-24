@@ -144,11 +144,6 @@
 		7F0000012E00000100000002 /* GlobalHotkeyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000012E00000100000001 /* GlobalHotkeyHandler.swift */; };
 		7F0000022E00000100000002 /* FloatingPanelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000022E00000100000001 /* FloatingPanelManager.swift */; };
 		7F0000032E00000100000002 /* QuickChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0000032E00000100000001 /* QuickChatView.swift */; };
-		42D4BE0579BB4BBE842FE7EE /* MCPServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC247FFA2684B028FB41897 /* MCPServerConfig.swift */; };
-		34178E1750A446FFA7F83BE5 /* MCPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF7909A43C74465B98ED6C0 /* MCPManager.swift */; };
-		8ABA00B4172A4908A1C9360D /* AddMCPAgentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422BF76689D34FF48FE3402B /* AddMCPAgentSheet.swift */; };
-		B405C51FB2384839A8A2F3BE /* MCPSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34212B816DE34BB18111BA13 /* MCPSettingsView.swift */; };
-		179BA2D2CF99478D91EFDE7D /* MCPAgentSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2BF50592D4013BD95F675 /* MCPAgentSelector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -314,11 +309,6 @@
 		7F0000012E00000100000001 /* GlobalHotkeyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyHandler.swift; sourceTree = "<group>"; };
 		7F0000022E00000100000001 /* FloatingPanelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelManager.swift; sourceTree = "<group>"; };
 		7F0000032E00000100000001 /* QuickChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickChatView.swift; sourceTree = "<group>"; };
-		CBC247FFA2684B028FB41897 /* MCPServerConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServerConfig.swift; sourceTree = "<group>"; };
-		0BF7909A43C74465B98ED6C0 /* MCPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPManager.swift; sourceTree = "<group>"; };
-		422BF76689D34FF48FE3402B /* AddMCPAgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMCPAgentSheet.swift; sourceTree = "<group>"; };
-		34212B816DE34BB18111BA13 /* MCPSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPSettingsView.swift; sourceTree = "<group>"; };
-		C4F2BF50592D4013BD95F675 /* MCPAgentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPAgentSelector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -935,12 +925,7 @@
 				7F0000012E00000100000002 /* GlobalHotkeyHandler.swift in Sources */,
 				7F0000022E00000100000002 /* FloatingPanelManager.swift in Sources */,
 				7F0000032E00000100000002 /* QuickChatView.swift in Sources */,
-							42D4BE0579BB4BBE842FE7EE /* MCPServerConfig.swift in Sources */,
-				34178E1750A446FFA7F83BE5 /* MCPManager.swift in Sources */,
-				8ABA00B4172A4908A1C9360D /* AddMCPAgentSheet.swift in Sources */,
-				B405C51FB2384839A8A2F3BE /* MCPSettingsView.swift in Sources */,
-				179BA2D2CF99478D91EFDE7D /* MCPAgentSelector.swift in Sources */,
-);
+			);
 		};
 		4A399CA229BC8FF200E98796 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
