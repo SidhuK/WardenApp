@@ -17,21 +17,26 @@ class BaseAPIHandler: APIService {
     
     // MARK: - APIService Protocol Implementation
     
+    // MARK: - APIService Protocol Implementation
+    
     func sendMessage(
         _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
         temperature: Float,
-        completion: @escaping (Result<String, APIError>) -> Void
+        completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
-        defaultSendMessage(requestMessages, temperature: temperature, completion: completion)
+        defaultSendMessage(requestMessages, tools: tools, temperature: temperature, completion: completion)
     }
     
     func sendMessageStream(
         _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
         temperature: Float
-    ) async throws -> AsyncThrowingStream<String, Error> {
+    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
         return AsyncThrowingStream { continuation in
             let request = self.prepareRequest(
                 requestMessages: requestMessages,
+                tools: tools,
                 model: model,
                 temperature: temperature,
                 stream: true
@@ -59,14 +64,14 @@ class BaseAPIHandler: APIService {
                         guard let self = self else { return }
                         
                         if let data = dataString.data(using: .utf8) {
-                            let (finished, error, messageData, _) = self.parseDeltaJSONResponse(data: data)
+                            let (finished, error, messageData, _, toolCalls) = self.parseDeltaJSONResponse(data: data)
                             
                             if let error = error {
                                 throw error
                             }
                             
-                            if let messageData = messageData {
-                                continuation.yield(messageData)
+                            if messageData != nil || toolCalls != nil {
+                                continuation.yield((messageData, toolCalls))
                             }
                             
                             if finished {
@@ -88,6 +93,7 @@ class BaseAPIHandler: APIService {
     
     func prepareRequest(
         requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
         model: String,
         temperature: Float,
         stream: Bool
@@ -95,12 +101,12 @@ class BaseAPIHandler: APIService {
         fatalError("prepareRequest must be implemented by subclass")
     }
     
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         return nil
     }
     
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
-        return (false, nil, nil, nil)
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
+        return (false, nil, nil, nil, nil)
     }
     
     func fetchModels() async throws -> [AIModel] {

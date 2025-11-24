@@ -41,6 +41,30 @@ class ChatViewModel: ObservableObject {
         
         // Subscribe to search results changes to cache them
         setupSearchResultsCaching()
+        
+        // Load selected MCP agents
+        loadSelectedMCPAgents()
+    }
+    
+    @Published var selectedMCPAgents: Set<UUID> = [] {
+        didSet {
+            saveSelectedMCPAgents()
+        }
+    }
+    
+    private func loadSelectedMCPAgents() {
+        let key = "SelectedMCPAgents_\(chat.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode(Set<UUID>.self, from: data) {
+            self.selectedMCPAgents = decoded
+        }
+    }
+    
+    private func saveSelectedMCPAgents() {
+        let key = "SelectedMCPAgents_\(chat.id.uuidString)"
+        if let encoded = try? JSONEncoder().encode(selectedMCPAgents) {
+            UserDefaults.standard.set(encoded, forKey: key)
+        }
     }
     
     private func setupSearchResultsCaching() {

@@ -41,6 +41,8 @@ struct ChatView: View {
     @State private var webSearchEnabled = false
     @State private var isSearchingWeb = false
     
+    @State private var showAgentSelector = false
+    
     // Multi-agent functionality
     @State private var isMultiAgentMode = false
     @State private var showServiceSelector = false
@@ -231,6 +233,31 @@ struct ChatView: View {
             
             ToolbarItem(placement: .automatic) {
                 HStack(spacing: 8) {
+                    // MCP Agents Button
+                    Button(action: {
+                        showAgentSelector.toggle()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "server.rack")
+                                .font(.system(size: 12))
+                            if !chatViewModel.selectedMCPAgents.isEmpty {
+                                Text("\(chatViewModel.selectedMCPAgents.count)")
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(chatViewModel.selectedMCPAgents.isEmpty ? .secondary : .accentColor)
+                        .padding(6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(chatViewModel.selectedMCPAgents.isEmpty ? Color.clear : Color.accentColor.opacity(0.1))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showAgentSelector) {
+                        MCPAgentSelector(selectedAgents: $chatViewModel.selectedMCPAgents)
+                    }
+                    .help("Manage MCP Agents")
+
                     // Multi-agent mode toggle with consistent styling (only show if enabled in settings)
                     if enableMultiAgentMode {
                         Button(action: {

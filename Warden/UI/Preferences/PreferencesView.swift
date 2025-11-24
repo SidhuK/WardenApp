@@ -23,6 +23,7 @@ struct PreferencesView: View {
         case aiPersonas = "AI Assistants"
         case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
+        case mcp = "MCP Agents"
         case contributions = "Contributions"
         
         var icon: String {
@@ -32,6 +33,7 @@ struct PreferencesView: View {
             case .aiPersonas: return "person.2"
             case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
+            case .mcp: return "server.rack"
             case .contributions: return "star.fill"
             }
         }
@@ -107,6 +109,8 @@ struct PreferencesView: View {
                     TabTavilySearchView()
                 case .keyboardShortcuts:
                     TabHotkeysView()
+                case .mcp:
+                    MCPSettingsView()
                 case .contributions:
                     TabContributionsView()
                 }
@@ -136,6 +140,7 @@ struct InlineSettingsView: View {
         case aiPersonas = "AI Assistants"
         case webSearch = "Web Search"
         case keyboardShortcuts = "Keyboard Shortcuts"
+        case mcp = "MCP Agents"
         case contributions = "Contributions"
         
         var icon: String {
@@ -145,6 +150,7 @@ struct InlineSettingsView: View {
             case .aiPersonas: return "person.2"
             case .webSearch: return "globe"
             case .keyboardShortcuts: return "keyboard"
+            case .mcp: return "server.rack"
             case .contributions: return "star.fill"
             }
         }
@@ -235,6 +241,8 @@ struct InlineSettingsView: View {
                         TabTavilySearchView()
                     case .keyboardShortcuts:
                         TabHotkeysView()
+                    case .mcp:
+                        MCPSettingsView()
                     case .contributions:
                         TabContributionsView()
                     }

@@ -12,6 +12,33 @@ enum APIError: Error {
     case noApiService(String)
 }
 
+    case noApiService(String)
+}
+
+struct Tool: Codable {
+    let type: String
+    let function: Function
+    
+    struct Function: Codable {
+        let name: String
+        let description: String?
+        let parameters: [String: AnyCodable] // We'll use a simplified approach or AnyCodable if available. 
+        // For now, we'll assume parameters are passed as [String: Any] and handled manually in handlers.
+        // So we won't use this struct in the protocol signature, but use [[String: Any]].
+    }
+}
+
+struct ToolCall: Codable {
+    let id: String
+    let type: String
+    let function: FunctionCall
+    
+    struct FunctionCall: Codable {
+        let name: String
+        let arguments: String
+    }
+}
+
 protocol APIService {
     var name: String { get }
     var baseURL: URL { get }
@@ -20,20 +47,140 @@ protocol APIService {
 
     func sendMessage(
         _ requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
         temperature: Float,
-        completion: @escaping (Result<String, APIError>) -> Void
+        completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     )
     
-    func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws
-        -> AsyncThrowingStream<String, Error>
+    func sendMessageStream(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        temperature: Float
+    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error>
     
     func fetchModels() async throws -> [AIModel]
     
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest
+    func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest
     
-    func parseJSONResponse(data: Data) -> (String, String)?
+    func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)?
     
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?)
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?)
+}
+
+// Default implementations
+extension APIService {
+    func sendMessage(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
+        temperature: Float,
+        completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
+    ) {
+        // Default implementation ignores tools if not supported by specific handler
+        // But we need to update the signature match.
+        // This default implementation calls the OLD sendMessage? No, we are replacing it.
+        // We need to implement the default logic here.
+        
+        let request = prepareRequest(
+            requestMessages: requestMessages,
+            tools: tools,
+            model: model,
+            temperature: temperature,
+            stream: false
+        )
+
+        session.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                let result = self.handleAPIResponse(response, data: data, error: error)
+
+                switch result {
+                case .success(let responseData):
+                    if let responseData = responseData {
+                        guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
+                            completion(.failure(.decodingFailed("Failed to parse response")))
+                            return
+                        }
+                        completion(.success((messageContent, toolCalls)))
+                    } else {
+                        completion(.failure(.invalidResponse))
+                    }
+
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+        }.resume()
+    }
+    
+    func sendMessageStream(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
+        temperature: Float
+    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
+        return AsyncThrowingStream { continuation in
+            let request = self.prepareRequest(requestMessages: requestMessages, tools: tools, model: model, temperature: temperature, stream: true)
+
+            Task {
+                do {
+                    let (stream, response) = try await session.bytes(for: request)
+                    let result = self.handleAPIResponse(response, data: nil, error: nil)
+
+                    switch result {
+                    case .failure(let error):
+                        // ... error handling ...
+                        continuation.finish(throwing: error)
+                        return
+                    case .success:
+                        break
+                    }
+
+                    try await SSEStreamParser.parse(stream: stream) { dataString in
+                        if let jsonData = dataString.data(using: .utf8) {
+                            let (finished, error, messageData, _, toolCalls) = self.parseDeltaJSONResponse(data: jsonData)
+
+                            if let error = error {
+                                throw error
+                            }
+                            
+                            if messageData != nil || toolCalls != nil {
+                                continuation.yield((messageData, toolCalls))
+                            }
+
+                            if finished {
+                                continuation.finish()
+                                return
+                            }
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
+    func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
+        // Default implementation ignores tools. Handlers supporting tools must override.
+        // We need to call the old prepareRequest signature if we want to maintain backward compatibility for other handlers?
+        // Or just implement the base logic here.
+        // Since `prepareRequest` was a protocol requirement, we can't easily call "super" from default impl.
+        // But we can assume handlers override this.
+        // Wait, `prepareRequest` in protocol didn't have body.
+        // I'll provide a default that calls a legacy version?
+        // Or just fail?
+        // Most handlers override `prepareRequest`.
+        // I'll update the signature in the protocol, so handlers MUST update or they won't conform.
+        // This is a breaking change. I should update `BaseAPIHandler` too.
+        fatalError("prepareRequest must be implemented by the handler")
+    }
+    
+    func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
+        return nil
+    }
+    
+    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
+        return (false, nil, nil, nil, nil)
+    }
 }
 
 protocol APIServiceConfiguration {
