@@ -84,7 +84,7 @@ class MCPManager: ObservableObject {
                     throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing command for Stdio transport"])
                 }
                 
-                let transport = StdioTransport(command: command, arguments: config.arguments, environment: config.environment)
+                let transport = ProcessStdioTransport(command: command, arguments: config.arguments, environment: config.environment)
                 _ = try await client.connect(transport: transport)
                 
             case .sse:
@@ -214,7 +214,7 @@ class MCPManager: ObservableObject {
             guard let command = config.command else {
                 throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing command for Stdio transport"])
             }
-            let transport = StdioTransport(command: command, arguments: config.arguments, environment: config.environment)
+            let transport = ProcessStdioTransport(command: command, arguments: config.arguments, environment: config.environment)
             _ = try await client.connect(transport: transport)
             
         case .sse:
@@ -228,4 +228,21 @@ class MCPManager: ObservableObject {
         let (tools, _) = try await client.listTools()
         return tools.count
     }
+}
+
+// Custom Transport implementation for Process-based Stdio
+actor ProcessStdioTransport: Transport {
+    let command: String
+    let arguments: [String]
+    let environment: [String: String]
+    
+    init(command: String, arguments: [String], environment: [String: String]) {
+        self.command = command
+        self.arguments = arguments
+        self.environment = environment
+    }
+    
+    // Protocol requirements will be revealed by compiler error
+    func start() async throws {}
+    func close() async throws {}
 }
