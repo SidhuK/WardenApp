@@ -424,24 +424,25 @@ struct MessageInputView: View {
     }
 
     private var textInputArea: some View {
-        ZStack(alignment: .leading) {
+        ZStack(alignment: .topLeading) {
             if text.isEmpty {
                 Text(inputPlaceholderText)
                     .font(.system(size: effectiveFontSize))
                     .foregroundColor(.secondary)
+                    .padding(.leading, 5)
+                    .padding(.top, 8)
                     .allowsHitTesting(false)
             }
             
-            TextField("", text: $text)
-                .textFieldStyle(.plain)
+            TextEditor(text: $text)
                 .font(.system(size: effectiveFontSize))
                 .foregroundColor(.primary)
-                .onSubmit {
-                    if canSend {
-                        onEnter()
-                    }
-                }
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .frame(minHeight: 36, maxHeight: maxInputHeight)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(minWidth: 200)
     }
 }
 
