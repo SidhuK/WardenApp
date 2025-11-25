@@ -194,7 +194,7 @@ struct SuggestionCard: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(
@@ -204,10 +204,10 @@ struct SuggestionCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 36, height: 36)
+                        .frame(width: 32, height: 32)
                     
                     Image(systemName: icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [color, color.opacity(0.8)],
@@ -218,21 +218,22 @@ struct SuggestionCard: View {
                         .symbolRenderingMode(.hierarchical)
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(spacing: 2) {
                     Text(title)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                     
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(.system(size: 9))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
-                
-                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(nsColor: .controlBackgroundColor))

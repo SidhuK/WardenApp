@@ -74,6 +74,11 @@ struct MessageInputView: View {
                 
                 Spacer()
                 
+                // Model Selector (compact)
+                if let chat = chat {
+                    CompactModelSelector(chat: chat)
+                }
+                
                 // Web Search Toggle
                 webSearchToggleButton
                 

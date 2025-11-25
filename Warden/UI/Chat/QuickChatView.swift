@@ -843,27 +843,42 @@ struct CompactModelSelector: View {
         chat.apiService?.type ?? AppConstants.defaultApiType
     }
     
+    private var currentModelLabel: String {
+        let modelId = chat.gptModel
+        if modelId.isEmpty { return "Select Model" }
+        return ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
+    }
+    
     var body: some View {
         Button(action: {
             isExpanded = true
-            // Lazy-load models when opening
             let services = Array(apiServices)
             if !services.isEmpty {
                 modelCache.fetchAllModels(from: services)
             }
         }) {
-            Image("logo_\(currentProviderType)")
-                .resizable()
-                .renderingMode(.template)
-                .interpolation(.high)
-                .frame(width: 18, height: 18)
-                .foregroundColor(.primary)
-                .opacity(isHovered ? 1.0 : 0.7)
-                .padding(8)
-                .background(
-                    Circle()
-                        .fill(isHovered ? Color.primary.opacity(0.08) : Color.clear)
-                )
+            HStack(spacing: 5) {
+                Image("logo_\(currentProviderType)")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 16, height: 16)
+                    .foregroundStyle(isHovered ? Color.accentColor : .secondary)
+                
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.06), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -871,15 +886,13 @@ struct CompactModelSelector: View {
                 isHovered = hovering
             }
         }
-        .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
+        .popover(isPresented: $isExpanded, arrowEdge: .top) {
             StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
-                withAnimation(.easeInOut(duration: 0.05)) {
-                    isExpanded = false
-                }
+                isExpanded = false
             })
-                .environment(\.managedObjectContext, viewContext)
-                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
+            .environment(\.managedObjectContext, viewContext)
+            .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
         }
-        .help("Select AI Model")
+        .help(currentModelLabel)
     }
 }
