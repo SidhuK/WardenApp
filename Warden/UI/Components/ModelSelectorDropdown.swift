@@ -228,99 +228,110 @@ struct StandaloneModelSelector: View {
         VStack(spacing: 0) {
             // Search bar
             searchBar
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
             
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0, pinnedViews: []) {
+            Divider()
+            
+            ScrollView(.vertical, showsIndicators: true) {
+                LazyVStack(spacing: 2, pinnedViews: [.sectionHeaders]) {
                     ForEach(viewModel.filteredSections) { section in
                         if section.id == "favorites" {
-                            sectionHeader(section.title)
-                            ForEach(section.items) { item in
-                                modelRow(item: item)
+                            Section {
+                                ForEach(section.items) { item in
+                                    modelRow(item: item)
+                                }
+                            } header: {
+                                sectionHeader(section.title, icon: "star.fill")
                             }
-                            Divider().padding(.vertical, 4)
                         } else if section.id == "search" {
-                            sectionHeader(section.title)
+                            // Empty search results header if needed
                         } else {
-                            // Provider section
-                            providerSectionHeader(title: section.title, provider: section.id)
-                            ForEach(section.items) { item in
-                                modelRow(item: item)
+                            Section {
+                                ForEach(section.items) { item in
+                                    modelRow(item: item)
+                                }
+                            } header: {
+                                providerSectionHeader(title: section.title, provider: section.id)
                             }
                         }
                     }
                 }
-                .padding(.bottom, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
-            .frame(maxHeight: 280)
+            .frame(maxHeight: 300)
         }
-        .frame(minWidth: 340, maxWidth: 400)
-        .padding(.vertical, 8)
-        .background(AppConstants.backgroundElevated)
+        .frame(minWidth: 320, maxWidth: 380)
+        .background(Color(NSColor.controlBackgroundColor))
     }
     
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    private func sectionHeader(_ title: String, icon: String? = nil) -> some View {
+        HStack(spacing: 6) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.tertiary)
+            }
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.tertiary)
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Color(NSColor.controlBackgroundColor))
     }
     
     private func providerSectionHeader(title: String, provider: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image("logo_\(provider)")
                 .resizable()
                 .renderingMode(.template)
                 .interpolation(.high)
-                .frame(width: 12, height: 12)
-                .foregroundColor(.secondary)
+                .frame(width: 11, height: 11)
+                .foregroundStyle(.tertiary)
             
-            Text(title)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.tertiary)
             
             Spacer()
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .background(Color(NSColor.controlBackgroundColor))
     }
     
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.tertiary)
             
             TextField("Search models...", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 11))
+                .font(.system(size: 12))
             
             if !viewModel.searchText.isEmpty {
                 Button(action: { viewModel.searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(AppConstants.backgroundInput)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
-                )
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(NSColor.textBackgroundColor))
         )
     }
     
     private func modelRow(item: ModelSelectorViewModel.ModelItem) -> some View {
-        // Use local vars to avoid capturing self if possible, but we need managers
         let isSelected = (chat.apiService?.type == item.provider && chat.gptModel == item.modelId)
         let metadata = metadataCache.getMetadata(provider: item.provider, modelId: item.modelId)
         
@@ -333,76 +344,74 @@ struct StandaloneModelSelector: View {
             handleModelChange(providerType: item.provider, model: item.modelId)
             onDismiss?()
         }) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    // Selection Indicator
-                    Circle()
-                        .fill(isSelected ? Color.accentColor : Color.clear)
-                        .frame(width: 8, height: 8)
-                        .overlay(Circle().stroke(Color.primary.opacity(0.2), lineWidth: 0.5))
-                    
-                    // Model name with bold provider
-                    (Text(formattedModel.displayName)
-                        .font(.system(size: 11, weight: .regular))
-                     + Text(formattedModel.provider != nil ? " (" : "")
-                        .font(.system(size: 11, weight: .regular))
-                     + Text(formattedModel.provider ?? "")
-                        .font(.system(size: 11, weight: .bold))
-                     + Text(formattedModel.provider != nil ? ")" : "")
-                        .font(.system(size: 11, weight: .regular)))
-                        .foregroundColor(isSelected ? .accentColor : AppConstants.textPrimary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 6) {
-                        // Favorite
-                        Button(action: {
-                            favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
-                        }) {
-                            Image(systemName: item.isFavorite ? "star.fill" : "star")
-                                .font(.system(size: 9))
-                                .foregroundColor(item.isFavorite ? .yellow : .secondary.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
+            HStack(spacing: 10) {
+                // Model name
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(formattedModel.displayName)
+                            .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                            .lineLimit(1)
                         
-                        if isReasoning {
-                            Image(systemName: "brain")
-                                .font(.system(size: 9))
-                                .foregroundColor(.orange)
+                        if let provider = formattedModel.provider {
+                            Text("(\(provider))")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
-                        if isVision {
-                            Image(systemName: "eye")
-                                .font(.system(size: 9))
-                                .foregroundColor(.blue)
+                    }
+                    
+                    // Capabilities & pricing in subtitle
+                    if isReasoning || isVision || (metadata?.hasPricing == true) {
+                        HStack(spacing: 6) {
+                            if isReasoning {
+                                Label("Reasoning", systemImage: "brain")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.secondary)
+                            }
+                            if isVision {
+                                Label("Vision", systemImage: "eye")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let pricing = metadata?.pricing, let inputPrice = pricing.inputPer1M {
+                                Text(pricing.outputPer1M != nil
+                                    ? "$\(String(format: "%.2f", inputPrice))/$\(String(format: "%.2f", pricing.outputPer1M!))"
+                                    : "$\(String(format: "%.2f", inputPrice))/M")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                     }
                 }
                 
-                // Pricing
-                if let metadata = metadata, metadata.hasPricing, let pricing = metadata.pricing, let inputPrice = pricing.inputPer1M {
-                    HStack(spacing: 8) {
-                        Text(metadata.costIndicator)
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(.orange)
-                        
-                        let priceText = pricing.outputPer1M != nil 
-                            ? "$\(String(format: "%.2f", inputPrice)) → $\(String(format: "%.2f", pricing.outputPer1M!))/1M"
-                            : "$\(String(format: "%.2f", inputPrice))/1M"
-                            
-                        Text(priceText)
-                            .font(.system(size: 9, weight: .regular))
-                            .foregroundColor(.secondary)
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    // Favorite button
+                    Button(action: {
+                        favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
+                    }) {
+                        Image(systemName: item.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 11))
+                            .foregroundStyle(item.isFavorite ? Color.accentColor : Color.secondary.opacity(0.5))
                     }
-                    .padding(.leading, 16)
+                    .buttonStyle(.plain)
+                    
+                    // Selection checkmark
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(hoveredItem == item.id ? AppConstants.backgroundSubtle : Color.clear)
+                    .fill(hoveredItem == item.id ? Color.primary.opacity(0.04) : Color.clear)
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -490,79 +499,63 @@ struct ModelSelectorDropdown: View {
     
     var body: some View {
         Button(action: {
-            // Single-click opens the full selector immediately.
             isExpanded = true
-
-            // Lazy-load models when user opens the selector.
             if isExpanded {
                 triggerModelFetchIfNeeded()
             }
         }) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 // Provider logo
                 Image("logo_\(currentProviderType)")
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
                     .frame(width: 14, height: 14)
-                    .foregroundColor(.primary)
-                    .opacity(0.7)
+                    .foregroundStyle(.secondary)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    // Current model
+                VStack(alignment: .leading, spacing: 1) {
                     Text(currentModelLabel)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
-                        .truncationMode(.tail)
+                        .truncationMode(.middle)
 
-                    // Provider / hint
                     Text(currentProviderDisplayName)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
                         .lineLimit(1)
-                        .truncationMode(.tail)
                 }
-                .padding(.leading, 2)
 
-                // Chevron only if there are choices; keeps UI lightweight.
                 if hasMultipleVisibleModels {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .padding(.leading, 2)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(
-                Capsule()
-                    .fill(isHovered ? Color.primary.opacity(0.05) : Color.clear)
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovered ? Color.primary.opacity(0.04) : Color.clear)
             )
             .overlay(
-                Capsule()
+                RoundedRectangle(cornerRadius: 6)
                     .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.1)) {
+            withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
         }
-        .frame(maxWidth: 360)
         .popover(isPresented: $isExpanded, arrowEdge: .bottom) {
-            // Directly render the full selector content, without an extra nested trigger.
             StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
-                withAnimation(.easeInOut(duration: 0.05)) {
-                    isExpanded = false
-                }
+                isExpanded = false
             })
                 .environment(\.managedObjectContext, viewContext)
-                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
         }
         .onAppear {
-            // Prime cache once using current active services; avoid repeated global fetches.
             triggerModelFetchIfNeeded()
         }
     }
