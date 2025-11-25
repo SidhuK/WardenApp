@@ -79,9 +79,6 @@ struct MessageInputView: View {
                     CompactModelSelector(chat: chat)
                 }
                 
-                // Web Search Toggle
-                webSearchToggleButton
-                
                 // Send / Stop Button
                 sendStopButton
             }
@@ -179,6 +176,30 @@ struct MessageInputView: View {
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!canRephrase)
                 
+                // Web Search toggle
+                Button(action: {
+                    webSearchEnabled.toggle()
+                }) {
+                    HStack {
+                        Image(systemName: "globe")
+                            .font(.system(size: 14))
+                        Text("Web Search")
+                        Spacer()
+                        if webSearchEnabled {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                    .foregroundColor(AppConstants.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Divider()
+                    .padding(.horizontal, 8)
+                
                 // Add Image option (if allowed)
                 if imageUploadsAllowed {
                     Button(action: {
@@ -249,18 +270,6 @@ struct MessageInputView: View {
             .padding(.vertical, 8)
             .frame(minWidth: 180)
         }
-    }
-    
-    private var webSearchToggleButton: some View {
-        Button(action: {
-            webSearchEnabled.toggle()
-        }) {
-            Image(systemName: "globe")
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(webSearchEnabled ? Color.accentColor : .secondary)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .help(webSearchEnabled ? "Web search enabled" : "Web search disabled")
     }
     
     @ViewBuilder
@@ -424,13 +433,11 @@ struct MessageInputView: View {
     }
 
     private var textInputArea: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .leading) {
             if text.isEmpty {
                 Text(inputPlaceholderText)
                     .font(.system(size: effectiveFontSize))
                     .foregroundColor(.secondary)
-                    .padding(.leading, 5)
-                    .padding(.top, 8)
                     .allowsHitTesting(false)
             }
             
@@ -438,10 +445,13 @@ struct MessageInputView: View {
                 .font(.system(size: effectiveFontSize))
                 .foregroundColor(.primary)
                 .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .frame(minHeight: 36, maxHeight: maxInputHeight)
+                .scrollDisabled(false)
+                .padding(.leading, -5)
+                .padding(.top, -8)
+                .frame(minHeight: 20, maxHeight: maxInputHeight)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.vertical, 8)
         .frame(minWidth: 200)
     }
 }
