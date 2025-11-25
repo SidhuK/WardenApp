@@ -73,6 +73,9 @@ struct MessageInputView: View {
                 
                 // Web Search Toggle
                 webSearchToggleButton
+                
+                // Send / Stop Button
+                sendStopButton
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -238,6 +241,50 @@ struct MessageInputView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .help(webSearchEnabled ? "Web search enabled" : "Web search disabled")
+    }
+    
+    @ViewBuilder
+    private var sendStopButton: some View {
+        if isStreaming {
+            // Stop button
+            Button(action: {
+                onStopStreaming?()
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.red.opacity(0.15))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("Stop generating")
+            .transition(.scale.combined(with: .opacity))
+        } else {
+            // Send button
+            Button(action: {
+                if canSend {
+                    onEnter()
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(canSend ? Color.accentColor : Color.secondary.opacity(0.2))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(canSend ? .white : .secondary)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!canSend)
+            .help("Send message")
+            .transition(.scale.combined(with: .opacity))
+        }
     }
     
     private func rephraseText() {
