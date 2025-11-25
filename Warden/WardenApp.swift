@@ -2,6 +2,7 @@ import SwiftUI
 import UserNotifications
 import CoreData
 import Sparkle
+import Darwin
 
 class PersistenceController {
     static let shared = PersistenceController()
@@ -71,6 +72,9 @@ struct WardenApp: App {
     let persistenceController = PersistenceController.shared
 
     init() {
+        // Ignore SIGPIPE to prevent crashes when MCP server processes terminate
+        signal(SIGPIPE, SIG_IGN)
+        
         ValueTransformer.setValueTransformer(
             RequestMessagesTransformer(),
             forName: RequestMessagesTransformer.name

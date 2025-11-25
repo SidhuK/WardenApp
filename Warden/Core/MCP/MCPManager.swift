@@ -327,13 +327,23 @@ actor ProcessStdioTransport: Transport {
     }
     
     public func send(_ data: Data) async throws {
-        guard let inputPipe = inputPipe else {
+        guard let inputPipe = inputPipe, isConnected else {
             throw NSError(domain: "ProcessStdioTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not connected"])
+        }
+        
+        guard let process = process, process.isRunning else {
+            throw NSError(domain: "ProcessStdioTransport", code: 2, userInfo: [NSLocalizedDescriptionKey: "Process is not running"])
         }
         
         var messageData = data
         messageData.append(UInt8(ascii: "\n"))
-        try inputPipe.fileHandleForWriting.write(contentsOf: messageData)
+        
+        do {
+            try inputPipe.fileHandleForWriting.write(contentsOf: messageData)
+        } catch {
+            isConnected = false
+            throw NSError(domain: "ProcessStdioTransport", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to write to process: \(error.localizedDescription)"])
+        }
     }
     
     public func receive() -> AsyncThrowingStream<Data, Error> {
