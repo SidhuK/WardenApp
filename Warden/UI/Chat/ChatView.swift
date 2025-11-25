@@ -360,6 +360,7 @@ struct ChatView: View {
                         isMultiAgentMode: isMultiAgentMode,
                         multiAgentManager: multiAgentManager,
                         activeToolCalls: chatViewModel.messageManager?.activeToolCalls ?? [],
+                        messageToolCalls: chatViewModel.messageManager?.messageToolCalls ?? [:],
                         userIsScrolling: $userIsScrolling,
                         onRetryMessage: {
                             // Retry last failed or pending message using existing logic

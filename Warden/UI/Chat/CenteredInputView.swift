@@ -189,57 +189,71 @@ struct SuggestionCard: View {
     let color: Color
     let action: () -> Void
     
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(color)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(color.opacity(0.1))
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.2), color.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
+                        .frame(width: 36, height: 36)
                     
-                    Spacer()
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [color, color.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .symbolRenderingMode(.hierarchical)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.primary)
                     
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
+                
+                Spacer(minLength: 0)
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(nsColor: .controlBackgroundColor))
                     .shadow(
-                        color: Color.black.opacity(isHovered ? 0.1 : 0.05),
+                        color: Color.black.opacity(colorScheme == .dark ? (isHovered ? 0.3 : 0.2) : (isHovered ? 0.08 : 0.04)),
                         radius: isHovered ? 8 : 4,
                         x: 0,
-                        y: isHovered ? 4 : 2
+                        y: isHovered ? 3 : 1
                     )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(
-                        isHovered ? color.opacity(0.3) : Color.primary.opacity(0.05),
+                        isHovered ? color.opacity(0.4) : Color.primary.opacity(0.06),
                         lineWidth: 1
                     )
             )
             .scaleEffect(isHovered ? 1.02 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }

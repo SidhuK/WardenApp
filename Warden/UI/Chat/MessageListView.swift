@@ -16,6 +16,7 @@ struct MessageListView: View {
     
     // Tool call status
     let activeToolCalls: [ToolCallStatus]
+    let messageToolCalls: [Int64: [ToolCallStatus]]
 
     // State and coordination passed from ChatView
     @Binding var userIsScrolling: Bool
@@ -70,10 +71,17 @@ struct MessageListView: View {
                             isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
                             isLatestMessage: messageEntity.id == sortedMessages.last?.id
                         )
+                        
+                        // Show tool calls associated with this AI message (if any)
+                        if !messageEntity.own, let toolCalls = messageToolCalls[messageEntity.id], !toolCalls.isEmpty {
+                            CompletedToolCallsView(toolCalls: toolCalls)
+                                .padding(.top, topPadding)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
 
                         ChatBubbleView(content: bubbleContent, message: messageEntity)
                             .id(messageEntity.id)
-                            .padding(.top, topPadding)
+                            .padding(.top, (messageToolCalls[messageEntity.id] != nil && !messageEntity.own) ? 8 : topPadding)
                             .frame(maxWidth: viewWidth * 0.75, alignment: messageEntity.own ? .trailing : .leading)
                             .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                     }

@@ -2,11 +2,13 @@ import Foundation
 
 // MARK: - Tool Call Status
 
-enum ToolCallStatus: Equatable {
+enum ToolCallStatus: Equatable, Identifiable {
     case calling(toolName: String)
     case executing(toolName: String, progress: String?)
-    case completed(toolName: String, success: Bool)
+    case completed(toolName: String, success: Bool, result: String? = nil)
     case failed(toolName: String, error: String)
+    
+    var id: String { toolName }
     
     static func == (lhs: ToolCallStatus, rhs: ToolCallStatus) -> Bool {
         switch (lhs, rhs) {
@@ -14,7 +16,7 @@ enum ToolCallStatus: Equatable {
             return n1 == n2
         case (.executing(let n1, _), .executing(let n2, _)):
             return n1 == n2
-        case (.completed(let n1, let s1), .completed(let n2, let s2)):
+        case (.completed(let n1, let s1, _), .completed(let n2, let s2, _)):
             return n1 == n2 && s1 == s2
         case (.failed(let n1, _), .failed(let n2, _)):
             return n1 == n2
@@ -25,8 +27,28 @@ enum ToolCallStatus: Equatable {
     
     var toolName: String {
         switch self {
-        case .calling(let name), .executing(let name, _), .completed(let name, _), .failed(let name, _):
+        case .calling(let name), .executing(let name, _), .completed(let name, _, _), .failed(let name, _):
             return name
+        }
+    }
+    
+    var result: String? {
+        switch self {
+        case .completed(_, _, let result):
+            return result
+        case .failed(_, let error):
+            return error
+        default:
+            return nil
+        }
+    }
+    
+    var isComplete: Bool {
+        switch self {
+        case .completed, .failed:
+            return true
+        default:
+            return false
         }
     }
 }

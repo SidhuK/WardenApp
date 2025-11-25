@@ -208,6 +208,7 @@ struct MCPAgentDetailView: View {
     
     @State private var isTesting = false
     @State private var testResult: String?
+    @State private var showingEditSheet = false
     
     private var status: MCPManager.ServerStatus {
         manager.serverStatuses[config.id] ?? .disconnected
@@ -224,7 +225,7 @@ struct MCPAgentDetailView: View {
     
     private var statusText: String {
         switch status {
-        case .connected(let count): return "Connected (\(count) tools)"
+        case .connected(let count): return "Connected • \(count) tools available"
         case .disconnected: return "Disconnected"
         case .error(let msg): return "Error: \(msg)"
         case .connecting: return "Connecting..."
@@ -234,118 +235,54 @@ struct MCPAgentDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(config.name)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(statusColor)
-                                .frame(width: 8, height: 8)
-                            Text(statusText)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Toggle("Enabled", isOn: $config.enabled)
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                }
-                
-                Divider()
-                
-                // Configuration Section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Configuration")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    // Transport Type
-                    HStack {
-                        Text("Transport:")
-                        Spacer()
-                        Text(config.transportType == .stdio ? "Stdio (Local Process)" : "SSE (Server-Sent Events)")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if config.transportType == .stdio {
-                        // Command
-                        HStack {
-                            Text("Command:")
-                            Spacer()
-                            Text(config.command ?? "Not set")
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
+                // Header Card
+                VStack(spacing: 16) {
+                    HStack(spacing: 16) {
+                        // Agent Icon
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [statusColor.opacity(0.2), statusColor.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 52, height: 52)
+                            
+                            Image(systemName: config.transportType == .stdio ? "terminal.fill" : "network")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(statusColor)
                         }
                         
-                        // Arguments
-                        if !config.arguments.isEmpty {
-                            HStack(alignment: .top) {
-                                Text("Arguments:")
-                                Spacer()
-                                Text(config.arguments.joined(separator: " "))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(config.name)
+                                .font(.system(size: 20, weight: .semibold))
+                            
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(statusColor)
+                                    .frame(width: 8, height: 8)
+                                Text(statusText)
+                                    .font(.system(size: 12))
                                     .foregroundColor(.secondary)
-                                    .lineLimit(2)
                             }
                         }
                         
-                        // Environment
-                        if !config.environment.isEmpty {
-                            HStack(alignment: .top) {
-                                Text("Environment:")
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    ForEach(Array(config.environment.keys.sorted()), id: \.self) { key in
-                                        Text("\(key)=***")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // URL
-                        HStack {
-                            Text("URL:")
-                            Spacer()
-                            Text(config.url?.absoluteString ?? "Not set")
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
+                        Spacer()
+                        
+                        Toggle("", isOn: $config.enabled)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
                     }
-                }
-                
-                Divider()
-                
-                // Actions Section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Actions")
-                        .font(.headline)
-                        .fontWeight(.semibold)
                     
-                    HStack(spacing: 12) {
-                        Button(action: testConnection) {
-                            HStack {
-                                if isTesting {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "bolt.fill")
-                                }
-                                Text("Test Connection")
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(isTesting)
-                        
-                        Button(action: {
+                    // Quick Actions
+                    HStack(spacing: 10) {
+                        DetailActionButton(
+                            title: status == .disconnected ? "Connect" : "Disconnect",
+                            icon: status == .disconnected ? "power" : "stop.fill",
+                            color: status == .disconnected ? .green : .orange
+                        ) {
                             Task {
                                 if case .connected = status {
                                     await manager.disconnect(id: config.id)
@@ -353,23 +290,123 @@ struct MCPAgentDetailView: View {
                                     try? await manager.connect(config: config)
                                 }
                             }
-                        }) {
-                            HStack {
-                                Image(systemName: status == .disconnected ? "power" : "stop.fill")
-                                Text(status == .disconnected ? "Connect" : "Disconnect")
+                        }
+                        
+                        DetailActionButton(
+                            title: "Test",
+                            icon: isTesting ? "arrow.trianglehead.2.counterclockwise" : "bolt.fill",
+                            color: .blue,
+                            isLoading: isTesting
+                        ) {
+                            testConnection()
+                        }
+                        .disabled(isTesting)
+                        
+                        DetailActionButton(
+                            title: "Edit",
+                            icon: "pencil",
+                            color: .secondary
+                        ) {
+                            showingEditSheet = true
+                        }
+                        
+                        DetailActionButton(
+                            title: "Restart",
+                            icon: "arrow.clockwise",
+                            color: .secondary
+                        ) {
+                            Task {
+                                await manager.disconnect(id: config.id)
+                                try? await manager.connect(config: config)
                             }
                         }
-                        .buttonStyle(.bordered)
-                        
-                        Spacer()
                     }
                     
                     if let result = testResult {
-                        Text(result)
-                            .font(.caption)
-                            .foregroundColor(result.contains("Success") ? .green : .red)
-                            .padding(.top, 4)
+                        HStack(spacing: 8) {
+                            Image(systemName: result.contains("Success") ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundColor(result.contains("Success") ? .green : .red)
+                            Text(result)
+                                .font(.system(size: 12))
+                                .foregroundColor(result.contains("Success") ? .green : .red)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(result.contains("Success") ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        )
                     }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+                
+                // Configuration Details
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text("Configuration")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    
+                    VStack(spacing: 0) {
+                        DetailRow(
+                            label: "Transport",
+                            value: config.transportType == .stdio ? "Stdio (Local Process)" : "SSE (Server-Sent Events)",
+                            icon: config.transportType == .stdio ? "terminal" : "network"
+                        )
+                        
+                        Divider().padding(.leading, 40)
+                        
+                        if config.transportType == .stdio {
+                            DetailRow(
+                                label: "Command",
+                                value: config.command ?? "Not set",
+                                icon: "chevron.right"
+                            )
+                            
+                            if !config.arguments.isEmpty {
+                                Divider().padding(.leading, 40)
+                                DetailRow(
+                                    label: "Arguments",
+                                    value: config.arguments.joined(separator: " "),
+                                    icon: "text.alignleft"
+                                )
+                            }
+                            
+                            if !config.environment.isEmpty {
+                                Divider().padding(.leading, 40)
+                                DetailRow(
+                                    label: "Environment",
+                                    value: "\(config.environment.count) variable(s)",
+                                    icon: "key"
+                                )
+                            }
+                        } else {
+                            DetailRow(
+                                label: "URL",
+                                value: config.url?.absoluteString ?? "Not set",
+                                icon: "link"
+                            )
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                    )
                 }
                 
                 Spacer()
@@ -377,6 +414,9 @@ struct MCPAgentDetailView: View {
             .padding(24)
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .sheet(isPresented: $showingEditSheet) {
+            AddMCPAgentSheet(manager: manager, configToEdit: config)
+        }
     }
     
     private func testConnection() {
@@ -397,5 +437,84 @@ struct MCPAgentDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Detail Supporting Views
+
+struct DetailActionButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    var isLoading: Bool = false
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack {
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                    } else {
+                        Image(systemName: icon)
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                }
+                .foregroundStyle(isHovered ? color : .secondary)
+                .frame(width: 20, height: 20)
+                
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isHovered ? color.opacity(0.1) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+struct DetailRow: View {
+    let label: String
+    let value: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+            
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 13))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }

@@ -24,6 +24,9 @@ class MessageManager: ObservableObject {
     @Published var toolCallStatus: ToolCallStatus?
     @Published var activeToolCalls: [ToolCallStatus] = []
     
+    // Map of message IDs to their completed tool calls (for persistence within session)
+    @Published var messageToolCalls: [Int64: [ToolCallStatus]] = [:]
+    
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
         get {
@@ -529,9 +532,9 @@ class MessageManager: ObservableObject {
             
             if success {
                 await MainActor.run {
-                    self.toolCallStatus = .completed(toolName: functionName, success: true)
+                    self.toolCallStatus = .completed(toolName: functionName, success: true, result: resultString)
                     if let index = self.activeToolCalls.firstIndex(where: { $0.toolName == functionName }) {
-                        self.activeToolCalls[index] = .completed(toolName: functionName, success: true)
+                        self.activeToolCalls[index] = .completed(toolName: functionName, success: true, result: resultString)
                     }
                 }
             }
@@ -570,22 +573,21 @@ class MessageManager: ObservableObject {
                 switch result {
                 case .success(let (fullMessage, toolCalls)):
                     if let messageText = fullMessage {
-                        self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil)
+                        // Store the tool calls with this message for persistence
+                        let toolCallsToStore = self.activeToolCalls
+                        self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil, toolCalls: toolCallsToStore)
                         self.addNewMessageToRequestMessages(chat: chat, content: messageText, role: AppConstants.defaultRole)
                     }
                     self.debounceSave()
                     self.generateChatNameIfNeeded(chat: chat)
                     
-                    // Clear tool call status after response is complete
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        self.activeToolCalls.removeAll()
-                    }
+                    // Clear active tool calls for next message (they're now stored with the message)
+                    self.activeToolCalls.removeAll()
                     
                     completion(.success(()))
                     
                 case .failure(let error):
-                    // Clear tool call status on error too
-                    self.activeToolCalls.removeAll()
+                    // Keep tool calls visible on error for debugging
                     completion(.failure(error))
                 }
             }
@@ -704,7 +706,7 @@ class MessageManager: ObservableObject {
         return chat.constructRequestMessages(forUserMessage: userMessage, contextSize: contextSize)
     }
 
-    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil) {
+    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [ToolCallStatus]? = nil) {
         print("💬 [Message] AI response received, length: \(message.count)")
         print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
         
@@ -725,6 +727,11 @@ class MessageManager: ObservableObject {
         newMessage.timestamp = Date()
         newMessage.own = false
         newMessage.chat = chat
+        
+        // Store tool calls associated with this message
+        if let toolCalls = toolCalls, !toolCalls.isEmpty {
+            messageToolCalls[newMessage.id] = toolCalls
+        }
 
         chat.updatedDate = Date()
         chat.addToMessages(newMessage)
