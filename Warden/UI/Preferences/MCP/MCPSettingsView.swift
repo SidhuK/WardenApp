@@ -28,8 +28,45 @@ struct MCPSettingsView: View {
                     ForEach($manager.configs) { $config in
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(config.name)
-                                    .font(.headline)
+                                HStack {
+                                    Text(config.name)
+                                        .font(.headline)
+                                    
+                                    // Status Indicator
+                                    if let status = manager.serverStatuses[config.id] {
+                                        switch status {
+                                        case .connected(let count):
+                                            Circle()
+                                                .fill(Color.green)
+                                                .frame(width: 8, height: 8)
+                                                .help("Connected: \(count) tools")
+                                            Text("\(count) tools")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        case .disconnected:
+                                            Circle()
+                                                .fill(Color.gray)
+                                                .frame(width: 8, height: 8)
+                                                .help("Disconnected")
+                                        case .error(let msg):
+                                            Circle()
+                                                .fill(Color.red)
+                                                .frame(width: 8, height: 8)
+                                                .help("Error: \(msg)")
+                                        case .connecting:
+                                            Circle()
+                                                .fill(Color.orange)
+                                                .frame(width: 8, height: 8)
+                                                .help("Connecting...")
+                                        }
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray)
+                                            .frame(width: 8, height: 8)
+                                            .help("Unknown Status")
+                                    }
+                                }
+                                
                                 Text(config.transportType == .stdio ? "Stdio: \(config.command ?? "")" : "SSE: \(config.url?.absoluteString ?? "")")
                                     .font(.caption)
                                     .foregroundColor(.secondary)

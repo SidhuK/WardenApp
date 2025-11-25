@@ -199,11 +199,12 @@ class APIServiceManager {
         tools: [[String: Any]]? = nil,
         temperature: Float,
         onChunk: @escaping (String, String) async -> Void
-    ) async throws -> String {
+    ) async throws -> (String, [ToolCall]?) {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
         var accumulatedResponse = ""
+        var allToolCalls: [ToolCall]? = nil
         
-        for try await (chunk, _) in stream {
+        for try await (chunk, toolCalls) in stream {
             try Task.checkCancellation()
             
             if let chunk = chunk {
@@ -211,17 +212,15 @@ class APIServiceManager {
                 await onChunk(chunk, accumulatedResponse)
             }
             
-            // Note: Tool calls in streaming are complex. 
-            // For now, we are just passing the text chunks.
-            // If we receive tool calls, we might need to handle them.
-            // But the current signature returns String.
-            // We might need to update the return type to include tool calls?
-            // Or handle tool calls via a callback?
-            // Given the scope, let's assume we just accumulate text for now, 
-            // but we need to update the signature to match APIService.
+            if let calls = toolCalls {
+                if allToolCalls == nil {
+                    allToolCalls = []
+                }
+                allToolCalls?.append(contentsOf: calls)
+            }
         }
         
-        return accumulatedResponse
+        return (accumulatedResponse, allToolCalls)
     }
     
     /// Prepares messages specifically formatted for summarization requests

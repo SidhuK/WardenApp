@@ -14,11 +14,7 @@ class ChatService {
         tools: [[String: Any]]? = nil,
         temperature: Float,
         onChunk: @escaping (String, String) async -> Void
-    ) async throws -> String {
-        // Note: Streaming tool calls is not yet fully supported in the return type here.
-        // We return String for now to maintain compatibility, but APIServiceManager handles the stream.
-        // To fully support streaming tools, we would need to change this return type or handle it via callback.
-        // For this iteration, we focus on non-streaming tools or accumulating text.
+    ) async throws -> (String, [ToolCall]?) {
         return try await APIServiceManager.handleStream(
             apiService: apiService,
             messages: messages,

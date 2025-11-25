@@ -324,7 +324,7 @@ class MessageManager: ObservableObject {
             do {
                 chat.waitingForResponse = true
                 
-                let fullResponse = try await ChatService.shared.sendStream(
+                let (fullResponse, toolCalls) = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
@@ -359,17 +359,14 @@ class MessageManager: ObservableObject {
                 
                 // Normal completion path - stream finished successfully
                  guard let lastMessage = chat.lastMessage else {
-                     // If no last message exists, create a new one (rare case if stream was empty but successful?)
-                     // Or maybe it was a pure tool call response?
-                     // If fullResponse is empty, it might be a tool call.
-                     // But sendStream currently only returns String.
-                     // We need to handle tool calls in stream.
-                     // Since I didn't update sendStream to return tool calls, I can't handle them here yet.
-                     // I need to update ChatService.sendStream to return (String, [ToolCall]?)
-                     // But I updated it to return String.
-                     // I made a mistake in previous step. I should have updated sendStream return type.
-                     // I will fix this in next step.
-                     // For now, I'll assume text only for stream or I'll fix it now.
+                     // Handle tool calls if present even if no text response
+                     if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                         // If we have tool calls but no message, creating a message might be confusing unless it's a "thinking" or empty message.
+                         // But handleToolCalls expects a state.
+                         // Actually, we should process tool calls immediately.
+                         await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                         return
+                     }
                      
                      print("⚠️ Warning: No last message found after streaming")
                      if !fullResponse.isEmpty {
@@ -381,8 +378,17 @@ class MessageManager: ObservableObject {
                  }
                  
                  // Final update: append citations now
-                 updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: fullResponse, searchUrls: searchUrls, appendCitations: true, save: true)
-                 addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
+                 if !fullResponse.isEmpty {
+                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: fullResponse, searchUrls: searchUrls, appendCitations: true, save: true)
+                    addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
+                 }
+                 
+                 // Handle tool calls if any
+                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                     await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                     return
+                 }
+                 
                  // Auto-rename chat if needed
                  generateChatNameIfNeeded(chat: chat)
                  completion(.success(()))

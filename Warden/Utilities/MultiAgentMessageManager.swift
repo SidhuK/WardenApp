@@ -133,7 +133,7 @@ class MultiAgentMessageManager: ObservableObject {
     ) {
         let task = Task {
             do {
-                let fullResponse = try await ChatService.shared.sendStream(
+                let (fullResponse, _) = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     temperature: temperature

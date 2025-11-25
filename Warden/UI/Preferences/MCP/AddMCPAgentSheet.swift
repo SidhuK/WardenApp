@@ -12,6 +12,9 @@ struct AddMCPAgentSheet: View {
     @State private var environment: String = "" // Key=Value per line
     @State private var urlString: String = ""
     
+    @State private var testStatus: String? = nil
+    @State private var isTesting: Bool = false
+    
     var body: some View {
         Form {
             Section("General") {
@@ -46,10 +49,26 @@ struct AddMCPAgentSheet: View {
             }
             
             Section {
+                if let status = testStatus {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundColor(status.contains("Success") ? .green : .red)
+                }
+                
+                Button(action: testConnection) {
+                    if isTesting {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                    } else {
+                        Text("Test Connection")
+                    }
+                }
+                .disabled(name.isEmpty || (transportType == .stdio && command.isEmpty) || (transportType == .sse && urlString.isEmpty) || isTesting)
+                
                 Button(configToEdit != nil ? "Save Changes" : "Add Agent") {
                     saveAgent()
                 }
-                .disabled(name.isEmpty || (transportType == .stdio && command.isEmpty) || (transportType == .sse && urlString.isEmpty))
+                .disabled(name.isEmpty || (transportType == .stdio && command.isEmpty) || (transportType == .sse && urlString.isEmpty) || isTesting)
                 
                 Button("Cancel", role: .cancel) {
                     dismiss()
@@ -78,19 +97,33 @@ struct AddMCPAgentSheet: View {
         }
     }
     
-    private func saveAgent() {
-        var config: MCPServerConfig
+    private func testConnection() {
+        isTesting = true
+        testStatus = nil
         
-        if let existingConfig = configToEdit {
-            config = existingConfig
-            config.name = name
-            config.transportType = transportType
-        } else {
-            config = MCPServerConfig(
-                name: name,
-                transportType: transportType
-            )
+        let config = createConfigFromState()
+        
+        Task {
+            do {
+                let toolCount = try await manager.testConnection(config: config)
+                await MainActor.run {
+                    testStatus = "Success! Found \(toolCount) tools."
+                    isTesting = false
+                }
+            } catch {
+                await MainActor.run {
+                    testStatus = "Connection failed: \(error.localizedDescription)"
+                    isTesting = false
+                }
+            }
         }
+    }
+    
+    private func createConfigFromState() -> MCPServerConfig {
+        var config = MCPServerConfig(
+            name: name,
+            transportType: transportType
+        )
         
         if transportType == .stdio {
             config.command = command
@@ -110,6 +143,17 @@ struct AddMCPAgentSheet: View {
             config.command = nil
             config.arguments = []
             config.environment = [:]
+        }
+        
+        return config
+    }
+    
+    private func saveAgent() {
+        var config = createConfigFromState()
+        
+        // Preserve ID if editing
+        if let existingConfig = configToEdit {
+            config.id = existingConfig.id
         }
         
         if configToEdit != nil {

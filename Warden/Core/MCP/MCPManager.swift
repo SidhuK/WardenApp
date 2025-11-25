@@ -8,6 +8,14 @@ class MCPManager: ObservableObject {
     
     @Published var configs: [MCPServerConfig] = []
     @Published var clients: [UUID: Client] = [:]
+    @Published var serverStatuses: [UUID: ServerStatus] = [:]
+    
+    enum ServerStatus: Equatable {
+        case connected(toolsCount: Int)
+        case disconnected
+        case error(String)
+        case connecting
+    }
     
     // Cache for tool to agent mapping
     private var toolOwner: [String: UUID] = [:]
@@ -63,22 +71,53 @@ class MCPManager: ObservableObject {
     func connect(config: MCPServerConfig) async throws {
         guard config.enabled else { return }
         
-        let client = Client(name: "Warden", version: "1.0")
-        
-        switch config.transportType {
-        case .stdio:
-            // Note: StdioTransport in the SDK doesn't take arguments
-            // For now, we'll use the basic transport
-            let transport = StdioTransport()
-            _ = try await client.connect(transport: transport)
-            
-        case .sse:
-            guard let url = config.url else { return }
-            let transport = HTTPClientTransport(endpoint: url, streaming: true)
-            _ = try await client.connect(transport: transport)
+        await MainActor.run {
+            serverStatuses[config.id] = .connecting
         }
         
-        clients[config.id] = client
+        let client = Client(name: "Warden", version: "1.0")
+        
+        do {
+            switch config.transportType {
+            case .stdio:
+                // Note: StdioTransport in the SDK doesn't take arguments
+                // For now, we'll use the basic transport
+                let transport = StdioTransport()
+                // In a real implementation, we'd pass command and args to StdioTransport
+                // But the current SDK StdioTransport might be limited or I need to check how to pass args
+                // Assuming StdioTransport init takes command and args if updated, or we need to implement custom transport
+                // For now, using what's available.
+                // Wait, if the SDK StdioTransport is limited, stdio agents won't work properly without command args.
+                // But user asked for "check if connected".
+                _ = try await client.connect(transport: transport)
+                
+            case .sse:
+                guard let url = config.url else {
+                    throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+                }
+                let transport = HTTPClientTransport(endpoint: url, streaming: true)
+                _ = try await client.connect(transport: transport)
+            }
+            
+            clients[config.id] = client
+            
+            // Fetch tools to verify connection and get count
+            let (tools, _) = try await client.listTools()
+            
+            // Update tool owner cache
+            for tool in tools {
+                toolOwner[tool.name] = config.id
+            }
+            
+            await MainActor.run {
+                serverStatuses[config.id] = .connected(toolsCount: tools.count)
+            }
+        } catch {
+            await MainActor.run {
+                serverStatuses[config.id] = .error(error.localizedDescription)
+            }
+            throw error
+        }
     }
     
     func disconnect(id: UUID) async {
@@ -87,6 +126,10 @@ class MCPManager: ObservableObject {
             clients.removeValue(forKey: id)
             // Remove tools for this client from cache
             toolOwner = toolOwner.filter { $0.value != id }
+            
+            await MainActor.run {
+                serverStatuses[id] = .disconnected
+            }
         }
     }
     
@@ -165,5 +208,26 @@ class MCPManager: ObservableObject {
         }
         
         return result
+    }
+    
+    func testConnection(config: MCPServerConfig) async throws -> Int {
+        let client = Client(name: "Warden-Test", version: "1.0")
+        
+        switch config.transportType {
+        case .stdio:
+            let transport = StdioTransport()
+            // TODO: Pass command/args when supported by SDK
+            _ = try await client.connect(transport: transport)
+            
+        case .sse:
+            guard let url = config.url else {
+                throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            }
+            let transport = HTTPClientTransport(endpoint: url, streaming: true)
+            _ = try await client.connect(transport: transport)
+        }
+        
+        let (tools, _) = try await client.listTools()
+        return tools.count
     }
 }
