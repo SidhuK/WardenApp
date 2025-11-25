@@ -1,4 +1,5 @@
 import SwiftUI
+import MCP
 
 struct MCPSettingsView: View {
     @StateObject private var manager = MCPManager.shared
@@ -409,6 +410,17 @@ struct MCPAgentDetailView: View {
                     )
                 }
                 
+                // Available Tools Section
+                ToolListView(
+                    tools: manager.serverTools[config.id] ?? [],
+                    status: status,
+                    onRefresh: {
+                        Task {
+                            _ = await manager.getToolsForServer(id: config.id)
+                        }
+                    }
+                )
+                
                 Spacer()
             }
             .padding(24)
@@ -516,5 +528,188 @@ struct DetailRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Tool List View
+
+struct ToolListView: View {
+    let tools: [Tool]
+    let status: MCPManager.ServerStatus
+    let onRefresh: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: "wrench.and.screwdriver")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("Available Tools")
+                    .font(.system(size: 13, weight: .semibold))
+                
+                if !tools.isEmpty {
+                    Text("(\(tools.count))")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                if case .connected = status {
+                    Button(action: onRefresh) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Refresh Tools")
+                }
+            }
+            
+            if case .disconnected = status {
+                // Disconnected state
+                VStack(spacing: 8) {
+                    Image(systemName: "bolt.slash")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.secondary.opacity(0.5))
+                    Text("Connect to view tools")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+            } else if tools.isEmpty {
+                // Empty state
+                VStack(spacing: 8) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.secondary.opacity(0.5))
+                    Text("No tools available")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+            } else {
+                // Tools list
+                VStack(spacing: 8) {
+                    ForEach(Array(tools.enumerated()), id: \.element.name) { index, tool in
+                        ToolItemView(tool: tool)
+                        
+                        if index < tools.count - 1 {
+                            Divider()
+                                .padding(.horizontal, 12)
+                        }
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+            }
+        }
+    }
+}
+
+struct ToolItemView: View {
+    let tool: Tool
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "wrench.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .blue.opacity(0.7)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tool.name)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+                        
+                        if let description = tool.description, !description.isEmpty {
+                            Text(description)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(isExpanded ? nil : 1)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                        .padding(.horizontal, 16)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Input Schema")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16)
+                        
+                        ScrollView {
+                            Text(formatSchema(tool.inputSchema))
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxHeight: 150)
+                        .padding(.horizontal, 16)
+                    }
+                }
+                .padding(.bottom, 12)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
+    private func formatSchema(_ schema: Value) -> String {
+        // Simply use the description property which should provide JSON-like output
+        return schema.description
     }
 }

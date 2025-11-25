@@ -10,6 +10,7 @@ class MCPManager: ObservableObject {
     @Published var configs: [MCPServerConfig] = []
     @Published var clients: [UUID: Client] = [:]
     @Published var serverStatuses: [UUID: ServerStatus] = [:]
+    @Published var serverTools: [UUID: [Tool]] = [:]
     
     enum ServerStatus: Equatable {
         case connected(toolsCount: Int)
@@ -108,6 +109,7 @@ class MCPManager: ObservableObject {
             
             await MainActor.run {
                 serverStatuses[config.id] = .connected(toolsCount: tools.count)
+                serverTools[config.id] = tools
             }
         } catch {
             await MainActor.run {
@@ -126,6 +128,7 @@ class MCPManager: ObservableObject {
             
             await MainActor.run {
                 serverStatuses[id] = .disconnected
+                serverTools.removeValue(forKey: id)
             }
         }
     }
@@ -133,6 +136,29 @@ class MCPManager: ObservableObject {
     func restartAll() async {
         for config in configs where config.enabled {
             try? await connect(config: config)
+        }
+    }
+    
+    func getToolsForServer(id: UUID) async -> [Tool] {
+        // Return cached tools if available
+        if let tools = serverTools[id] {
+            return tools
+        }
+        
+        // Otherwise try to fetch from client
+        guard let client = clients[id] else {
+            return []
+        }
+        
+        do {
+            let (tools, _) = try await client.listTools()
+            await MainActor.run {
+                serverTools[id] = tools
+            }
+            return tools
+        } catch {
+            print("Error fetching tools for server \(id): \(error)")
+            return []
         }
     }
     
