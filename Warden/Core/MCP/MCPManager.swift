@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import MCP
+import Logging
 
 @MainActor
 class MCPManager: ObservableObject {
@@ -232,17 +233,110 @@ class MCPManager: ObservableObject {
 
 // Custom Transport implementation for Process-based Stdio
 actor ProcessStdioTransport: Transport {
-    let command: String
-    let arguments: [String]
-    let environment: [String: String]
+    public nonisolated let logger: Logger
     
-    init(command: String, arguments: [String], environment: [String: String]) {
+    private let command: String
+    private let arguments: [String]
+    private let environment: [String: String]
+    
+    private var process: Process?
+    private var inputPipe: Pipe?
+    private var outputPipe: Pipe?
+    private var isConnected = false
+    
+    private var receiveStream: AsyncThrowingStream<Data, Error>?
+    private var receiveContinuation: AsyncThrowingStream<Data, Error>.Continuation?
+    
+    init(command: String, arguments: [String], environment: [String: String], logger: Logger? = nil) {
         self.command = command
         self.arguments = arguments
         self.environment = environment
+        self.logger = logger ?? Logger(label: "mcp.transport.process")
     }
     
-    // Protocol requirements will be revealed by compiler error
-    func start() async throws {}
-    func close() async throws {}
+    public func connect() async throws {
+        guard !isConnected else { return }
+        
+        let process = Process()
+        
+        // Use /usr/bin/env to resolve commands in PATH (like npx, node, python)
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = [command] + arguments
+        
+        var env = ProcessInfo.processInfo.environment
+        for (key, value) in environment {
+            env[key] = value
+        }
+        process.environment = env
+        
+        let inputPipe = Pipe()
+        let outputPipe = Pipe()
+        process.standardInput = inputPipe
+        process.standardOutput = outputPipe
+        process.standardError = FileHandle.nullDevice
+        
+        self.process = process
+        self.inputPipe = inputPipe
+        self.outputPipe = outputPipe
+        
+        var continuation: AsyncThrowingStream<Data, Error>.Continuation!
+        self.receiveStream = AsyncThrowingStream { continuation = $0 }
+        self.receiveContinuation = continuation
+        
+        try process.run()
+        isConnected = true
+        
+        readLoop(handle: outputPipe.fileHandleForReading, continuation: continuation)
+    }
+    
+    private nonisolated func readLoop(handle: FileHandle, continuation: AsyncThrowingStream<Data, Error>.Continuation) {
+        Task.detached {
+            var buffer = Data()
+            
+            while !Task.isCancelled {
+                let data = handle.availableData
+                
+                if data.isEmpty {
+                    break
+                }
+                
+                buffer.append(data)
+                
+                while let newlineIndex = buffer.firstIndex(of: UInt8(ascii: "\n")) {
+                    let messageData = buffer[..<newlineIndex]
+                    buffer = buffer[(newlineIndex + 1)...]
+                    if !messageData.isEmpty {
+                        continuation.yield(Data(messageData))
+                    }
+                }
+            }
+            
+            continuation.finish()
+        }
+    }
+    
+    public func disconnect() async {
+        guard isConnected else { return }
+        isConnected = false
+        
+        receiveContinuation?.finish()
+        process?.terminate()
+        process = nil
+        inputPipe = nil
+        outputPipe = nil
+    }
+    
+    public func send(_ data: Data) async throws {
+        guard let inputPipe = inputPipe else {
+            throw NSError(domain: "ProcessStdioTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not connected"])
+        }
+        
+        var messageData = data
+        messageData.append(UInt8(ascii: "\n"))
+        try inputPipe.fileHandleForWriting.write(contentsOf: messageData)
+    }
+    
+    public func receive() -> AsyncThrowingStream<Data, Error> {
+        return receiveStream ?? AsyncThrowingStream { $0.finish() }
+    }
 }
