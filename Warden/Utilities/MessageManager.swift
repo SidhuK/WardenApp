@@ -20,6 +20,10 @@ class MessageManager: ObservableObject {
     @Published var lastSearchSources: [SearchSource]?
     @Published var lastSearchQuery: String?
     
+    // Published property for tool call status
+    @Published var toolCallStatus: ToolCallStatus?
+    @Published var activeToolCalls: [ToolCallStatus] = []
+    
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
         get {
@@ -238,16 +242,22 @@ class MessageManager: ObservableObject {
             let selectedAgents = viewModel.selectedMCPAgents
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
             
-            // Convert MCP ServerTool to OpenAI format
-            let toolDefinitions = tools.map { tool -> [String: Any] in
-                // inputSchema is already [String: Any] compatible
+            // Convert MCP Tool to OpenAI format
+            let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
+                // Convert MCP Value inputSchema to JSON-compatible dictionary
+                var parameters: [String: Any] = ["type": "object", "properties": [:]]
+                if let jsonData = try? JSONEncoder().encode(tool.inputSchema),
+                   let jsonDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+                    parameters = jsonDict
+                }
+                
                 return [
                     "type": "function",
                     "function": [
                         "name": tool.name,
                         "description": tool.description ?? "",
-                        "parameters": tool.inputSchema ?? [:]
-                    ]
+                        "parameters": parameters
+                    ] as [String: Any]
                 ]
             }
             
@@ -310,14 +320,21 @@ class MessageManager: ObservableObject {
             let selectedAgents = viewModel.selectedMCPAgents
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
             
-            let toolDefinitions = tools.map { tool -> [String: Any] in
+            let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
+                // Convert MCP Value inputSchema to JSON-compatible dictionary
+                var parameters: [String: Any] = ["type": "object", "properties": [:]]
+                if let jsonData = try? JSONEncoder().encode(tool.inputSchema),
+                   let jsonDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+                    parameters = jsonDict
+                }
+                
                 return [
                     "type": "function",
                     "function": [
                         "name": tool.name,
                         "description": tool.description ?? "",
-                        "parameters": tool.inputSchema
-                    ]
+                        "parameters": parameters
+                    ] as [String: Any]
                 ]
             }
             
@@ -468,8 +485,22 @@ class MessageManager: ObservableObject {
             
             print("🛠️ Executing tool: \(functionName)")
             
+            // Update UI with tool call status
+            await MainActor.run {
+                self.toolCallStatus = .calling(toolName: functionName)
+                self.activeToolCalls.append(.calling(toolName: functionName))
+            }
+            
             var resultString = ""
+            var success = true
             do {
+                await MainActor.run {
+                    self.toolCallStatus = .executing(toolName: functionName, progress: nil)
+                    if let index = self.activeToolCalls.firstIndex(where: { $0.toolName == functionName }) {
+                        self.activeToolCalls[index] = .executing(toolName: functionName, progress: nil)
+                    }
+                }
+                
                 if let argsData = arguments.data(using: .utf8),
                    let argsDict = try? JSONSerialization.jsonObject(with: argsData, options: []) as? [String: Any] {
                     let contentArray = try await MCPManager.shared.callTool(name: functionName, arguments: argsDict)
@@ -483,9 +514,26 @@ class MessageManager: ObservableObject {
                     }
                 } else {
                     resultString = "{\"error\": \"Invalid arguments JSON\"}"
+                    success = false
                 }
             } catch {
                 resultString = "{\"error\": \"\(error.localizedDescription)\"}"
+                success = false
+                await MainActor.run {
+                    self.toolCallStatus = .failed(toolName: functionName, error: error.localizedDescription)
+                    if let index = self.activeToolCalls.firstIndex(where: { $0.toolName == functionName }) {
+                        self.activeToolCalls[index] = .failed(toolName: functionName, error: error.localizedDescription)
+                    }
+                }
+            }
+            
+            if success {
+                await MainActor.run {
+                    self.toolCallStatus = .completed(toolName: functionName, success: true)
+                    if let index = self.activeToolCalls.firstIndex(where: { $0.toolName == functionName }) {
+                        self.activeToolCalls[index] = .completed(toolName: functionName, success: true)
+                    }
+                }
             }
             
             print("🛠️ Tool result: \(resultString)")
@@ -497,6 +545,12 @@ class MessageManager: ObservableObject {
                 "name": functionName,
                 "content": resultString
             ])
+        }
+        
+        // Clear tool call status after all tools complete
+        await MainActor.run {
+            // Keep activeToolCalls for display, clear current status
+            self.toolCallStatus = nil
         }
         
         // Now send the conversation again to get the final response
@@ -511,18 +565,29 @@ class MessageManager: ObservableObject {
         ) { [weak self] result in
             guard let self = self else { return }
             
-            switch result {
-            case .success(let (fullMessage, toolCalls)):
-                if let messageText = fullMessage {
-                    self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil)
-                    self.addNewMessageToRequestMessages(chat: chat, content: messageText, role: AppConstants.defaultRole)
+            // Ensure all UI updates happen on main thread
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let (fullMessage, toolCalls)):
+                    if let messageText = fullMessage {
+                        self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil)
+                        self.addNewMessageToRequestMessages(chat: chat, content: messageText, role: AppConstants.defaultRole)
+                    }
+                    self.debounceSave()
+                    self.generateChatNameIfNeeded(chat: chat)
+                    
+                    // Clear tool call status after response is complete
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        self.activeToolCalls.removeAll()
+                    }
+                    
+                    completion(.success(()))
+                    
+                case .failure(let error):
+                    // Clear tool call status on error too
+                    self.activeToolCalls.removeAll()
+                    completion(.failure(error))
                 }
-                self.debounceSave()
-                self.generateChatNameIfNeeded(chat: chat)
-                completion(.success(()))
-                
-            case .failure(let error):
-                completion(.failure(error))
             }
         }
     }

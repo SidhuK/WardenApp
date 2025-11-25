@@ -242,6 +242,7 @@ actor ProcessStdioTransport: Transport {
     private var process: Process?
     private var inputPipe: Pipe?
     private var outputPipe: Pipe?
+    private var stderrPipe: Pipe?
     private var isConnected = false
     
     private var receiveStream: AsyncThrowingStream<Data, Error>?
@@ -264,6 +265,17 @@ actor ProcessStdioTransport: Transport {
         process.arguments = [command] + arguments
         
         var env = ProcessInfo.processInfo.environment
+        
+        // Add common paths for node/npm/npx that may not be in GUI app's PATH
+        let currentPath = env["PATH"] ?? "/usr/bin:/bin"
+        let additionalPaths = [
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "\(NSHomeDirectory())/.local/bin",
+            "/opt/local/bin"
+        ]
+        env["PATH"] = (additionalPaths + [currentPath]).joined(separator: ":")
+        
         for (key, value) in environment {
             env[key] = value
         }
@@ -271,47 +283,60 @@ actor ProcessStdioTransport: Transport {
         
         let inputPipe = Pipe()
         let outputPipe = Pipe()
+        let stderrPipe = Pipe()
         process.standardInput = inputPipe
         process.standardOutput = outputPipe
-        process.standardError = FileHandle.nullDevice
+        process.standardError = stderrPipe
         
         self.process = process
         self.inputPipe = inputPipe
         self.outputPipe = outputPipe
+        self.stderrPipe = stderrPipe
         
         var continuation: AsyncThrowingStream<Data, Error>.Continuation!
         self.receiveStream = AsyncThrowingStream { continuation = $0 }
         self.receiveContinuation = continuation
         
+        // Log stderr for debugging
+        stderrPipe.fileHandleForReading.readabilityHandler = { handle in
+            let data = handle.availableData
+            if !data.isEmpty, let str = String(data: data, encoding: .utf8) {
+                print("[MCP stderr] \(str)")
+            }
+        }
+        
         try process.run()
         isConnected = true
         
-        readLoop(handle: outputPipe.fileHandleForReading, continuation: continuation)
+        // Start reading stdout in background using readabilityHandler
+        startReadLoop(handle: outputPipe.fileHandleForReading, continuation: continuation)
     }
     
-    private nonisolated func readLoop(handle: FileHandle, continuation: AsyncThrowingStream<Data, Error>.Continuation) {
-        Task.detached {
-            var buffer = Data()
+    private nonisolated func startReadLoop(handle: FileHandle, continuation: AsyncThrowingStream<Data, Error>.Continuation) {
+        // Use a class to hold mutable state across closure invocations
+        class BufferHolder {
+            var data = Data()
+        }
+        let bufferHolder = BufferHolder()
+        
+        handle.readabilityHandler = { fileHandle in
+            let data = fileHandle.availableData
             
-            while !Task.isCancelled {
-                let data = handle.availableData
-                
-                if data.isEmpty {
-                    break
-                }
-                
-                buffer.append(data)
-                
-                while let newlineIndex = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-                    let messageData = buffer[..<newlineIndex]
-                    buffer = buffer[(newlineIndex + 1)...]
-                    if !messageData.isEmpty {
-                        continuation.yield(Data(messageData))
-                    }
-                }
+            if data.isEmpty {
+                handle.readabilityHandler = nil
+                continuation.finish()
+                return
             }
             
-            continuation.finish()
+            bufferHolder.data.append(data)
+            
+            while let newlineIndex = bufferHolder.data.firstIndex(of: UInt8(ascii: "\n")) {
+                let messageData = bufferHolder.data[..<newlineIndex]
+                bufferHolder.data = bufferHolder.data[(newlineIndex + 1)...]
+                if !messageData.isEmpty {
+                    continuation.yield(Data(messageData))
+                }
+            }
         }
     }
     
@@ -319,11 +344,14 @@ actor ProcessStdioTransport: Transport {
         guard isConnected else { return }
         isConnected = false
         
+        outputPipe?.fileHandleForReading.readabilityHandler = nil
+        stderrPipe?.fileHandleForReading.readabilityHandler = nil
         receiveContinuation?.finish()
         process?.terminate()
         process = nil
         inputPipe = nil
         outputPipe = nil
+        stderrPipe = nil
     }
     
     public func send(_ data: Data) async throws {

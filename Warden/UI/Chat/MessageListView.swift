@@ -13,6 +13,9 @@ struct MessageListView: View {
     let enableMultiAgentMode: Bool
     let isMultiAgentMode: Bool
     @ObservedObject var multiAgentManager: MultiAgentMessageManager
+    
+    // Tool call status
+    let activeToolCalls: [ToolCallStatus]
 
     // State and coordination passed from ChatView
     @Binding var userIsScrolling: Bool
@@ -75,6 +78,15 @@ struct MessageListView: View {
                             .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                     }
                 }
+            }
+
+            // Tool call progress view
+            if !activeToolCalls.isEmpty {
+                ToolCallProgressView(toolCalls: activeToolCalls)
+                    .id("tool-calls")
+                    .padding(.top, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if chat.waitingForResponse {

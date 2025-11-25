@@ -1,5 +1,36 @@
 import Foundation
 
+// MARK: - Tool Call Status
+
+enum ToolCallStatus: Equatable {
+    case calling(toolName: String)
+    case executing(toolName: String, progress: String?)
+    case completed(toolName: String, success: Bool)
+    case failed(toolName: String, error: String)
+    
+    static func == (lhs: ToolCallStatus, rhs: ToolCallStatus) -> Bool {
+        switch (lhs, rhs) {
+        case (.calling(let n1), .calling(let n2)):
+            return n1 == n2
+        case (.executing(let n1, _), .executing(let n2, _)):
+            return n1 == n2
+        case (.completed(let n1, let s1), .completed(let n2, let s2)):
+            return n1 == n2 && s1 == s2
+        case (.failed(let n1, _), .failed(let n2, _)):
+            return n1 == n2
+        default:
+            return false
+        }
+    }
+    
+    var toolName: String {
+        switch self {
+        case .calling(let name), .executing(let name, _), .completed(let name, _), .failed(let name, _):
+            return name
+        }
+    }
+}
+
 // MARK: - Search Status
 
 enum SearchStatus: Equatable {
