@@ -50,7 +50,7 @@ class ModelMetadataCache: ObservableObject {
             lastRefreshAttempt[provider] = Date()
         }
         
-        do {
+        do {/e/
             let fetcher = ModelMetadataFetcherFactory.createFetcher(for: provider)
             let newMetadata = try await fetcher.fetchAllMetadata(apiKey: apiKey)
             

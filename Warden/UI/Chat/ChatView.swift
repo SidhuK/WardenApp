@@ -228,11 +228,6 @@ struct ChatView: View {
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbarColorScheme(colorScheme, for: .windowToolbar)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                ModelSelectorDropdown(chat: chat)
-                    .buttonStyle(.plain)
-            }
-            
             ToolbarItem(placement: .automatic) {
                 HStack(spacing: 8) {
                     // Multi-agent mode toggle with consistent styling (only show if enabled in settings)
