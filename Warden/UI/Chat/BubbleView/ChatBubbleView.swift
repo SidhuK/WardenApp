@@ -176,8 +176,33 @@ struct ChatBubbleView: View, Equatable {
         return content.own ? .trailing : .leading
     }
 
+    private var modelDisplayName: String? {
+        guard let messageEntity = message,
+              let chat = messageEntity.chat else { return nil }
+        
+        // Use gptModel from chat (the model used for this conversation)
+        let model = chat.gptModel
+        guard !model.isEmpty else { return nil }
+        
+        // Format the model name to be more readable
+        let parts = model.split(separator: "/")
+        let modelPart = parts.count > 1 ? String(parts.last!) : model
+        // Truncate if too long
+        if modelPart.count > 20 {
+            return String(modelPart.prefix(17)) + "..."
+        }
+        return modelPart
+    }
+    
     private var toolbarContent: some View {
         HStack(spacing: 6) {
+            // For assistant messages: show model name first
+            if !content.own && !content.systemMessage, let modelName = modelDisplayName {
+                Text(modelName)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppConstants.textTertiary)
+            }
+            
             if !content.own, let _ = message {
                 Text(formattedTimestamp)
                     .font(.system(size: 10, weight: .medium))
