@@ -9,19 +9,25 @@ struct SettingsView: View {
     @State private var selectedTab: PreferencesTabs = .general
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar
-            List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
-                Label(tab.rawValue, systemImage: tab.icon)
-                    .tag(tab)
+        VStack(spacing: 0) {
+            // Top Tab Bar
+            HStack(spacing: 8) {
+                ForEach(PreferencesTabs.allCases) { tab in
+                    TopTabItem(tab: tab, isSelected: selectedTab == tab) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedTab = tab
+                        }
+                    }
+                }
             }
-            .listStyle(.sidebar)
-            .frame(width: 200)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.windowBackgroundColor))
             
             // Divider
             Rectangle()
                 .fill(Color(NSColor.separatorColor))
-                .frame(width: 1)
+                .frame(height: 1)
             
             // Content Area
             Group {

@@ -38,6 +38,36 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Top Tab Item View
+struct TopTabItem: View {
+    let tab: PreferencesTabs
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 20))
+                    .frame(height: 24)
+                Text(tab.rawValue)
+                    .font(.system(size: 10))
+                    .lineLimit(1)
+            }
+            .frame(width: 80, height: 52)
+            .foregroundStyle(isSelected ? Color.accentColor : (isHovering ? .primary : .secondary))
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.15) : (isHovering ? Color.primary.opacity(0.08) : .clear))
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
 // MARK: - Main Preferences View
 struct PreferencesView: View {
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
@@ -45,19 +75,25 @@ struct PreferencesView: View {
     @State private var selectedTab: PreferencesTabs = .general
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar
-            List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
-                Label(tab.rawValue, systemImage: tab.icon)
-                    .tag(tab)
+        VStack(spacing: 0) {
+            // Top Tab Bar
+            HStack(spacing: 8) {
+                ForEach(PreferencesTabs.allCases) { tab in
+                    TopTabItem(tab: tab, isSelected: selectedTab == tab) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedTab = tab
+                        }
+                    }
+                }
             }
-            .listStyle(.sidebar)
-            .frame(width: 200)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.windowBackgroundColor))
             
             // Divider
             Rectangle()
                 .fill(Color(NSColor.separatorColor))
-                .frame(width: 1)
+                .frame(height: 1)
             
             // Content
             Group {
@@ -103,8 +139,9 @@ struct InlineSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header with glass effect
-            GlassToolbar {
+            // Header with top tabs
+            VStack(spacing: 0) {
+                // Title bar with close button
                 HStack {
                     Text("Settings")
                         .font(.system(size: 14, weight: .semibold))
@@ -121,57 +158,54 @@ struct InlineSettingsView: View {
                     .onHover { isHoveringClose = $0 }
                     .help("Close Settings")
                 }
-            }
-
-            HStack(spacing: 0) {
-                // Sidebar
-                VStack(spacing: 4) {
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                
+                // Top Tab Bar
+                HStack(spacing: 8) {
                     ForEach(PreferencesTabs.allCases) { tab in
-                        SidebarTabItem(
-                            icon: tab.icon,
-                            title: tab.rawValue,
-                            isSelected: selectedTab == tab
-                        ) {
+                        TopTabItem(tab: tab, isSelected: selectedTab == tab) {
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 selectedTab = tab
                             }
                         }
                     }
-                    Spacer()
                 }
-                .padding(12)
-                .frame(width: 180)
-                .background(Color(NSColor.controlBackgroundColor))
-                
-                Rectangle()
-                    .fill(Color(NSColor.separatorColor))
-                    .frame(width: 1)
-                
-                // Content
-                Group {
-                    switch selectedTab {
-                    case .general:
-                        TabGeneralSettingsView()
-                            .environmentObject(store)
-                    case .apiServices:
-                        TabAPIServicesView()
-                    case .aiPersonas:
-                        TabAIPersonasView()
-                            .environmentObject(store)
-                            .environment(\.managedObjectContext, viewContext)
-                    case .webSearch:
-                        TabTavilySearchView()
-                    case .keyboardShortcuts:
-                        TabHotkeysView()
-                    case .mcp:
-                        MCPSettingsView()
-                    case .contributions:
-                        TabContributionsView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(NSColor.windowBackgroundColor))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
             }
+            .background(Color(NSColor.windowBackgroundColor))
+            
+            // Divider
+            Rectangle()
+                .fill(Color(NSColor.separatorColor))
+                .frame(height: 1)
+            
+            // Content
+            Group {
+                switch selectedTab {
+                case .general:
+                    TabGeneralSettingsView()
+                        .environmentObject(store)
+                case .apiServices:
+                    TabAPIServicesView()
+                case .aiPersonas:
+                    TabAIPersonasView()
+                        .environmentObject(store)
+                        .environment(\.managedObjectContext, viewContext)
+                case .webSearch:
+                    TabTavilySearchView()
+                case .keyboardShortcuts:
+                    TabHotkeysView()
+                case .mcp:
+                    MCPSettingsView()
+                case .contributions:
+                    TabContributionsView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
