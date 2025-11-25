@@ -15,8 +15,8 @@ struct MessageListView: View {
     @ObservedObject var multiAgentManager: MultiAgentMessageManager
     
     // Tool call status
-    let activeToolCalls: [ToolCallStatus]
-    let messageToolCalls: [Int64: [ToolCallStatus]]
+    let activeToolCalls: [WardenToolCallStatus]
+    let messageToolCalls: [Int64: [WardenToolCallStatus]]
 
     // State and coordination passed from ChatView
     @Binding var userIsScrolling: Bool
@@ -73,15 +73,19 @@ struct MessageListView: View {
                         )
                         
                         // Show tool calls associated with this AI message (if any)
-                        if !messageEntity.own, let toolCalls = messageToolCalls[messageEntity.id], !toolCalls.isEmpty {
-                            CompletedToolCallsView(toolCalls: toolCalls)
+                        // Prefer persisted tool calls from entity, fallback to in-memory dictionary
+                        let entityToolCalls = messageEntity.toolCalls
+                        let displayToolCalls = !entityToolCalls.isEmpty ? entityToolCalls : (messageToolCalls[messageEntity.id] ?? [])
+                        
+                        if !messageEntity.own, !displayToolCalls.isEmpty {
+                            CompletedToolCallsView(toolCalls: displayToolCalls)
                                 .padding(.top, topPadding)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
                         ChatBubbleView(content: bubbleContent, message: messageEntity)
                             .id(messageEntity.id)
-                            .padding(.top, (messageToolCalls[messageEntity.id] != nil && !messageEntity.own) ? 8 : topPadding)
+                            .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
                             .frame(maxWidth: viewWidth * 0.75, alignment: messageEntity.own ? .trailing : .leading)
                             .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                     }

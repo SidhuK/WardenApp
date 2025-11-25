@@ -22,11 +22,11 @@ class MessageManager: ObservableObject {
     @Published var lastSearchQuery: String?
     
     // Published property for tool call status
-    @Published var toolCallStatus: ToolCallStatus?
-    @Published var activeToolCalls: [ToolCallStatus] = []
+    @Published var toolCallStatus: WardenToolCallStatus?
+    @Published var activeToolCalls: [WardenToolCallStatus] = []
     
     // Map of message IDs to their completed tool calls (for persistence within session)
-    @Published var messageToolCalls: [Int64: [ToolCallStatus]] = [:]
+    @Published var messageToolCalls: [Int64: [WardenToolCallStatus]] = [:]
     
     // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
     private var currentStreamingTask: Task<Void, Never>? {
@@ -737,7 +737,7 @@ class MessageManager: ObservableObject {
         return chat.constructRequestMessages(forUserMessage: userMessage, contextSize: contextSize)
     }
 
-    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [ToolCallStatus]? = nil) {
+    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil) {
         print("💬 [Message] AI response received, length: \(message.count)")
         print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
         
@@ -762,6 +762,8 @@ class MessageManager: ObservableObject {
         // Store tool calls associated with this message
         if let toolCalls = toolCalls, !toolCalls.isEmpty {
             messageToolCalls[newMessage.id] = toolCalls
+            // Persist tool calls to Core Data
+            newMessage.toolCalls = toolCalls
         }
 
         chat.updatedDate = Date()

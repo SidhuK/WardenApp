@@ -62,8 +62,28 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var body: String
     @NSManaged public var timestamp: Date?
     @NSManaged public var own: Bool
+    @NSManaged public var toolCallsJson: String?
     @NSManaged public var waitingForResponse: Bool
     @NSManaged public var chat: ChatEntity?
+    
+    public var toolCalls: [WardenToolCallStatus] {
+        get {
+            guard let json = toolCallsJson,
+                  let data = json.data(using: .utf8),
+                  let calls = try? JSONDecoder().decode([WardenToolCallStatus].self, from: data) else {
+                return []
+            }
+            return calls
+        }
+        set {
+            if newValue.isEmpty {
+                toolCallsJson = nil
+            } else if let data = try? JSONEncoder().encode(newValue),
+                      let json = String(data: data, encoding: .utf8) {
+                toolCallsJson = json
+            }
+        }
+    }
 }
 
 /// Data Transfer Object for Chat backup and export/import

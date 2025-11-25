@@ -1,56 +1,53 @@
 import SwiftUI
 
 struct ToolCallProgressView: View {
-    let toolCalls: [ToolCallStatus]
+    let toolCalls: [WardenToolCallStatus]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.orange, .orange.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .symbolRenderingMode(.hierarchical)
-                
-                Text("Tool Calls")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("(\(toolCalls.count))")
+            HStack(spacing: 6) {
+                Image(systemName: "wrench.and.screwdriver")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
+                
+                Text("Tool Calls")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                if !toolCalls.isEmpty {
+                    Text("•")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                    
+                    Text("\(toolCalls.count)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
                 
                 Spacer()
             }
             
-            VStack(spacing: 6) {
+            VStack(spacing: 1) {
                 ForEach(toolCalls) { status in
                     ToolCallRow(status: status)
                 }
             }
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+            )
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 4)
         .padding(.vertical, 8)
     }
 }
 
 struct ToolCallRow: View {
-    let status: ToolCallStatus
+    let status: WardenToolCallStatus
     
     @State private var isExpanded = false
     
@@ -67,35 +64,25 @@ struct ToolCallRow: View {
                     }
                 }
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     statusIcon
-                        .frame(width: 20, height: 20)
+                        .frame(width: 14, height: 14)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(formattedToolName)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        Text(statusText)
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                    }
+                    Text(formattedToolName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary)
                     
                     Spacer()
                     
                     if hasResult {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.tertiary)
                             .rotationEffect(.degrees(isExpanded ? 90 : 0))
                     }
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(backgroundColor)
-                )
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -104,23 +91,19 @@ struct ToolCallRow: View {
             if isExpanded, let result = status.result {
                 VStack(alignment: .leading, spacing: 8) {
                     Divider()
-                        .padding(.horizontal, 10)
+                        .opacity(0.5)
                     
                     ScrollView {
                         Text(formatResult(result))
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(.system(size: 10, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxHeight: 200)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 10)
+                    .frame(maxHeight: 150)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(resultBackgroundColor)
-                )
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -130,32 +113,17 @@ struct ToolCallRow: View {
     @ViewBuilder
     private var statusIcon: some View {
         switch status {
-        case .calling:
+        case .calling, .executing:
             ProgressView()
-                .scaleEffect(0.55)
-        case .executing:
-            ProgressView()
-                .scaleEffect(0.55)
+                .scaleEffect(0.4)
         case .completed(_, let success, _):
-            Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: success ? [.green, .green.opacity(0.8)] : [.red, .red.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .font(.system(size: 14))
+            Image(systemName: success ? "checkmark.circle" : "xmark.circle")
+                .foregroundStyle(success ? .green : .red)
+                .font(.system(size: 11))
         case .failed:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.orange, .orange.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .font(.system(size: 14))
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .font(.system(size: 11))
         }
     }
     
@@ -164,41 +132,6 @@ struct ToolCallRow: View {
             .split(separator: "_")
             .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
             .joined(separator: " ")
-    }
-    
-    private var statusText: String {
-        switch status {
-        case .calling:
-            return "Calling..."
-        case .executing(_, let progress):
-            return progress ?? "Executing..."
-        case .completed(_, let success, _):
-            return success ? "Completed" : "Failed"
-        case .failed(_, let error):
-            return "Error: \(error)"
-        }
-    }
-    
-    private var backgroundColor: Color {
-        switch status {
-        case .calling, .executing:
-            return Color.orange.opacity(0.08)
-        case .completed(_, let success, _):
-            return success ? Color.green.opacity(0.08) : Color.red.opacity(0.08)
-        case .failed:
-            return Color.red.opacity(0.08)
-        }
-    }
-    
-    private var resultBackgroundColor: Color {
-        switch status {
-        case .completed(_, let success, _):
-            return success ? Color.green.opacity(0.04) : Color.red.opacity(0.04)
-        case .failed:
-            return Color.red.opacity(0.04)
-        default:
-            return Color.clear
-        }
     }
     
     private func formatResult(_ result: String) -> String {
@@ -220,7 +153,7 @@ struct ToolCallRow: View {
 // MARK: - Completed Tool Calls View (for persisted tool calls with messages)
 
 struct CompletedToolCallsView: View {
-    let toolCalls: [ToolCallStatus]
+    let toolCalls: [WardenToolCallStatus]
     
     @State private var isExpanded = false
     
@@ -231,13 +164,13 @@ struct CompletedToolCallsView: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "wrench.and.screwdriver.fill")
+                HStack(spacing: 6) {
+                    Image(systemName: "wrench.and.screwdriver")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.secondary)
                     
                     Text("\(toolCalls.count) tool\(toolCalls.count == 1 ? "" : "s") used")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                     
                     Image(systemName: "chevron.right")
@@ -247,26 +180,27 @@ struct CompletedToolCallsView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.orange.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.orange.opacity(0.15), lineWidth: 1)
-                )
+                .padding(.horizontal, 4)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             
             if isExpanded {
-                VStack(spacing: 6) {
+                VStack(spacing: 1) {
                     ForEach(toolCalls) { status in
                         ToolCallRow(status: status)
                     }
                 }
-                .padding(.top, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.03))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
+                .padding(.bottom, 8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }

@@ -2,15 +2,64 @@ import Foundation
 
 // MARK: - Tool Call Status
 
-enum ToolCallStatus: Equatable, Identifiable {
+public enum WardenToolCallStatus: Equatable, Identifiable, Codable {
     case calling(toolName: String)
     case executing(toolName: String, progress: String?)
     case completed(toolName: String, success: Bool, result: String? = nil)
     case failed(toolName: String, error: String)
     
-    var id: String { toolName }
+    public var id: String { toolName }
     
-    static func == (lhs: ToolCallStatus, rhs: ToolCallStatus) -> Bool {
+    enum CodingKeys: String, CodingKey {
+        case type, toolName, progress, success, result, error
+    }
+    
+    public enum StatusType: String, Codable {
+        case calling, executing, completed, failed
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(StatusType.self, forKey: .type)
+        let toolName = try container.decode(String.self, forKey: .toolName)
+        
+        switch type {
+        case .calling:
+            self = .calling(toolName: toolName)
+        case .executing:
+            let progress = try container.decodeIfPresent(String.self, forKey: .progress)
+            self = .executing(toolName: toolName, progress: progress)
+        case .completed:
+            let success = try container.decode(Bool.self, forKey: .success)
+            let result = try container.decodeIfPresent(String.self, forKey: .result)
+            self = .completed(toolName: toolName, success: success, result: result)
+        case .failed:
+            let error = try container.decode(String.self, forKey: .error)
+            self = .failed(toolName: toolName, error: error)
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(toolName, forKey: .toolName)
+        
+        switch self {
+        case .calling:
+            try container.encode(StatusType.calling, forKey: .type)
+        case .executing(_, let progress):
+            try container.encode(StatusType.executing, forKey: .type)
+            try container.encodeIfPresent(progress, forKey: .progress)
+        case .completed(_, let success, let result):
+            try container.encode(StatusType.completed, forKey: .type)
+            try container.encode(success, forKey: .success)
+            try container.encodeIfPresent(result, forKey: .result)
+        case .failed(_, let error):
+            try container.encode(StatusType.failed, forKey: .type)
+            try container.encode(error, forKey: .error)
+        }
+    }
+    
+    public static func == (lhs: WardenToolCallStatus, rhs: WardenToolCallStatus) -> Bool {
         switch (lhs, rhs) {
         case (.calling(let n1), .calling(let n2)):
             return n1 == n2
@@ -25,14 +74,14 @@ enum ToolCallStatus: Equatable, Identifiable {
         }
     }
     
-    var toolName: String {
+    public var toolName: String {
         switch self {
         case .calling(let name), .executing(let name, _), .completed(let name, _, _), .failed(let name, _):
             return name
         }
     }
     
-    var result: String? {
+    public var result: String? {
         switch self {
         case .completed(_, _, let result):
             return result
@@ -43,7 +92,7 @@ enum ToolCallStatus: Equatable, Identifiable {
         }
     }
     
-    var isComplete: Bool {
+    public var isComplete: Bool {
         switch self {
         case .completed, .failed:
             return true
