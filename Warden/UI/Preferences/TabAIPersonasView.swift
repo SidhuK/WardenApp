@@ -587,6 +587,7 @@ struct PersonaDetailView: View {
                     attachedImages: .constant([]),
                     attachedFiles: .constant([]),
                     webSearchEnabled: .constant(false),
+                    selectedMCPAgents: .constant([]),
                     chat: nil,
                     imageUploadsAllowed: false,
                     onEnter: {},

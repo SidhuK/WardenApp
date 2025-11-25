@@ -80,6 +80,7 @@ struct ChatView: View {
                     attachedImages: $attachedImages,
                     attachedFiles: $attachedFiles,
                     webSearchEnabled: $webSearchEnabled,
+                    selectedMCPAgents: $chatViewModel.selectedMCPAgents,
                     chat: chat,
                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                     isStreaming: isStreaming,
@@ -136,6 +137,7 @@ struct ChatView: View {
                         attachedImages: $attachedImages,
                         attachedFiles: $attachedFiles,
                         webSearchEnabled: $webSearchEnabled,
+                        selectedMCPAgents: $chatViewModel.selectedMCPAgents,
                         imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                         isStreaming: isStreaming,
                         onSendMessage: {
@@ -233,31 +235,6 @@ struct ChatView: View {
             
             ToolbarItem(placement: .automatic) {
                 HStack(spacing: 8) {
-                    // MCP Agents Button
-                    Button(action: {
-                        showAgentSelector.toggle()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "server.rack")
-                                .font(.system(size: 12))
-                            if !chatViewModel.selectedMCPAgents.isEmpty {
-                                Text("\(chatViewModel.selectedMCPAgents.count)")
-                                    .font(.system(size: 10, weight: .bold))
-                            }
-                        }
-                        .foregroundColor(chatViewModel.selectedMCPAgents.isEmpty ? .secondary : .accentColor)
-                        .padding(6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(chatViewModel.selectedMCPAgents.isEmpty ? Color.clear : Color.accentColor.opacity(0.1))
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .popover(isPresented: $showAgentSelector) {
-                        MCPAgentSelector(selectedAgents: $chatViewModel.selectedMCPAgents)
-                    }
-                    .help("Manage MCP Agents")
-
                     // Multi-agent mode toggle with consistent styling (only show if enabled in settings)
                     if enableMultiAgentMode {
                         Button(action: {

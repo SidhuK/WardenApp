@@ -8,6 +8,7 @@ struct MessageInputView: View {
     @Binding var attachedImages: [ImageAttachment]
     @Binding var attachedFiles: [FileAttachment]
     @Binding var webSearchEnabled: Bool
+    @Binding var selectedMCPAgents: Set<UUID>
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
     var isStreaming: Bool = false
@@ -18,6 +19,8 @@ struct MessageInputView: View {
     var onStopStreaming: (() -> Void)?
     var inputPlaceholderText: String = "Type your message..."
     var cornerRadius: Double = 11.0
+    
+    @StateObject private var mcpManager = MCPManager.shared
 
     @Environment(\.managedObjectContext) private var viewContext
     @State var frontReturnKeyType = OmenTextField.ReturnKeyType.next
@@ -225,9 +228,21 @@ struct MessageInputView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
+                
+                // MCP Agents option (if any configured)
+                if !mcpManager.configs.isEmpty {
+                    Divider()
+                        .padding(.horizontal, 8)
+                    
+                    MCPAgentMenuSection(
+                        configs: mcpManager.configs,
+                        selectedAgents: $selectedMCPAgents,
+                        statuses: mcpManager.serverStatuses
+                    )
+                }
             }
             .padding(.vertical, 8)
-            .frame(minWidth: 160)
+            .frame(minWidth: 180)
         }
     }
     
@@ -472,5 +487,99 @@ struct ImagePreviewView: View {
                 .help(error.localizedDescription)
             }
         }
+    }
+}
+
+// MARK: - MCP Agent Menu Section
+
+struct MCPAgentMenuSection: View {
+    let configs: [MCPServerConfig]
+    @Binding var selectedAgents: Set<UUID>
+    let statuses: [UUID: MCPManager.ServerStatus]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: "server.rack")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                Text("MCP Agents")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                Spacer()
+                if !selectedAgents.isEmpty {
+                    Text("\(selectedAgents.count)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.accentColor))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            
+            ForEach(configs) { config in
+                MCPAgentMenuItem(
+                    config: config,
+                    isSelected: selectedAgents.contains(config.id),
+                    status: statuses[config.id] ?? .disconnected
+                ) {
+                    if selectedAgents.contains(config.id) {
+                        selectedAgents.remove(config.id)
+                    } else {
+                        selectedAgents.insert(config.id)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct MCPAgentMenuItem: View {
+    let config: MCPServerConfig
+    let isSelected: Bool
+    let status: MCPManager.ServerStatus
+    let onToggle: () -> Void
+    
+    private var statusColor: Color {
+        switch status {
+        case .connected: return .green
+        case .disconnected: return .gray
+        case .error: return .red
+        case .connecting: return .orange
+        }
+    }
+    
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 10) {
+                // Checkbox
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 14))
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                
+                // Status dot
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 6, height: 6)
+                
+                // Name
+                Text(config.name)
+                    .font(.system(size: 13))
+                    .foregroundColor(config.enabled ? AppConstants.textPrimary : AppConstants.textSecondary)
+                    .lineLimit(1)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(!config.enabled)
     }
 }

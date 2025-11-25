@@ -6,6 +6,7 @@ struct CenteredInputView: View {
     @Binding var attachedImages: [ImageAttachment]
     @Binding var attachedFiles: [FileAttachment]
     @Binding var webSearchEnabled: Bool
+    @Binding var selectedMCPAgents: Set<UUID>
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
     let isStreaming: Bool
@@ -77,6 +78,7 @@ struct CenteredInputView: View {
                                 attachedImages: $attachedImages,
                                 attachedFiles: $attachedFiles,
                                 webSearchEnabled: $webSearchEnabled,
+                                selectedMCPAgents: $selectedMCPAgents,
                                 chat: chat,
                                 imageUploadsAllowed: imageUploadsAllowed,
                                 isStreaming: isStreaming,
@@ -255,11 +257,12 @@ struct SuggestionCard: View {
         return chat
     }()
     
-    return CenteredInputView(
+    CenteredInputView(
         newMessage: .constant(""),
         attachedImages: .constant([]),
         attachedFiles: .constant([]),
         webSearchEnabled: .constant(false),
+        selectedMCPAgents: .constant([]),
         chat: mockChat,
         imageUploadsAllowed: true,
         isStreaming: false,
