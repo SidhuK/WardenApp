@@ -31,6 +31,8 @@ struct QuickChatView: View {
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
+    @AppStorage("defaultApiService") private var defaultApiServiceID: String?
+    
     // Focus state for the custom input
     @FocusState private var isInputFocused: Bool
     
@@ -264,9 +266,31 @@ struct QuickChatView: View {
             newChat.name = "Quick Chat"
             newChat.createdDate = Date()
             newChat.updatedDate = Date()
-            newChat.gptModel = AppConstants.chatGptDefaultModel
+            
+            // Use the default API service from settings
+            if let defaultServiceIDString = defaultApiServiceID,
+               let url = URL(string: defaultServiceIDString),
+               let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
+                do {
+                    if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
+                        newChat.apiService = defaultService
+                        newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
+                        selectedModel = newChat.gptModel
+                    }
+                } catch {
+                    print("Default API service not found: \(error)")
+                    // Fall back to first available service
+                    fallbackServiceSelectionFor(chat: newChat)
+                    selectedModel = newChat.gptModel.isEmpty ? AppConstants.chatGptDefaultModel : newChat.gptModel
+                }
+            } else {
+                // No default set, fall back to first available service
+                fallbackServiceSelectionFor(chat: newChat)
+                newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+                selectedModel = newChat.gptModel
+            }
+            
             quickChatEntity = newChat
-            selectedModel = AppConstants.chatGptDefaultModel
             try? viewContext.save()
         }
     }
@@ -474,8 +498,28 @@ struct QuickChatView: View {
         newChat.name = "Quick Chat"
         newChat.createdDate = Date()
         newChat.updatedDate = Date()
-        newChat.gptModel = selectedModel.isEmpty ? AppConstants.chatGptDefaultModel : selectedModel
-        fallbackServiceSelectionFor(chat: newChat)
+        
+        // Use the default API service from settings
+        if let defaultServiceIDString = defaultApiServiceID,
+           let url = URL(string: defaultServiceIDString),
+           let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
+            do {
+                if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
+                    newChat.apiService = defaultService
+                    newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
+                    selectedModel = newChat.gptModel
+                }
+            } catch {
+                print("Default API service not found: \(error)")
+                fallbackServiceSelectionFor(chat: newChat)
+                newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+                selectedModel = newChat.gptModel
+            }
+        } else {
+            fallbackServiceSelectionFor(chat: newChat)
+            newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+            selectedModel = newChat.gptModel
+        }
         
         quickChatEntity = newChat
         try? viewContext.save()
