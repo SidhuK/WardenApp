@@ -80,15 +80,11 @@ class MCPManager: ObservableObject {
         do {
             switch config.transportType {
             case .stdio:
-                // Note: StdioTransport in the SDK doesn't take arguments
-                // For now, we'll use the basic transport
-                let transport = StdioTransport()
-                // In a real implementation, we'd pass command and args to StdioTransport
-                // But the current SDK StdioTransport might be limited or I need to check how to pass args
-                // Assuming StdioTransport init takes command and args if updated, or we need to implement custom transport
-                // For now, using what's available.
-                // Wait, if the SDK StdioTransport is limited, stdio agents won't work properly without command args.
-                // But user asked for "check if connected".
+                guard let command = config.command else {
+                    throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing command for Stdio transport"])
+                }
+                
+                let transport = StdioTransport(command: command, arguments: config.arguments, environment: config.environment)
                 _ = try await client.connect(transport: transport)
                 
             case .sse:
@@ -215,8 +211,10 @@ class MCPManager: ObservableObject {
         
         switch config.transportType {
         case .stdio:
-            let transport = StdioTransport()
-            // TODO: Pass command/args when supported by SDK
+            guard let command = config.command else {
+                throw NSError(domain: "MCPManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing command for Stdio transport"])
+            }
+            let transport = StdioTransport(command: command, arguments: config.arguments, environment: config.environment)
             _ = try await client.connect(transport: transport)
             
         case .sse:

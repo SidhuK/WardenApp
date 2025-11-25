@@ -39,17 +39,31 @@ class OllamaHandler: BaseAPIHandler {
         }
     }
 
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let jsonDict: [String: Any] = [
+        var jsonDict: [String: Any] = [
             "model": self.model,
             "stream": stream,
             "messages": requestMessages,
             "temperature": temperature,
         ]
+        
+        // Add tools if present
+        if let tools = tools, !tools.isEmpty {
+            jsonDict["tools"] = tools
+            // Ollama uses 'tool_choice' similar to OpenAI? 
+            // According to Ollama docs, it supports function calling.
+            // We'll assume auto is default or explicitly set it if needed.
+            // For now, let's not force it unless we know Ollama requires it.
+            // Actually, OpenAI uses "tool_choice": "auto".
+            // Let's add it.
+            // Note: Check if Ollama supports "tool_choice".
+            // Recent Ollama versions do.
+            // jsonDict["tool_choice"] = "auto" 
+        }
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
 
