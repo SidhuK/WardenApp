@@ -9,17 +9,20 @@ struct SettingsView: View {
     @State private var selectedTab: PreferencesTabs = .general
     
     var body: some View {
-        NavigationSplitView {
-            // Native macOS Sidebar
+        HStack(spacing: 0) {
+            // Sidebar
             List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
                 Label(tab.rawValue, systemImage: tab.icon)
                     .tag(tab)
             }
             .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
-            .background(.regularMaterial)
-            .frame(minWidth: 180)
-        } detail: {
+            .frame(width: 200)
+            
+            // Divider
+            Rectangle()
+                .fill(Color(NSColor.separatorColor))
+                .frame(width: 1)
+            
             // Content Area
             Group {
                 switch selectedTab {
@@ -45,7 +48,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .navigationSplitViewStyle(.balanced)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             store.saveInCoreData()
         }

@@ -45,20 +45,20 @@ struct PreferencesView: View {
     @State private var selectedTab: PreferencesTabs = .general
     
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             // Sidebar
-            VStack(spacing: 0) {
-                List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
-                    Label(tab.rawValue, systemImage: tab.icon)
-                        .tag(tab)
-                }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
-                .background(.regularMaterial)
+            List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
+                Label(tab.rawValue, systemImage: tab.icon)
+                    .tag(tab)
             }
-            .frame(minWidth: 200)
-            .background(.regularMaterial)
-        } detail: {
+            .listStyle(.sidebar)
+            .frame(width: 200)
+            
+            // Divider
+            Rectangle()
+                .fill(Color(NSColor.separatorColor))
+                .frame(width: 1)
+            
             // Content
             Group {
                 switch selectedTab {
@@ -84,7 +84,7 @@ struct PreferencesView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .navigationSplitViewStyle(.balanced)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             store.saveInCoreData()
         }
