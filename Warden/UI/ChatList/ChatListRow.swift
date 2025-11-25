@@ -14,6 +14,7 @@ struct ChatListRow: View {
     var onKeyboardSelection: ((UUID, Bool, Bool) -> Void)?
     @StateObject private var chatViewModel: ChatViewModel
     @State private var showingMoveToProject = false
+    @State private var isHovered = false
     init(
         chat: ChatEntity,
         selectedChat: Binding<ChatEntity?>,
@@ -77,8 +78,32 @@ struct ChatListRow: View {
                     onSelectionToggle?(chatID, selected)
                 }
             )
+            .overlay(alignment: .trailing) {
+                if isHovered && !isSelectionMode {
+                    Menu {
+                        chatActionsMenuContent
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.08))
+                            )
+                    }
+                    .menuIndicator(.hidden)
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 4)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
+            }
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 deleteChat(chat)
@@ -116,58 +141,7 @@ struct ChatListRow: View {
             .tint(.secondary)
         }
         .contextMenu {
-            Button(action: { 
-                togglePinChat(chat) 
-            }) {
-                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
-            }
-            
-            Button(action: { renameChat(chat) }) {
-                Label("Rename", systemImage: "pencil")
-            }
-            if chat.apiService?.generateChatNames ?? false {
-                Button(action: {
-                    chatViewModel.regenerateChatName()
-                }) {
-                    Label("Regenerate Name", systemImage: "arrow.clockwise")
-                }
-            }
-            Button(action: { clearChat(chat) }) {
-                Label("Clear Chat", systemImage: "eraser")
-            }
-            
-            Divider()
-            
-            Button(action: {
-                showingMoveToProject = true
-            }) {
-                Label("Move to Project", systemImage: "folder.badge.plus")
-            }
-            
-            Menu("Share Chat") {
-                Button(action: {
-                    ChatSharingService.shared.shareChat(chat, format: .markdown)
-                }) {
-                    Label("Share as Markdown", systemImage: "square.and.arrow.up")
-                }
-                
-                Button(action: {
-                    ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
-                }) {
-                    Label("Copy as Markdown", systemImage: "doc.on.doc")
-                }
-                
-                Button(action: {
-                    ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
-                }) {
-                    Label("Export to File", systemImage: "doc.badge.arrow.up")
-                }
-            }
-            
-            Divider()
-            Button(action: { deleteChat(chat) }) {
-                Label("Delete", systemImage: "trash")
-            }
+            chatActionsMenuContent
         }
         .sheet(isPresented: $showingMoveToProject) {
             MoveToProjectView(
@@ -259,6 +233,67 @@ struct ChatListRow: View {
             try viewContext.save()
         } catch {
             print("Error toggling pin status: \(error.localizedDescription)")
+        }
+    }
+
+    @ViewBuilder
+    private var chatActionsMenuContent: some View {
+        Button(action: {
+            togglePinChat(chat)
+        }) {
+            Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
+        }
+        
+        Button(action: { renameChat(chat) }) {
+            Label("Rename", systemImage: "pencil")
+        }
+        
+        if chat.apiService?.generateChatNames ?? false {
+            Button(action: {
+                chatViewModel.regenerateChatName()
+            }) {
+                Label("Regenerate Name", systemImage: "arrow.clockwise")
+            }
+        }
+        
+        Button(action: { clearChat(chat) }) {
+            Label("Clear Chat", systemImage: "eraser")
+        }
+        
+        Divider()
+        
+        Button(action: {
+            showingMoveToProject = true
+        }) {
+            Label("Move to Project", systemImage: "folder.badge.plus")
+        }
+        
+        Menu("Share Chat") {
+            Button(action: {
+                ChatSharingService.shared.shareChat(chat, format: .markdown)
+            }) {
+                Label("Share as Markdown", systemImage: "square.and.arrow.up")
+            }
+            
+            Button(action: {
+                ChatSharingService.shared.copyChatToClipboard(chat, format: .markdown)
+            }) {
+                Label("Copy as Markdown", systemImage: "doc.on.doc")
+            }
+            
+            Button(action: {
+                ChatSharingService.shared.exportChatToFile(chat, format: .markdown)
+            }) {
+                Label("Export to File", systemImage: "doc.badge.arrow.up")
+            }
+        }
+        
+        Divider()
+        
+        Button(role: .destructive, action: {
+            deleteChat(chat)
+        }) {
+            Label("Delete", systemImage: "trash")
         }
     }
 }
