@@ -127,9 +127,20 @@ extension ModelMetadata {
     
     // MARK: - Model Name Formatting
     
-    /// Formats a model ID into a human-readable display name
-    /// Example: "x-ai/grok-code-fast-1" → "Grok Code Fast 1 (xAI)"
-    static func formatModelDisplayName(modelId: String, provider: String? = nil) -> String {
+    struct FormattedModelName {
+        let displayName: String
+        let provider: String?
+        
+        var fullName: String {
+            if let provider = provider {
+                return "\(displayName) (\(provider))"
+            }
+            return displayName
+        }
+    }
+    
+    /// Formats a model ID into structured components for display
+    static func formatModelComponents(modelId: String, provider: String? = nil) -> FormattedModelName {
         // Split by "/" if OpenRouter-style format
         let parts = modelId.split(separator: "/")
         let modelName: String
@@ -143,37 +154,124 @@ extension ModelMetadata {
             modelName = modelId
         }
         
-        // Convert kebab-case/snake_case to Title Case
-        let formatted = modelName
+        let formatted = Self.formatModelName(modelName)
+        let providerDisplay = providerPrefix.map { Self.mapProviderName($0).uppercased() }
+        
+        return FormattedModelName(displayName: formatted, provider: providerDisplay)
+    }
+    
+    /// Formats a model ID into a human-readable display name
+    /// Example: "x-ai/grok-code-fast-1" → "Grok Code Fast 1 (XAI)"
+    static func formatModelDisplayName(modelId: String, provider: String? = nil) -> String {
+        return formatModelComponents(modelId: modelId, provider: provider).fullName
+    }
+    
+    private static func formatModelName(_ modelName: String) -> String {
+        var name = modelName
+        
+        // Known model name mappings for cleaner display
+        let knownModels: [String: String] = [
+            "gpt-4o": "GPT-4o",
+            "gpt-4o-mini": "GPT-4o Mini",
+            "gpt-4-turbo": "GPT-4 Turbo",
+            "gpt-4": "GPT-4",
+            "gpt-3.5-turbo": "GPT-3.5 Turbo",
+            "claude-3-5-sonnet": "Claude 3.5 Sonnet",
+            "claude-3-5-haiku": "Claude 3.5 Haiku",
+            "claude-3-opus": "Claude 3 Opus",
+            "claude-3-sonnet": "Claude 3 Sonnet",
+            "claude-3-haiku": "Claude 3 Haiku",
+            "claude-sonnet-4": "Claude Sonnet 4",
+            "claude-4-sonnet": "Claude Sonnet 4",
+            "claude-opus-4": "Claude Opus 4",
+            "claude-4-opus": "Claude Opus 4",
+            "gemini-1.5-pro": "Gemini 1.5 Pro",
+            "gemini-1.5-flash": "Gemini 1.5 Flash",
+            "gemini-2.0-flash": "Gemini 2.0 Flash",
+            "gemini-pro": "Gemini Pro",
+            "llama-3.1-70b": "Llama 3.1 70B",
+            "llama-3.1-8b": "Llama 3.1 8B",
+            "llama-3-70b": "Llama 3 70B",
+            "llama-3-8b": "Llama 3 8B",
+            "mixtral-8x7b": "Mixtral 8x7B",
+            "mistral-large": "Mistral Large",
+            "mistral-medium": "Mistral Medium",
+            "mistral-small": "Mistral Small",
+            "deepseek-chat": "DeepSeek Chat",
+            "deepseek-coder": "DeepSeek Coder",
+            "deepseek-r1": "DeepSeek R1",
+            "grok-2": "Grok 2",
+            "grok-beta": "Grok Beta",
+            "o1-preview": "O1 Preview",
+            "o1-mini": "O1 Mini",
+            "o1": "O1",
+            "o3": "O3",
+            "o3-mini": "O3 Mini",
+        ]
+        
+        // Check for exact match first (case-insensitive)
+        let lowerName = name.lowercased()
+        for (key, value) in knownModels {
+            if lowerName == key.lowercased() || lowerName.hasPrefix(key.lowercased()) {
+                // Handle version suffixes like "-20241022"
+                let suffix = String(name.dropFirst(key.count))
+                if suffix.isEmpty || suffix.hasPrefix("-") || suffix.hasPrefix("@") {
+                    return value
+                }
+            }
+        }
+        
+        // Generic formatting: convert kebab-case/snake_case to Title Case
+        // But preserve version numbers and special tokens
+        let tokens = name
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")
             .split(separator: " ")
-            .map { $0.capitalized }
-            .joined(separator: " ")
         
-        // Add provider suffix if available
-        if let prefix = providerPrefix {
-            let friendlyProvider = Self.mapProviderName(prefix)
-            return "\(formatted) (\(friendlyProvider))"
-        }
+        let formatted = tokens.map { token -> String in
+            let str = String(token)
+            
+            // Keep version numbers as-is (e.g., "3.5", "4o", "8x7b")
+            if str.first?.isNumber == true || str.contains(".") {
+                return str
+            }
+            
+            // Keep size indicators uppercase (e.g., "70B", "8B")
+            if str.hasSuffix("b") || str.hasSuffix("B"), let _ = Int(str.dropLast()) {
+                return str.uppercased()
+            }
+            
+            // Capitalize normally
+            return str.capitalized
+        }.joined(separator: " ")
         
         return formatted
     }
     
     private static func mapProviderName(_ provider: String) -> String {
         let mapping: [String: String] = [
-            "x-ai": "xAI",
-            "anthropic": "Anthropic",
-            "openai": "OpenAI",
-            "google": "Google",
-            "meta": "Meta",
-            "mistralai": "Mistral AI",
-            "cohere": "Cohere",
-            "perplexity": "Perplexity",
-            "deepseek": "DeepSeek",
-            "qwen": "Qwen",
-            "nvidia": "NVIDIA"
+            "x-ai": "XAI",
+            "xai": "XAI",
+            "anthropic": "ANTHROPIC",
+            "openai": "OPENAI",
+            "chatgpt": "OPENAI",
+            "google": "GOOGLE",
+            "gemini": "GOOGLE",
+            "meta": "META",
+            "meta-llama": "META",
+            "mistralai": "MISTRAL",
+            "mistral": "MISTRAL",
+            "cohere": "COHERE",
+            "perplexity": "PERPLEXITY",
+            "deepseek": "DEEPSEEK",
+            "qwen": "QWEN",
+            "nvidia": "NVIDIA",
+            "groq": "GROQ",
+            "ollama": "OLLAMA",
+            "openrouter": "OPENROUTER",
+            "lmstudio": "LMSTUDIO",
+            "claude": "ANTHROPIC",
         ]
-        return mapping[provider.lowercased()] ?? provider.capitalized
+        return mapping[provider.lowercased()] ?? provider.uppercased()
     }
 }

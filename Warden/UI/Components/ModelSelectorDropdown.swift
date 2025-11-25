@@ -327,6 +327,8 @@ struct StandaloneModelSelector: View {
         let isReasoning = metadata?.hasReasoning ?? false
         let isVision = metadata?.hasVision ?? false
         
+        let formattedModel = ModelMetadata.formatModelComponents(modelId: item.modelId, provider: item.provider)
+        
         return Button(action: {
             handleModelChange(providerType: item.provider, model: item.modelId)
             onDismiss?()
@@ -339,8 +341,15 @@ struct StandaloneModelSelector: View {
                         .frame(width: 8, height: 8)
                         .overlay(Circle().stroke(Color.primary.opacity(0.2), lineWidth: 0.5))
                     
-                    Text(ModelMetadata.formatModelDisplayName(modelId: item.modelId, provider: item.provider))
+                    // Model name with bold provider
+                    (Text(formattedModel.displayName)
                         .font(.system(size: 11, weight: .regular))
+                     + Text(formattedModel.provider != nil ? " (" : "")
+                        .font(.system(size: 11, weight: .regular))
+                     + Text(formattedModel.provider ?? "")
+                        .font(.system(size: 11, weight: .bold))
+                     + Text(formattedModel.provider != nil ? ")" : "")
+                        .font(.system(size: 11, weight: .regular)))
                         .foregroundColor(isSelected ? .accentColor : AppConstants.textPrimary)
                         .lineLimit(1)
                     
