@@ -51,154 +51,151 @@ struct TabGeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Appearance Settings
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Appearance")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    // Chat Font Size
-                    HStack {
-                        Text("Chat Font Size:")
+            VStack(alignment: .leading, spacing: 20) {
+                // Appearance Settings Card
+                settingsCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader(icon: "paintbrush", title: "Appearance")
                         
-                        Spacer()
-                        
-                        Picker("", selection: $chatFontSize) {
-                            ForEach(fontSizeOptions, id: \.self) { size in
-                                Text("\(Int(size))pt").tag(size)
+                        VStack(spacing: 14) {
+                            // Chat Font Size
+                            HStack {
+                                Text("Chat Font Size:")
+                                Spacer()
+                                Picker("", selection: $chatFontSize) {
+                                    ForEach(fontSizeOptions, id: \.self) { size in
+                                        Text("\(Int(size))pt").tag(size)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 120)
+                                .labelsHidden()
                             }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 120)
-                        .labelsHidden()
-                    }
-                    
-                    // Theme
-                    HStack {
-                        Text("Theme:")
-                        
-                        Spacer()
-                        
-                        Picker("", selection: $selectedColorSchemeRaw) {
-                            Text("System").tag(0)
-                            Text("Light").tag(1)
-                            Text("Dark").tag(2)
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 120)
-                        .labelsHidden()
-                        .onChange(of: selectedColorSchemeRaw) { _, newValue in
-                            switch newValue {
-                            case 0:
-                                preferredColorScheme.wrappedValue = nil
-                            case 1:
-                                preferredColorScheme.wrappedValue = .light
-                            case 2:
-                                preferredColorScheme.wrappedValue = .dark
-                            default:
-                                preferredColorScheme.wrappedValue = nil
+                            
+                            // Theme
+                            HStack {
+                                Text("Theme:")
+                                Spacer()
+                                Picker("", selection: $selectedColorSchemeRaw) {
+                                    Text("System").tag(0)
+                                    Text("Light").tag(1)
+                                    Text("Dark").tag(2)
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 120)
+                                .labelsHidden()
+                                .onChange(of: selectedColorSchemeRaw) { _, newValue in
+                                    switch newValue {
+                                    case 0:
+                                        preferredColorScheme.wrappedValue = nil
+                                    case 1:
+                                        preferredColorScheme.wrappedValue = .light
+                                    case 2:
+                                        preferredColorScheme.wrappedValue = .dark
+                                    default:
+                                        preferredColorScheme.wrappedValue = nil
+                                    }
+                                }
                             }
-                        }
-                    }
-                    
-                    // Multi-Agent Mode
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Multi-Agent Mode:")
                             
-                            Spacer()
-                            
-                            Picker("", selection: $enableMultiAgentMode) {
-                                Text("Disabled").tag(false)
-                                Text("Enabled").tag(true)
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 120)
-                            .labelsHidden()
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                            
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .foregroundColor(.orange)
+                            // Sidebar Icons
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Sidebar Icons:")
+                                    Spacer()
+                                    Picker("", selection: $showSidebarAIIcons) {
+                                        Text("Hidden").tag(false)
+                                        Text("Visible").tag(true)
+                                    }
+                                    .pickerStyle(.menu)
+                                    .frame(width: 120)
+                                    .labelsHidden()
+                                }
+                                
+                                Text("Display AI service logos next to chat names in the sidebar")
+                                    .foregroundColor(.secondary)
                                     .font(.caption)
-                                Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved.")
-                                    .foregroundColor(.orange)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
                             }
                         }
-                    }
-                    
-                    // Sidebar Icons
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Sidebar Icons:")
-                            
-                            Spacer()
-                            
-                            Picker("", selection: $showSidebarAIIcons) {
-                                Text("Hidden").tag(false)
-                                Text("Visible").tag(true)
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 120)
-                            .labelsHidden()
-                        }
-                        
-                        Text("Display AI service logos next to chat names in the sidebar")
-                            .foregroundColor(.secondary)
-                            .font(.caption)
                     }
                 }
                 
-                Divider()
-                    .padding(.vertical, 8)
-                
-                // Backup & Restore
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Backup & Restore")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
-                        .foregroundColor(.secondary)
-                        .font(.callout)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Export chats history")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Export to file...") {
-                                Task {
-                                    let result = await store.loadFromCoreData()
-                                    handleExportResult(result)
+                // Multi-Agent Mode Card
+                settingsCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader(icon: "person.3", title: "Multi-Agent Mode")
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Enable Multi-Agent:")
+                                Spacer()
+                                Picker("", selection: $enableMultiAgentMode) {
+                                    Text("Disabled").tag(false)
+                                    Text("Enabled").tag(true)
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 120)
+                                .labelsHidden()
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Query up to 3 AI models simultaneously and compare responses in real-time.")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                                
+                                HStack(spacing: 4) {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundColor(.orange)
+                                        .font(.caption)
+                                    Text("⚠️ Beta Feature: May cause instability or crashes. This feature is purely for testing responses, chats are not saved.")
+                                        .foregroundColor(.orange)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
                                 }
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
                         }
+                    }
+                }
+                
+                // Backup & Restore Card
+                settingsCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader(icon: "archivebox", title: "Backup & Restore")
+                        
+                        Text("Chats are exported into plaintext, unencrypted JSON file. You can import them back later.")
+                            .foregroundColor(.secondary)
+                            .font(.callout)
 
-                        HStack {
-                            Text("Import chats history")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Import from file...") {
-                                let openPanel = NSOpenPanel()
-                                openPanel.allowedContentTypes = [.json]
-                                openPanel.begin { result in
-                                    guard result == .OK, let url = openPanel.url else { return }
-                                    self.handleImport(from: url)
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Export chats history")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Button("Export to file...") {
+                                    Task {
+                                        let result = await store.loadFromCoreData()
+                                        handleExportResult(result)
+                                    }
                                 }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+
+                            HStack {
+                                Text("Import chats history")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Button("Import from file...") {
+                                    let openPanel = NSOpenPanel()
+                                    openPanel.allowedContentTypes = [.json]
+                                    openPanel.begin { result in
+                                        guard result == .OK, let url = openPanel.url else { return }
+                                        self.handleImport(from: url)
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+                            }
                         }
                     }
                 }
@@ -208,6 +205,32 @@ struct TabGeneralSettingsView: View {
         }
         .onAppear {
             self.selectedColorSchemeRaw = self.preferredColorSchemeRaw
+        }
+    }
+    
+    // MARK: - Card Style
+    private func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+            )
+    }
+    
+    // MARK: - Section Header
+    private func sectionHeader(icon: String, title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
         }
     }
     

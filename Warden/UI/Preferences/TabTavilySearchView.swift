@@ -12,110 +12,104 @@ struct TabTavilySearchView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // API Configuration
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("API Configuration")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Tavily API Key")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 20) {
+                // API Configuration Card
+                sectionCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader(icon: "key", title: "API Configuration")
                         
-                        SecureField("Paste your API key here", text: $apiKey)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        HStack(spacing: 12) {
-                            Button("Get API Key") {
-                                NSWorkspace.shared.open(URL(string: "https://app.tavily.com")!)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Tavily API Key")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
                             
-                            Button("Test Connection") {
-                                testConnection()
-                            }
-                            .disabled(apiKey.isEmpty || isTesting)
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+                            SecureField("Paste your API key here", text: $apiKey)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
                             
-                            if isTesting {
-                                ProgressView()
-                                    .scaleEffect(0.7)
+                            HStack(spacing: 12) {
+                                Button("Get API Key") {
+                                    NSWorkspace.shared.open(URL(string: "https://app.tavily.com")!)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+                                
+                                Button("Test Connection") {
+                                    testConnection()
+                                }
+                                .disabled(apiKey.isEmpty || isTesting)
+                                .buttonStyle(.bordered)
+                                .controlSize(.regular)
+                                
+                                if isTesting {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                }
+                                
+                                Spacer()
                             }
-                            
-                            Spacer()
                         }
                     }
                 }
                 
-                Divider()
-                    .padding(.vertical, 8)
-                
-                // Search Settings
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Search Settings")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Search Depth:")
-                            
-                            Spacer()
-                            
-                            Picker("", selection: $searchDepth) {
-                                Text("Basic (Faster)").tag("basic")
-                                Text("Advanced (More thorough)").tag("advanced")
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 140)
-                            .labelsHidden()
-                        }
+                // Search Settings Card
+                sectionCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader(icon: "magnifyingglass", title: "Search Settings")
                         
-                        HStack {
-                            Text("Max Results:")
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Search Depth:")
+                                
+                                Spacer()
+                                
+                                Picker("", selection: $searchDepth) {
+                                    Text("Basic (Faster)").tag("basic")
+                                    Text("Advanced (More thorough)").tag("advanced")
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 140)
+                                .labelsHidden()
+                            }
                             
-                            Spacer()
+                            HStack {
+                                Text("Max Results:")
+                                
+                                Spacer()
+                                
+                                Stepper("", value: $maxResults, in: 1...10)
+                                
+                                Text("\(maxResults)")
+                                    .frame(width: 30, alignment: .trailing)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                             
-                            Stepper("", value: $maxResults, in: 1...10)
-                            
-                            Text("\(maxResults)")
-                                .frame(width: 30, alignment: .trailing)
+                            HStack {
+                                Text("Include AI Answer:")
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $includeAnswer)
+                                    .labelsHidden()
+                            }
+                        }
+                    }
+                }
+                
+                // Usage Instructions Card
+                sectionCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader(icon: "book", title: "Usage")
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Enable web search in chat:")
+                                .fontWeight(.medium)
+                            Text("Click the globe button (🌐) in the message input area to toggle web search on/off. When enabled, your messages will include web search results.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        
-                        HStack {
-                            Text("Include AI Answer:")
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $includeAnswer)
-                                .labelsHidden()
-                        }
-                    }
-                }
-                
-                Divider()
-                    .padding(.vertical, 8)
-                
-                // Usage Instructions
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Usage")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Enable web search in chat:")
-                            .fontWeight(.medium)
-                        Text("Click the globe button (🌐) in the message input area to toggle web search on/off. When enabled, your messages will include web search results.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 
@@ -140,6 +134,33 @@ struct TabTavilySearchView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(testResultMessage)
+        }
+    }
+    
+    @ViewBuilder
+    private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+            )
+    }
+    
+    @ViewBuilder
+    private func sectionHeader(icon: String, title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.headline)
+                .fontWeight(.semibold)
         }
     }
     

@@ -89,9 +89,10 @@ struct MessageCell: View {
                 
                 if chat.isPinned {
                     Image(systemName: "pin.fill")
-                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .gray)
-                        .font(.caption)
-                        .padding(.trailing, 8)
+                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .secondary)
+                        .font(.system(size: 10, weight: .medium))
+                        .rotationEffect(.degrees(45))
+                        .padding(.trailing, 10)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -100,11 +101,13 @@ struct MessageCell: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         self.isActive
-                            ? (colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
+                            ? Color.accentColor.opacity(0.15)
                             : self.isHovered
-                                ? (colorScheme == .dark ? Color(hex: "#666666")! : Color(hex: "#CCCCCC")!) : Color.clear
+                                ? Color.primary.opacity(0.05) : Color.clear
                     )
             )
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
+            .animation(.easeInOut(duration: 0.15), value: isActive)
             .onHover { hovering in
                 isHovered = hovering
             }

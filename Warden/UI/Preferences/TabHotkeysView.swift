@@ -6,38 +6,48 @@ struct TabHotkeysView: View {
     @State private var editingActionId: String?
     @State private var showingResetConfirmation = false
     @State private var isRecording = false
+    @State private var hoveredRowId: String?
     
     var body: some View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                settingGroup {
-                    VStack(spacing: 0) {
-                        ForEach(Array(HotkeyAction.HotkeyCategory.allCases.enumerated()), id: \.element) { index, category in
-                            if index > 0 {
-                                Divider()
-                                    .padding(.vertical, 16)
-                            }
-                            categorySection(category)
+                // Card container
+                VStack(spacing: 0) {
+                    ForEach(Array(HotkeyAction.HotkeyCategory.allCases.enumerated()), id: \.element) { index, category in
+                        if index > 0 {
+                            Divider()
+                                .padding(.vertical, 12)
                         }
-                        
-                        Divider()
-                            .padding(.vertical, 16)
-                        
-                        HStack {
-                            Text("Reset All Shortcuts")
-                                .fontWeight(.medium)
-                            Spacer()
-                            Button("Reset All") {
-                                showingResetConfirmation = true
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .foregroundColor(.red)
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
+                        categorySection(category)
                     }
+                    
+                    Divider()
+                        .padding(.vertical, 12)
+                    
+                    // Reset All row
+                    HStack {
+                        Text("Reset All Shortcuts")
+                            .fontWeight(.medium)
+                        Spacer()
+                        Button("Reset All") {
+                            showingResetConfirmation = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .foregroundColor(.red)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
                 }
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                )
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
@@ -61,17 +71,21 @@ struct TabHotkeysView: View {
         let actionsInCategory = hotkeyManager.availableActions.filter { $0.category == category }
         
         return VStack(spacing: 0) {
-            // Category header
-            HStack {
-                Label(category.rawValue, systemImage: category.icon)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+            // Category header with improved styling
+            HStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16)
+                
+                Text(category.rawValue)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
                 
                 Spacer()
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             
             // Actions in category
             ForEach(actionsInCategory) { action in
@@ -80,11 +94,6 @@ struct TabHotkeysView: View {
                     Divider()
                         .padding(.leading, 16)
                 }
-            }
-            
-            if category != HotkeyAction.HotkeyCategory.allCases.last {
-                Divider()
-                    .padding(.vertical, 8)
             }
         }
     }
@@ -124,6 +133,13 @@ struct TabHotkeysView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(hoveredRowId == action.id ? Color.primary.opacity(0.04) : Color.clear)
+        )
+        .onHover { isHovered in
+            hoveredRowId = isHovered ? action.id : nil
+        }
         .background(
             // Invisible view to capture key events when editing
             InvisibleKeyCapture(
@@ -207,32 +223,6 @@ struct TabHotkeysView: View {
         hotkeyManager.updateShortcut(for: actionId, shortcut: newShortcut)
         editingActionId = nil
     }
-    
-    
-    
-    // MARK: - Section Header Style
-    private func sectionHeader(icon: String, title: String, iconColor: Color = .accentColor) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundColor(iconColor)
-                .font(.system(size: 16, weight: .medium))
-                .frame(width: 20)
-            
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.primary)
-                
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-    
-    private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) {
-            content()
-        }
-    }
 }
 
 struct InvisibleKeyCapture: NSViewRepresentable {
@@ -304,4 +294,4 @@ struct InlineTabHotkeysView: View {
 
 #Preview {
     TabHotkeysView()
-} 
+}

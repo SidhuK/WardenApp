@@ -1,7 +1,7 @@
 
 import SwiftUI
 
-struct DangerZoneView: View {
+struct TabDangerZoneView: View {
     @ObservedObject var store: ChatStore
     @State private var currentAlert: AlertType?
 
@@ -11,39 +11,55 @@ struct DangerZoneView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text(
-                    "Here you can remove all chats, AI Assistants and API Services. Use with caution: this action cannot be undone."
-                )
-                .foregroundColor(.gray)
-                .fixedSize(horizontal: false, vertical: true)
-                Spacer()
-            }
-            .padding(.bottom, 16)
-
-            VStack(alignment: .leading) {
-                Button(
-                    action: {
-                        currentAlert = .deleteChats
-                    },
-                    label: {
-                        Text("Delete all chats")
-                    }
-                )
-                Button(action: {
-                    currentAlert = .deletePersonas
-                }) {
-                    Text("Delete all AI Assistants")
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title2)
+                        .foregroundColor(.red)
+                    Text("Danger Zone")
+                        .font(.headline)
+                        .foregroundColor(.red)
                 }
-                Button(action: {
-                    currentAlert = .deleteAPIServices
-                }) {
-                    Text("Delete all API Services")
+                .padding(.bottom, 4)
+
+                Text("These actions are permanent and cannot be undone. Please proceed with caution.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+                    .padding(.vertical, 8)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    dangerActionRow(
+                        title: "Delete all chats",
+                        description: "Remove all conversation history from the app.",
+                        action: { currentAlert = .deleteChats }
+                    )
+
+                    dangerActionRow(
+                        title: "Delete all AI Assistants",
+                        description: "Remove all custom AI assistant configurations.",
+                        action: { currentAlert = .deletePersonas }
+                    )
+
+                    dangerActionRow(
+                        title: "Delete all API Services",
+                        description: "Remove all configured API service connections.",
+                        action: { currentAlert = .deleteAPIServices }
+                    )
                 }
-
             }
-
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.red.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.red.opacity(0.15), lineWidth: 1)
+            )
         }
         .padding(32)
         .alert(item: $currentAlert) { alertType in
@@ -76,6 +92,30 @@ struct DangerZoneView: View {
                     secondaryButton: .cancel()
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private func dangerActionRow(title: String, description: String, action: @escaping () -> Void) -> some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Button(action: action) {
+                Text("Delete")
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.red)
+                    .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
