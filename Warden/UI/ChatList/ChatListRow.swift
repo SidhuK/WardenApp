@@ -80,63 +80,40 @@ struct ChatListRow: View {
         }
         .buttonStyle(.plain)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            // Delete action (destructive, red)
             Button(role: .destructive) {
                 deleteChat(chat)
             } label: {
                 Image(systemName: "trash")
             }
             
-            // Pin/Unpin action
             Button {
                 togglePinChat(chat)
             } label: {
                 Image(systemName: chat.isPinned ? "pin.slash" : "pin")
             }
-            .tint(chat.isPinned ? Color(.systemBrown).opacity(0.7) : Color(.systemIndigo).opacity(0.7))
+            .tint(.secondary)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            // Move to Project action
             Button {
                 showingMoveToProject = true
             } label: {
                 Image(systemName: "folder.badge.plus")
             }
-            .tint(Color(.systemGreen).opacity(0.7))
+            .tint(.secondary)
             
-            // Rename action
             Button {
                 renameChat(chat)
             } label: {
                 Image(systemName: "pencil")
             }
-            .tint(Color(.systemTeal).opacity(0.7))
+            .tint(.secondary)
             
-            // Share action
             Button {
                 ChatSharingService.shared.shareChat(chat, format: .markdown)
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
-            .tint(Color(.systemBlue).opacity(0.7))
-            
-            // Clear chat action
-            Button {
-                clearChat(chat)
-            } label: {
-                Image(systemName: "eraser")
-            }
-            .tint(Color(.systemOrange).opacity(0.6))
-            
-            // Regenerate name action (only if supported)
-            if chat.apiService?.generateChatNames ?? false {
-                Button {
-                    chatViewModel.regenerateChatName()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .tint(Color(.systemPurple).opacity(0.6))
-            }
+            .tint(.secondary)
         }
         .contextMenu {
             Button(action: { 

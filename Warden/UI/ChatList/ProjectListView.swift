@@ -280,7 +280,7 @@ struct ProjectRow: View {
                         Label(isArchived ? "Unarchive" : "Archive", 
                               systemImage: isArchived ? "tray.and.arrow.up" : "tray.and.arrow.down")
                     }
-                    .tint(Color(.systemOrange).opacity(0.7))
+                    .tint(.secondary)
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
                     // Edit action
@@ -289,7 +289,7 @@ struct ProjectRow: View {
                     } label: {
                         Label("Edit", systemImage: "pencil")
                     }
-                    .tint(Color(.systemBlue).opacity(0.7))
+                    .tint(.secondary)
                     
                     // New chat in project action
                     Button {
@@ -297,7 +297,7 @@ struct ProjectRow: View {
                     } label: {
                         Label("New Chat", systemImage: "plus.message")
                     }
-                    .tint(Color(.systemGreen).opacity(0.7))
+                    .tint(.secondary)
                     
                     // Regenerate chat titles action
                     Button {
@@ -305,7 +305,7 @@ struct ProjectRow: View {
                     } label: {
                         Label("Regenerate Titles", systemImage: "arrow.clockwise")
                     }
-                    .tint(Color(.systemPurple).opacity(0.7))
+                    .tint(.secondary)
                 }
                 .opacity(isArchived ? 0.7 : 1.0)
             
@@ -748,7 +748,7 @@ struct ProjectRowInList: View {
                 Label(isArchived ? "Unarchive" : "Archive", 
                       systemImage: isArchived ? "tray.and.arrow.up" : "tray.and.arrow.down")
             }
-            .tint(Color(.systemOrange).opacity(0.7))
+            .tint(.secondary)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             // Edit action
@@ -757,7 +757,7 @@ struct ProjectRowInList: View {
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
-            .tint(Color(.systemBlue).opacity(0.7))
+            .tint(.secondary)
             
             // New chat in project action
             Button {
@@ -765,7 +765,7 @@ struct ProjectRowInList: View {
             } label: {
                 Label("New Chat", systemImage: "plus.message")
             }
-            .tint(Color(.systemGreen).opacity(0.7))
+            .tint(.secondary)
             
             // Regenerate chat titles action
             Button {
@@ -773,7 +773,7 @@ struct ProjectRowInList: View {
             } label: {
                 Label("Regenerate Titles", systemImage: "arrow.clockwise")
             }
-            .tint(Color(.systemPurple).opacity(0.7))
+            .tint(.secondary)
         }
     }
     

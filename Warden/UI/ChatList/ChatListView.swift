@@ -331,124 +331,31 @@ struct ChatListView: View {
         .padding(.horizontal)
     }
 
-    private var topBarSection: some View {
-        HStack(spacing: 8) {
-            // Search field
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-
-                TextField("Search chats...", text: $searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .font(.system(.body))
-                    .focused($isSearchFocused)
-                    .onExitCommand {
-                        searchText = ""
-                        isSearchFocused = false
-                    }
-
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(8)
-            .background(
-                Group {
-                    if isSearchFocused {
-                        Color(NSColor.controlBackgroundColor).opacity(0.6)
-                    } else {
-                        // Light mode: slightly darker background, Dark mode: slightly lighter background
-                        Color.primary.opacity(0.05)
-                    }
-                }
-            )
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-            )
-            
-            // New chat button
-            newChatButton
-            
-            // Settings button
-            settingsButton
-        }
-        .padding(.horizontal)
-    }
-
     private var newChatButton: some View {
-        // New Thread button with subtle angled glassy effect
         Button(action: {
             newChatButtonTapped.toggle()
             onNewChat()
         }) {
             HStack(spacing: 8) {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 16, weight: .medium))
-                Text("New Thread")
                     .font(.system(size: 14, weight: .medium))
+                Text("New Thread")
+                    .font(.system(size: 13, weight: .medium))
             }
             .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 40)
+            .frame(height: 36)
             .background(
-                ZStack {
-                    // Base gradient background
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.accentColor.opacity(0.85),
-                            Color.accentColor.opacity(0.75)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    
-                    // Subtle angled glassy overlay effect
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: .white.opacity(0.15), location: 0.0),
-                            .init(color: .white.opacity(0.05), location: 0.4),
-                            .init(color: .clear, location: 0.6),
-                            .init(color: .black.opacity(0.03), location: 1.0)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    
-                    // Very subtle material texture
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.ultraThinMaterial)
-                        .opacity(0.05)
-                        .blendMode(.overlay)
-                }
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor)
             )
-            .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0.2),
-                                Color.accentColor.opacity(0.15)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.5
-                    )
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
             )
-            .shadow(color: Color.accentColor.opacity(0.2), radius: 1.5, x: 0, y: 1)
-            .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .padding(.horizontal, 16)
     }
     
@@ -473,9 +380,14 @@ struct ChatListView: View {
     }
 
     private var selectionToolbar: some View {
-        HStack(spacing: 12) {
-            // Select All/None button
-            Button(action: {
+        HStack(spacing: 8) {
+            Text("\(selectedChatIDs.count) selected")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            Button {
                 if selectedChatIDs.count == filteredChats.count {
                     selectedChatIDs.removeAll()
                     lastSelectedChatID = nil
@@ -483,71 +395,34 @@ struct ChatListView: View {
                     selectedChatIDs = Set(filteredChats.map { $0.id })
                     lastSelectedChatID = filteredChats.last?.id
                 }
-            }) {
-                Image(systemName: selectedChatIDs.count == filteredChats.count ? "checklist" : "checklist.unchecked")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.accentColor)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.accentColor.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-                            )
-                    )
+            } label: {
+                Text(selectedChatIDs.count == filteredChats.count ? "Deselect All" : "Select All")
+                    .font(.system(size: 11, weight: .medium))
             }
-            .buttonStyle(PlainButtonStyle())
-            .help(selectedChatIDs.count == filteredChats.count ? "Deselect All" : "Select All")
+            .buttonStyle(.borderless)
             
-            // Delete button
-            Button(action: {
+            Button(role: .destructive) {
                 deleteSelectedChats()
-            }) {
+            } label: {
                 Image(systemName: "trash")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.red)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.red.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-                            )
-                    )
+                    .font(.system(size: 12))
             }
-            .buttonStyle(PlainButtonStyle())
-            .help("Delete Selected")
+            .buttonStyle(.borderless)
             .disabled(selectedChatIDs.isEmpty)
             
-            // Clear selection button
-            Button(action: {
+            Button {
                 selectedChatIDs.removeAll()
                 lastSelectedChatID = nil
-            }) {
-                Image(systemName: "xmark.circle")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.primary.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-                            )
-                    )
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .medium))
             }
-            .buttonStyle(PlainButtonStyle())
-            .help("Clear Selection")
-            
-            Spacer()
+            .buttonStyle(.borderless)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.8))
-        .cornerRadius(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private func deleteSelectedChats() {
