@@ -25,27 +25,14 @@ struct GlassCard<Content: View>: View {
 // MARK: - Glass Background
 struct GlassBackground: View {
     var cornerRadius: CGFloat = 12
-    var opacity: Double = 0.7
     
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(.regularMaterial)
+            .fill(Color(NSColor.controlBackgroundColor))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.3),
-                                Color.white.opacity(0.1),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.5
-                    )
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -161,10 +148,10 @@ struct GlassToolbar<Content: View>: View {
         content
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(.ultraThinMaterial)
+            .background(Color(NSColor.controlBackgroundColor))
             .overlay(
                 Rectangle()
-                    .fill(Color.primary.opacity(0.06))
+                    .fill(Color.primary.opacity(0.08))
                     .frame(height: 1),
                 alignment: .bottom
             )
@@ -373,10 +360,10 @@ struct MasterDetailLayout<Master: View, Detail: View>: View {
         HStack(spacing: 0) {
             master
                 .frame(width: masterWidth)
-                .background(.regularMaterial)
+                .background(Color(NSColor.controlBackgroundColor))
             
             Rectangle()
-                .fill(Color.primary.opacity(0.08))
+                .fill(Color(NSColor.separatorColor))
                 .frame(width: 1)
             
             detail

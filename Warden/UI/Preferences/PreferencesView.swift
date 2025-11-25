@@ -141,10 +141,10 @@ struct InlineSettingsView: View {
                 }
                 .padding(12)
                 .frame(width: 180)
-                .background(.regularMaterial)
+                .background(Color(NSColor.controlBackgroundColor))
                 
                 Rectangle()
-                    .fill(Color.primary.opacity(0.06))
+                    .fill(Color(NSColor.separatorColor))
                     .frame(width: 1)
                 
                 // Content
