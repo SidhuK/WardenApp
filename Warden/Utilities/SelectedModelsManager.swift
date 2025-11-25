@@ -6,16 +6,29 @@ import CoreData
 class SelectedModelsManager: ObservableObject {
     static let shared = SelectedModelsManager()
     
-    @Published private(set) var customSelections: [String: Set<String>] = [:]
+    // nil = no custom selection (show all), Set = custom selection (can be empty for "show none")
+    @Published private(set) var customSelections: [String: Set<String>?] = [:]
     
     private init() {}
     
     /// Get the selected model IDs for a service
+    /// Returns nil if no custom selection exists (meaning all models are selected)
     func getSelectedModelIds(for serviceType: String) -> Set<String> {
-        return customSelections[serviceType] ?? Set()
+        // customSelections[serviceType] returns Optional<Set<String>?>
+        // We need to flatten this: if key exists and has a value, return the Set; otherwise return empty Set
+        if let selection = customSelections[serviceType] {
+            return selection ?? Set()
+        }
+        return Set()
+    }
+    
+    /// Check if a custom selection exists (regardless of whether it's empty)
+    func hasCustomSelection(for serviceType: String) -> Bool {
+        return customSelections[serviceType] != nil
     }
     
     /// Set custom model selection for a service
+    /// Pass an empty Set to select no models, or use clearCustomSelection to show all
     func setSelectedModels(for serviceType: String, modelIds: Set<String>) {
         customSelections[serviceType] = modelIds
     }
@@ -25,12 +38,12 @@ class SelectedModelsManager: ObservableObject {
         if customSelections[serviceType] == nil {
             customSelections[serviceType] = Set()
         }
-        customSelections[serviceType]?.insert(modelId)
+        customSelections[serviceType]??.insert(modelId)
     }
     
     /// Remove a model from the custom selection
     func removeModel(for serviceType: String, modelId: String) {
-        customSelections[serviceType]?.remove(modelId)
+        customSelections[serviceType]??.remove(modelId)
     }
     
     /// Clear custom selection for a service (show all models)
@@ -45,9 +58,8 @@ class SelectedModelsManager: ObservableObject {
                let selectedModelsData = service.selectedModels as? Data {
                 do {
                     let modelIds = try JSONDecoder().decode(Set<String>.self, from: selectedModelsData)
-                    if !modelIds.isEmpty {
-                        customSelections[serviceType] = modelIds
-                    }
+                    // Always set the selection, even if empty (empty = "select none")
+                    customSelections[serviceType] = modelIds
                 } catch {
                     print("Failed to decode selected models for \(serviceType): \(error)")
                 }
@@ -59,7 +71,9 @@ class SelectedModelsManager: ObservableObject {
     func saveToService(_ service: APIServiceEntity, context: NSManagedObjectContext) {
         guard let serviceType = service.type else { return }
         
-        if let selection = customSelections[serviceType], !selection.isEmpty {
+        // Check if there's a custom selection (even if empty)
+        if let selection = customSelections[serviceType] {
+            // Save the selection even if it's empty
             do {
                 let data = try JSONEncoder().encode(selection)
                 service.selectedModels = data as NSObject
@@ -67,6 +81,7 @@ class SelectedModelsManager: ObservableObject {
                 print("Failed to encode selected models for \(serviceType): \(error)")
             }
         } else {
+            // No custom selection = clear the saved data (show all models)
             service.selectedModels = nil
         }
         
@@ -103,16 +118,18 @@ extension APIServiceEntity {
     }
     
     /// Set the selected models for this service
-    func setSelectedModelIds(_ modelIds: Set<String>) {
-        if modelIds.isEmpty {
-            selectedModels = nil
-        } else {
+    func setSelectedModelIds(_ modelIds: Set<String>?) {
+        if let modelIds = modelIds {
+            // Save even if empty (empty = "select none")
             do {
                 selectedModels = try JSONEncoder().encode(modelIds) as NSObject
             } catch {
                 print("Failed to encode selected models: \(error)")
                 selectedModels = nil
             }
+        } else {
+            // nil = no custom selection (show all)
+            selectedModels = nil
         }
     }
 }

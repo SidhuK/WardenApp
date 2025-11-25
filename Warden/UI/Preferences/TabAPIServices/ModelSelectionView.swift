@@ -18,7 +18,7 @@ struct ModelSelectionView: View {
     }
     
     private var hasCustomSelection: Bool {
-        !selectedModelsManager.getSelectedModelIds(for: serviceType).isEmpty
+        selectedModelsManager.hasCustomSelection(for: serviceType)
     }
     
     private var filteredModels: [AIModel] {
@@ -272,16 +272,26 @@ struct ModelSelectionView: View {
     private func selectNoModels() {
         var newSelection: Set<String>
         
-        // If no custom selection exists, start with all available models
+        // If no custom selection exists, we need to handle two cases:
+        // 1. If we're deselecting ALL available models, create an empty selection
+        // 2. If we're deselecting a subset (via filters), start with all models and remove filtered ones
         if !hasCustomSelection {
-            newSelection = Set(availableModels.map { $0.id })
+            let filteredModelIds = Set(filteredModels.map { $0.id })
+            let allModelIds = Set(availableModels.map { $0.id })
+            
+            // If filtered models equals all models, user wants to deselect everything
+            if filteredModelIds == allModelIds {
+                newSelection = Set()
+            } else {
+                // Start with all models and remove only the filtered ones
+                newSelection = allModelIds.subtracting(filteredModelIds)
+            }
         } else {
+            // We have a custom selection, so just remove filtered models from it
             newSelection = selectedModelIds
-        }
-        
-        // Remove all filtered models from selection
-        for model in filteredModels {
-            newSelection.remove(model.id)
+            for model in filteredModels {
+                newSelection.remove(model.id)
+            }
         }
         
         selectedModelsManager.setSelectedModels(for: serviceType, modelIds: newSelection)
