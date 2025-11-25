@@ -118,6 +118,9 @@ struct WardenApp: App {
                     
                     // Setup Global Hotkeys
                     setupGlobalHotkeys()
+                    
+                    // Auto-connect MCP servers after a delay
+                    autoConnectMCPServers()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: AppConstants.toggleQuickChatNotification)) { _ in
                     FloatingPanelManager.shared.togglePanel()
@@ -305,6 +308,19 @@ struct WardenApp: App {
             GlobalHotkeyHandler.shared.register(shortcut: shortcut) {
                 FloatingPanelManager.shared.togglePanel()
             }
+        }
+    }
+    
+    private func autoConnectMCPServers() {
+        // Auto-connect MCP servers after a delay to allow app initialization to complete
+        Task {
+            // Wait 3 seconds to ensure app is fully initialized
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            
+            // Connect all enabled MCP servers in the background
+            await MCPManager.shared.restartAll()
+            
+            print("✅ Auto-connected MCP servers")
         }
     }
 
