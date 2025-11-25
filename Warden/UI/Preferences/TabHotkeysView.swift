@@ -5,57 +5,75 @@ struct TabHotkeysView: View {
     @StateObject private var hotkeyManager = HotkeyManager.shared
     @State private var editingActionId: String?
     @State private var showingResetConfirmation = false
-    @State private var isRecording = false
     @State private var hoveredRowId: String?
     
     var body: some View {
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Card container
-                VStack(spacing: 0) {
-                    ForEach(Array(HotkeyAction.HotkeyCategory.allCases.enumerated()), id: \.element) { index, category in
-                        if index > 0 {
-                            Divider()
-                                .padding(.vertical, 12)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keyboard Shortcuts")
+                        .font(.system(size: 24, weight: .bold))
+                    Text("Customize keyboard shortcuts for quick actions")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, 8)
+                
+                // Shortcuts by Category
+                ForEach(HotkeyAction.HotkeyCategory.allCases, id: \.self) { category in
+                    let actionsInCategory = hotkeyManager.availableActions.filter { $0.category == category }
+                    if !actionsInCategory.isEmpty {
+                        GlassCard {
+                            VStack(alignment: .leading, spacing: 16) {
+                                SettingsSectionHeader(
+                                    title: category.rawValue,
+                                    icon: category.icon,
+                                    iconColor: categoryColor(for: category)
+                                )
+                                
+                                VStack(spacing: 0) {
+                                    ForEach(Array(actionsInCategory.enumerated()), id: \.element.id) { index, action in
+                                        hotkeyRow(action)
+                                        
+                                        if index < actionsInCategory.count - 1 {
+                                            SettingsDivider()
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        categorySection(category)
                     }
-                    
-                    Divider()
-                        .padding(.vertical, 12)
-                    
-                    // Reset All row
+                }
+                
+                // Reset All
+                GlassCard(padding: 12) {
                     HStack {
-                        Text("Reset All Shortcuts")
-                            .fontWeight(.medium)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Reset All Shortcuts")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Restore all shortcuts to their default values")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        
                         Spacer()
+                        
                         Button("Reset All") {
                             showingResetConfirmation = true
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
                 }
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                )
+                
+                Spacer(minLength: 20)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(24)
         }
         .alert("Reset All Shortcuts", isPresented: $showingResetConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Reset All", role: .destructive) {
-                // Reset all hotkeys to default
                 for action in HotkeyManager.shared.availableActions {
                     if let defaultShortcut = KeyboardShortcut.from(displayString: action.defaultShortcut) {
                         HotkeyManager.shared.updateShortcut(for: action.id, shortcut: defaultShortcut)
@@ -63,85 +81,63 @@ struct TabHotkeysView: View {
                 }
             }
         } message: {
-            Text("This will reset all keyboard shortcuts to their default values. This action cannot be undone.")
+            Text("This will reset all keyboard shortcuts to their default values.")
         }
     }
     
-    private func categorySection(_ category: HotkeyAction.HotkeyCategory) -> some View {
-        let actionsInCategory = hotkeyManager.availableActions.filter { $0.category == category }
-        
-        return VStack(spacing: 0) {
-            // Category header with improved styling
-            HStack(spacing: 8) {
-                Image(systemName: category.icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 16)
-                
-                Text(category.rawValue)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            
-            // Actions in category
-            ForEach(actionsInCategory) { action in
-                hotkeyRow(action)
-                if action.id != actionsInCategory.last?.id {
-                    Divider()
-                        .padding(.leading, 16)
-                }
-            }
+    private func categoryColor(for category: HotkeyAction.HotkeyCategory) -> Color {
+        switch category {
+        case .chat: return .blue
+        case .clipboard: return .orange
+        case .navigation: return .purple
         }
     }
     
+    @ViewBuilder
     private func hotkeyRow(_ action: HotkeyAction) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(action.name)
-                    .font(.headline)
+                    .font(.system(size: 13, weight: .medium))
                 
                 Text(action.description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
             
             Spacer()
             
-            HStack(spacing: 8) {
-                // Current shortcut display - clickable for editing
+            HStack(spacing: 10) {
                 shortcutDisplay(
                     formatShortcutWithPlus(hotkeyManager.getDisplayString(for: action.id)),
                     isEditing: editingActionId == action.id,
                     action: action
                 )
                 
-                // Reset to default button
-                Button("Reset") {
+                Button {
                     hotkeyManager.resetToDefault(for: action.id)
                     if editingActionId == action.id {
                         editingActionId = nil
                     }
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 11))
                 }
                 .buttonStyle(.borderless)
-                .controlSize(.small)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .help("Reset to default")
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(hoveredRowId == action.id ? Color.primary.opacity(0.04) : Color.clear)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(hoveredRowId == action.id ? Color.primary.opacity(0.03) : Color.clear)
         )
         .onHover { isHovered in
             hoveredRowId = isHovered ? action.id : nil
         }
         .background(
-            // Invisible view to capture key events when editing
             InvisibleKeyCapture(
                 isActive: editingActionId == action.id,
                 onKeyPressed: { key, modifiers in
@@ -152,54 +148,54 @@ struct TabHotkeysView: View {
     }
     
     private func shortcutDisplay(_ shortcutString: String, isEditing: Bool, action: HotkeyAction) -> some View {
-        Button(action: {
+        Button {
             if editingActionId == action.id {
-                // Stop editing
                 editingActionId = nil
             } else {
-                // Start editing
                 editingActionId = action.id
             }
-        }) {
-            Text(isEditing ? "Press keys..." : (shortcutString.isEmpty ? "Click to set" : shortcutString))
-                .font(.system(.body, design: .monospaced))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isEditing ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(
-                                    isEditing ? Color.accentColor : Color(NSColor.separatorColor), 
-                                    lineWidth: isEditing ? 2 : 1
-                                )
-                        )
-                )
-                .foregroundColor(
-                    isEditing ? .accentColor : 
-                    (shortcutString.isEmpty ? .secondary : .primary)
-                )
+        } label: {
+            HStack(spacing: 4) {
+                if isEditing {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 10))
+                    Text("Recording...")
+                        .font(.system(size: 12, weight: .medium))
+                } else if shortcutString.isEmpty {
+                    Text("Click to set")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(shortcutString)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isEditing ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isEditing ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .foregroundColor(isEditing ? .accentColor : (shortcutString.isEmpty ? .secondary : .primary))
         }
         .buttonStyle(.plain)
-        .help(isEditing ? "Press Escape to cancel" : "Click to edit shortcut")
+        .help(isEditing ? "Press Escape to cancel" : "Click to edit")
     }
     
     private func formatShortcutWithPlus(_ shortcut: String) -> String {
         guard !shortcut.isEmpty else { return shortcut }
         
-        // Convert ⌘⇧C to ⌘ + ⇧ + C
         var result = ""
         for char in shortcut {
             if ["⌘", "⇧", "⌥", "⌃"].contains(String(char)) {
-                if !result.isEmpty {
-                    result += " + "
-                }
+                if !result.isEmpty { result += " " }
                 result += String(char)
             } else {
-                if !result.isEmpty {
-                    result += " + "
-                }
+                if !result.isEmpty { result += " " }
                 result += String(char)
             }
         }
@@ -207,18 +203,15 @@ struct TabHotkeysView: View {
     }
     
     private func handleKeyPress(key: String, modifiers: [String], for actionId: String) {
-        // Don't allow just modifier keys
         guard !key.isEmpty && !["cmd", "shift", "option", "control"].contains(key.lowercased()) else {
             return
         }
         
-        // Handle escape to cancel
         if key.lowercased() == "escape" {
             editingActionId = nil
             return
         }
         
-        // Create new shortcut
         let newShortcut = KeyboardShortcut(key: key.lowercased(), modifiers: modifiers)
         hotkeyManager.updateShortcut(for: actionId, shortcut: newShortcut)
         editingActionId = nil
@@ -263,24 +256,15 @@ class KeyCaptureView: NSView {
         let key = event.charactersIgnoringModifiers ?? ""
         var modifiers: [String] = []
         
-        if event.modifierFlags.contains(.command) {
-            modifiers.append("cmd")
-        }
-        if event.modifierFlags.contains(.shift) {
-            modifiers.append("shift")
-        }
-        if event.modifierFlags.contains(.option) {
-            modifiers.append("option")
-        }
-        if event.modifierFlags.contains(.control) {
-            modifiers.append("control")
-        }
+        if event.modifierFlags.contains(.command) { modifiers.append("cmd") }
+        if event.modifierFlags.contains(.shift) { modifiers.append("shift") }
+        if event.modifierFlags.contains(.option) { modifiers.append("option") }
+        if event.modifierFlags.contains(.control) { modifiers.append("control") }
         
         onKeyPressed?(key, modifiers)
     }
     
     override func flagsChanged(with event: NSEvent) {
-        // Handle modifier-only key events if needed
         super.flagsChanged(with: event)
     }
 }
@@ -294,4 +278,5 @@ struct InlineTabHotkeysView: View {
 
 #Preview {
     TabHotkeysView()
+        .frame(width: 600, height: 500)
 }

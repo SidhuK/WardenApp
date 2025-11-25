@@ -13,87 +13,53 @@ struct APIRequestData: Codable {
     ]
 }
 
+// MARK: - Preferences Tabs Enum
+enum PreferencesTabs: String, CaseIterable, Identifiable {
+    case general = "General"
+    case apiServices = "API Services"
+    case aiPersonas = "AI Assistants"
+    case webSearch = "Web Search"
+    case keyboardShortcuts = "Keyboard Shortcuts"
+    case mcp = "MCP Agents"
+    case contributions = "Contributions"
+    
+    var id: String { rawValue }
+    
+    var icon: String {
+        switch self {
+        case .general: return "gearshape.fill"
+        case .apiServices: return "network"
+        case .aiPersonas: return "person.2.fill"
+        case .webSearch: return "globe"
+        case .keyboardShortcuts: return "keyboard.fill"
+        case .mcp: return "server.rack"
+        case .contributions: return "heart.fill"
+        }
+    }
+}
+
+// MARK: - Main Preferences View
 struct PreferencesView: View {
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
     @Environment(\.managedObjectContext) private var viewContext
-    
-    private enum PreferencesTabs: String, CaseIterable {
-        case general = "General"
-        case apiServices = "API Services"
-        case aiPersonas = "AI Assistants"
-        case webSearch = "Web Search"
-        case keyboardShortcuts = "Keyboard Shortcuts"
-        case mcp = "MCP Agents"
-        case contributions = "Contributions"
-        
-        var icon: String {
-            switch self {
-            case .general: return "gearshape"
-            case .apiServices: return "network"
-            case .aiPersonas: return "person.2"
-            case .webSearch: return "globe"
-            case .keyboardShortcuts: return "keyboard"
-            case .mcp: return "server.rack"
-            case .contributions: return "star.fill"
-            }
-        }
-    }
-    
     @State private var selectedTab: PreferencesTabs = .general
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Flattened, semantic top tab bar
-            HStack(spacing: 6) {
-                ForEach(PreferencesTabs.allCases, id: \.self) { tab in
-                    Button(action: {
-                        selectedTab = tab
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 13, weight: .medium))
-                            
-                            Text(tab.rawValue)
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTab == tab
-                                      ? Color.accentColor.opacity(0.10)
-                                      : Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    selectedTab == tab
-                                    ? AppConstants.borderSubtle
-                                    : Color.clear,
-                                    lineWidth: 0.9
-                                )
-                        )
-                        .foregroundColor(
-                            selectedTab == tab
-                            ? AppConstants.textPrimary
-                            : AppConstants.textSecondary
-                        )
-                    }
-                    .buttonStyle(.plain)
+        NavigationSplitView {
+            // Sidebar
+            VStack(spacing: 0) {
+                List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
+                    Label(tab.rawValue, systemImage: tab.icon)
+                        .tag(tab)
                 }
+                .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
+                .background(.regularMaterial)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(AppConstants.backgroundChrome)
-            .overlay(
-                Rectangle()
-                    .fill(AppConstants.borderSubtle)
-                    .frame(height: 0.5),
-                alignment: .bottom
-            )
-            
-            // Content Area on semantic background
+            .frame(minWidth: 200)
+            .background(.regularMaterial)
+        } detail: {
+            // Content
             Group {
                 switch selectedTab {
                 case .general:
@@ -116,16 +82,14 @@ struct PreferencesView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppConstants.backgroundWindow)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .background(AppConstants.backgroundWindow)
+        .navigationSplitViewStyle(.balanced)
         .onAppear {
             store.saveInCoreData()
         }
     }
 }
-
-
 
 // MARK: - Inline Settings View for Main Window
 struct InlineSettingsView: View {
@@ -134,98 +98,56 @@ struct InlineSettingsView: View {
     
     let onDismiss: () -> Void
     
-    private enum PreferencesTabs: String, CaseIterable {
-        case general = "General"
-        case apiServices = "API Services"
-        case aiPersonas = "AI Assistants"
-        case webSearch = "Web Search"
-        case keyboardShortcuts = "Keyboard Shortcuts"
-        case mcp = "MCP Agents"
-        case contributions = "Contributions"
-        
-        var icon: String {
-            switch self {
-            case .general: return "gearshape"
-            case .apiServices: return "network"
-            case .aiPersonas: return "person.2"
-            case .webSearch: return "globe"
-            case .keyboardShortcuts: return "keyboard"
-            case .mcp: return "server.rack"
-            case .contributions: return "star.fill"
-            }
-        }
-    }
-    
     @State private var selectedTab: PreferencesTabs = .general
+    @State private var isHoveringClose = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header with close affordance
-            HStack {
-                Spacer()
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 17))
-                        .foregroundColor(AppConstants.textSecondary)
-                }
-                .buttonStyle(.plain)
-                .help("Close Settings")
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(AppConstants.backgroundWindow)
-
-            // Flattened tab bar aligned with main PreferencesView
-            HStack(spacing: 6) {
-                ForEach(PreferencesTabs.allCases, id: \.self) { tab in
-                    Button(action: {
-                        selectedTab = tab
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 12, weight: .medium))
-                            Text(tab.rawValue)
-                                .font(.system(size: 10, weight: .medium))
-                        }
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTab == tab
-                                      ? Color.accentColor.opacity(0.10)
-                                      : Color.clear)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(
-                                    selectedTab == tab
-                                    ? AppConstants.borderSubtle
-                                    : Color.clear,
-                                    lineWidth: 0.8
-                                )
-                        )
-                        .foregroundColor(
-                            selectedTab == tab
-                            ? AppConstants.textPrimary
-                            : AppConstants.textSecondary
-                        )
+            // Header with glass effect
+            GlassToolbar {
+                HStack {
+                    Text("Settings")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(isHoveringClose ? .primary : .tertiary)
                     }
                     .buttonStyle(.plain)
+                    .onHover { isHoveringClose = $0 }
+                    .help("Close Settings")
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(AppConstants.backgroundChrome)
-            .overlay(
-                Rectangle()
-                    .fill(AppConstants.borderSubtle)
-                    .frame(height: 0.5),
-                alignment: .bottom
-            )
 
-            // Content with consistent padding and background cards handled by tabs
-            ScrollView {
+            HStack(spacing: 0) {
+                // Sidebar
+                VStack(spacing: 4) {
+                    ForEach(PreferencesTabs.allCases) { tab in
+                        SidebarTabItem(
+                            icon: tab.icon,
+                            title: tab.rawValue,
+                            isSelected: selectedTab == tab
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedTab = tab
+                            }
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(12)
+                .frame(width: 180)
+                .background(.regularMaterial)
+                
+                Rectangle()
+                    .fill(Color.primary.opacity(0.06))
+                    .frame(width: 1)
+                
+                // Content
                 Group {
                     switch selectedTab {
                     case .general:
@@ -247,13 +169,11 @@ struct InlineSettingsView: View {
                         TabContributionsView()
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 18)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.windowBackgroundColor))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppConstants.backgroundWindow)
         }
-        .background(AppConstants.backgroundWindow)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             store.saveInCoreData()
         }
@@ -264,11 +184,11 @@ struct InlineSettingsView: View {
 struct PreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         PreferencesView()
-            .frame(width: 680, height: 720)
-            .previewDisplayName("Tab-based Preferences")
+            .frame(width: 800, height: 600)
+            .previewDisplayName("Preferences Window")
         
         InlineSettingsView(onDismiss: {})
-            .frame(width: 800, height: 900)
+            .frame(width: 900, height: 700)
             .previewDisplayName("Inline Settings")
     }
 }

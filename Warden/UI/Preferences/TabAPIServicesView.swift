@@ -1,7 +1,6 @@
 import CoreData
 import SwiftUI
 
-
 struct TabAPIServicesView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -25,116 +24,91 @@ struct TabAPIServicesView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left Sidebar - API Services List
+        MasterDetailLayout(masterWidth: 280) {
+            // Sidebar
             VStack(spacing: 0) {
-                // Sidebar Header
-                HStack {
-                    Text("API Services")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(NSColor.controlBackgroundColor))
-
-                        Divider()
-
-                // Services List
-                ScrollView {
-                    LazyVStack(spacing: 2) {
-                        ForEach(apiServices, id: \.objectID) { service in
-                            APIServiceSidebarRow(
-                                service: service,
-                                isSelected: selectedServiceID == service.objectID,
-                                isDefault: service.objectID.uriRepresentation().absoluteString == defaultApiServiceID
-                            ) {
-                                selectedServiceID = service.objectID
+                GlassToolbar {
+                    HStack {
+                        Text("API Services")
+                            .font(.system(size: 14, weight: .semibold))
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Button(action: duplicateService) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 12, weight: .medium))
                             }
+                            .buttonStyle(.borderless)
+                            .disabled(selectedServiceID == nil)
+                            .help("Duplicate")
+                            
+                            Button(action: addNewService) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Add Service")
                         }
                     }
-                    .padding(.vertical, 8)
                 }
                 
-                Divider()
-                
-                // Bottom Actions
-                HStack(spacing: 12) {
-                    Button(action: addNewService) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .medium))
-                                    }
-                    .buttonStyle(.borderless)
-                    .help("Add New Service")
-                    
-                    Button(action: duplicateService) {
-                        Image(systemName: "plus.square.on.square")
-                            .font(.system(size: 14, weight: .medium))
-                            }
-                    .buttonStyle(.borderless)
-                    .disabled(selectedServiceID == nil)
-                    .help("Duplicate Service")
-                    
-                    Spacer()
-            }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(NSColor.controlBackgroundColor))
-            }
-            .frame(width: 250)
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
-            
-            // Right Side - Service Details
-            Group {
-                if let service = selectedService {
-                    APIServiceInlineDetailView(
-                        service: service,
-                        viewContext: viewContext,
-                        onDelete: {
-                            selectedServiceID = nil
-                            refreshList()
-                        },
-                        onSetDefault: {
-                            defaultApiServiceID = service.objectID.uriRepresentation().absoluteString
-                        },
-                        isDefault: isSelectedServiceDefault
+                if apiServices.isEmpty {
+                    GlassEmptyState(
+                        icon: "network",
+                        title: "No Services",
+                        subtitle: "Add an API service to get started"
                     )
-                    .id(service.objectID) // Force SwiftUI to recreate the view when service changes
                 } else {
-                    // Empty state
-                    VStack(spacing: 16) {
-                        Image(systemName: "network")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
-                        
-                        Text("Select an API Service")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                        
-                        Text("Choose a service from the sidebar to view and edit its settings")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(apiServices, id: \.objectID) { service in
+                                GlassListRow(
+                                    iconImage: "logo_\(service.type ?? "openai")",
+                                    title: service.name ?? "Untitled",
+                                    subtitle: service.model ?? "No model",
+                                    isSelected: selectedServiceID == service.objectID,
+                                    badge: service.objectID.uriRepresentation().absoluteString == defaultApiServiceID ? "Default" : nil,
+                                    badgeColor: .blue
+                                ) {
+                                    selectedServiceID = service.objectID
+                                }
+                            }
+                        }
+                        .padding(12)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            }
+        } detail: {
+            if let service = selectedService {
+                APIServiceDetailContent(
+                    service: service,
+                    viewContext: viewContext,
+                    onDelete: {
+                        selectedServiceID = nil
+                        refreshList()
+                    },
+                    onSetDefault: {
+                        defaultApiServiceID = service.objectID.uriRepresentation().absoluteString
+                    },
+                    isDefault: isSelectedServiceDefault
+                )
+                .id(service.objectID)
+            } else {
+                GlassEmptyState(
+                    icon: "network",
+                    title: "Select a Service",
+                    subtitle: "Choose an API service from the sidebar"
+                )
             }
         }
         .onAppear {
-            // Select first service if none selected
             if selectedServiceID == nil && !apiServices.isEmpty {
                 selectedServiceID = apiServices.first?.objectID
-                }
+            }
         }
     }
 
     private func addNewService() {
-        // Create a new service and select it
         let newService = APIServiceEntity(context: viewContext)
         newService.id = UUID()
         newService.name = "New API Service"
@@ -159,105 +133,39 @@ struct TabAPIServicesView: View {
     private func duplicateService() {
         guard let selectedService = apiServices.first(where: { $0.objectID == selectedServiceID }) else { return }
         
-            let newService = selectedService.copy() as! APIServiceEntity
-            newService.name = (selectedService.name ?? "") + " Copy"
-            newService.addedDate = Date()
+        let newService = selectedService.copy() as! APIServiceEntity
+        newService.name = (selectedService.name ?? "") + " Copy"
+        newService.addedDate = Date()
+        
+        let newServiceID = UUID()
+        newService.id = newServiceID
 
-            // Generate new UUID and copy the token
-            let newServiceID = UUID()
-            newService.id = newServiceID
-
-            if let oldServiceIDString = selectedService.id?.uuidString {
-                do {
-                    if let token = try TokenManager.getToken(for: oldServiceIDString) {
-                        try TokenManager.setToken(token, for: newServiceID.uuidString)
-                    }
-                }
-                catch {
-                    print("Error copying API token: \(error)")
-                }
-            }
-
+        if let oldServiceIDString = selectedService.id?.uuidString {
             do {
-                try viewContext.save()
-            selectedServiceID = newService.objectID
-                refreshList()
-            }
-            catch {
-                print("Error duplicating service: \(error)")
+                if let token = try TokenManager.getToken(for: oldServiceIDString) {
+                    try TokenManager.setToken(token, for: newServiceID.uuidString)
+                }
+            } catch {
+                print("Error copying API token: \(error)")
             }
         }
+
+        do {
+            try viewContext.save()
+            selectedServiceID = newService.objectID
+            refreshList()
+        } catch {
+            print("Error duplicating service: \(error)")
+        }
+    }
 
     private func refreshList() {
         refreshID = UUID()
     }
 }
 
-// MARK: - Sidebar Row Component
-struct APIServiceSidebarRow: View {
-    let service: APIServiceEntity
-    let isSelected: Bool
-    let isDefault: Bool
-    let onSelect: () -> Void
-    
-    var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 12) {
-                // Service Icon
-                Image("logo_\(service.type ?? "openai")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(.primary)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(service.name ?? "Untitled Service")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        if isDefault {
-                            Text("DEFAULT")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue)
-                                .cornerRadius(4)
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    Text(service.model ?? "No model")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                Rectangle()
-                    .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-            )
-            .overlay(
-                Rectangle()
-                    .fill(isSelected ? Color.accentColor : Color.clear)
-                    .frame(width: 3)
-                    .animation(.easeInOut(duration: 0.2), value: isSelected),
-                alignment: .leading
-            )
-        }
-        .buttonStyle(.plain)
-    }
-    }
-    
-// MARK: - Inline Detail View Component  
-struct APIServiceInlineDetailView: View {
+// MARK: - Detail Content View
+struct APIServiceDetailContent: View {
     @ObservedObject var service: APIServiceEntity
     let viewContext: NSManagedObjectContext
     let onDelete: () -> Void
@@ -266,8 +174,8 @@ struct APIServiceInlineDetailView: View {
     
     @StateObject private var viewModel: APIServiceDetailViewModel
     @State private var lampColor: Color = .gray
-    @State private var showingDeleteConfirmation: Bool = false
-    @FocusState private var isFocused: Bool
+    @State private var showingDeleteConfirmation = false
+    @FocusState private var isTokenFocused: Bool
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \PersonaEntity.addedDate, ascending: true)],
         animation: .default
@@ -282,641 +190,345 @@ struct APIServiceInlineDetailView: View {
         self.onDelete = onDelete
         self.onSetDefault = onSetDefault
         self.isDefault = isDefault
-        
-        let viewModel = APIServiceDetailViewModel(viewContext: viewContext, apiService: service)
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = StateObject(wrappedValue: APIServiceDetailViewModel(viewContext: viewContext, apiService: service))
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Header with title and default button
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 12) {
-                            Image("logo_\(service.type ?? "openai")")
-                                .resizable()
-                                .renderingMode(.template)
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(.primary)
-            
-                            Text(service.name ?? "Untitled Service")
-                .font(.title2)
-                .fontWeight(.semibold)
-                        }
-                        
-                        Text(AppConstants.defaultApiConfigurations[service.type ?? ""]?.name ?? "Unknown Type")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                HStack(spacing: 16) {
+                    Image("logo_\(service.type ?? "openai")")
+                        .resizable()
+                        .renderingMode(.template)
+                        .frame(width: 32, height: 32)
+                        .foregroundStyle(.primary)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(service.name ?? "Untitled")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text(AppConstants.defaultApiConfigurations[service.type ?? ""]?.name ?? "Unknown")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
-                    if !isDefault {
-                        Button("Set as Default") {
-                            onSetDefault()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
+                    if isDefault {
+                        StatusBadge(text: "Default", color: .blue)
                     } else {
-                        Text("DEFAULT")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue)
-                            .cornerRadius(6)
+                        Button("Set Default") { onSetDefault() }
+                            .buttonStyle(.bordered)
                     }
                 }
                 
-                Divider()
-                
-                // Settings in two-column layout like General settings
-                VStack(spacing: 20) {
-                    // Service Name
-                    HStack {
-                        Text("Service Name:")
-                            .frame(width: 140, alignment: .leading)
+                // Basic Settings
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Basic Settings", icon: "slider.horizontal.3", iconColor: .blue)
                         
-                        TextField("API Name", text: $viewModel.name)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        Spacer()
-                    }
-                    
-                    // API Type
-                    HStack {
-                        Text("API Type:")
-                            .frame(width: 140, alignment: .leading)
-                        
-                        HStack(spacing: 8) {
-                            Image("logo_\(viewModel.type)")
-                                .resizable()
-                                .renderingMode(.template)
-                                .interpolation(.high)
-                                .antialiased(true)
-                                .frame(width: 14, height: 14)
-
-                            Picker("", selection: $viewModel.type) {
-                                ForEach(types, id: \.self) {
-                                    Text(AppConstants.defaultApiConfigurations[$0]?.name ?? $0)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 150)
-                            .labelsHidden()
-                            .onChange(of: viewModel.type) { _, newValue in
-                                viewModel.onChangeApiType(newValue)
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    // API URL
-                    HStack {
-                        Text("API URL:")
-                            .frame(width: 140, alignment: .leading)
-                        
-                        TextField("Paste your URL here", text: $viewModel.url)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                        Button("Default") {
-                            viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        
-                        Spacer()
-                    }
-                    
-                    // API Token (if required)
-                    if (viewModel.defaultApiConfiguration?.apiKeyRef ?? "") != "" {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("API Token:")
-                                    .frame(width: 140, alignment: .leading)
-                                
-                                TextField("Paste your token here", text: $viewModel.apiKey)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .focused($isFocused)
-                                    .blur(radius: !viewModel.apiKey.isEmpty && !isFocused ? 3 : 0.0, opaque: false)
-                                    .onChange(of: viewModel.apiKey) { _, newValue in
-                                        viewModel.onChangeApiKey(newValue)
-                                    }
-                                
-                                Spacer()
+                        VStack(spacing: 12) {
+                            SettingsRow(title: "Service Name") {
+                                TextField("", text: $viewModel.name)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 200)
                             }
                             
-                            if let apiKeyRef = viewModel.defaultApiConfiguration?.apiKeyRef,
-                               let url = URL(string: apiKeyRef) {
+                            SettingsDivider()
+                            
+                            SettingsRow(title: "API Type") {
+                                HStack(spacing: 8) {
+                                    Image("logo_\(viewModel.type)")
+                                        .resizable()
+                                        .renderingMode(.template)
+                                        .frame(width: 14, height: 14)
+                                    
+                                    Picker("", selection: $viewModel.type) {
+                                        ForEach(types, id: \.self) {
+                                            Text(AppConstants.defaultApiConfigurations[$0]?.name ?? $0)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .frame(width: 150)
+                                    .labelsHidden()
+                                    .onChange(of: viewModel.type) { _, newValue in
+                                        viewModel.onChangeApiType(newValue)
+                                    }
+                                }
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(title: "API URL") {
+                                HStack(spacing: 8) {
+                                    TextField("", text: $viewModel.url)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 250)
+                                    
+                                    Button("Reset") {
+                                        viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .font(.system(size: 11))
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Authentication
+                if (viewModel.defaultApiConfiguration?.apiKeyRef ?? "") != "" {
+                    GlassCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            SettingsSectionHeader(title: "Authentication", icon: "key.fill", iconColor: .orange)
+                            
+                            VStack(spacing: 12) {
+                                SettingsRow(title: "API Token") {
+                                    TextField("", text: $viewModel.apiKey)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 250)
+                                        .focused($isTokenFocused)
+                                        .blur(radius: !viewModel.apiKey.isEmpty && !isTokenFocused ? 3 : 0)
+                                        .onChange(of: viewModel.apiKey) { _, newValue in
+                                            viewModel.onChangeApiKey(newValue)
+                                        }
+                                }
+                                
+                                if let apiKeyRef = viewModel.defaultApiConfiguration?.apiKeyRef,
+                                   let url = URL(string: apiKeyRef) {
+                                    HStack {
+                                        Spacer()
+                                        Link("Get API Token", destination: url)
+                                            .font(.system(size: 11))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Model Selection
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Model", icon: "brain", iconColor: .purple)
+                        
+                        VStack(spacing: 12) {
+                            SettingsRow(title: "LLM Model") {
+                                HStack(spacing: 8) {
+                                    Picker("", selection: $viewModel.selectedModel) {
+                                        ForEach(viewModel.availableModels.sorted(), id: \.self) { model in
+                                            Text(model).tag(model)
+                                        }
+                                        Text("Custom...").tag("custom")
+                                    }
+                                    .pickerStyle(.menu)
+                                    .frame(width: 200)
+                                    .labelsHidden()
+                                    .disabled(viewModel.isLoadingModels)
+                                    .onChange(of: viewModel.selectedModel) { _, newValue in
+                                        viewModel.isCustomModel = newValue == "custom"
+                                        if newValue != "custom" {
+                                            viewModel.model = newValue
+                                        }
+                                    }
+                                    
+                                    if AppConstants.defaultApiConfigurations[viewModel.type]?.modelsFetching ?? false {
+                                        ButtonWithStatusIndicator(
+                                            title: "Refresh",
+                                            action: { viewModel.onUpdateModelsList() },
+                                            isLoading: viewModel.isLoadingModels,
+                                            hasError: viewModel.modelFetchError != nil,
+                                            errorMessage: "Can't fetch models",
+                                            successMessage: "Click to refresh",
+                                            isSuccess: !viewModel.isLoadingModels && viewModel.modelFetchError == nil && viewModel.availableModels.count > 0
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            if viewModel.isCustomModel {
+                                SettingsRow(title: "Custom Model") {
+                                    TextField("Model name", text: $viewModel.model)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 200)
+                                }
+                            }
+                            
+                            if let apiModelRef = viewModel.defaultApiConfiguration?.apiModelRef,
+                               let url = URL(string: apiModelRef) {
                                 HStack {
                                     Spacer()
-                                    Link(
-                                        "How to get API Token",
-                                        destination: url
-                                    )
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                                }
-                                .padding(.leading, 140)
-                            }
-                        }
-                    }
-                    
-                    // LLM Model
-                    HStack {
-                        Text("LLM Model:")
-                            .frame(width: 140, alignment: .leading)
-                        
-                        HStack(spacing: 8) {
-                            Picker("", selection: $viewModel.selectedModel) {
-                                ForEach(viewModel.availableModels.sorted(), id: \.self) { modelName in
-                                    Text(modelName).tag(modelName)
-                                }
-                                Text("Enter custom model").tag("custom")
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 200)
-                            .labelsHidden()
-                            .onChange(of: viewModel.selectedModel) { _, newValue in
-                                if newValue == "custom" {
-                                    viewModel.isCustomModel = true
-                                }
-                                else {
-                                    viewModel.isCustomModel = false
-                                    viewModel.model = newValue
+                                    Link("Models Reference", destination: url)
+                                        .font(.system(size: 11))
                                 }
                             }
-                            .disabled(viewModel.isLoadingModels)
-
-                            if AppConstants.defaultApiConfigurations[viewModel.type]?.modelsFetching ?? false {
-                                ButtonWithStatusIndicator(
-                                    title: "Update",
-                                    action: { viewModel.onUpdateModelsList() },
-                                    isLoading: viewModel.isLoadingModels,
-                                    hasError: viewModel.modelFetchError != nil,
-                                    errorMessage: "Can't get models from server",
-                                    successMessage: "Click to refresh models list",
-                                    isSuccess: !viewModel.isLoadingModels && viewModel.modelFetchError == nil && viewModel.availableModels.count > 0
-                                )
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    // Custom Model Input (if needed)
-                    if viewModel.isCustomModel {
-                        HStack {
-                            Text("")
-                                .frame(width: 140, alignment: .leading)
                             
-                            TextField("Enter custom model name", text: $viewModel.model)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            
-                            Spacer()
-                        }
-                    }
-                    
-                    // Model Reference Link
-                    if let apiModelRef = viewModel.defaultApiConfiguration?.apiModelRef,
-                       let url = URL(string: apiModelRef) {
-                        HStack {
-                            Text("")
-                                .frame(width: 140, alignment: .leading)
+                            SettingsDivider()
                             
                             HStack {
-                                Link(
-                                    "Models reference",
-                                    destination: url
-                                )
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                
+                                Text("Test Connection")
+                                    .font(.system(size: 13))
                                 Spacer()
+                                ButtonTestApiTokenAndModel(
+                                    lampColor: $lampColor,
+                                    gptToken: viewModel.apiKey,
+                                    gptModel: viewModel.model,
+                                    apiUrl: viewModel.url,
+                                    apiType: viewModel.type
+                                )
                             }
-                            
-                            Spacer()
                         }
                     }
-                    
-                    // Test API Button
-                    HStack {
-                        Text("")
-                            .frame(width: 140, alignment: .leading)
-                        
-                        ButtonTestApiTokenAndModel(
-                            lampColor: $lampColor,
-                            gptToken: viewModel.apiKey,
-                            gptModel: viewModel.model,
-                            apiUrl: viewModel.url,
-                            apiType: viewModel.type
-                        )
-                
-            Spacer()
-        }
                 }
                 
-                Divider()
-                
-                // Model Selection Configuration (if available)
+                // Model Visibility
                 if !viewModel.fetchedModels.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Model Visibility")
-                            .font(.headline)
-                        
-                        ModelSelectionView(
-                            serviceType: viewModel.type,
-                            availableModels: viewModel.fetchedModels,
-                            onSelectionChanged: { selectedIds in
-                                viewModel.updateSelectedModels(selectedIds)
-                            }
-                        )
-                    }
-                    
-                    Divider()
-                }
-                
-                // Context Size
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Context Configuration")
-                        .font(.headline)
-                    
-                    HStack {
-                        Text("Context Size:")
-                            .frame(width: 140, alignment: .leading)
-                        
-                        HStack {
-                            Slider(
-                                value: $viewModel.contextSize,
-                                in: 5...100,
-                                step: 5
+                    GlassCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            SettingsSectionHeader(title: "Model Visibility", icon: "eye", iconColor: .cyan)
+                            
+                            ModelSelectionView(
+                                serviceType: viewModel.type,
+                                availableModels: viewModel.fetchedModels,
+                                onSelectionChanged: { selectedIds in
+                                    viewModel.updateSelectedModels(selectedIds)
+                                }
                             )
-                            .frame(width: 200)
-                            
-                            Text("\(Int(viewModel.contextSize)) messages")
-                                .frame(width: 100, alignment: .leading)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         }
-                        
-                        Spacer()
                     }
                 }
                 
-                Divider()
-                
-                // Feature Toggles
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Features")
-                        .font(.headline)
-                    
-                    VStack(spacing: 16) {
-                        HStack {
-                            Text("Auto Chat Naming:")
-                                .frame(width: 140, alignment: .leading)
-                            
-                            Picker("", selection: $viewModel.generateChatNames) {
-                                Text("Disabled").tag(false)
-                                Text("Enabled").tag(true)
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 120)
-                            .labelsHidden()
-                            
-                            Button(action: {}) {
-                                Image(systemName: "questionmark.circle")
-                                    .foregroundColor(.blue)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Chat name will be generated based on chat messages using the selected model")
-                            
-                            Spacer()
-                        }
+                // Context & Features
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Behavior", icon: "gearshape.2.fill", iconColor: .gray)
                         
-                        HStack {
-                            Text("Stream Responses:")
-                                .frame(width: 140, alignment: .leading)
-                            
-                            Picker("", selection: $viewModel.useStreamResponse) {
-                                Text("Disabled").tag(false)
-                                Text("Enabled").tag(true)
-    }
-                            .pickerStyle(.menu)
-                            .frame(width: 120)
-                            .labelsHidden()
-                            
-                            Button(action: {}) {
-                                Image(systemName: "questionmark.circle")
-                                    .foregroundColor(.blue)
+                        VStack(spacing: 12) {
+                            SettingsRow(
+                                title: "Context Size",
+                                subtitle: "Number of messages to include"
+                            ) {
+                                HStack(spacing: 8) {
+                                    Slider(value: $viewModel.contextSize, in: 5...100, step: 5)
+                                        .frame(width: 120)
+                                    Text("\(Int(viewModel.contextSize))")
+                                        .font(.system(size: 12, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 30)
+                                }
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Enable real-time streaming of responses instead of waiting for completion")
                             
-                            Spacer()
-                        }
-                        
-                        if viewModel.supportsImageUploads {
-                            HStack {
-                                Text("Image Uploads:")
-                                    .frame(width: 140, alignment: .leading)
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Auto Chat Naming",
+                                subtitle: "Generate names from content"
+                            ) {
+                                Toggle("", isOn: $viewModel.generateChatNames)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Stream Responses",
+                                subtitle: "Show text as it's generated"
+                            ) {
+                                Toggle("", isOn: $viewModel.useStreamResponse)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
+                            }
+                            
+                            if viewModel.supportsImageUploads {
+                                SettingsDivider()
                                 
-                                Picker("", selection: $viewModel.imageUploadsAllowed) {
-                                    Text("Disabled").tag(false)
-                                    Text("Enabled").tag(true)
+                                SettingsRow(
+                                    title: "Image Uploads",
+                                    subtitle: "Enable vision capabilities"
+                                ) {
+                                    Toggle("", isOn: $viewModel.imageUploadsAllowed)
+                                        .toggleStyle(.switch)
+                                        .labelsHidden()
                                 }
-                                .pickerStyle(.menu)
-                                .frame(width: 120)
-                                .labelsHidden()
-                                
-                                Button(action: {}) {
-                                    Image(systemName: "questionmark.circle")
-                                        .foregroundColor(.blue)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Allow image uploads for vision-capable models")
-                                
-                                Spacer()
                             }
                         }
                     }
                 }
                 
-                Divider()
-                
-                // Default AI Assistant
-                HStack {
-                    Text("Default Assistant:")
-                        .frame(width: 140, alignment: .leading)
-                    
-                    Picker("", selection: $viewModel.defaultAiPersona) {
-                        ForEach(personas) { persona in
-                            Text(persona.name ?? "Untitled").tag(persona)
+                // Default Assistant
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Default Assistant", icon: "person.fill", iconColor: .green)
+                        
+                        Picker("", selection: $viewModel.defaultAiPersona) {
+                            ForEach(personas) { persona in
+                                Text(persona.name ?? "Untitled").tag(persona)
+                            }
                         }
-        }
-                    .pickerStyle(.menu)
-                    .frame(width: 200)
-                    .labelsHidden()
-                    
-                    Spacer()
+                        .pickerStyle(.menu)
+                        .frame(width: 200)
+                        .labelsHidden()
+                    }
                 }
                 
                 // Reasoning Model Warning
                 if AppConstants.openAiReasoningModels.contains(viewModel.model) {
-                    Text("💁‍♂️ OpenAI API doesn't support system message and temperature other than 1 for o1 models. Warden will send system message as a user message internally, while temperature will be always set to 1.0")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(8)
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Reasoning models don't support system messages. Temperature is fixed at 1.0.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.orange)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.orange.opacity(0.1))
+                    )
                 }
                 
-                Divider()
-                
-                // Bottom Actions
+                // Actions
                 HStack {
-                    Button("Delete Service") {
+                    Button(role: .destructive) {
                         showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
                     }
                     .buttonStyle(.bordered)
-                    .foregroundColor(.red)
                     
                     Spacer()
                     
-                    Button("Save Changes") {
+                    Button {
                         viewModel.saveAPIService()
+                    } label: {
+                        Label("Save Changes", systemImage: "checkmark.circle.fill")
                     }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                 }
+                
+                Spacer(minLength: 20)
             }
             .padding(24)
         }
-        .alert(isPresented: $showingDeleteConfirmation) {
-            Alert(
-                title: Text("Delete API Service"),
-                message: Text("Are you sure you want to delete this API Service? This action cannot be undone."),
-                primaryButton: .destructive(Text("Delete")) {
-                    viewModel.deleteAPIService()
-                    onDelete()
-                },
-                secondaryButton: .cancel()
-        )
+        .alert("Delete Service", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                viewModel.deleteAPIService()
+                onDelete()
+            }
+        } message: {
+            Text("Are you sure you want to delete this service?")
         }
     }
 }
 
-// MARK: - Inline Version for Main Window (keeping the existing structure for compatibility)
+// MARK: - Inline Version (kept for compatibility)
 struct InlineTabAPIServicesView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
-        animation: .default
-    )
-    private var apiServices: FetchedResults<APIServiceEntity>
-
-    @State private var isShowingAddOrEditService = false
-    @State private var selectedServiceID: NSManagedObjectID?
-    @State private var refreshID = UUID()
-    @AppStorage("defaultApiService") private var defaultApiServiceID: String?
-
-    // Colors matching the chat app theme
-    private let primaryBlue = Color(red: 0.0, green: 0.48, blue: 1.0)
-    private var cardBackgroundColor: Color {
-        Color(NSColor.controlBackgroundColor)
-    }
-
-    private var isSelectedServiceDefault: Bool {
-        guard let selectedServiceID = selectedServiceID else { return false }
-        return selectedServiceID.uriRepresentation().absoluteString == defaultApiServiceID
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(icon: "network", title: "API Services")
-            
-            settingGroup {
-                VStack(spacing: 16) {
-                    entityListView
-                        .id(refreshID)
-                        .frame(minHeight: 260)
-
-                    Divider()
-
-                    HStack(spacing: 20) {
-                        if selectedServiceID != nil {
-                            Button(action: onEdit) {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .keyboardShortcut(.defaultAction)
-
-                            Button(action: onDuplicate) {
-                                Label("Duplicate", systemImage: "plus.square.on.square")
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-
-                            if !isSelectedServiceDefault {
-                                Button(action: {
-                                    defaultApiServiceID = selectedServiceID?.uriRepresentation().absoluteString
-                                }) {
-                                    Label("Set as Default", systemImage: "star")
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.regular)
-                            }
-                            Spacer()
-                        }
-                        else {
-                            Spacer()
-                        }
-                        Button(action: onAdd) {
-                            Label("Add New Service", systemImage: "plus")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $isShowingAddOrEditService) {
-            let selectedApiService = apiServices.first(where: { $0.objectID == selectedServiceID }) ?? nil
-            if selectedApiService == nil {
-                APIServiceDetailView(viewContext: viewContext, apiService: nil)
-            }
-            else {
-                APIServiceDetailView(viewContext: viewContext, apiService: selectedApiService)
-            }
-        }
-    }
-
-    private var entityListView: some View {
-        EntityListView(
-            selectedEntityID: $selectedServiceID,
-            entities: apiServices,
-            detailContent: detailContent,
-            onRefresh: refreshList,
-            getEntityColor: { _ in nil },
-            getEntityName: { $0.name ?? "Untitled Service" },
-            getEntityDefault: { $0.objectID.uriRepresentation().absoluteString == defaultApiServiceID },
-            getEntityIcon: { "logo_" + ($0.type ?? "") },
-            onEdit: {
-                if selectedServiceID != nil {
-                    isShowingAddOrEditService = true
-                }
-            },
-            onMove: nil
-        )
-    }
-
-    private func detailContent(service: APIServiceEntity?) -> some View {
-        Group {
-            if let service = service {
-                VStack(alignment: .leading, spacing: 10) {
-                    detailRow(label: "Type", value: AppConstants.defaultApiConfigurations[service.type!]?.name ?? "Unknown")
-                    detailRow(label: "Model", value: service.model ?? "Not specified")
-                    detailRow(label: "Context Size", value: "\(service.contextSize)")
-                    detailRow(label: "Auto Chat Naming", value: service.generateChatNames ? "Enabled" : "Disabled")
-                    detailRow(label: "Default Assistant", value: service.defaultPersona?.name ?? "None")
-                }
-                .padding(10)
-            }
-            else {
-                Text("Select an API service to view details")
-                    .foregroundColor(.secondary)
-                    .font(.callout)
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.secondary.opacity(0.05))
-                    .cornerRadius(8)
-            }
-        }
-    }
-    
-    private func detailRow(label: String, value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(label + ":")
-                .fontWeight(.medium)
-                .frame(width: 100, alignment: .leading)
-            Text(value)
-                .foregroundColor(.primary)
-            Spacer()
-        }
-    }
-
-    private func refreshList() {
-        refreshID = UUID()
-    }
-
-    private func onAdd() {
-        selectedServiceID = nil
-        isShowingAddOrEditService = true
-    }
-
-    private func onDuplicate() {
-        if let selectedService = apiServices.first(where: { $0.objectID == selectedServiceID }) {
-            let newService = selectedService.copy() as! APIServiceEntity
-            newService.name = (selectedService.name ?? "") + " Copy"
-            newService.addedDate = Date()
-
-            // Generate new UUID and copy the token
-            let newServiceID = UUID()
-            newService.id = newServiceID
-
-            if let oldServiceIDString = selectedService.id?.uuidString {
-                do {
-                    if let token = try TokenManager.getToken(for: oldServiceIDString) {
-                        try TokenManager.setToken(token, for: newServiceID.uuidString)
-                    }
-                }
-                catch {
-                    print("Error copying API token: \(error)")
-                }
-            }
-
-            do {
-                try viewContext.save()
-                refreshList()
-            }
-            catch {
-                print("Error duplicating service: \(error)")
-            }
-        }
-    }
-
-    private func onEdit() {
-        isShowingAddOrEditService = true
-    }
-    
-    // MARK: - Section Header Style
-    private func sectionHeader(icon: String, title: String, iconColor: Color? = nil) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundColor(iconColor ?? primaryBlue)
-                .font(.system(size: 16, weight: .medium))
-                .frame(width: 20)
-            
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.primary)
-                
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-    
-    // MARK: - Setting Group Style
-    private func settingGroup<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content()
-        }
-        .padding(16)
+        TabAPIServicesView()
     }
 }
 
@@ -932,4 +544,9 @@ struct APIServiceRowView: View {
                 .foregroundColor(.secondary)
         }
     }
+}
+
+#Preview {
+    TabAPIServicesView()
+        .frame(width: 800, height: 600)
 }

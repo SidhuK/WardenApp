@@ -124,6 +124,7 @@
 		C43A763A2ED5672E006DA5E2 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76342ED5672E006DA5E2 /* SearchProgressView.swift */; };
 		C43A763B2ED5672E006DA5E2 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76322ED5672E006DA5E2 /* CitationBadgeView.swift */; };
 		C43A763C2ED5672E006DA5E2 /* SearchErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76332ED5672E006DA5E2 /* SearchErrorView.swift */; };
+		C44EA8BB2ED5E600008DAA73 /* GlassEffectModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */; };
 		C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BC12ECDD29000D72DA1 /* SearchModels.swift */; };
 		C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */; };
 		C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */; };
@@ -303,6 +304,7 @@
 		C43A76342ED5672E006DA5E2 /* SearchProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProgressView.swift; sourceTree = "<group>"; };
 		C43A76352ED5672E006DA5E2 /* SearchResultsPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultsPreviewView.swift; sourceTree = "<group>"; };
 		C43A76362ED5672E006DA5E2 /* ToolCallProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallProgressView.swift; sourceTree = "<group>"; };
+		C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffectModifiers.swift; sourceTree = "<group>"; };
 		C4632BC12ECDD29000D72DA1 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
 		C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchErrorView.swift; sourceTree = "<group>"; };
@@ -425,6 +427,7 @@
 				C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */,
 				C4EB88D52ECC421C00AA0829 /* ModernButton.swift */,
 				C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */,
+				C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */,
 				C4642A532EC200C000326693 /* AnimatedStateView.swift */,
 				C4642A542EC200C000326693 /* SkeletonLoaderView.swift */,
 				C4642A552EC200C000326693 /* TypingIndicatorView.swift */,
@@ -884,6 +887,7 @@
 				4A5F64B829C64E21000403F7 /* ChatBubbleView.swift in Sources */,
 				7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */,
 				4AFEE7232C472FA1006F99FB /* ChatGPTHandler.swift in Sources */,
+				C44EA8BB2ED5E600008DAA73 /* GlassEffectModifiers.swift in Sources */,
 				C4EB88D62ECC421C00AA0829 /* ModernButton.swift in Sources */,
 				4A5F64C129C78B64000403F7 /* SceneKitParticlesView.swift in Sources */,
 				4A27FF942DA1C4640075D730 /* MessageContent.swift in Sources */,

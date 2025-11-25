@@ -12,117 +12,163 @@ struct TabTavilySearchView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // API Configuration Card
-                sectionCard {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Web Search")
+                        .font(.system(size: 24, weight: .bold))
+                    Text("Configure Tavily API for web search in conversations")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, 8)
+                
+                // API Configuration
+                GlassCard {
                     VStack(alignment: .leading, spacing: 16) {
-                        sectionHeader(icon: "key", title: "API Configuration")
+                        SettingsSectionHeader(title: "API Configuration", icon: "key.fill", iconColor: .orange)
                         
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Tavily API Key")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                            
-                            SecureField("Paste your API key here", text: $apiKey)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Tavily API Key")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                
+                                SecureField("Enter your API key", text: $apiKey)
+                                    .textFieldStyle(.roundedBorder)
+                            }
                             
                             HStack(spacing: 12) {
-                                Button("Get API Key") {
+                                Button {
                                     NSWorkspace.shared.open(URL(string: "https://app.tavily.com")!)
+                                } label: {
+                                    Label("Get API Key", systemImage: "arrow.up.right.square")
                                 }
                                 .buttonStyle(.bordered)
-                                .controlSize(.regular)
                                 
-                                Button("Test Connection") {
+                                Button {
                                     testConnection()
+                                } label: {
+                                    if isTesting {
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                            .frame(width: 16, height: 16)
+                                    } else {
+                                        Label("Test Connection", systemImage: "bolt.fill")
+                                    }
                                 }
-                                .disabled(apiKey.isEmpty || isTesting)
                                 .buttonStyle(.bordered)
-                                .controlSize(.regular)
-                                
-                                if isTesting {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                }
-                                
-                                Spacer()
+                                .disabled(apiKey.isEmpty || isTesting)
                             }
                         }
                     }
                 }
                 
-                // Search Settings Card
-                sectionCard {
+                // Search Settings
+                GlassCard {
                     VStack(alignment: .leading, spacing: 16) {
-                        sectionHeader(icon: "magnifyingglass", title: "Search Settings")
+                        SettingsSectionHeader(title: "Search Settings", icon: "magnifyingglass", iconColor: .blue)
                         
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Search Depth:")
-                                
-                                Spacer()
-                                
+                        VStack(spacing: 12) {
+                            SettingsRow(
+                                title: "Search Depth",
+                                subtitle: "Advanced provides more thorough results"
+                            ) {
                                 Picker("", selection: $searchDepth) {
-                                    Text("Basic (Faster)").tag("basic")
-                                    Text("Advanced (More thorough)").tag("advanced")
+                                    Text("Basic").tag("basic")
+                                    Text("Advanced").tag("advanced")
                                 }
-                                .pickerStyle(.menu)
-                                .frame(width: 140)
+                                .pickerStyle(.segmented)
+                                .frame(width: 160)
                                 .labelsHidden()
                             }
                             
-                            HStack {
-                                Text("Max Results:")
-                                
-                                Spacer()
-                                
-                                Stepper("", value: $maxResults, in: 1...10)
-                                
-                                Text("\(maxResults)")
-                                    .frame(width: 30, alignment: .trailing)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                            SettingsDivider()
+                            
+                            SettingsRow(title: "Maximum Results") {
+                                HStack(spacing: 8) {
+                                    Slider(value: Binding(
+                                        get: { Double(maxResults) },
+                                        set: { maxResults = Int($0) }
+                                    ), in: 1...10, step: 1)
+                                    .frame(width: 100)
+                                    
+                                    Text("\(maxResults)")
+                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 24)
+                                }
                             }
                             
-                            HStack {
-                                Text("Include AI Answer:")
-                                
-                                Spacer()
-                                
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Include AI Answer",
+                                subtitle: "Add Tavily's summarized answer to results"
+                            ) {
                                 Toggle("", isOn: $includeAnswer)
+                                    .toggleStyle(.switch)
                                     .labelsHidden()
                             }
                         }
                     }
                 }
                 
-                // Usage Instructions Card
-                sectionCard {
+                // Usage Instructions
+                GlassCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        sectionHeader(icon: "book", title: "Usage")
+                        SettingsSectionHeader(title: "How to Use", icon: "lightbulb.fill", iconColor: .yellow)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Enable web search in chat:")
-                                .fontWeight(.medium)
-                            Text("Click the globe button (🌐) in the message input area to toggle web search on/off. When enabled, your messages will include web search results.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(.blue)
+                                    .frame(width: 28)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Enable Web Search")
+                                        .font(.system(size: 13, weight: .medium))
+                                    Text("Click the globe icon in the message input area to toggle web search on/off.")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(.blue)
+                                    .frame(width: 28)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Search Results")
+                                        .font(.system(size: 13, weight: .medium))
+                                    Text("When enabled, your messages will include relevant web search results for context.")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
                         }
                     }
                 }
                 
+                // Save Button
                 HStack {
                     Spacer()
-                    Button("Save Settings") {
+                    Button {
                         saveSettings()
+                    } label: {
+                        Label("Save Settings", systemImage: "checkmark.circle.fill")
                     }
                     .buttonStyle(.borderedProminent)
                 }
+                
+                Spacer(minLength: 20)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(24)
         }
         .onAppear {
             loadSettings()
@@ -137,43 +183,12 @@ struct TabTavilySearchView: View {
         }
     }
     
-    @ViewBuilder
-    private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-            )
-    }
-    
-    @ViewBuilder
-    private func sectionHeader(icon: String, title: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-            Text(title)
-                .font(.headline)
-                .fontWeight(.semibold)
-        }
-    }
-    
     private func loadSettings() {
         apiKey = TavilyKeyManager.shared.getApiKey() ?? ""
-        searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) 
-            ?? AppConstants.tavilyDefaultSearchDepth
+        searchDepth = UserDefaults.standard.string(forKey: AppConstants.tavilySearchDepthKey) ?? AppConstants.tavilyDefaultSearchDepth
         maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
-        if maxResults == 0 { 
-            maxResults = AppConstants.tavilyDefaultMaxResults 
-        }
+        if maxResults == 0 { maxResults = AppConstants.tavilyDefaultMaxResults }
         
-        // Check if includeAnswer has been set, if not default to true
         if UserDefaults.standard.object(forKey: AppConstants.tavilyIncludeAnswerKey) == nil {
             includeAnswer = true
             UserDefaults.standard.set(true, forKey: AppConstants.tavilyIncludeAnswerKey)
@@ -187,23 +202,21 @@ struct TabTavilySearchView: View {
         UserDefaults.standard.set(searchDepth, forKey: AppConstants.tavilySearchDepthKey)
         UserDefaults.standard.set(maxResults, forKey: AppConstants.tavilyMaxResultsKey)
         UserDefaults.standard.set(includeAnswer, forKey: AppConstants.tavilyIncludeAnswerKey)
-        
         showingSaveSuccess = true
     }
     
     private func testConnection() {
         guard !apiKey.trimmingCharacters(in: .whitespaces).isEmpty else {
-            testResultMessage = "❌ Please enter an API key first."
+            testResultMessage = "Please enter an API key first."
             showingTestResult = true
             return
         }
         
         isTesting = true
         
-        // Save the API key first so the test can use it
         let saveSuccess = TavilyKeyManager.shared.saveApiKey(apiKey)
         guard saveSuccess else {
-            testResultMessage = "❌ Failed to save API key. Please try again."
+            testResultMessage = "Failed to save API key. Please try again."
             showingTestResult = true
             isTesting = false
             return
@@ -215,19 +228,19 @@ struct TabTavilySearchView: View {
                 _ = try await service.search(query: "test", maxResults: 1)
                 
                 await MainActor.run {
-                    testResultMessage = "✅ Connection successful! Tavily API is working."
+                    testResultMessage = "Connection successful! Tavily API is working."
                     showingTestResult = true
                     isTesting = false
                 }
             } catch let error as TavilyError {
                 await MainActor.run {
-                    testResultMessage = "❌ Connection failed: \(error.localizedDescription)"
+                    testResultMessage = "Connection failed: \(error.localizedDescription)"
                     showingTestResult = true
                     isTesting = false
                 }
             } catch {
                 await MainActor.run {
-                    testResultMessage = "❌ Connection failed: \(error.localizedDescription)"
+                    testResultMessage = "Connection failed: \(error.localizedDescription)"
                     showingTestResult = true
                     isTesting = false
                 }
@@ -238,4 +251,5 @@ struct TabTavilySearchView: View {
 
 #Preview {
     TabTavilySearchView()
+        .frame(width: 600, height: 500)
 }
