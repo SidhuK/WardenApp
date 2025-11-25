@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import MCP
 
 class MessageManager: ObservableObject {
     private var apiService: APIService
@@ -228,6 +229,20 @@ class MessageManager: ObservableObject {
         }
     }
     
+    // MARK: - MCP Tool Conversion Helpers
+    
+    /// Converts MCP Value type to a dictionary for OpenAI tool schema format
+    private func convertValueToDict(_ value: Value) -> Any {
+        // Value has a description property that outputs JSON-like format
+        // We need to parse it as a dictionary
+        if let jsonData = value.description.data(using: .utf8),
+           let dict = try? JSONSerialization.jsonObject(with: jsonData) {
+            return dict
+        }
+        // Fallback: return empty object
+        return [:]
+    }
+    
     func sendMessage(
         _ message: String,
         in chat: ChatEntity,
@@ -243,16 +258,19 @@ class MessageManager: ObservableObject {
         Task { @MainActor in
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
+            
+            print("🛠️ [MCP] Fetching tools for \(selectedAgents.count) selected agent(s)")
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
+            print("🛠️ [MCP] Found \(tools.count) tool(s)")
             
             // Convert MCP Tool to OpenAI format
             let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
+                print("🛠️ [MCP] Converting tool: \(tool.name) - \(tool.description ?? "no description")")
+                
                 // Convert MCP Value inputSchema to JSON-compatible dictionary
-                var parameters: [String: Any] = ["type": "object", "properties": [:]]
-                if let jsonData = try? JSONEncoder().encode(tool.inputSchema),
-                   let jsonDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                    parameters = jsonDict
-                }
+                let parameters = convertValueToDict(tool.inputSchema)
+                
+                print("🛠️ [MCP] Tool \(tool.name) schema: \(parameters)")
                 
                 return [
                     "type": "function",
@@ -262,6 +280,11 @@ class MessageManager: ObservableObject {
                         "parameters": parameters
                     ] as [String: Any]
                 ]
+            }
+            
+            print("🛠️ [MCP] Sending \(toolDefinitions.count) tool definition(s) to API")
+            if !toolDefinitions.isEmpty {
+                print("🛠️ [MCP] Tool names: \(tools.map { $0.name }.joined(separator: ", "))")
             }
             
             ChatService.shared.sendMessage(
@@ -321,15 +344,18 @@ class MessageManager: ObservableObject {
             // Fetch tools
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
+            
+            print("🛠️ [MCP Stream] Fetching tools for \(selectedAgents.count) selected agent(s)")
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
+            print("🛠️ [MCP Stream] Found \(tools.count) tool(s)")
             
             let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
+                print("🛠️ [MCP Stream] Converting tool: \(tool.name) - \(tool.description ?? "no description")")
+                
                 // Convert MCP Value inputSchema to JSON-compatible dictionary
-                var parameters: [String: Any] = ["type": "object", "properties": [:]]
-                if let jsonData = try? JSONEncoder().encode(tool.inputSchema),
-                   let jsonDict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                    parameters = jsonDict
-                }
+                let parameters = convertValueToDict(tool.inputSchema)
+                
+                print("🛠️ [MCP Stream] Tool \(tool.name) schema: \(parameters)")
                 
                 return [
                     "type": "function",
@@ -339,6 +365,11 @@ class MessageManager: ObservableObject {
                         "parameters": parameters
                     ] as [String: Any]
                 ]
+            }
+            
+            print("🛠️ [MCP Stream] Sending \(toolDefinitions.count) tool definition(s) to API")
+            if !toolDefinitions.isEmpty {
+                print("🛠️ [MCP Stream] Tool names: \(tools.map { $0.name }.joined(separator: ", "))")
             }
             
             do {
