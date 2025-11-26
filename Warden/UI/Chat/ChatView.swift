@@ -140,6 +140,10 @@ struct ChatView: View {
                         selectedMCPAgents: $chatViewModel.selectedMCPAgents,
                         imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                         isStreaming: isStreaming,
+                        isMultiAgentMode: $isMultiAgentMode,
+                        selectedMultiAgentServices: $selectedMultiAgentServices,
+                        showServiceSelector: $showServiceSelector,
+                        enableMultiAgentMode: enableMultiAgentMode,
                         onSendMessage: {
                             if editSystemMessage {
                                 chat.systemMessage = newMessage
@@ -227,90 +231,6 @@ struct ChatView: View {
         .toolbarBackground(.clear, for: .automatic)
         .toolbarBackground(.visible, for: .windowToolbar)
         .toolbarColorScheme(colorScheme, for: .windowToolbar)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                HStack(spacing: 8) {
-                    // Multi-agent mode toggle with consistent styling (only show if enabled in settings)
-                    if enableMultiAgentMode {
-                        Button(action: {
-                            isMultiAgentMode.toggle()
-                            
-                            // Clear multi-agent responses when switching modes
-                            if !isMultiAgentMode {
-                                multiAgentManager.activeAgents.removeAll()
-                            }
-                            
-                            if isMultiAgentMode && selectedMultiAgentServices.isEmpty {
-                                // Auto-select up to 3 available services with valid API keys
-                                selectedMultiAgentServices = Array(apiServices.filter { service in
-                                    guard let serviceId = service.id?.uuidString else { return false }
-                                    do {
-                                        let token = try TokenManager.getToken(for: serviceId)
-                                        return token != nil && !token!.isEmpty
-                                    } catch {
-                                        return false
-                                    }
-                                }.prefix(3)) // Limit to 3 services
-                            }
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: isMultiAgentMode ? "person.3.fill" : "person.3")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(isMultiAgentMode ? .white : .secondary)
-                                
-                                Text(isMultiAgentMode ? "Multi" : "Single")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(isMultiAgentMode ? .white : .secondary)
-                            }
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(isMultiAgentMode ? Color.blue : Color(NSColor.controlBackgroundColor).opacity(0.75))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .stroke(
-                                                isMultiAgentMode ? Color.blue.opacity(0.25) : Color.primary.opacity(0.08),
-                                                lineWidth: isMultiAgentMode ? 1.2 : 0.6
-                                            )
-                                    )
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .help(isMultiAgentMode ? "Switch to single AI mode" : "Switch to multi-agent mode")
-                        
-                        // Service selector button (only visible in multi-agent mode)
-                        if isMultiAgentMode {
-                            Button(action: {
-                                showServiceSelector.toggle()
-                            }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "gear")
-                                        .font(.system(size: 9, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text("\(selectedMultiAgentServices.count)/3")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color(NSColor.controlBackgroundColor).opacity(0.75))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
-                                        )
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .help("Select AI services for multi-agent mode (\(selectedMultiAgentServices.count)/3 selected)")
-                        }
-                    }
-                }
-            }
-        }
         
         // Common modifiers and event handlers
         .onAppear(perform: {

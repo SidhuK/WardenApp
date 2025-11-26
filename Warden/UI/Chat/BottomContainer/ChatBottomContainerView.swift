@@ -11,6 +11,13 @@ struct ChatBottomContainerView: View {
     @Binding var selectedMCPAgents: Set<UUID>
     var imageUploadsAllowed: Bool
     var isStreaming: Bool
+    
+    // Multi-agent mode parameters
+    @Binding var isMultiAgentMode: Bool
+    @Binding var selectedMultiAgentServices: [APIServiceEntity]
+    @Binding var showServiceSelector: Bool
+    var enableMultiAgentMode: Bool
+    
     var onSendMessage: () -> Void
     var onExpandToggle: () -> Void
     var onAddImage: () -> Void
@@ -29,6 +36,10 @@ struct ChatBottomContainerView: View {
         selectedMCPAgents: Binding<Set<UUID>> = .constant([]),
         imageUploadsAllowed: Bool = false,
         isStreaming: Bool = false,
+        isMultiAgentMode: Binding<Bool> = .constant(false),
+        selectedMultiAgentServices: Binding<[APIServiceEntity]> = .constant([]),
+        showServiceSelector: Binding<Bool> = .constant(false),
+        enableMultiAgentMode: Bool = false,
         onSendMessage: @escaping () -> Void,
         onExpandToggle: @escaping () -> Void = {},
         onAddImage: @escaping () -> Void = {},
@@ -45,6 +56,10 @@ struct ChatBottomContainerView: View {
         self._selectedMCPAgents = selectedMCPAgents
         self.imageUploadsAllowed = imageUploadsAllowed
         self.isStreaming = isStreaming
+        self._isMultiAgentMode = isMultiAgentMode
+        self._selectedMultiAgentServices = selectedMultiAgentServices
+        self._showServiceSelector = showServiceSelector
+        self.enableMultiAgentMode = enableMultiAgentMode
         self.onSendMessage = onSendMessage
         self.onExpandToggle = onExpandToggle
         self.onAddImage = onAddImage
@@ -84,6 +99,10 @@ struct ChatBottomContainerView: View {
                  chat: chat,
                  imageUploadsAllowed: imageUploadsAllowed,
                  isStreaming: isStreaming,
+                 isMultiAgentMode: $isMultiAgentMode,
+                 selectedMultiAgentServices: $selectedMultiAgentServices,
+                 showServiceSelector: $showServiceSelector,
+                 enableMultiAgentMode: enableMultiAgentMode,
                  onEnter: onSendMessage,
                  onAddImage: onAddImage,
                  onAddFile: onAddFile,

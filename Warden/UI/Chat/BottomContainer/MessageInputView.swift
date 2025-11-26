@@ -12,6 +12,13 @@ struct MessageInputView: View {
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
     var isStreaming: Bool = false
+    
+    // Multi-agent mode parameters
+    @Binding var isMultiAgentMode: Bool
+    @Binding var selectedMultiAgentServices: [APIServiceEntity]
+    @Binding var showServiceSelector: Bool
+    var enableMultiAgentMode: Bool
+    
     var onEnter: () -> Void
     var onAddImage: () -> Void
     var onAddFile: () -> Void
@@ -195,6 +202,51 @@ struct MessageInputView: View {
                     .padding(.vertical, 8)
                 }
                 .buttonStyle(PlainButtonStyle())
+                
+                // Multi-Agent Mode toggle (if enabled in settings)
+                if enableMultiAgentMode {
+                    Button(action: {
+                        isMultiAgentMode.toggle()
+                    }) {
+                        HStack {
+                            Image(systemName: isMultiAgentMode ? "person.3.fill" : "person.3")
+                                .font(.system(size: 14))
+                            Text("Multi-Agent")
+                            Spacer()
+                            if isMultiAgentMode {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .foregroundColor(AppConstants.textPrimary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Model selector button (shown when multi-agent is on)
+                    if isMultiAgentMode {
+                        Button(action: {
+                            showingPlusMenu = false
+                            showServiceSelector = true
+                        }) {
+                            HStack {
+                                Image(systemName: "gearshape")
+                                    .font(.system(size: 14))
+                                Text("Select Models")
+                                Spacer()
+                                Text("\(selectedMultiAgentServices.count)/3")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                            .foregroundColor(AppConstants.textPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
                 
                 Divider()
                     .padding(.horizontal, 8)

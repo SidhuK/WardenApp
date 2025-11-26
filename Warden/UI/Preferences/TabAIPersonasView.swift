@@ -350,9 +350,15 @@ struct PersonaDetailView: View {
                     selectedMCPAgents: .constant([]),
                     chat: nil,
                     imageUploadsAllowed: false,
+                    isStreaming: false,
+                    isMultiAgentMode: .constant(false),
+                    selectedMultiAgentServices: .constant([]),
+                    showServiceSelector: .constant(false),
+                    enableMultiAgentMode: false,
                     onEnter: {},
                     onAddImage: {},
                     onAddFile: {},
+                    onStopStreaming: {},
                     inputPlaceholderText: "Define how this assistant should behave...",
                     cornerRadius: 8
                 )
