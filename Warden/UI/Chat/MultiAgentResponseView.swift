@@ -4,6 +4,7 @@ import SwiftUI
 struct MultiAgentResponseView: View {
     let responses: [MultiAgentMessageManager.AgentResponse]
     let isProcessing: Bool
+    let onContinue: (MultiAgentMessageManager.AgentResponse) -> Void
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     
     var body: some View {
@@ -22,7 +23,9 @@ struct MultiAgentResponseView: View {
                 // Column layout for responses
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(responses) { response in
-                        AgentResponseColumn(response: response)
+                        AgentResponseColumn(response: response, onContinue: {
+                            onContinue(response)
+                        })
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -36,8 +39,10 @@ struct MultiAgentResponseView: View {
 
 struct AgentResponseColumn: View {
     let response: MultiAgentMessageManager.AgentResponse
+    let onContinue: () -> Void
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     @State private var isExpanded = true
+    @State private var isHovered = false
     
     private var serviceLogoName: String {
         "logo_\(response.serviceType)"
@@ -119,9 +124,36 @@ struct AgentResponseColumn: View {
             }
             .frame(maxHeight: 400) // Limit height for better UX
             
-            // Footer with timestamp
+            // Footer with Continue button and timestamp
             HStack {
+                // Show Continue button only for completed successful responses
+                if response.isComplete && response.error == nil && !response.response.isEmpty {
+                    Button(action: {
+                        onContinue()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.system(size: 11))
+                            Text("Continue")
+                                .font(.system(size: chatFontSize - 3, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(isHovered ? Color.blue.opacity(0.9) : Color.blue)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        isHovered = hovering
+                    }
+                    .help("Continue conversation with this model")
+                }
+                
                 Spacer()
+                
                 Text(timeString)
                     .font(.system(size: chatFontSize - 3))
                     .foregroundColor(.secondary)
@@ -220,7 +252,10 @@ struct AgentResponseColumn: View {
                 timestamp: Date()
             )
         ],
-        isProcessing: false
+        isProcessing: false,
+        onContinue: { response in
+            print("Continue with \(response.serviceName)")
+        }
     )
     .frame(width: 800, height: 500)
 } 

@@ -66,6 +66,13 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var waitingForResponse: Bool
     @NSManaged public var chat: ChatEntity?
     
+    // Multi-agent response tracking
+    @NSManaged public var isMultiAgentResponse: Bool
+    @NSManaged public var agentServiceName: String?
+    @NSManaged public var agentServiceType: String?
+    @NSManaged public var agentModel: String?
+    @NSManaged public var multiAgentGroupId: UUID?
+    
     public var toolCalls: [WardenToolCallStatus] {
         get {
             guard let json = toolCallsJson,

@@ -46,7 +46,7 @@ struct ChatView: View {
     // Multi-agent functionality
     @State private var isMultiAgentMode = false
     @State private var showServiceSelector = false
-    @State private var selectedMultiAgentServices: Set<APIServiceEntity> = []
+    @State private var selectedMultiAgentServices: [APIServiceEntity] = []
     @StateObject private var multiAgentManager: MultiAgentMessageManager
 
     @FetchRequest(
@@ -242,7 +242,7 @@ struct ChatView: View {
                             
                             if isMultiAgentMode && selectedMultiAgentServices.isEmpty {
                                 // Auto-select up to 3 available services with valid API keys
-                                selectedMultiAgentServices = Set(apiServices.filter { service in
+                                selectedMultiAgentServices = Array(apiServices.filter { service in
                                     guard let serviceId = service.id?.uuidString else { return false }
                                     do {
                                         let token = try TokenManager.getToken(for: serviceId)
@@ -369,6 +369,9 @@ struct ChatView: View {
                             },
                             onIgnoreError: {
                                 currentError = nil
+                            },
+                            onContinueWithAgent: { response in
+                                continueWithSelectedAgent(response)
                             },
                             scrollView: scrollView,
                             viewWidth: geometry.size.width
@@ -765,7 +768,7 @@ extension ChatView {
         let limitedServices = Array(selectedMultiAgentServices.prefix(3))
         if limitedServices.count != selectedMultiAgentServices.count {
             // Update the selection to reflect the limit
-            selectedMultiAgentServices = Set(limitedServices)
+            selectedMultiAgentServices = limitedServices
         }
         
         resetError()
@@ -776,6 +779,9 @@ extension ChatView {
         
         // Save user message (with attachments if any)
         saveNewMessageInStore(with: messageBody)
+        
+        // Create a group ID to link all responses from this multi-agent request
+        let groupId = UUID()
         
         // Set streaming state for multi-agent mode
         self.isStreaming = true
@@ -790,7 +796,32 @@ extension ChatView {
             DispatchQueue.main.async {
                 switch result {
                 case .success(let responses):
-                    // Don't save to chat history - keep responses only as columns
+                    // Save all 3 responses to chat history
+                    for response in responses {
+                        // Only save successful responses (skip errors)
+                        if response.isComplete && response.error == nil && !response.response.isEmpty {
+                            let assistantMessage = MessageEntity(context: self.viewContext)
+                            assistantMessage.id = Int64(self.chat.messages.count + 1)
+                            assistantMessage.body = response.response
+                            assistantMessage.timestamp = response.timestamp
+                            assistantMessage.own = false
+                            assistantMessage.chat = self.chat
+                            
+                            // Set multi-agent metadata
+                            assistantMessage.isMultiAgentResponse = true
+                            assistantMessage.agentServiceName = response.serviceName
+                            assistantMessage.agentServiceType = response.serviceType
+                            assistantMessage.agentModel = response.model
+                            assistantMessage.multiAgentGroupId = groupId
+                            
+                            self.chat.addToMessages(assistantMessage)
+                        }
+                    }
+                    
+                    // Save to Core Data
+                    self.chat.updatedDate = Date()
+                    try? self.viewContext.save()
+                    
                     // Generate chat title using the first successful service response
                     if self.chat.name.isEmpty || self.chat.name == "New Chat" {
                         if let firstSuccessfulResponse = responses.first(where: { $0.isComplete && $0.error == nil && !$0.response.isEmpty }) {
@@ -843,6 +874,35 @@ extension ChatView {
                 }
             }
         }
+    }
+    
+    /// Switch to the selected agent's service and continue the conversation
+    private func continueWithSelectedAgent(_ agentResponse: MultiAgentMessageManager.AgentResponse) {
+        // Find the corresponding API service
+        guard let selectedService = selectedMultiAgentServices.first(where: {
+            $0.name == agentResponse.serviceName && $0.model == agentResponse.model
+        }) else {
+            print("⚠️ Could not find service for agent: \(agentResponse.serviceName)")
+            return
+        }
+        
+        // Switch the chat's active service to the selected one
+        chat.apiService = selectedService
+        
+        // Exit multi-agent mode
+        isMultiAgentMode = false
+        
+        // Clear multi-agent responses
+        multiAgentManager.activeAgents.removeAll()
+        
+        // Save the chat with new service
+        chat.updatedDate = Date()
+        try? viewContext.save()
+        
+        print("✅ Switched to \(agentResponse.serviceName) - \(agentResponse.model)")
+        
+        // Show visual feedback
+        showTemporaryFeedback("Continuing with \(agentResponse.serviceName)", icon: "checkmark.circle.fill")
     }
     
     // MARK: - Hotkey Action Methods

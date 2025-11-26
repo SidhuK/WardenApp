@@ -3,7 +3,7 @@ import SwiftUI
 import CoreData
 
 struct MultiAgentServiceSelector: View {
-    @Binding var selectedServices: Set<APIServiceEntity>
+    @Binding var selectedServices: [APIServiceEntity]
     @Binding var isVisible: Bool
     let availableServices: [APIServiceEntity]
     private let maxSelectedServices = 3
@@ -31,13 +31,17 @@ struct MultiAgentServiceSelector: View {
                     ForEach(availableServices, id: \.id) { service in
                         ServiceSelectionRow(
                             service: service,
-                            isSelected: selectedServices.contains(service),
-                            isDisabled: !selectedServices.contains(service) && selectedServices.count >= maxSelectedServices
+                            isSelected: selectedServices.contains(where: { $0.id == service.id }),
+                            selectionCount: selectedServices.filter({ $0.id == service.id }).count,
+                            isDisabled: !selectedServices.contains(where: { $0.id == service.id }) && selectedServices.count >= maxSelectedServices
                         ) { isSelected in
                             if isSelected && selectedServices.count < maxSelectedServices {
-                                selectedServices.insert(service)
+                                selectedServices.append(service)
                             } else if !isSelected {
-                                selectedServices.remove(service)
+                                // Remove the first occurrence of this service
+                                if let index = selectedServices.firstIndex(where: { $0.id == service.id }) {
+                                    selectedServices.remove(at: index)
+                                }
                             }
                         }
                     }
@@ -63,7 +67,7 @@ struct MultiAgentServiceSelector: View {
                             return false
                         }
                     }
-                    selectedServices = Set(validServices.prefix(maxSelectedServices))
+                    selectedServices = Array(validServices.prefix(maxSelectedServices))
                 }
                 .disabled(selectedServices.count == maxSelectedServices)
                 
@@ -83,6 +87,7 @@ struct MultiAgentServiceSelector: View {
 struct ServiceSelectionRow: View {
     let service: APIServiceEntity
     let isSelected: Bool
+    let selectionCount: Int
     let isDisabled: Bool
     let onToggle: (Bool) -> Void
     
@@ -91,7 +96,12 @@ struct ServiceSelectionRow: View {
     }
     
     private var serviceModelName: String {
-        return service.model ?? "Unknown Model"
+        let baseName = service.model ?? "Unknown Model"
+        // Show count if selected multiple times
+        if selectionCount > 1 {
+            return "\(baseName) (×\(selectionCount))"
+        }
+        return baseName
     }
     
     private var serviceLogoName: String {
@@ -158,7 +168,7 @@ struct ServiceSelectionRow: View {
 
 #Preview {
     MultiAgentServiceSelector(
-        selectedServices: .constant(Set()),
+        selectedServices: .constant([]),
         isVisible: .constant(true),
         availableServices: []
     )

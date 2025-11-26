@@ -24,6 +24,7 @@ struct MessageListView: View {
     // Callbacks
     let onRetryMessage: () -> Void
     let onIgnoreError: () -> Void
+    let onContinueWithAgent: (MultiAgentMessageManager.AgentResponse) -> Void
 
     // We accept a ScrollViewProxy via closure-style usage in ChatView
     let scrollView: ScrollViewProxy
@@ -142,7 +143,8 @@ struct MessageListView: View {
                (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing) {
                 MultiAgentResponseView(
                     responses: multiAgentManager.activeAgents,
-                    isProcessing: multiAgentManager.isProcessing
+                    isProcessing: multiAgentManager.isProcessing,
+                    onContinue: onContinueWithAgent
                 )
                 .id("multi-agent-responses")
                 .padding(.top, 16)
