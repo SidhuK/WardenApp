@@ -7,6 +7,32 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.8</title>
+            <description><![CDATA[
+                <ul>
+                <li>Full MCP agent support with tool calling</li>
+                <li>MCP agent management in Preferences</li>
+                <li>Agent selection in chat interface</li>
+                <li>Tool call progress view and management UI</li>
+                <li>Conversation branching with custom AI selection</li>
+                <li>Web search results persistence and citations overhaul</li>
+                <li>Multi-agent mode enhancements</li>
+                <li>Fresh UI improvements across message cells and settings</li>
+                <li>Refactored API handlers with better error handling</li>
+                </ul>
+            ]]></description>
+            <pubDate>Wed, 26 Nov 2025 00:00:00 +0000</pubDate>
+            <sparkle:version>0.8</sparkle:version>
+            <sparkle:shortVersionString>0.8</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.8/Warden.zip"
+                       sparkle:version="0.8"
+                       sparkle:shortVersionString="0.8"
+                       type="application/zip"
+                       length="12885357"
+                       sparkle:edSignature="BNnWA0h3MQwbSNd+HPe0TXmn3IhDRI0s/TWIwPgAHyLEU7FGXQa3RzDpXCNbPkLZEfsUyOlgg7B6Sbk3cI/yDg==" />
+        </item>
+        
+        <item>
             <title>Version 0.7</title>
             <description><![CDATA[
                 <ul>
