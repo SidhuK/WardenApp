@@ -32,16 +32,8 @@ struct CenteredInputView: View {
         GeometryReader { geometry in
             ZStack {
                 // Subtle background gradient for depth
-                LinearGradient(
-                    colors: [
-                        Color.accentColor.opacity(0.03),
-                        Color.clear,
-                        Color.accentColor.opacity(0.02)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Background removed for cleaner look
+
                 
                 VStack(spacing: 0) {
                     Spacer()
@@ -73,60 +65,40 @@ struct CenteredInputView: View {
                         // Input Section
                         VStack(spacing: 24) {
                             // Enhanced Input Container
-                            MessageInputView(
-                                text: $newMessage,
-                                attachedImages: $attachedImages,
-                                attachedFiles: $attachedFiles,
-                                webSearchEnabled: $webSearchEnabled,
-                                selectedMCPAgents: $selectedMCPAgents,
-                                chat: chat,
-                                imageUploadsAllowed: imageUploadsAllowed,
-                                isStreaming: isStreaming,
-                                onEnter: onSendMessage,
-                                onAddImage: onAddImage,
-                                onAddFile: onAddFile,
-                                onAddAssistant: onAddAssistant,
-                                onStopStreaming: onStopStreaming,
-                                inputPlaceholderText: "Type a message...",
-                                cornerRadius: 16.0
-                            )
-                            .frame(maxWidth: 640)
-                            .padding(6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(Color(nsColor: .controlBackgroundColor))
-                                    .shadow(
-                                        color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08),
-                                        radius: isInputFocused ? 16 : 8,
-                                        x: 0,
-                                        y: isInputFocused ? 6 : 2
-                                    )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.accentColor.opacity(isInputFocused ? 0.4 : 0.1),
-                                                Color.accentColor.opacity(isInputFocused ? 0.2 : 0.05)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1
-                                    )
-                            )
-                            .scaleEffect(isInputFocused ? 1.01 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
-                            .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidBeginEditingNotification)) { _ in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    isInputFocused = true
+                            HStack {
+                                Spacer()
+                                MessageInputView(
+                                    text: $newMessage,
+                                    attachedImages: $attachedImages,
+                                    attachedFiles: $attachedFiles,
+                                    webSearchEnabled: $webSearchEnabled,
+                                    selectedMCPAgents: $selectedMCPAgents,
+                                    chat: chat,
+                                    imageUploadsAllowed: imageUploadsAllowed,
+                                    isStreaming: isStreaming,
+                                    onEnter: onSendMessage,
+                                    onAddImage: onAddImage,
+                                    onAddFile: onAddFile,
+                                    onAddAssistant: onAddAssistant,
+                                    onStopStreaming: onStopStreaming,
+                                    inputPlaceholderText: "Type a message...",
+                                    cornerRadius: 16.0
+                                )
+                                .frame(maxWidth: 640)
+                                .padding(6)
+                                .scaleEffect(isInputFocused ? 1.01 : 1.0)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
+                                .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidBeginEditingNotification)) { _ in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        isInputFocused = true
+                                    }
                                 }
-                            }
-                            .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidEndEditingNotification)) { _ in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    isInputFocused = false
+                                .onReceive(NotificationCenter.default.publisher(for: NSTextField.textDidEndEditingNotification)) { _ in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        isInputFocused = false
+                                    }
                                 }
+                                Spacer()
                             }
                             
                             // Suggestion Cards

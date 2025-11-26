@@ -84,13 +84,12 @@ struct MessageInputView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Material.regular) // Glassmorphic background
-            .cornerRadius(24) // Slightly rounder corners
+            .background(Color(nsColor: .controlBackgroundColor))
+            .cornerRadius(24)
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5) // Subtle border
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4) // Softer shadow
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
             return handleDrop(providers: providers)
@@ -441,15 +440,17 @@ struct MessageInputView: View {
                     .allowsHitTesting(false)
             }
             
-            TextEditor(text: $text)
-                .font(.system(size: effectiveFontSize))
-                .foregroundColor(.primary)
-                .scrollContentBackground(.hidden)
-                .scrollDisabled(false)
-                .padding(.leading, -5)
-                .padding(.top, -8)
-                .frame(minHeight: 20, maxHeight: maxInputHeight)
-                .fixedSize(horizontal: false, vertical: true)
+            SubmitTextEditor(
+                text: $text,
+                onSubmit: {
+                    if canSend {
+                        onEnter()
+                    }
+                },
+                font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize))
+            )
+            .frame(minHeight: 20, maxHeight: maxInputHeight)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 8)
         .frame(minWidth: 200)

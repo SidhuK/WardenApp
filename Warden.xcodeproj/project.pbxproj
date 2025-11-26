@@ -125,6 +125,7 @@
 		C43A763B2ED5672E006DA5E2 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76322ED5672E006DA5E2 /* CitationBadgeView.swift */; };
 		C43A763C2ED5672E006DA5E2 /* SearchErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76332ED5672E006DA5E2 /* SearchErrorView.swift */; };
 		C44EA8BB2ED5E600008DAA73 /* GlassEffectModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */; };
+		C450598E2ED6A49900AF3449 /* SubmitTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */; };
 		C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BC12ECDD29000D72DA1 /* SearchModels.swift */; };
 		C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */; };
 		C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */; };
@@ -305,6 +306,7 @@
 		C43A76352ED5672E006DA5E2 /* SearchResultsPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultsPreviewView.swift; sourceTree = "<group>"; };
 		C43A76362ED5672E006DA5E2 /* ToolCallProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallProgressView.swift; sourceTree = "<group>"; };
 		C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffectModifiers.swift; sourceTree = "<group>"; };
+		C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitTextEditor.swift; sourceTree = "<group>"; };
 		C4632BC12ECDD29000D72DA1 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
 		C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchErrorView.swift; sourceTree = "<group>"; };
@@ -428,6 +430,7 @@
 				C4EB88D52ECC421C00AA0829 /* ModernButton.swift */,
 				C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */,
 				C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */,
+				C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */,
 				C4642A532EC200C000326693 /* AnimatedStateView.swift */,
 				C4642A542EC200C000326693 /* SkeletonLoaderView.swift */,
 				C4642A552EC200C000326693 /* TypingIndicatorView.swift */,
@@ -964,6 +967,7 @@
 				7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */,
 				4AE3CEB92C93AEA800A9CF4C /* APIServiceDetailView.swift in Sources */,
 				C4642A522EC200A900326693 /* AnimationModifiers.swift in Sources */,
+				C450598E2ED6A49900AF3449 /* SubmitTextEditor.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
