@@ -25,7 +25,6 @@ struct MessageListView: View {
     let onRetryMessage: () -> Void
     let onIgnoreError: () -> Void
     let onContinueWithAgent: (MultiAgentMessageManager.AgentResponse) -> Void
-    let onBranch: ((MessageEntity) -> Void)?
 
     // We accept a ScrollViewProxy via closure-style usage in ChatView
     let scrollView: ScrollViewProxy
@@ -86,7 +85,7 @@ struct MessageListView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        ChatBubbleView(content: bubbleContent, message: messageEntity, onBranch: onBranch)
+                        ChatBubbleView(content: bubbleContent, message: messageEntity)
                             .id(messageEntity.id)
                             .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
                             // Adjusted max width for better readability on large screens

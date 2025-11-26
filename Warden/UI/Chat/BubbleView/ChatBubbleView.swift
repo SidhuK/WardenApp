@@ -32,7 +32,6 @@ struct ChatBubbleView: View, Equatable {
     var message: MessageEntity?
     var color: String?
     var onEdit: (() -> Void)?
-    var onBranch: ((MessageEntity) -> Void)?
 
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.managedObjectContext) private var viewContext
@@ -242,11 +241,9 @@ struct ChatBubbleView: View, Equatable {
                 }
             }
 
-            // Branch button with enhanced styling
+            // Branch button with inline popover
             if !content.systemMessage, let msg = message {
-                BranchToolbarButton {
-                    onBranch?(msg)
-                }
+                BranchToolbarButton(message: msg)
             }
 
             ToolbarButton(icon: isCopied ? "checkmark" : "doc.on.doc", text: "Copy") {
@@ -615,14 +612,21 @@ struct StreamingPulseModifier: ViewModifier {
 
 // MARK: - Branch Toolbar Button
 
-/// A specialized toolbar button for branching with enhanced visual styling
+/// A specialized toolbar button for branching with inline popover
 struct BranchToolbarButton: View {
-    let action: () -> Void
+    let message: MessageEntity
     
     @State private var isHovered = false
+    @State private var showPopover = false
+    
+    private var origin: BranchOrigin {
+        message.own ? .user : .assistant
+    }
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            showPopover = true
+        }) {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.triangle.branch")
                     .font(.system(size: 10, weight: .medium))
@@ -630,12 +634,12 @@ struct BranchToolbarButton: View {
                 Text("Branch")
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundColor(isHovered ? .accentColor : AppConstants.textTertiary)
+            .foregroundColor(isHovered || showPopover ? .accentColor : AppConstants.textTertiary)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
+                    .fill((isHovered || showPopover) ? Color.accentColor.opacity(0.1) : Color.clear)
             )
             .contentShape(Rectangle())
         }
@@ -643,6 +647,25 @@ struct BranchToolbarButton: View {
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
+            }
+        }
+        .popover(isPresented: $showPopover, arrowEdge: .bottom) {
+            if let chat = message.chat {
+                BranchPopover(
+                    sourceMessage: message,
+                    sourceChat: chat,
+                    origin: origin,
+                    onBranchCreated: { _ in
+                        NotificationCenter.default.post(
+                            name: .showToast,
+                            object: nil,
+                            userInfo: ["message": "Branch created", "icon": "arrow.triangle.branch"]
+                        )
+                    },
+                    onDismiss: {
+                        showPopover = false
+                    }
+                )
             }
         }
         .help("Create a branch from this message")

@@ -49,10 +49,6 @@ struct ChatView: View {
     @State private var selectedMultiAgentServices: [APIServiceEntity] = []
     @StateObject private var multiAgentManager: MultiAgentMessageManager
     
-    // Branching functionality
-    @State private var pendingBranch: (message: MessageEntity, origin: BranchOrigin)?
-    @State private var showBranchSheet = false
-
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
@@ -254,23 +250,7 @@ struct ChatView: View {
             )
             .frame(minWidth: 500, minHeight: 400)
         }
-        .sheet(isPresented: $showBranchSheet) {
-            if let (message, origin) = pendingBranch {
-                BranchCreationSheet(
-                    sourceMessage: message,
-                    sourceChat: chat,
-                    origin: origin,
-                    availableServices: Array(apiServices),
-                    onBranchCreated: { _ in
-                        NotificationCenter.default.post(
-                            name: .showToast,
-                            object: nil,
-                            userInfo: ["message": "Branch created", "icon": "arrow.triangle.branch"]
-                        )
-                    }
-                )
-            }
-        }
+
         .onChange(of: enableMultiAgentMode) { oldValue, newValue in
             // Automatically disable multi-agent mode if the setting is turned off
             if !newValue && isMultiAgentMode {
@@ -310,10 +290,6 @@ struct ChatView: View {
                             },
                             onContinueWithAgent: { response in
                                 continueWithSelectedAgent(response)
-                            },
-                            onBranch: { message in
-                                pendingBranch = (message: message, origin: message.own ? .user : .assistant)
-                                showBranchSheet = true
                             },
                             scrollView: scrollView,
                             viewWidth: geometry.size.width
