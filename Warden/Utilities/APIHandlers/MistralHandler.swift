@@ -41,7 +41,13 @@ class MistralHandler: BaseAPIHandler {
         }
     }
 
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -64,12 +70,17 @@ class MistralHandler: BaseAPIHandler {
             processedMessages.append(processedMessage)
         }
 
-        let parameters: [String: Any] = [
+        var parameters: [String: Any] = [
             "model": model,
             "messages": processedMessages,
             "temperature": temperature,
             "stream": stream
         ]
+        
+        // Add tools if provided
+        if let tools = tools {
+            parameters["tools"] = tools
+        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
@@ -80,7 +91,7 @@ class MistralHandler: BaseAPIHandler {
         return request
     }
 
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let choices = json["choices"] as? [[String: Any]],
@@ -88,8 +99,7 @@ class MistralHandler: BaseAPIHandler {
                let message = firstChoice["message"] as? [String: Any],
                let content = message["content"] as? String
             {
-                // Note: Usage tokens are currently ignored by BaseAPIHandler signature
-                return (content, "assistant")
+                return (content, "assistant", nil)
             }
         } catch {
             print("Error parsing JSON response: \(error)")
@@ -97,13 +107,13 @@ class MistralHandler: BaseAPIHandler {
         return nil
     }
 
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
-        guard let data = data else { return (false, nil, nil, nil) }
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
+        guard let data = data else { return (false, nil, nil, nil, nil) }
         
         do {
             // Check for [DONE] message
             if let string = String(data: data, encoding: .utf8), string == "[DONE]" {
-                return (true, nil, nil, nil)
+                return (true, nil, nil, nil, nil)
             }
 
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -113,18 +123,18 @@ class MistralHandler: BaseAPIHandler {
                     if let delta = firstChoice["delta"] as? [String: Any],
                        let content = delta["content"] as? String
                     {
-                        return (false, nil, content, "assistant")
+                        return (false, nil, content, "assistant", nil)
                     }
                     
                     // If there's a finish_reason, we're done
                     if let finishReason = firstChoice["finish_reason"] as? String, !finishReason.isEmpty {
-                        return (true, nil, nil, nil)
+                        return (true, nil, nil, nil, nil)
                     }
                 }
             }
         } catch {
-            return (false, error, nil, nil)
+            return (false, error, nil, nil, nil)
         }
-        return (false, nil, nil, nil)
+        return (false, nil, nil, nil, nil)
     }
 }

@@ -70,7 +70,7 @@ class OllamaHandler: BaseAPIHandler {
         return request
     }
 
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
                 print("Response: \(responseString)")
@@ -82,7 +82,7 @@ class OllamaHandler: BaseAPIHandler {
                         let messageRole = message["role"] as? String,
                         let messageContent = message["content"] as? String
                     {
-                        return (messageContent, messageRole)
+                        return (messageContent, messageRole, nil)
                     }
                 }
             }
@@ -94,15 +94,15 @@ class OllamaHandler: BaseAPIHandler {
         return nil
     }
 
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
             print("No data received.")
-            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)
+            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
         let dataString = String(data: data, encoding: .utf8)
         if dataString == "[DONE]" {
-            return (true, nil, nil, nil)
+            return (true, nil, nil, nil, nil)
         }
 
         do {
@@ -114,7 +114,7 @@ class OllamaHandler: BaseAPIHandler {
                     let done = dict["done"] as? Bool,
                     let messageContent = message["content"] as? String
                 {
-                    return (done, nil, messageContent, messageRole)
+                    return (done, nil, messageContent, messageRole, nil)
                 }
             }
 
@@ -125,9 +125,9 @@ class OllamaHandler: BaseAPIHandler {
                 print("Error parsing JSON: \(error)")
             #endif
 
-            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil)
+            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)
         }
 
-        return (false, nil, nil, nil)
+        return (false, nil, nil, nil, nil)
     }
 }

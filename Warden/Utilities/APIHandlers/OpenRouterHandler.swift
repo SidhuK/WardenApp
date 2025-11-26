@@ -1,7 +1,7 @@
 import Foundation
 
 class OpenRouterHandler: ChatGPTHandler {    
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             // Always print response for debugging
             print("OpenRouter Raw Response: \(responseString)")
@@ -28,7 +28,7 @@ class OpenRouterHandler: ChatGPTHandler {
                          return nil
                     }
                     
-                    return (finalContent, messageRole)
+                    return (finalContent, messageRole, nil)
                 } else {
                     print("OpenRouter Parsing Failed: Structure mismatch")
                     if let dict = json as? [String: Any] {
@@ -51,16 +51,16 @@ class OpenRouterHandler: ChatGPTHandler {
         return nil
     }
     
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
             print("No data received.")
-            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)
+            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
         let defaultRole = "assistant"
         let dataString = String(data: data, encoding: .utf8)
         if dataString == "[DONE]" {
-            return (true, nil, nil, nil)
+            return (true, nil, nil, nil, nil)
         }
 
         do {
@@ -85,9 +85,9 @@ class OpenRouterHandler: ChatGPTHandler {
                 let finished = firstChoice["finish_reason"] as? String == "stop"
                 
                 if let reasoningContent = reasoningContent {
-                    return (finished, nil, reasoningContent, "reasoning")
+                    return (finished, nil, reasoningContent, "reasoning", nil)
                 } else if let content = content {
-                    return (finished, nil, content, defaultRole)
+                    return (finished, nil, content, defaultRole, nil)
                 }
             }
         } catch {
@@ -96,10 +96,10 @@ class OpenRouterHandler: ChatGPTHandler {
                 print("Error parsing JSON: \(error)")
             #endif
             
-            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil)
+            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)
         }
 
-        return (false, nil, nil, nil)
+        return (false, nil, nil, nil, nil)
     }
 
     func sendMessageStream(_ requestMessages: [[String: String]], temperature: Float) async throws

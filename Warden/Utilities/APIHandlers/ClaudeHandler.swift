@@ -45,9 +45,13 @@ class ClaudeHandler: BaseAPIHandler {
         }
     }
 
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool)
-        -> URLRequest
-    {
+    override func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
@@ -67,7 +71,7 @@ class ClaudeHandler: BaseAPIHandler {
         let maxTokens =
             model == "claude-3-5-sonnet-latest" ? 8192 : AppConstants.defaultApiConfigurations["claude"]!.maxTokens!
 
-        let jsonDict: [String: Any] = [
+        var jsonDict: [String: Any] = [
             "model": model,
             "messages": updatedRequestMessages,
             "system": systemMessage,
@@ -75,6 +79,11 @@ class ClaudeHandler: BaseAPIHandler {
             "temperature": temperature,
             "max_tokens": maxTokens,
         ]
+        
+        // Add tools if provided
+        if let tools = tools {
+            jsonDict["tools"] = tools
+        }
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
 
@@ -83,7 +92,7 @@ class ClaudeHandler: BaseAPIHandler {
 
 
 
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         do {
             if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                 let role = json["role"] as? String,
@@ -100,7 +109,7 @@ class ClaudeHandler: BaseAPIHandler {
                 }.joined(separator: "\n")
 
                 if !textContent.isEmpty {
-                    return (textContent, role)
+                    return (textContent, role, nil)
                 }
             }
         }
@@ -110,9 +119,9 @@ class ClaudeHandler: BaseAPIHandler {
         return nil
     }
 
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
-            return (false, nil, nil, nil)
+            return (false, nil, nil, nil, nil)
         }
         
         var isFinished = false
@@ -125,7 +134,7 @@ class ClaudeHandler: BaseAPIHandler {
                 code: 1,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to parse JSON"]
             )
-            return (isFinished, parseError, nil, nil)
+            return (isFinished, parseError, nil, nil, nil)
         }
 
         if let eventType = json["type"] as? String {
@@ -158,6 +167,6 @@ class ClaudeHandler: BaseAPIHandler {
                 break
             }
         }
-        return (isFinished, parseError, textContent.isEmpty ? nil : textContent, nil)
+        return (isFinished, parseError, textContent.isEmpty ? nil : textContent, nil, nil)
     }
 }

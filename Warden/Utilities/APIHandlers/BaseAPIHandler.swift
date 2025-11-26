@@ -72,6 +72,9 @@ class BaseAPIHandler: APIService {
                     try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
                         guard let self = self else { return }
                         
+                        // Check if task was cancelled before yielding
+                        try Task.checkCancellation()
+                        
                         if let data = dataString.data(using: .utf8) {
                             let (finished, error, messageData, _, toolCalls) = self.parseDeltaJSONResponse(data: data)
                             
@@ -90,6 +93,9 @@ class BaseAPIHandler: APIService {
                         }
                     }
                     
+                    continuation.finish()
+                } catch is CancellationError {
+                    // Silently finish on cancellation - don't throw
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)

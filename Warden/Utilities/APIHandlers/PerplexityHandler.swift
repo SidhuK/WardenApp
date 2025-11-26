@@ -2,18 +2,29 @@ import Foundation
 
 class PerplexityHandler: BaseAPIHandler {
 
-    func prepareRequest(requestMessages: [[String: String]], model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let jsonDict: [String: Any] = [
+        var jsonDict: [String: Any] = [
             "model": self.model,
             "stream": stream,
             "messages": requestMessages,
             "temperature": temperature,
         ]
+        
+        // Add tools if provided
+        if let tools = tools {
+            jsonDict["tools"] = tools
+        }
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
 
@@ -34,7 +45,7 @@ class PerplexityHandler: BaseAPIHandler {
         return formattedContent
     }
 
-    func parseJSONResponse(data: Data) -> (String, String)? {
+    override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
                 print("Response: \(responseString)")
@@ -50,7 +61,7 @@ class PerplexityHandler: BaseAPIHandler {
                     {
                         let citations = dict["citations"] as? [String]
                         let finalContent = formatContentWithCitations(messageContent, citations: citations)
-                        return (finalContent, messageRole)
+                        return (finalContent, messageRole, nil)
                     }
                 }
             }
@@ -62,16 +73,16 @@ class PerplexityHandler: BaseAPIHandler {
         return nil
     }
 
-    func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?) {
+    override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
             print("No data received.")
-            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil)
+            return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
         let defaultRole = "assistant"
         let dataString = String(data: data, encoding: .utf8)
         if dataString == "[DONE]" {
-            return (true, nil, nil, nil)
+            return (true, nil, nil, nil, nil)
         }
 
         do {
@@ -86,7 +97,7 @@ class PerplexityHandler: BaseAPIHandler {
                     let finished = firstChoice["finish_reason"] as? String == "stop"
                     let citations = dict["citations"] as? [String]
                     let finalContent = formatContentWithCitations(contentPart, citations: citations)
-                    return (finished, nil, finalContent, defaultRole)
+                    return (finished, nil, finalContent, defaultRole, nil)
                 }
             }
         }
@@ -96,9 +107,9 @@ class PerplexityHandler: BaseAPIHandler {
                 print("Error parsing JSON: \(error)")
             #endif
 
-            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil)
+            return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)
         }
 
-        return (false, nil, nil, nil)
+        return (false, nil, nil, nil, nil)
     }
 }
