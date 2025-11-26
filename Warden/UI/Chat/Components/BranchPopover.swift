@@ -10,6 +10,7 @@ struct BranchPopover: View {
     let onDismiss: () -> Void
     
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var viewModel = ModelSelectorViewModel()
     @StateObject private var favoriteManager = FavoriteModelsManager.shared
     @StateObject private var metadataCache = ModelMetadataCache.shared
@@ -30,6 +31,7 @@ struct BranchPopover: View {
             header
             
             Divider()
+                .opacity(0.5)
             
             if isCreating {
                 creatingView
@@ -38,15 +40,16 @@ struct BranchPopover: View {
             } else {
                 // Search bar
                 searchBar
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
-                    .padding(.bottom, 6)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
                 
                 Divider()
+                    .opacity(0.5)
                 
                 // Model list
                 ScrollView(.vertical, showsIndicators: true) {
-                    LazyVStack(spacing: 2, pinnedViews: [.sectionHeaders]) {
+                    LazyVStack(spacing: 4, pinnedViews: [.sectionHeaders]) {
                         ForEach(viewModel.filteredSections) { section in
                             if section.id == "favorites" {
                                 Section {
@@ -66,14 +69,17 @@ struct BranchPopover: View {
                                 }
                             }
                         }
+                        
+                        // Bottom padding
+                        Spacer()
+                            .frame(height: 8)
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 6)
                 }
-                .frame(maxHeight: 280)
             }
         }
-        .frame(width: 340)
+        .frame(width: 360, height: 420)
         .background(Color(NSColor.controlBackgroundColor))
         .onAppear {
             viewModel.updateServices(Array(apiServices))
@@ -83,57 +89,68 @@ struct BranchPopover: View {
     // MARK: - Header
     
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
+            // Branch icon
             ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 28, height: 28)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .frame(width: 32, height: 32)
                 
                 Image(systemName: "arrow.triangle.branch")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.accentColor)
             }
             
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Branch")
-                    .font(.system(size: 13, weight: .semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Create Branch")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
                 
-                Text(origin == .user ? "Select AI for new response" : "Select AI to continue")
-                    .font(.system(size: 10))
+                Text(origin == .user ? "Select AI to generate response" : "Select AI to continue chat")
+                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
             
             Spacer()
+            
+            // Close button
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+            .help("Close")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
     }
     
     // MARK: - Search Bar
     
     private var searchBar: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11, weight: .regular))
+                .font(.system(size: 12, weight: .regular))
                 .foregroundStyle(.tertiary)
             
             TextField("Search models...", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 11))
+                .font(.system(size: 12))
             
             if !viewModel.searchText.isEmpty {
                 Button(action: { viewModel.searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color(NSColor.textBackgroundColor))
         )
     }
@@ -141,39 +158,39 @@ struct BranchPopover: View {
     // MARK: - Section Headers
     
     private func sectionHeader(_ title: String, icon: String? = nil) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(.accentColor.opacity(0.8))
             }
             Text(title.uppercased())
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(Color(NSColor.controlBackgroundColor))
     }
     
     private func providerSectionHeader(title: String, provider: String) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             Image("logo_\(provider)")
                 .resizable()
                 .renderingMode(.template)
                 .interpolation(.high)
-                .frame(width: 10, height: 10)
-                .foregroundStyle(.tertiary)
+                .frame(width: 12, height: 12)
+                .foregroundStyle(.secondary)
             
             Text(title.uppercased())
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
             
             Spacer()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(Color(NSColor.controlBackgroundColor))
     }
     
@@ -184,36 +201,60 @@ struct BranchPopover: View {
         let isReasoning = metadata?.hasReasoning ?? false
         let isVision = metadata?.hasVision ?? false
         let formattedModel = ModelMetadata.formatModelComponents(modelId: item.modelId, provider: item.provider)
+        let isHovered = hoveredItem == item.id
         
         return Button(action: {
             createBranch(providerType: item.provider, model: item.modelId)
         }) {
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
+            HStack(spacing: 10) {
+                // Model info
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 5) {
                         Text(formattedModel.displayName)
-                            .font(.system(size: 11, weight: .regular))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                         
                         if let provider = formattedModel.provider {
-                            Text("(\(provider))")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(.secondary)
+                            Text(provider)
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.primary.opacity(0.06))
+                                )
                         }
                     }
                     
-                    if isReasoning || isVision {
-                        HStack(spacing: 5) {
+                    // Capabilities badges
+                    if isReasoning || isVision || (metadata?.hasPricing == true) {
+                        HStack(spacing: 8) {
                             if isReasoning {
-                                Label("Reasoning", systemImage: "brain")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(.secondary)
+                                HStack(spacing: 3) {
+                                    Image(systemName: "brain")
+                                        .font(.system(size: 8))
+                                    Text("Reasoning")
+                                        .font(.system(size: 9))
+                                }
+                                .foregroundStyle(.secondary)
                             }
                             if isVision {
-                                Label("Vision", systemImage: "eye")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(.secondary)
+                                HStack(spacing: 3) {
+                                    Image(systemName: "eye")
+                                        .font(.system(size: 8))
+                                    Text("Vision")
+                                        .font(.system(size: 9))
+                                }
+                                .foregroundStyle(.secondary)
+                            }
+                            if let pricing = metadata?.pricing, let inputPrice = pricing.inputPer1M {
+                                Text(pricing.outputPer1M != nil
+                                    ? "$\(String(format: "%.2f", inputPrice))/$\(String(format: "%.2f", pricing.outputPer1M!))/M"
+                                    : "$\(String(format: "%.2f", inputPrice))/M")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
                             }
                         }
                     }
@@ -221,69 +262,87 @@ struct BranchPopover: View {
                 
                 Spacer()
                 
-                // Favorite button
-                Button(action: {
-                    favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
-                }) {
-                    Image(systemName: item.isFavorite ? "star.fill" : "star")
-                        .font(.system(size: 10))
-                        .foregroundStyle(item.isFavorite ? Color.accentColor : Color.secondary.opacity(0.4))
+                // Actions
+                HStack(spacing: 10) {
+                    // Favorite button
+                    Button(action: {
+                        favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
+                    }) {
+                        Image(systemName: item.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 11))
+                            .foregroundStyle(item.isFavorite ? Color.accentColor : Color.secondary.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // Branch action indicator
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(isHovered ? .accentColor : .secondary.opacity(0.5))
                 }
-                .buttonStyle(.plain)
-                
-                Image(systemName: "arrow.right.circle")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(hoveredItem == item.id ? Color.accentColor.opacity(0.08) : Color.clear)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            hoveredItem = hovering ? item.id : nil
+            withAnimation(.easeInOut(duration: 0.1)) {
+                hoveredItem = hovering ? item.id : nil
+            }
         }
     }
     
     // MARK: - Creating State
     
     private var creatingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             ProgressView()
-                .scaleEffect(0.8)
+                .scaleEffect(0.9)
             
-            Text("Creating branch...")
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
+            VStack(spacing: 4) {
+                Text("Creating branch...")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Text(origin == .user ? "Generating AI response" : "Preparing conversation")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
         }
-        .frame(height: 100)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.title2)
+        VStack(spacing: 14) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 28))
                 .foregroundColor(.orange)
             
-            Text(error)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button("Try Again") {
-                errorMessage = nil
+            VStack(spacing: 4) {
+                Text("Branch Failed")
+                    .font(.system(size: 13, weight: .semibold))
+                
+                Text(error)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
             }
-            .font(.system(size: 11))
+            
+            Button(action: { errorMessage = nil }) {
+                Text("Try Again")
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.bordered)
         }
-        .frame(height: 120)
-        .frame(maxWidth: .infinity)
-        .padding()
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     // MARK: - Branch Creation
