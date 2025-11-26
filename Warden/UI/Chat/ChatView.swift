@@ -282,8 +282,10 @@ struct ChatView: View {
                             messageToolCalls: chatViewModel.messageManager?.messageToolCalls ?? [:],
                             userIsScrolling: $userIsScrolling,
                             onRetryMessage: {
-                                // Retry last failed or pending message using existing logic
-                                sendMessage(ignoreMessageInput: true)
+                                // Retry logic: Find the last user message and re-send it
+                                if let lastUserMessage = chatViewModel.sortedMessages.last(where: { $0.own }) {
+                                    sendMessage(retryContent: lastUserMessage.body)
+                                }
                             },
                             onIgnoreError: {
                                 currentError = nil
@@ -395,7 +397,7 @@ struct ChatView: View {
 
 
 extension ChatView {
-    func sendMessage(ignoreMessageInput: Bool = false) {
+    func sendMessage(ignoreMessageInput: Bool = false, retryContent: String? = nil) {
         guard chatViewModel.canSendMessage else {
             currentError = ErrorMessage(
                 apiError: .noApiService("No API service selected. Select the API service to send your first message"),
@@ -409,39 +411,14 @@ extension ChatView {
         let messageBody: String
         let isFirstMessage = chat.messages.count == 0
 
-        if ignoreMessageInput {
-            // Retry logic - assume message is already in store or we just want to trigger send
-            // Actually, retry logic in this app seems to just re-send 'newMessage' if it failed?
-            // Or re-send the last message?
-            // The original code for retry passes ignoreMessageInput=true but doesn't grab last message body.
-            // It seems it relies on 'newMessage' not being cleared?
-            // But saveNewMessageInStore clears 'newMessage'.
-            // Let's look at how it was:
-            // if !ignoreMessageInput { save...; clear... }
-            // So if ignoreMessageInput is true, it uses 'newMessage' state?
-            // But if we are retrying a previous message, 'newMessage' might be empty.
-            // The `onRetryMessage` callback in ChatView calls `sendMessage(ignoreMessageInput: true)`.
-            // But `newMessage` is binding to the input field.
-            // If I type a message, send (fails), input is cleared. 'newMessage' is empty.
-            // Retry would send empty message?
-            // Original code:
-            // let messageText = newMessage
-            // ...
-            // if !ignoreMessageInput { save... }
-            // ...
-            // sendMessageStream...(messageBody...)
-            
-            // If ignoreMessageInput is true, messageBody comes from newMessage/attachments.
-            // If newMessage is empty, messageBody is empty.
-            // This seems like a bug in the original code for Retry, OR Retry is intended for when the send fails *before* clearing input?
-            // But saveNewMessageInStore clears input.
-            // And save happens *before* network call.
-            // So if network fails, input is already cleared.
-            // So `sendMessage(ignoreMessageInput: true)` would send an empty string?
-            
-            // NOTE: Preserving original behavior for now, but optimizing the structure.
+        if let retryText = retryContent {
+            // Retry mode: Use provided text, do not save new user message
+            messageBody = retryText
+        } else if ignoreMessageInput {
+             // Legacy retry/send logic (mostly unused now with explicit retryContent)
             messageBody = prepareMessageBody(clearInput: false)
         } else {
+            // Normal send
             messageBody = prepareMessageBody(clearInput: true)
             saveNewMessageInStore(with: messageBody)
             

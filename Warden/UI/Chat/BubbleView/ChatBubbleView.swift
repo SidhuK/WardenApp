@@ -41,6 +41,7 @@ struct ChatBubbleView: View, Equatable {
     private let verticalSpacingCompact: CGFloat = 4
     private let verticalSpacingSeparated: CGFloat = 12
     @State private var isHovered = false
+    @State private var hoverWorkItem: DispatchWorkItem?
     @State private var showingDeleteConfirmation = false
     @State private var isCopied = false
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
@@ -81,7 +82,21 @@ struct ChatBubbleView: View, Equatable {
         }
         .padding(.vertical, 8)
         .onHover { isHovered in
-            self.isHovered = isHovered
+            self.hoverWorkItem?.cancel()
+            
+            if isHovered {
+                withAnimation(.easeOut(duration: 0.1)) {
+                    self.isHovered = true
+                }
+            } else {
+                let workItem = DispatchWorkItem {
+                    withAnimation(.easeIn(duration: 0.2)) {
+                        self.isHovered = false
+                    }
+                }
+                self.hoverWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
+            }
         }
         .alert(isPresented: $showingDeleteConfirmation) {
             Alert(
