@@ -22,6 +22,19 @@ We've added full **MCP agent support**, bringing powerful tool-calling capabilit
 
 ---
 
+## 🌿 Conversation Branching
+
+Ever wanted to explore a different direction mid-conversation? Now you can!
+
+- **🔀 Branch from Any Message** — Click the Branch button on any message to fork your conversation
+- **🤖 Pick Your AI** — Choose which AI model to use for your new branch right from the inline selector
+- **⚡ Instant Responses** — Branch from your message and get an immediate AI response with your chosen model
+- **🏷️ Visual Indicators** — Branched chats show a badge in the sidebar so you always know which conversations are forks
+- **📜 Full History** — Branches keep all the context from the original conversation up to your branch point
+- **💾 Persistent** — Your branches and their messages are saved automatically
+
+---
+
 ## 🎨 Fresh UI Vibes
 
 We gave several parts of Warden a visual makeover!

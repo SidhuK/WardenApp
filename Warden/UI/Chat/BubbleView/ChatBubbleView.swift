@@ -612,11 +612,12 @@ struct StreamingPulseModifier: ViewModifier {
 
 // MARK: - Branch Toolbar Button
 
-/// A specialized toolbar button for branching with inline popover
+/// A specialized toolbar button for branching with inline popover (matches ToolbarButton style)
 struct BranchToolbarButton: View {
     let message: MessageEntity
     
     @State private var isHovered = false
+    @State private var isPressed = false
     @State private var showPopover = false
     
     private var origin: BranchOrigin {
@@ -632,23 +633,42 @@ struct BranchToolbarButton: View {
                     .font(.system(size: 10, weight: .medium))
                 
                 Text("Branch")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
             }
-            .foregroundColor(isHovered || showPopover ? .accentColor : AppConstants.textTertiary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill((isHovered || showPopover) ? Color.accentColor.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered || showPopover ? AppConstants.backgroundSubtle : .clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(
+                                isHovered || showPopover ? AppConstants.borderSubtle : Color.clear,
+                                lineWidth: 0.5
+                            )
+                    )
             )
-            .contentShape(Rectangle())
+            .foregroundColor(isHovered || showPopover ? AppConstants.textPrimary : AppConstants.textSecondary)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .scaleEffect(isPressed ? 0.97 : (isHovered ? 1.02 : 1.0))
+        .shadow(
+            color: Color.black.opacity(isHovered ? 0.08 : 0.04),
+            radius: isHovered ? 4 : 2,
+            x: 0,
+            y: isHovered ? 2 : 1
+        )
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(.easeOut(duration: 0.16)) {
                 isHovered = hovering
             }
         }
+        .onLongPressGesture(minimumDuration: .infinity, perform: {}, onPressingChanged: { pressing in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        })
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
             if let chat = message.chat {
                 BranchPopover(

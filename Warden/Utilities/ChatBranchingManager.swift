@@ -253,5 +253,9 @@ final class ChatBranchingManager {
                 )
             }
         }
+        
+        // Immediately save after response generation completes (don't rely on debounced save)
+        chat.updatedDate = Date()
+        try viewContext.save()
     }
 }
