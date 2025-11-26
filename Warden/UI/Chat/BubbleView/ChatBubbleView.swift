@@ -64,6 +64,19 @@ struct ChatBubbleView: View, Equatable {
     var body: some View {
         VStack(spacing: 4) {
             bubbleRow
+            
+            // Show search sources below AI messages that have search results
+            if !content.own && !content.systemMessage,
+               let messageEntity = message,
+               let metadata = messageEntity.searchMetadata {
+                HStack {
+                    Spacer().frame(width: 32) // Align with bubble
+                    MessageSourcesView(metadata: metadata)
+                        .frame(maxWidth: 500) // Limit width to match bubble
+                    Spacer(minLength: 40)
+                }
+            }
+            
             toolbarRow
         }
         .padding(.vertical, 8)

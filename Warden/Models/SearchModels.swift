@@ -131,23 +131,37 @@ enum SearchStatus: Equatable {
 
 // MARK: - Search Source
 
-struct SearchSource: Identifiable, Codable, Equatable {
-    let id = UUID()
-    let title: String
-    let url: String
-    let score: Double
-    let publishedDate: String?
+public struct SearchSource: Identifiable, Codable, Equatable {
+    public let id = UUID()
+    public let title: String
+    public let url: String
+    public let score: Double
+    public let publishedDate: String?
     
     enum CodingKeys: String, CodingKey {
         case title, url, score, publishedDate
+    }
+    
+    public init(title: String, url: String, score: Double, publishedDate: String?) {
+        self.title = title
+        self.url = url
+        self.score = score
+        self.publishedDate = publishedDate
     }
 }
 
 // MARK: - Message Search Metadata
 
-struct MessageSearchMetadata: Codable {
-    let query: String
-    let sources: [SearchSource]
-    let searchTime: Date
-    let resultCount: Int
+public struct MessageSearchMetadata: Codable {
+    public let query: String
+    public let sources: [SearchSource]
+    public let searchTime: Date
+    public let resultCount: Int
+    
+    public init(query: String, sources: [SearchSource], searchTime: Date, resultCount: Int) {
+        self.query = query
+        self.sources = sources
+        self.searchTime = searchTime
+        self.resultCount = resultCount
+    }
 }

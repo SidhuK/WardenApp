@@ -35,6 +35,20 @@ Ever wanted to explore a different direction mid-conversation? Now you can!
 
 ---
 
+## 🔍 Web Search & Citations Overhaul
+
+The web search experience just got a major upgrade!
+
+- **💾 Persistent Search Results** — Search sources are now saved with messages and persist when switching chats
+- **🎯 Beautiful Citation Display** — Sources appear below AI responses with collapsible details
+- **📊 Source Pills** — Compact, clickable source indicators show at a glance which sources were used
+- **🔗 Improved Inline Citations** — Superscript-style numbered citations that link directly to sources
+- **✨ Polished Search UI** — Redesigned search results preview with macOS-native styling
+- **📱 Better Source Cards** — Relevance indicators, domain extraction, and hover actions for each source
+- **🖱️ Quick Actions** — Copy URLs or open sources in browser with one click
+
+---
+
 ## 🎨 Fresh UI Vibes
 
 We gave several parts of Warden a visual makeover!

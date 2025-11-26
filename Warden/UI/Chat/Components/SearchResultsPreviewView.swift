@@ -5,33 +5,82 @@ struct SearchResultsPreviewView: View {
     let query: String
     
     @State private var isExpanded = false
+    @State private var isHovered = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
+            // Compact header with source preview
             Button(action: {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     isExpanded.toggle()
                 }
             }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.accentColor)
+                HStack(spacing: 10) {
+                    // Globe icon with accent background
+                    ZStack {
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.15))
+                            .frame(width: 28, height: 28)
+                        
+                        Image(systemName: "globe")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.accentColor)
+                    }
                     
-                    Text("Web Search Results (\(sources.count) sources)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Web Search")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("\(sources.count) sources found")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
                     
                     Spacer()
+                    
+                    // Mini source indicators when collapsed
+                    if !isExpanded {
+                        HStack(spacing: -4) {
+                            ForEach(0..<min(sources.count, 3), id: \.self) { index in
+                                Circle()
+                                    .fill(Color.accentColor.opacity(0.2))
+                                    .frame(width: 20, height: 20)
+                                    .overlay(
+                                        Text("\(index + 1)")
+                                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                                            .foregroundColor(.accentColor)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color(nsColor: .controlBackgroundColor), lineWidth: 1.5)
+                                    )
+                            }
+                            
+                            if sources.count > 3 {
+                                Circle()
+                                    .fill(Color.secondary.opacity(0.15))
+                                    .frame(width: 20, height: 20)
+                                    .overlay(
+                                        Text("+\(sources.count - 3)")
+                                            .font(.system(size: 8, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color(nsColor: .controlBackgroundColor), lineWidth: 1.5)
+                                    )
+                            }
+                        }
+                    }
                     
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : 0))
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
             }
             .buttonStyle(.plain)
             .cursor(.pointingHand)
@@ -39,6 +88,7 @@ struct SearchResultsPreviewView: View {
             // Expanded content
             if isExpanded {
                 Divider()
+                    .padding(.horizontal, 14)
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -50,23 +100,29 @@ struct SearchResultsPreviewView: View {
                             
                             if index < sources.count - 1 {
                                 Divider()
-                                    .padding(.leading, 40)
+                                    .padding(.leading, 48)
                             }
                         }
                     }
+                    .padding(.vertical, 4)
                 }
-                .frame(maxHeight: 300)
+                .frame(maxHeight: 280)
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(isHovered ? 0.8 : 0.6))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                 )
+                .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
         )
-        .padding(.bottom, 8)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
     }
 }
 
@@ -81,16 +137,15 @@ struct SearchResultRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            // Icon and number
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.1))
-                    .frame(width: 24, height: 24)
-                
-                Text("\(index)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.accentColor)
-            }
+            // Number badge
+            Text("\(index)")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(width: 22, height: 22)
+                .background(
+                    Circle()
+                        .fill(Color.accentColor)
+                )
             
             // Content
             VStack(alignment: .leading, spacing: 4) {
@@ -100,20 +155,26 @@ struct SearchResultRow: View {
                     .foregroundColor(.primary)
                     .lineLimit(2)
                 
-                // URL
-                Text(truncatedURL)
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                // URL with favicon placeholder
+                HStack(spacing: 4) {
+                    Image(systemName: "link")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                    
+                    Text(domainFromURL)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
                 
-                // Metadata
-                HStack(spacing: 12) {
-                    // Relevance score
-                    HStack(spacing: 4) {
-                        ForEach(0..<5) { starIndex in
-                            Image(systemName: starIndex < relevanceStars ? "star.fill" : "star")
-                                .font(.system(size: 8))
-                                .foregroundColor(starIndex < relevanceStars ? .yellow : .gray.opacity(0.3))
+                // Metadata row
+                HStack(spacing: 10) {
+                    // Relevance indicator (dots instead of stars)
+                    HStack(spacing: 2) {
+                        ForEach(0..<5) { dotIndex in
+                            Circle()
+                                .fill(dotIndex < relevanceLevel ? Color.accentColor : Color.secondary.opacity(0.2))
+                                .frame(width: 4, height: 4)
                         }
                     }
                     
@@ -130,58 +191,56 @@ struct SearchResultRow: View {
                     
                     Spacer()
                     
-                    // Copy button (visible on hover)
+                    // Actions (visible on hover)
                     if isHovered {
-                        Button(action: copyURL) {
-                            HStack(spacing: 3) {
+                        HStack(spacing: 6) {
+                            Button(action: copyURL) {
                                 Image(systemName: showCopiedFeedback ? "checkmark" : "doc.on.doc")
-                                    .font(.system(size: 9))
-                                if showCopiedFeedback {
-                                    Text("Copied")
-                                        .font(.system(size: 9))
-                                }
+                                    .font(.system(size: 10))
+                                    .foregroundColor(showCopiedFeedback ? .green : .secondary)
                             }
-                            .foregroundColor(showCopiedFeedback ? .green : .accentColor)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color(nsColor: .controlBackgroundColor))
-                            )
+                            .buttonStyle(.plain)
+                            .help("Copy URL")
+                            
+                            Button(action: openURL) {
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Open in browser")
                         }
-                        .buttonStyle(.plain)
                         .transition(.opacity)
                     }
                 }
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(isHovered ? Color(nsColor: .controlBackgroundColor).opacity(0.3) : Color.clear)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
+        )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
         }
         .onTapGesture {
-            if let url = URL(string: source.url) {
-                NSWorkspace.shared.open(url)
-            }
+            openURL()
         }
         .cursor(.pointingHand)
     }
     
-    private var truncatedURL: String {
-        if source.url.count > 60 {
-            let startIndex = source.url.index(source.url.startIndex, offsetBy: 0)
-            let endIndex = source.url.index(source.url.startIndex, offsetBy: 57)
-            return String(source.url[startIndex..<endIndex]) + "..."
+    private var domainFromURL: String {
+        guard let url = URL(string: source.url),
+              let host = url.host else {
+            return source.url
         }
-        return source.url
+        return host.replacingOccurrences(of: "www.", with: "")
     }
     
-    private var relevanceStars: Int {
-        // Convert 0.0-1.0 score to 0-5 stars
+    private var relevanceLevel: Int {
         Int((source.score * 5).rounded())
     }
     
@@ -198,6 +257,12 @@ struct SearchResultRow: View {
             withAnimation {
                 showCopiedFeedback = false
             }
+        }
+    }
+    
+    private func openURL() {
+        if let url = URL(string: source.url) {
+            NSWorkspace.shared.open(url)
         }
     }
 }

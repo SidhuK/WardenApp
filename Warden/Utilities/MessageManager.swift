@@ -769,8 +769,18 @@ class MessageManager: ObservableObject {
         // Store tool calls associated with this message
         if let toolCalls = toolCalls, !toolCalls.isEmpty {
             messageToolCalls[newMessage.id] = toolCalls
-            // Persist tool calls to Core Data
             newMessage.toolCalls = toolCalls
+        }
+        
+        // Store search metadata if we have search results
+        if let sources = lastSearchSources, let query = lastSearchQuery, !sources.isEmpty {
+            newMessage.searchMetadata = MessageSearchMetadata(
+                query: query,
+                sources: sources,
+                searchTime: Date(),
+                resultCount: sources.count
+            )
+            print("💬 [Message] Saved search metadata with \(sources.count) sources for query: \(query)")
         }
 
         chat.updatedDate = Date()

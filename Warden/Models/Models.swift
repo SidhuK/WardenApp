@@ -78,6 +78,7 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var timestamp: Date?
     @NSManaged public var own: Bool
     @NSManaged public var toolCallsJson: String?
+    @NSManaged public var searchMetadataJson: String?
     @NSManaged public var waitingForResponse: Bool
     @NSManaged public var chat: ChatEntity?
     
@@ -105,6 +106,30 @@ public class MessageEntity: NSManagedObject, Identifiable {
                 toolCallsJson = json
             }
         }
+    }
+    
+    public var searchMetadata: MessageSearchMetadata? {
+        get {
+            guard let json = searchMetadataJson,
+                  let data = json.data(using: .utf8),
+                  let metadata = try? JSONDecoder().decode(MessageSearchMetadata.self, from: data) else {
+                return nil
+            }
+            return metadata
+        }
+        set {
+            if let newValue = newValue,
+               let data = try? JSONEncoder().encode(newValue),
+               let json = String(data: data, encoding: .utf8) {
+                searchMetadataJson = json
+            } else {
+                searchMetadataJson = nil
+            }
+        }
+    }
+    
+    public var hasSearchResults: Bool {
+        searchMetadata != nil
     }
 }
 

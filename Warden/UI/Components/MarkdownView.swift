@@ -134,56 +134,54 @@ struct MarkdownView: View {
             
         case let link as MarkdownLink:
             let text = extractPlainText(from: link.children)
-            let attributedString = NSMutableAttributedString(string: text)
-            let range = NSRange(location: 0, length: attributedString.length)
-            
-            // Apply appropriate link styling
-            attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: effectiveFontSize), range: range)
-            attributedString.addAttribute(.foregroundColor, value: own ? NSColor.white : NSColor.linkColor, range: range)
             
             if let destination = link.destination {
-                attributedString.addAttribute(NSAttributedString.Key.link, value: destination, range: range)
-                
                 // Check if this is a citation link (numeric text with URL)
                 if let citationNumber = Int(text.trimmingCharacters(in: .whitespaces)) {
-                    // Create prominent circular citation badge
-                    let citationSize = effectiveFontSize * 0.8
+                    // Create a polished circular citation badge
+                    let citationSize = effectiveFontSize * 0.75
                     
-                    // Make the badge text with padding spaces for circular appearance
-                    let paddedText = " \(citationNumber) "
+                    // Create superscript-style citation
+                    let paddedText = "\(citationNumber)"
                     let paddedString = NSMutableAttributedString(string: paddedText)
                     let paddedRange = NSRange(location: 0, length: paddedString.length)
                     
                     // Use rounded, bold font for the number
-                    paddedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize, weight: .bold), range: paddedRange)
+                    if let roundedFont = NSFont(name: "SF Pro Rounded", size: citationSize) {
+                        paddedString.addAttribute(.font, value: roundedFont, range: paddedRange)
+                    } else {
+                        paddedString.addAttribute(.font, value: NSFont.systemFont(ofSize: citationSize, weight: .bold), range: paddedRange)
+                    }
                     
-                    // Strong circular background
-                    let bgColor = own 
-                        ? NSColor.white.withAlphaComponent(0.35)
-                        : NSColor.controlAccentColor.withAlphaComponent(0.2)
-                    paddedString.addAttribute(.backgroundColor, value: bgColor, range: paddedRange)
-                    
-                    // Text color - make it stand out
+                    // Text color based on context
                     let textColor = own 
                         ? NSColor.white
                         : NSColor.controlAccentColor
                     paddedString.addAttribute(.foregroundColor, value: textColor, range: paddedRange)
                     
-                    // Add prominent border
-                    paddedString.addAttribute(.strokeWidth, value: -2.0, range: paddedRange)
-                    paddedString.addAttribute(.strokeColor, value: textColor.withAlphaComponent(0.5), range: paddedRange)
-                    
-                    // Make it slightly raised like a superscript
-                    paddedString.addAttribute(.baselineOffset, value: 1.5, range: paddedRange)
+                    // Make it superscript style
+                    paddedString.addAttribute(.baselineOffset, value: effectiveFontSize * 0.35, range: paddedRange)
                     
                     // Add the link
                     paddedString.addAttribute(NSAttributedString.Key.link, value: destination, range: paddedRange)
                     
-                    // Add corner radius effect
-                    paddedString.addAttribute(.expansion, value: 0.1, range: paddedRange)
+                    // Add underline on the number for clickable indication
+                    paddedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: paddedRange)
+                    paddedString.addAttribute(.underlineColor, value: textColor.withAlphaComponent(0.5), range: paddedRange)
                     
                     return paddedString
                 }
+            }
+            
+            // Regular link styling
+            let attributedString = NSMutableAttributedString(string: text)
+            let range = NSRange(location: 0, length: attributedString.length)
+            
+            attributedString.addAttribute(.font, value: NSFont.systemFont(ofSize: effectiveFontSize), range: range)
+            attributedString.addAttribute(.foregroundColor, value: own ? NSColor.white : NSColor.linkColor, range: range)
+            
+            if let destination = link.destination {
+                attributedString.addAttribute(NSAttributedString.Key.link, value: destination, range: range)
             }
             return attributedString
             
