@@ -40,27 +40,16 @@ struct CenteredInputView: View {
                     
                     VStack(spacing: 40) {
                         // Greeting Header
-                        VStack(spacing: 12) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 32))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.accentColor, .accentColor.opacity(0.6)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .padding(.bottom, 4)
-                            
+                        VStack(spacing: 8) {
                             Text("What can I help you with?")
-                                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                                .font(.system(size: 28, weight: .medium))
                                 .foregroundStyle(.primary)
                             
-                            Text("Ask anything, generate code, or create content.")
-                                .font(.system(size: 15, weight: .medium))
+                            Text("Ask questions, generate code, or get creative ideas")
+                                .font(.system(size: 13))
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 20)
                         
                         // Input Section
                         VStack(spacing: 24) {
@@ -111,6 +100,7 @@ struct CenteredInputView: View {
                                         color: .yellow,
                                         action: { newMessage = "Give me some creative ideas for " }
                                     )
+                                    .frame(maxWidth: .infinity)
                                     
                                     SuggestionCard(
                                         icon: "doc.text.image",
@@ -119,6 +109,7 @@ struct CenteredInputView: View {
                                         color: .blue,
                                         action: { newMessage = "Summarize this text: " }
                                     )
+                                    .frame(maxWidth: .infinity)
                                     
                                     SuggestionCard(
                                         icon: "chevron.left.forwardslash.chevron.right",
@@ -127,6 +118,7 @@ struct CenteredInputView: View {
                                         color: .purple,
                                         action: { newMessage = "Write a function that " }
                                     )
+                                    .frame(maxWidth: .infinity)
                                     
                                     SuggestionCard(
                                         icon: "paintpalette",
@@ -135,6 +127,7 @@ struct CenteredInputView: View {
                                         color: .pink,
                                         action: { newMessage = "Design a user interface for " }
                                     )
+                                    .frame(maxWidth: .infinity)
                                 }
                                 .frame(maxWidth: 640)
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -166,67 +159,40 @@ struct SuggestionCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(
-                            LinearGradient(
-                                colors: [color.opacity(0.2), color.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [color, color.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .symbolRenderingMode(.hierarchical)
-                }
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
                 
-                VStack(spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
                     
                     Text(subtitle)
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
                         .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
                 }
+                
+                Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color(nsColor: .controlBackgroundColor))
-                    .shadow(
-                        color: Color.black.opacity(colorScheme == .dark ? (isHovered ? 0.3 : 0.2) : (isHovered ? 0.08 : 0.04)),
-                        radius: isHovered ? 8 : 4,
-                        x: 0,
-                        y: isHovered ? 3 : 1
-                    )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isHovered ? color.opacity(0.4) : Color.primary.opacity(0.06),
-                        lineWidth: 1
-                    )
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.primary.opacity(isHovered ? 0.15 : 0.08), lineWidth: 0.5)
             )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .brightness(isHovered ? 0.02 : 0)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
