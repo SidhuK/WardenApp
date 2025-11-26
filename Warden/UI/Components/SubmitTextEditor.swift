@@ -3,14 +3,16 @@ import AppKit
 
 struct SubmitTextEditor: NSViewRepresentable {
     @Binding var text: String
+    @Binding var dynamicHeight: CGFloat
     var onSubmit: () -> Void
     var font: NSFont = .systemFont(ofSize: 14)
+    var maxHeight: CGFloat = 160
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
         scrollView.drawsBackground = false
         scrollView.borderType = .noBorder
-        scrollView.hasVerticalScroller = false
+        scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         
@@ -24,12 +26,16 @@ struct SubmitTextEditor: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
-        textView.textContainerInset = NSSize(width: 0, height: 0)
+        textView.textContainerInset = NSSize(width: 0, height: 8)
         
         // Transparent background
         textView.backgroundColor = .clear
         
         scrollView.documentView = textView
+        
+        // Initial height calculation
+        context.coordinator.updateHeight(for: textView)
+        
         return scrollView
     }
     
@@ -43,6 +49,8 @@ struct SubmitTextEditor: NSViewRepresentable {
         if textView.font != font {
             textView.font = font
         }
+        
+        context.coordinator.updateHeight(for: textView)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -59,6 +67,20 @@ struct SubmitTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+            updateHeight(for: textView)
+        }
+        
+        func updateHeight(for textView: NSTextView) {
+            guard let layoutManager = textView.layoutManager,
+                  let textContainer = textView.textContainer else { return }
+            
+            layoutManager.ensureLayout(for: textContainer)
+            let usedRect = layoutManager.usedRect(for: textContainer)
+            let newHeight = min(max(usedRect.height + 16, 20), parent.maxHeight)
+            
+            DispatchQueue.main.async {
+                self.parent.dynamicHeight = newHeight
+            }
         }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {

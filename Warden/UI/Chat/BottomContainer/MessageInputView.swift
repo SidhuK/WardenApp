@@ -65,7 +65,7 @@ struct MessageInputView: View {
             attachmentPreviewsSection
             
             // Unified Input Bar
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 // Paperclip Icon (Menu)
                 plusButtonMenu
                 
@@ -83,7 +83,7 @@ struct MessageInputView: View {
                 sendStopButton
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.vertical, 8)
             .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(24)
             .overlay(
@@ -432,27 +432,29 @@ struct MessageInputView: View {
     }
 
     private var textInputArea: some View {
-        ZStack(alignment: .leading) {
+        ZStack(alignment: .topLeading) {
             if text.isEmpty {
                 Text(inputPlaceholderText)
                     .font(.system(size: effectiveFontSize))
                     .foregroundColor(.secondary)
                     .allowsHitTesting(false)
+                    .padding(.top, 8)
             }
             
             SubmitTextEditor(
                 text: $text,
+                dynamicHeight: $dynamicHeight,
                 onSubmit: {
                     if canSend {
                         onEnter()
                     }
                 },
-                font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize))
+                font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize)),
+                maxHeight: maxInputHeight
             )
-            .frame(minHeight: 20, maxHeight: maxInputHeight)
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(height: dynamicHeight)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 0)
         .frame(minWidth: 200)
     }
 }

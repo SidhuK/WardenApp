@@ -84,6 +84,7 @@ struct TabContributionsView: View {
                                     DependencyLink(name: "Highlightr", url: "https://github.com/raspu/Highlightr")
                                     DependencyLink(name: "OmenTextField", url: "https://github.com/Renset/OmenTextField")
                                     DependencyLink(name: "Sparkle", url: "https://github.com/sparkle-project/Sparkle")
+                                    DependencyLink(name: "Swift MCP", url: "https://github.com/modelcontextprotocol/swift-sdk")
                                     DependencyLink(name: "SwiftMath", url: "https://github.com/mgriebling/SwiftMath")
                                     DependencyLink(name: "SwipeModifier", url: "https://github.com/lloydsargent/SwipeModifier")
                                     DependencyLink(name: "Fira Code", url: "https://github.com/tonsky/FiraCode")
@@ -111,7 +112,7 @@ struct TabContributionsView: View {
                         
                         Spacer()
                         
-                        Text("Made with \(Image(systemName: "heart.fill")) in California")
+                        Text("Made with \(Image(systemName: "heart.fill")) in Chandigarh, India 🇮🇳")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
