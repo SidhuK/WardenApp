@@ -74,47 +74,44 @@ struct ChatView: View {
         
         Group {
             if isNewChat {
-                // Show centered input for new chats
-                CenteredInputView(
-                    newMessage: $newMessage,
-                    attachedImages: $attachedImages,
-                    attachedFiles: $attachedFiles,
-                    webSearchEnabled: $webSearchEnabled,
-                    selectedMCPAgents: $chatViewModel.selectedMCPAgents,
-                    chat: chat,
-                    imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
-                    isStreaming: isStreaming,
-                    onSendMessage: {
-                        if editSystemMessage {
-                            chat.systemMessage = newMessage
-                            newMessage = ""
-                            editSystemMessage = false
-                            store.saveInCoreData()
-                        }
-                        else if newMessage != "" && newMessage != " " {
+                if chatViewModel.sortedMessages.isEmpty && !isStreaming {
+                    CenteredInputView(
+                        newMessage: $newMessage,
+                        attachedImages: $attachedImages,
+                        attachedFiles: $attachedFiles,
+                        webSearchEnabled: $webSearchEnabled,
+                        selectedMCPAgents: $chatViewModel.selectedMCPAgents,
+                        chat: chat,
+                        imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
+                        isStreaming: isStreaming,
+                        isMultiAgentMode: $isMultiAgentMode,
+                        selectedMultiAgentServices: $selectedMultiAgentServices,
+                        showServiceSelector: $showServiceSelector,
+                        enableMultiAgentMode: enableMultiAgentMode,
+                        onSendMessage: {
                             if enableMultiAgentMode && isMultiAgentMode {
                                 self.sendMultiAgentMessage()
                             } else {
                                 self.sendMessage()
                             }
+                        },
+                        onAddImage: {
+                            selectAndAddImages()
+                        },
+                        onAddFile: {
+                            selectAndAddFiles()
+                        },
+                        onAddAssistant: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isBottomContainerExpanded.toggle()
+                            }
+                        },
+                        onStopStreaming: {
+                            self.stopStreaming()
                         }
-                    },
-                    onAddImage: {
-                        selectAndAddImages()
-                    },
-                    onAddFile: {
-                        selectAndAddFiles()
-                    },
-                    onAddAssistant: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isBottomContainerExpanded.toggle()
-                        }
-                    },
-                    onStopStreaming: {
-                        self.stopStreaming()
-                    }
-                )
-                .background(.clear)
+                    )
+                    .background(.clear)
+                }
             } else {
                 // Show normal chat layout for chats with messages
                 VStack(spacing: 0) {

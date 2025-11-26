@@ -10,6 +10,13 @@ struct CenteredInputView: View {
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
     let isStreaming: Bool
+    
+    // Multi-agent mode parameters
+    @Binding var isMultiAgentMode: Bool
+    @Binding var selectedMultiAgentServices: [APIServiceEntity]
+    @Binding var showServiceSelector: Bool
+    let enableMultiAgentMode: Bool
+    
     let onSendMessage: () -> Void
     let onAddImage: () -> Void
     let onAddFile: () -> Void
@@ -65,13 +72,14 @@ struct CenteredInputView: View {
                                     chat: chat,
                                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                                     isStreaming: isStreaming,
-                                    isMultiAgentMode: .constant(false),
-                                    selectedMultiAgentServices: .constant([]),
-                                    showServiceSelector: .constant(false),
-                                    enableMultiAgentMode: false,
+                                    isMultiAgentMode: $isMultiAgentMode,
+                                    selectedMultiAgentServices: $selectedMultiAgentServices,
+                                    showServiceSelector: $showServiceSelector,
+                                    enableMultiAgentMode: enableMultiAgentMode,
                                     onEnter: onSendMessage,
                                     onAddImage: onAddImage,
                                     onAddFile: onAddFile,
+                                    onAddAssistant: onAddAssistant,
                                     onStopStreaming: onStopStreaming,
                                     inputPlaceholderText: "Type a message...",
                                     cornerRadius: 16.0
@@ -222,6 +230,10 @@ struct SuggestionCard: View {
         chat: mockChat,
         imageUploadsAllowed: true,
         isStreaming: false,
+        isMultiAgentMode: .constant(false),
+        selectedMultiAgentServices: .constant([]),
+        showServiceSelector: .constant(false),
+        enableMultiAgentMode: false,
         onSendMessage: {},
         onAddImage: {},
         onAddFile: {},
