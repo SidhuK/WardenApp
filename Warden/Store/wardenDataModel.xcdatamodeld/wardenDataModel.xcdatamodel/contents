@@ -20,6 +20,9 @@
     <entity name="ChatEntity" representedClassName=".ChatEntity" syncable="YES">
         <attribute name="aiGeneratedSummary" optional="YES" attributeType="String"/>
         <attribute name="behavior" optional="YES" attributeType="String"/>
+        <attribute name="branchRootID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="branchSourceMessageID" optional="YES" attributeType="Integer 64" usesScalarValueType="YES"/>
+        <attribute name="branchSourceRole" optional="YES" attributeType="String"/>
         <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="gptModel" optional="YES" attributeType="String" defaultValueString="gpt-3.5-turbo"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" preserveAfterDeletion="YES"/>
@@ -35,7 +38,9 @@
         <attribute name="updatedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="waitingForResponse" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <relationship name="apiService" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="APIServiceEntity"/>
+        <relationship name="childChats" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChatEntity" inverseName="parentChat" inverseEntity="ChatEntity"/>
         <relationship name="messages" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="MessageEntity" inverseName="chat" inverseEntity="MessageEntity"/>
+        <relationship name="parentChat" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ChatEntity" inverseName="childChats" inverseEntity="ChatEntity"/>
         <relationship name="persona" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PersonaEntity"/>
         <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ProjectEntity" inverseName="chats" inverseEntity="ProjectEntity"/>
     </entity>

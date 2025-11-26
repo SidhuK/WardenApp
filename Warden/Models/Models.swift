@@ -24,6 +24,13 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var isPinned: Bool
     @NSManaged public var project: ProjectEntity?
     @NSManaged public var aiGeneratedSummary: String?
+    
+    // Branching properties
+    @NSManaged public var parentChat: ChatEntity?
+    @NSManaged public var childChats: NSSet
+    @NSManaged public var branchSourceMessageID: Int64
+    @NSManaged public var branchSourceRole: String?
+    @NSManaged public var branchRootID: UUID?
 
     public var messagesArray: [MessageEntity] {
         messages.array as? [MessageEntity] ?? []
@@ -53,6 +60,14 @@ public class ChatEntity: NSManagedObject, Identifiable {
         (messages.array as? [MessageEntity])?.forEach { managedObjectContext?.delete($0) }
         messages = NSOrderedSet()
         newChat = true
+    }
+    
+    public var childChatsArray: [ChatEntity] {
+        childChats.allObjects as? [ChatEntity] ?? []
+    }
+    
+    public var isBranch: Bool {
+        parentChat != nil
     }
 }
 

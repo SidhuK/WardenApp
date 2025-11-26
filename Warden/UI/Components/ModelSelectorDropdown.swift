@@ -424,6 +424,10 @@ struct StandaloneModelSelector: View {
         
         chat.apiService = service
         chat.gptModel = model
+        chat.updatedDate = Date()
+        
+        // Force immediate UI refresh for the sidebar and other observers
+        chat.objectWillChange.send()
         
         try? viewContext.save()
         

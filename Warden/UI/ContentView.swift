@@ -71,6 +71,15 @@ struct ContentView: View {
                 selectedChat = chat
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenChatByID"))) { notification in
+            if let objectID = notification.userInfo?["chatObjectID"] as? NSManagedObjectID {
+                if let chat = viewContext.object(with: objectID) as? ChatEntity {
+                    DispatchQueue.main.async {
+                        selectedChat = chat
+                    }
+                }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenInlineSettings"))) { _ in
             showingSettings = true
         }

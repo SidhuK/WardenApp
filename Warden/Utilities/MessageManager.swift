@@ -759,6 +759,13 @@ class MessageManager: ObservableObject {
         newMessage.own = false
         newMessage.chat = chat
         
+        // Snapshot provider metadata for this message
+        if !newMessage.isMultiAgentResponse, let service = chat.apiService {
+            newMessage.agentServiceName = service.name
+            newMessage.agentServiceType = service.type
+            newMessage.agentModel = chat.gptModel
+        }
+        
         // Store tool calls associated with this message
         if let toolCalls = toolCalls, !toolCalls.isEmpty {
             messageToolCalls[newMessage.id] = toolCalls

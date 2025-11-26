@@ -32,6 +32,7 @@ struct ChatBubbleView: View, Equatable {
     var message: MessageEntity?
     var color: String?
     var onEdit: (() -> Void)?
+    var onBranch: ((MessageEntity) -> Void)?
 
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.managedObjectContext) private var viewContext
@@ -180,8 +181,15 @@ struct ChatBubbleView: View, Equatable {
         guard let messageEntity = message,
               let chat = messageEntity.chat else { return nil }
         
-        // Use gptModel from chat (the model used for this conversation)
-        let model = chat.gptModel
+        // Prefer message snapshot for provider metadata (for branch awareness)
+        // Fall back to chat model if snapshot is missing (legacy messages)
+        let model: String
+        if !content.own, let snapshotModel = messageEntity.agentModel, !snapshotModel.isEmpty {
+            model = snapshotModel
+        } else {
+            model = chat.gptModel
+        }
+        
         guard !model.isEmpty else { return nil }
         
         // Format the model name to be more readable
@@ -195,12 +203,25 @@ struct ChatBubbleView: View, Equatable {
     }
     
     private var toolbarContent: some View {
-        HStack(spacing: 6) {
-            // For assistant messages: show model name first
+        HStack(spacing: 8) {
+            // For assistant messages: show model name and provider
             if !content.own && !content.systemMessage, let modelName = modelDisplayName {
-                Text(modelName)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(AppConstants.textTertiary)
+                HStack(spacing: 4) {
+                    // Show provider icon from message snapshot if available
+                    if let messageEntity = message,
+                       let snapshotType = messageEntity.agentServiceType, !snapshotType.isEmpty {
+                        Image("logo_\(snapshotType)")
+                            .resizable()
+                            .renderingMode(.template)
+                            .interpolation(.high)
+                            .frame(width: 10, height: 10)
+                            .foregroundColor(AppConstants.textTertiary)
+                    }
+                    
+                    Text(modelName)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppConstants.textTertiary)
+                }
             }
             
             if !content.own, let _ = message {
@@ -218,6 +239,13 @@ struct ChatBubbleView: View, Equatable {
             if content.isLatestMessage && !content.systemMessage {
                 ToolbarButton(icon: "arrow.clockwise", text: "Retry") {
                     NotificationCenter.default.post(name: NSNotification.Name("RetryMessage"), object: nil)
+                }
+            }
+
+            // Branch button with enhanced styling
+            if !content.systemMessage, let msg = message {
+                BranchToolbarButton {
+                    onBranch?(msg)
                 }
             }
 
@@ -389,7 +417,16 @@ struct ChatBubbleView: View, Equatable {
     }
     
     private var aiProviderLogo: some View {
-        ZStack {
+        // Prefer message snapshot type for historical accuracy (branching awareness)
+        // Fall back to current chat service if snapshot is missing (legacy messages)
+        let providerType: String? = {
+            if let snapshotType = message?.agentServiceType, !snapshotType.isEmpty {
+                return snapshotType
+            }
+            return message?.chat?.apiService?.type
+        }()
+        
+        return ZStack {
             Circle()
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
@@ -397,9 +434,8 @@ struct ChatBubbleView: View, Equatable {
                         .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
                 )
             
-            if let apiService = message?.chat?.apiService,
-               let providerType = apiService.type {
-                let iconName = providerIconName(for: providerType)
+            if let type = providerType {
+                let iconName = providerIconName(for: type)
                 if iconName == "sparkles" {
                     Image(systemName: "sparkles")
                         .font(.system(size: 12, weight: .semibold))
@@ -574,5 +610,41 @@ struct StreamingPulseModifier: ViewModifier {
                     isPulsing = true
                 }
             }
+    }
+}
+
+// MARK: - Branch Toolbar Button
+
+/// A specialized toolbar button for branching with enhanced visual styling
+struct BranchToolbarButton: View {
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 10, weight: .medium))
+                
+                Text("Branch")
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(isHovered ? .accentColor : AppConstants.textTertiary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .help("Create a branch from this message")
     }
 }

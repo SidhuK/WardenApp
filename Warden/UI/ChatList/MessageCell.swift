@@ -28,6 +28,13 @@ struct MessageCell: View {
         )
         return messageWithoutThinking.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+    
+    private var branchHelpText: LocalizedStringKey {
+        if let parentName = chat.parentChat?.name, !parentName.isEmpty {
+            return "Branched from: \(parentName)"
+        }
+        return "Branched conversation"
+    }
 
     var body: some View {
         // Guard against deleted or invalid chat objects
@@ -48,16 +55,32 @@ struct MessageCell: View {
                     .padding(.leading, 8)
                 }
                 
-                // AI Model Logo (conditionally shown)
-                if showSidebarAIIcons {
-                    Image("logo_\(chat.apiService?.type ?? "")")
-                        .resizable()
-                        .renderingMode(.template)
-                        .interpolation(.high)
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
-                        .padding(.leading, isSelectionMode ? 4 : 8)
+                // AI Model Logo (conditionally shown) with branch indicator
+                HStack(spacing: 4) {
+                    if showSidebarAIIcons {
+                        Image("logo_\(chat.apiService?.type ?? "")")
+                            .resizable()
+                            .renderingMode(.template)
+                            .interpolation(.high)
+                            .frame(width: 16, height: 16)
+                            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
+                    }
+                    
+                    // Branch indicator badge
+                    if chat.isBranch {
+                        ZStack {
+                            Circle()
+                                .fill(Color.accentColor.opacity(0.15))
+                                .frame(width: 16, height: 16)
+                            
+                            Image(systemName: "arrow.triangle.branch")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                        }
+                        .help(branchHelpText)
+                    }
                 }
+                .padding(.leading, isSelectionMode ? 4 : 8)
                 
                 VStack(alignment: .leading) {
                     if !chat.name.isEmpty {

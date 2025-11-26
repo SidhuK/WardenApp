@@ -126,6 +126,8 @@
 		C43A763C2ED5672E006DA5E2 /* SearchErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76332ED5672E006DA5E2 /* SearchErrorView.swift */; };
 		C44EA8BB2ED5E600008DAA73 /* GlassEffectModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */; };
 		C450598E2ED6A49900AF3449 /* SubmitTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */; };
+		C45059902ED6BEB500AF3449 /* ChatBranchingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C450598F2ED6BEB500AF3449 /* ChatBranchingManager.swift */; };
+		C45059922ED6BEC900AF3449 /* BranchCreationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45059912ED6BEC900AF3449 /* BranchCreationSheet.swift */; };
 		C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BC12ECDD29000D72DA1 /* SearchModels.swift */; };
 		C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */; };
 		C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */; };
@@ -307,6 +309,8 @@
 		C43A76362ED5672E006DA5E2 /* ToolCallProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallProgressView.swift; sourceTree = "<group>"; };
 		C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffectModifiers.swift; sourceTree = "<group>"; };
 		C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitTextEditor.swift; sourceTree = "<group>"; };
+		C450598F2ED6BEB500AF3449 /* ChatBranchingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBranchingManager.swift; sourceTree = "<group>"; };
+		C45059912ED6BEC900AF3449 /* BranchCreationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchCreationSheet.swift; sourceTree = "<group>"; };
 		C4632BC12ECDD29000D72DA1 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
 		C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchErrorView.swift; sourceTree = "<group>"; };
@@ -577,6 +581,7 @@
 				C4870E712ECC2EA2003930F7 /* ModelMetadata.swift */,
 				C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
+				C450598F2ED6BEB500AF3449 /* ChatBranchingManager.swift */,
 				C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */,
 				C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */,
 				C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */,
@@ -718,6 +723,7 @@
 				C4632BD52ECDD2DD00D72DA1 /* CitationBadgeView.swift */,
 				C4632BD62ECDD2DD00D72DA1 /* SearchErrorView.swift */,
 				C4632BD72ECDD2DD00D72DA1 /* SearchProgressView.swift */,
+				C45059912ED6BEC900AF3449 /* BranchCreationSheet.swift */,
 				C4632BD82ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift */,
 			);
 			path = Components;
@@ -876,6 +882,7 @@
 			files = (
 				C43A76382ED5672E006DA5E2 /* SearchResultsPreviewView.swift in Sources */,
 				C43A76392ED5672E006DA5E2 /* ToolCallProgressView.swift in Sources */,
+				C45059922ED6BEC900AF3449 /* BranchCreationSheet.swift in Sources */,
 				C43A763A2ED5672E006DA5E2 /* SearchProgressView.swift in Sources */,
 				C43A763B2ED5672E006DA5E2 /* CitationBadgeView.swift in Sources */,
 				C43A763C2ED5672E006DA5E2 /* SearchErrorView.swift in Sources */,
@@ -990,6 +997,7 @@
 				C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */,
 				4A254A6D2CEA69EB00F66935 /* HighlighterManager.swift in Sources */,
 				7F4955AC2E06FB1200516E2D /* FilePreviewView.swift in Sources */,
+				C45059902ED6BEB500AF3449 /* ChatBranchingManager.swift in Sources */,
 				4A272A7429F5DAA800F93D0D /* Models.swift in Sources */,
 				7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */,
 				7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */,
