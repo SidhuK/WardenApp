@@ -32,6 +32,7 @@ Ever wanted to explore a different direction mid-conversation? Now you can!
 - **🏷️ Visual Indicators** — Branched chats show a badge in the sidebar so you always know which conversations are forks
 - **📜 Full History** — Branches keep all the context from the original conversation up to your branch point
 - **💾 Persistent** — Your branches and their messages are saved automatically
+- **🎯 Enhanced BranchPopover** — Improved UI with better layout, padding, and text styles for a smoother branching experience
 
 ---
 
@@ -49,11 +50,22 @@ The web search experience just got a major upgrade!
 
 ---
 
+## 🤖 Multi-Agent Mode Enhancements
+
+Take your AI conversations to the next level with improved multi-agent support!
+
+- **💬 Persisted Agent Responses** — Multi-agent conversations are now saved properly so you can return to them anytime
+- **➡️ Continue with Any Agent** — After agents respond, select any one to continue the conversation
+- **🔄 Relocated Controls** — Multi-agent toggle and service selector moved to the input bar's plus menu for better ergonomics
+- **🎯 Smart Detection** — Multi-agent mode automatically appears when starting a new chat in an empty conversation
+
+---
+
 ## 🎨 Fresh UI Vibes
 
 We gave several parts of Warden a visual makeover!
 
-- **💬 Message Cells** — Cleaner, more polished message bubbles
+- **💬 Message Cells** — Cleaner, more polished message bubbles with smooth hover effects
 - **⚙️ Settings Tabs** — Revamped General, Hotkeys, Tavily Search, and Danger Zone tabs
 - **📝 Input Views** — Better spacing, font sizes, and layout across the board
 - **🧹 Cleaner Toolbar** — Removed clutter for a more streamlined experience
@@ -70,6 +82,7 @@ Some technical goodies that make everything run better:
 - **🛡️ Better Error Handling** — Robust connection and process checks in MCP communications
 - **🔧 Process Management** — Full stdio communication with proper logging
 - **🐛 Crash Prevention** — Handling SIGPIPE signals to keep things stable
+- **🔄 Message Retry Logic** — Improved resilience with explicit content handling for better message reliability
 
 ---
 
