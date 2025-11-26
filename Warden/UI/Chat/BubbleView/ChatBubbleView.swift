@@ -462,41 +462,59 @@ struct BubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let width = rect.width
         let height = rect.height
+        let radius: CGFloat = 18
+        let tailSize: CGFloat = 6
         
-        // Smoother, more modern bubble shape (Continuous curvature)
         return Path { path in
-            let cornerRadius: CGFloat = 18
-            
-            if !myMessage {
-                // Received message (Tail on bottom left)
-                path.move(to: CGPoint(x: 20, y: height))
-                path.addLine(to: CGPoint(x: width - cornerRadius, y: height))
-                path.addArc(center: CGPoint(x: width - cornerRadius, y: height - cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 0), clockwise: false)
-                path.addLine(to: CGPoint(x: width, y: cornerRadius))
-                path.addArc(center: CGPoint(x: width - cornerRadius, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 0), endAngle: Angle(degrees: -90), clockwise: false)
-                path.addLine(to: CGPoint(x: cornerRadius + 5, y: 0)) // +5 for tail offset
-                path.addArc(center: CGPoint(x: cornerRadius + 5, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: -90), endAngle: Angle(degrees: 180), clockwise: false)
-                path.addLine(to: CGPoint(x: 5, y: height - 10))
+            if myMessage {
+                // User message - Tail bottom right
+                path.move(to: CGPoint(x: radius, y: 0))
+                path.addLine(to: CGPoint(x: width - radius - tailSize, y: 0))
+                path.addArc(center: CGPoint(x: width - radius - tailSize, y: radius), radius: radius, startAngle: Angle(degrees: -90), endAngle: Angle(degrees: 0), clockwise: false)
+                path.addLine(to: CGPoint(x: width - tailSize, y: height - radius))
                 
-                // Tail
-                path.addCurve(to: CGPoint(x: 0, y: height), control1: CGPoint(x: 5, y: height - 2), control2: CGPoint(x: 0, y: height))
-                path.addLine(to: CGPoint(x: 20, y: height)) // Close the loop properly
+                // Tail construction
+                path.addCurve(
+                    to: CGPoint(x: width, y: height),
+                    control1: CGPoint(x: width - tailSize, y: height - 4),
+                    control2: CGPoint(x: width, y: height)
+                )
+                path.addCurve(
+                    to: CGPoint(x: width - radius - tailSize, y: height),
+                    control1: CGPoint(x: width - 4, y: height),
+                    control2: CGPoint(x: width - radius - tailSize, y: height)
+                )
+                
+                path.addLine(to: CGPoint(x: radius, y: height))
+                path.addArc(center: CGPoint(x: radius, y: height - radius), radius: radius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 180), clockwise: false)
+                path.addLine(to: CGPoint(x: 0, y: radius))
+                path.addArc(center: CGPoint(x: radius, y: radius), radius: radius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 270), clockwise: false)
                 
             } else {
-                // Sent message (Tail on bottom right)
-                path.move(to: CGPoint(x: width - 20, y: height))
-                path.addLine(to: CGPoint(x: cornerRadius, y: height))
-                path.addArc(center: CGPoint(x: cornerRadius, y: height - cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 180), clockwise: false)
-                path.addLine(to: CGPoint(x: 0, y: cornerRadius))
-                path.addArc(center: CGPoint(x: cornerRadius, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 270), clockwise: false)
-                path.addLine(to: CGPoint(x: width - cornerRadius - 5, y: 0))
-                path.addArc(center: CGPoint(x: width - cornerRadius - 5, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 270), endAngle: Angle(degrees: 0), clockwise: false)
-                path.addLine(to: CGPoint(x: width - 5, y: height - 10))
+                // Assistant message - Tail bottom left
+                path.move(to: CGPoint(x: radius + tailSize, y: 0))
+                path.addLine(to: CGPoint(x: width - radius, y: 0))
+                path.addArc(center: CGPoint(x: width - radius, y: radius), radius: radius, startAngle: Angle(degrees: -90), endAngle: Angle(degrees: 0), clockwise: false)
+                path.addLine(to: CGPoint(x: width, y: height - radius))
+                path.addArc(center: CGPoint(x: width - radius, y: height - radius), radius: radius, startAngle: Angle(degrees: 0), endAngle: Angle(degrees: 90), clockwise: false)
+                path.addLine(to: CGPoint(x: radius + tailSize, y: height))
                 
-                // Tail
-                path.addCurve(to: CGPoint(x: width, y: height), control1: CGPoint(x: width - 5, y: height - 2), control2: CGPoint(x: width, y: height))
-                path.addLine(to: CGPoint(x: width - 20, y: height))
+                // Tail construction
+                path.addCurve(
+                    to: CGPoint(x: 0, y: height),
+                    control1: CGPoint(x: radius, y: height),
+                    control2: CGPoint(x: 0, y: height)
+                )
+                path.addCurve(
+                    to: CGPoint(x: tailSize, y: height - radius),
+                    control1: CGPoint(x: 0, y: height),
+                    control2: CGPoint(x: tailSize, y: height - 4)
+                )
+                
+                path.addLine(to: CGPoint(x: tailSize, y: radius))
+                path.addArc(center: CGPoint(x: radius + tailSize, y: radius), radius: radius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 270), clockwise: false)
             }
+            path.closeSubpath()
         }
     }
 }
