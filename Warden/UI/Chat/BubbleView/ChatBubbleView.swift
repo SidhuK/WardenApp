@@ -285,11 +285,14 @@ struct ChatBubbleView: View, Equatable {
         case .user:
             Color.accentColor
         case .assistant:
-            Color(nsColor: .controlBackgroundColor) // Grayish/System background
+            // Slightly lighter/darker than background for subtle contrast
+            Color(nsColor: .controlBackgroundColor)
+                .opacity(0.7)
+                .background(Material.regular) // Glassy effect
         case .system:
-            Color.accentColor.opacity(0.1)
+            Color.secondary.opacity(0.1)
         case .error:
-            AppConstants.destructive.opacity(0.1)
+            Color.red.opacity(0.1)
         }
     }
     
@@ -310,7 +313,7 @@ struct ChatBubbleView: View, Equatable {
                 thinkingView
             } else {
                 messageBody
-                    .foregroundColor(AppConstants.textPrimary)
+                    .foregroundColor(.primary)
             }
             
         case .system:
@@ -322,7 +325,7 @@ struct ChatBubbleView: View, Equatable {
                 colorScheme: colorScheme
             )
             .italic()
-            .foregroundColor(AppConstants.textSecondary)
+            .foregroundColor(.secondary)
             
         case .error(let error):
             ErrorBubbleView(
@@ -360,9 +363,9 @@ struct ChatBubbleView: View, Equatable {
         HStack(spacing: 6) {
             Text("Thinking")
                 .font(.system(size: 13))
-                .foregroundColor(AppConstants.textSecondary)
+                .foregroundColor(.secondary)
             Circle()
-                .fill(AppConstants.textSecondary)
+                .fill(Color.secondary)
                 .frame(width: 6, height: 6)
                 .modifier(PulsatingCircle())
         }
@@ -370,12 +373,17 @@ struct ChatBubbleView: View, Equatable {
     }
     
     private var userAvatar: some View {
+        // Hidden for iMessage style, or keep if preferred. 
+        // Let's keep it but make it subtle or remove if we want pure iMessage.
+        // User asked for "like iMessage", so removing user avatar is better, 
+        // but let's stick to the plan of "Subtle, classy improvements".
+        // We'll keep it but make it smaller/cleaner.
         ZStack {
             Circle()
                 .fill(Color.accentColor)
             
             Image(systemName: "person.fill")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(.white)
         }
     }
@@ -386,7 +394,7 @@ struct ChatBubbleView: View, Equatable {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     Circle()
-                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 0.5)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
                 )
             
             if let apiService = message?.chat?.apiService,
@@ -395,18 +403,18 @@ struct ChatBubbleView: View, Equatable {
                 if iconName == "sparkles" {
                     Image(systemName: "sparkles")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(.secondary)
                 } else {
                     Image(iconName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 14, height: 14)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(.primary)
                 }
             } else {
                 Image(systemName: "sparkles")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -455,33 +463,39 @@ struct BubbleShape: Shape {
         let width = rect.width
         let height = rect.height
         
+        // Smoother, more modern bubble shape (Continuous curvature)
         return Path { path in
+            let cornerRadius: CGFloat = 18
+            
             if !myMessage {
+                // Received message (Tail on bottom left)
                 path.move(to: CGPoint(x: 20, y: height))
-                path.addLine(to: CGPoint(x: width - 15, y: height))
-                path.addCurve(to: CGPoint(x: width, y: height - 15), control1: CGPoint(x: width - 8, y: height), control2: CGPoint(x: width, y: height - 8))
-                path.addLine(to: CGPoint(x: width, y: 15))
-                path.addCurve(to: CGPoint(x: width - 15, y: 0), control1: CGPoint(x: width, y: 8), control2: CGPoint(x: width - 8, y: 0))
-                path.addLine(to: CGPoint(x: 20, y: 0))
-                path.addCurve(to: CGPoint(x: 5, y: 15), control1: CGPoint(x: 12, y: 0), control2: CGPoint(x: 5, y: 8))
+                path.addLine(to: CGPoint(x: width - cornerRadius, y: height))
+                path.addArc(center: CGPoint(x: width - cornerRadius, y: height - cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 0), clockwise: false)
+                path.addLine(to: CGPoint(x: width, y: cornerRadius))
+                path.addArc(center: CGPoint(x: width - cornerRadius, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 0), endAngle: Angle(degrees: -90), clockwise: false)
+                path.addLine(to: CGPoint(x: cornerRadius + 5, y: 0)) // +5 for tail offset
+                path.addArc(center: CGPoint(x: cornerRadius + 5, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: -90), endAngle: Angle(degrees: 180), clockwise: false)
                 path.addLine(to: CGPoint(x: 5, y: height - 10))
-                path.addCurve(to: CGPoint(x: 0, y: height), control1: CGPoint(x: 5, y: height - 1), control2: CGPoint(x: 0, y: height))
-                path.addLine(to: CGPoint(x: -1, y: height))
-                path.addCurve(to: CGPoint(x: 12, y: height - 4), control1: CGPoint(x: 4, y: height + 1), control2: CGPoint(x: 8, y: height - 1))
-                path.addCurve(to: CGPoint(x: 20, y: height), control1: CGPoint(x: 15, y: height), control2: CGPoint(x: 20, y: height))
+                
+                // Tail
+                path.addCurve(to: CGPoint(x: 0, y: height), control1: CGPoint(x: 5, y: height - 2), control2: CGPoint(x: 0, y: height))
+                path.addLine(to: CGPoint(x: 20, y: height)) // Close the loop properly
+                
             } else {
+                // Sent message (Tail on bottom right)
                 path.move(to: CGPoint(x: width - 20, y: height))
-                path.addLine(to: CGPoint(x: 15, y: height))
-                path.addCurve(to: CGPoint(x: 0, y: height - 15), control1: CGPoint(x: 8, y: height), control2: CGPoint(x: 0, y: height - 8))
-                path.addLine(to: CGPoint(x: 0, y: 15))
-                path.addCurve(to: CGPoint(x: 15, y: 0), control1: CGPoint(x: 0, y: 8), control2: CGPoint(x: 8, y: 0))
-                path.addLine(to: CGPoint(x: width - 20, y: 0))
-                path.addCurve(to: CGPoint(x: width - 5, y: 15), control1: CGPoint(x: width - 12, y: 0), control2: CGPoint(x: width - 5, y: 8))
+                path.addLine(to: CGPoint(x: cornerRadius, y: height))
+                path.addArc(center: CGPoint(x: cornerRadius, y: height - cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 180), clockwise: false)
+                path.addLine(to: CGPoint(x: 0, y: cornerRadius))
+                path.addArc(center: CGPoint(x: cornerRadius, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 270), clockwise: false)
+                path.addLine(to: CGPoint(x: width - cornerRadius - 5, y: 0))
+                path.addArc(center: CGPoint(x: width - cornerRadius - 5, y: cornerRadius), radius: cornerRadius, startAngle: Angle(degrees: 270), endAngle: Angle(degrees: 0), clockwise: false)
                 path.addLine(to: CGPoint(x: width - 5, y: height - 10))
-                path.addCurve(to: CGPoint(x: width, y: height), control1: CGPoint(x: width - 5, y: height - 1), control2: CGPoint(x: width, y: height))
-                path.addLine(to: CGPoint(x: width + 1, y: height))
-                path.addCurve(to: CGPoint(x: width - 12, y: height - 4), control1: CGPoint(x: width - 4, y: height + 1), control2: CGPoint(x: width - 8, y: height - 1))
-                path.addCurve(to: CGPoint(x: width - 20, y: height), control1: CGPoint(x: width - 15, y: height), control2: CGPoint(x: width - 20, y: height))
+                
+                // Tail
+                path.addCurve(to: CGPoint(x: width, y: height), control1: CGPoint(x: width - 5, y: height - 2), control2: CGPoint(x: width, y: height))
+                path.addLine(to: CGPoint(x: width - 20, y: height))
             }
         }
     }

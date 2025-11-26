@@ -60,7 +60,8 @@ struct MessageListView: View {
                         let previous = index > 0 ? sortedMessages[index - 1] : nil
                         let sameAuthorAsPrevious = previous?.own == messageEntity.own
 
-                        let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 12
+                        // Slightly increased spacing for better separation
+                        let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 16
 
                         let bubbleContent = ChatBubbleContent(
                             message: messageEntity.body,
@@ -86,7 +87,8 @@ struct MessageListView: View {
                         ChatBubbleView(content: bubbleContent, message: messageEntity)
                             .id(messageEntity.id)
                             .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
-                            .frame(maxWidth: viewWidth * 0.75, alignment: messageEntity.own ? .trailing : .leading)
+                            // Adjusted max width for better readability on large screens
+                            .frame(maxWidth: viewWidth * 0.8, alignment: messageEntity.own ? .trailing : .leading)
                             .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                     }
                 }
@@ -96,7 +98,7 @@ struct MessageListView: View {
             if !activeToolCalls.isEmpty {
                 ToolCallProgressView(toolCalls: activeToolCalls)
                     .id("tool-calls")
-                    .padding(.top, 12)
+                    .padding(.top, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -115,6 +117,7 @@ struct MessageListView: View {
                 ChatBubbleView(content: bubbleContent)
                     .id(-1)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 16) // Consistent padding
                     .transition(.opacity)
             } else if let error = currentError {
                 let bubbleContent = ChatBubbleContent(
@@ -130,6 +133,7 @@ struct MessageListView: View {
                 ChatBubbleView(content: bubbleContent)
                     .id(-2)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 16)
             }
 
             // Multi-agent responses (only show in multi-agent mode and when feature is enabled)
@@ -141,13 +145,13 @@ struct MessageListView: View {
                     isProcessing: multiAgentManager.isProcessing
                 )
                 .id("multi-agent-responses")
-                .padding(.top, 12)
+                .padding(.top, 16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             // Extra bottom padding so bubbles do not collide with input
             Spacer()
-                .frame(height: 16)
+                .frame(height: 24)
         }
         .onAppear {
             // Optimize: Only check the last message for pending code blocks since that's what affects scroll-to-bottom

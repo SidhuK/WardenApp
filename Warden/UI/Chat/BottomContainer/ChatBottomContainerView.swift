@@ -62,19 +62,15 @@ struct ChatBottomContainerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top divider / subtle border
-            Rectangle()
-                .fill(AppConstants.borderSubtle)
-                .frame(height: 0.5)
-                .frame(maxWidth: .infinity)
-
             // Persona selector integrated into the same chrome
              if isExpanded {
                  PersonaSelectorView(chat: chat)
                      .padding(.horizontal, 16)
                      .padding(.top, 8)
                      .padding(.bottom, 4)
-                     .background(Color(nsColor: .controlBackgroundColor))
+                     .background(Material.regular) // Use material for floating feel
+                     .cornerRadius(12)
+                     .padding(.horizontal, 16)
                      .transition(.move(edge: .bottom).combined(with: .opacity))
              }
 
@@ -99,10 +95,9 @@ struct ChatBottomContainerView: View {
                  },
                  onStopStreaming: onStopStreaming
              )
-             .padding(.horizontal, 36)
-             .padding(.vertical, 10)
-             .background(Color(nsColor: .controlBackgroundColor))
+             .padding(.horizontal, 24)
+             .padding(.bottom, 20) // Bottom padding for floating effect
             }
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color.clear) // Clear background to let content behind show
     }
 }

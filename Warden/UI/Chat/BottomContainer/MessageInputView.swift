@@ -84,13 +84,13 @@ struct MessageInputView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Color(nsColor: .windowBackgroundColor))
-            .cornerRadius(20)
+            .background(Material.regular) // Glassmorphic background
+            .cornerRadius(24) // Slightly rounder corners
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5) // Subtle border
             )
-            .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 5)
+            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4) // Softer shadow
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
             return handleDrop(providers: providers)
