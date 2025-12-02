@@ -7,6 +7,7 @@ class MessageManager: ObservableObject {
     private var viewContext: NSManagedObjectContext
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
+    private let streamChunkFlushThreshold = 1200
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
     private let tavilyService = TavilySearchService()
@@ -337,9 +338,29 @@ class MessageManager: ObservableObject {
         
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
+        self.lastUpdateTime = .distantPast
 
         currentStreamingTask = Task { @MainActor in
             var accumulatedResponse = ""
+            var chunkBuffer = ""
+            var chunkCount = 0
+            let streamStart = Date()
+            
+            func flushBuffer(force: Bool) {
+                guard !chunkBuffer.isEmpty else { return }
+                if let lastMessage = chat.lastMessage, !lastMessage.own {
+                    let now = Date()
+                    if force || now.timeIntervalSince(self.lastUpdateTime) >= self.updateInterval {
+                        self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunkBuffer)
+                        chunkBuffer.removeAll(keepingCapacity: true)
+                        self.lastUpdateTime = now
+                    }
+                } else {
+                    self.addMessageToChat(chat: chat, message: chunkBuffer, searchUrls: nil, isStreaming: true)
+                    chunkBuffer.removeAll(keepingCapacity: true)
+                    self.lastUpdateTime = Date()
+                }
+            }
             
             // Fetch tools
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
@@ -382,70 +403,62 @@ class MessageManager: ObservableObject {
                     temperature: temperature
                 ) { chunk, accumulated in
                     accumulatedResponse = accumulated
-                    
-                    if let lastMessage = chat.lastMessage {
-                        if lastMessage.own {
-                            self.addMessageToChat(chat: chat, message: accumulated, searchUrls: searchUrls)
-                        }
-                        else {
-                            let now = Date()
-                            if now.timeIntervalSince(self.lastUpdateTime) >= self.updateInterval {
-                                self.updateLastMessage(
-                                    chat: chat,
-                                    lastMessage: lastMessage,
-                                    accumulatedResponse: accumulated,
-                                    searchUrls: searchUrls,
-                                    save: false
-                                )
-                                self.lastUpdateTime = now
-                            }
-                        }
-                    } else {
-                         // Handle case where there is no last message yet (first chunk)
-                         if !accumulated.isEmpty {
-                             self.addMessageToChat(chat: chat, message: accumulated, searchUrls: searchUrls)
-                         }
-                    }
+                    chunkCount += 1
+                    chunkBuffer.append(chunk)
+                    let forceFlush = chunkBuffer.count >= self.streamChunkFlushThreshold
+                    flushBuffer(force: forceFlush)
                 }
                 
+                flushBuffer(force: true)
+                let elapsed = Date().timeIntervalSince(streamStart)
+                print("⚡️ Stream finished: \(chunkCount) chunk(s) in \(String(format: "%.2f", elapsed))s")
                 // Normal completion path - stream finished successfully
-                 guard let lastMessage = chat.lastMessage else {
-                     // Handle tool calls if present even if no text response
-                     if let toolCalls = toolCalls, !toolCalls.isEmpty {
-                         // If we have tool calls but no message, creating a message might be confusing unless it's a "thinking" or empty message.
-                         // But handleToolCalls expects a state.
-                         // Actually, we should process tool calls immediately.
-                         await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
-                         return
-                     }
-                     
-                     print("⚠️ Warning: No last message found after streaming")
-                     if !fullResponse.isEmpty {
+                guard let lastMessage = chat.lastMessage else {
+                    if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                        await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                        return
+                    }
+                    
+                    print("⚠️ Warning: No last message found after streaming")
+                    if !fullResponse.isEmpty {
                         addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
                         addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
-                     }
-                     completion(.success(()))
-                     return
-                 }
-                 
-                 // Final update: append citations now
-                 if !fullResponse.isEmpty {
-                    updateLastMessage(chat: chat, lastMessage: lastMessage, accumulatedResponse: fullResponse, searchUrls: searchUrls, appendCitations: true, save: true)
+                    }
+                    completion(.success(()))
+                    return
+                }
+                
+                // Final update: append citations now
+                if !fullResponse.isEmpty {
+                    updateLastMessage(
+                        chat: chat,
+                        lastMessage: lastMessage,
+                        accumulatedResponse: fullResponse,
+                        searchUrls: searchUrls,
+                        appendCitations: true,
+                        save: true,
+                        isFinalUpdate: true
+                    )
                     addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
-                 }
-                 
-                 // Handle tool calls if any
-                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
-                     await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
-                     return
-                 }
-                 
-                 // Auto-rename chat if needed
-                 generateChatNameIfNeeded(chat: chat)
-                 completion(.success(()))
+                }
+                
+                // Handle tool calls if any
+                if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                    await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                    return
+                }
+                
+                // Auto-rename chat if needed
+                generateChatNameIfNeeded(chat: chat)
+                chat.waitingForResponse = false
+                chat.lastMessage?.waitingForResponse = false
+                completion(.success(()))
             }
             catch is CancellationError {
                 print("⚠️ Streaming cancelled via exception")
+                flushBuffer(force: true)
+                let elapsed = Date().timeIntervalSince(streamStart)
+                print("⚠️ Stream cancellation stats: \(chunkCount) chunk(s), \(String(format: "%.2f", elapsed))s elapsed")
                 
                 // Save partial response even when cancelled via exception
                 if !accumulatedResponse.isEmpty {
@@ -456,7 +469,8 @@ class MessageManager: ObservableObject {
                             accumulatedResponse: accumulatedResponse,
                             searchUrls: searchUrls,
                             appendCitations: true,
-                            save: true
+                            save: true,
+                            isFinalUpdate: true
                         )
                         addNewMessageToRequestMessages(
                             chat: chat,
@@ -737,7 +751,7 @@ class MessageManager: ObservableObject {
         return chat.constructRequestMessages(forUserMessage: userMessage, contextSize: contextSize)
     }
 
-    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil) {
+    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil, isStreaming: Bool = false) {
         print("💬 [Message] AI response received, length: \(message.count)")
         print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
         
@@ -757,6 +771,7 @@ class MessageManager: ObservableObject {
         newMessage.body = finalMessage
         newMessage.timestamp = Date()
         newMessage.own = false
+        newMessage.waitingForResponse = isStreaming
         newMessage.chat = chat
         
         // Snapshot provider metadata for this message
@@ -785,6 +800,18 @@ class MessageManager: ObservableObject {
 
         chat.updatedDate = Date()
         chat.addToMessages(newMessage)
+        if isStreaming {
+            chat.waitingForResponse = true
+        }
+        chat.objectWillChange.send()
+    }
+    
+    private func appendChunkToLastMessage(chat: ChatEntity, lastMessage: MessageEntity, chunk: String) {
+        guard !chunk.isEmpty else { return }
+        lastMessage.body += chunk
+        lastMessage.timestamp = Date()
+        lastMessage.waitingForResponse = true
+        chat.waitingForResponse = true
         chat.objectWillChange.send()
     }
 
@@ -793,7 +820,15 @@ class MessageManager: ObservableObject {
         self.debounceSave()
     }
 
-    private func updateLastMessage(chat: ChatEntity, lastMessage: MessageEntity, accumulatedResponse: String, searchUrls: [String]? = nil, appendCitations: Bool = false, save: Bool = false) {
+    private func updateLastMessage(
+        chat: ChatEntity,
+        lastMessage: MessageEntity,
+        accumulatedResponse: String,
+        searchUrls: [String]? = nil,
+        appendCitations: Bool = false,
+        save: Bool = false,
+        isFinalUpdate: Bool = false
+    ) {
         print("Streaming chunk received: \(accumulatedResponse.suffix(20))")
         
         // Only convert citations at the final update, not during intermediate streaming updates
@@ -804,10 +839,12 @@ class MessageManager: ObservableObject {
             finalMessage = accumulatedResponse
         }
         
-        chat.waitingForResponse = false
         lastMessage.body = finalMessage
         lastMessage.timestamp = Date()
-        lastMessage.waitingForResponse = false
+        if isFinalUpdate {
+            chat.waitingForResponse = false
+            lastMessage.waitingForResponse = false
+        }
 
         chat.objectWillChange.send()
 

@@ -235,12 +235,18 @@ extension ChatEntity {
             ])
         }
 
-        let sortedMessages = self.messagesArray
-            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
-            .suffix(contextSize)
+        let orderedMessages = self.messagesArray
+        let historyMessages: [MessageEntity]
+        if contextSize <= 0 {
+            historyMessages = []
+        } else if orderedMessages.count > contextSize {
+            historyMessages = Array(orderedMessages.suffix(contextSize))
+        } else {
+            historyMessages = orderedMessages
+        }
 
         // Add conversation history
-        for message in sortedMessages {
+        for message in historyMessages {
             messages.append([
                 "role": message.own ? "user" : "assistant",
                 "content": message.body,
