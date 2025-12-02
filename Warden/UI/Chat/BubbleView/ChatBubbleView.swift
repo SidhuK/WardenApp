@@ -329,6 +329,7 @@ struct ChatBubbleView: View, Equatable {
         .background(bubbleBackground(for: role))
         .clipShape(BubbleShape(myMessage: role.isUser)) // Custom shape
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .contentShape(Rectangle()) // Stable content shape
     }
     
     @ViewBuilder

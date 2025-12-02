@@ -71,6 +71,7 @@ struct CodeView: View {
                 inlinePreviewView
             }
         }
+        .animation(nil, value: code)
     }
     
     private var codeBlockView: some View {
