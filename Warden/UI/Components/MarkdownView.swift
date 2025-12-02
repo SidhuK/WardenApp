@@ -21,11 +21,13 @@ struct MarkdownView: View {
     }
     
     var body: some View {
+        let elements = parseMarkdown(markdownText)
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(parseMarkdown(markdownText), id: \.id) { element in
-                renderMarkdownElement(element)
+            ForEach(elements.indices, id: \.self) { index in
+                renderMarkdownElement(elements[index])
             }
         }
+        .animation(nil, value: markdownText)
     }
     
     private func parseMarkdown(_ text: String) -> [MarkdownElement] {

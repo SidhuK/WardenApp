@@ -28,6 +28,7 @@ struct MessageContentView: View {
                 renderFullContent()
             }
         }
+        .animation(nil, value: message)
     }
 
     private func containsImageData(_ message: String) -> Bool {

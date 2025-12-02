@@ -28,7 +28,6 @@ struct ThinkingProcessView: View {
                 Text(content)
                     .foregroundColor(.gray)
                     .padding(.leading, 24)
-                    .transition(.opacity)
                     .textSelection(.enabled)
             }
         }

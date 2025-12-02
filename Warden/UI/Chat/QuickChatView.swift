@@ -624,7 +624,7 @@ struct QuickChatContentView: View {
         request.sortDescriptors = [NSSortDescriptor(keyPath: \MessageEntity.timestamp, ascending: true)]
         let chatId = chat.id
         request.predicate = NSPredicate(format: "chat.id == %@", chatId as CVarArg)
-        _messages = FetchRequest(fetchRequest: request, animation: .default)
+        _messages = FetchRequest(fetchRequest: request, animation: nil)
     }
     
     var body: some View {

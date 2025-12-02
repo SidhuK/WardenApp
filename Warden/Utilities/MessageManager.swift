@@ -8,6 +8,7 @@ class MessageManager: ObservableObject {
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
     private let tavilyService = TavilySearchService()
+    private let streamUpdateInterval = AppConstants.streamedResponseUpdateUIInterval
     
     // Debounce saving to Core Data
     private var saveDebounceWorkItem: DispatchWorkItem?
@@ -340,25 +341,39 @@ class MessageManager: ObservableObject {
             var accumulatedResponse = ""
             var chunkCount = 0
             let streamStart = Date()
-            var hasActiveStreamingMessage = false
+            var streamingMessage: MessageEntity?
+            var deferImageResponse = false
+            var lastUpdateTime = Date.distantPast
+            var chunkBuffer = ""
+            let updateInterval = self.streamUpdateInterval
 
-            func deliverChunk(_ chunk: String) {
-                guard !chunk.isEmpty else { return }
+            func flushChunkBuffer(force: Bool = false) {
+                guard !chunkBuffer.isEmpty else { return }
 
-                if let lastMessage = chat.lastMessage,
-                   !lastMessage.own,
-                   lastMessage.waitingForResponse
-                {
-                    self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunk)
-                } else if hasActiveStreamingMessage {
-                    if let lastMessage = chat.lastMessage, !lastMessage.own {
-                        self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunk)
-                    } else {
-                        self.addMessageToChat(chat: chat, message: chunk, searchUrls: nil, isStreaming: true)
+                if streamingMessage == nil {
+                    if let existing = chat.lastMessage, !existing.own, existing.waitingForResponse {
+                        streamingMessage = existing
                     }
-                } else {
-                    self.addMessageToChat(chat: chat, message: chunk, searchUrls: nil, isStreaming: true)
-                    hasActiveStreamingMessage = true
+                }
+
+                if streamingMessage == nil {
+                    self.addMessageToChat(chat: chat, message: chunkBuffer, searchUrls: nil, isStreaming: true)
+                    streamingMessage = chat.lastMessage
+                    chunkBuffer = ""
+                    lastUpdateTime = Date()
+                    return
+                }
+
+                guard let message = streamingMessage else { return }
+                let now = Date()
+                if force || now.timeIntervalSince(lastUpdateTime) >= updateInterval {
+                    message.body += chunkBuffer
+                    message.timestamp = Date()
+                    message.waitingForResponse = true
+                    chat.waitingForResponse = true
+                    chat.objectWillChange.send()
+                    chunkBuffer = ""
+                    lastUpdateTime = now
                 }
             }
             
@@ -404,37 +419,48 @@ class MessageManager: ObservableObject {
                 ) { chunk, accumulated in
                     accumulatedResponse = accumulated
                     chunkCount += 1
-                    deliverChunk(chunk)
+                    guard !chunk.isEmpty else { return }
+
+                    if chunk.contains("<image-uuid>") {
+                        if !deferImageResponse {
+                            deferImageResponse = true
+                            chunkBuffer = ""
+                            if let message = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
+                                chat.removeFromMessages(message)
+                                self.viewContext.delete(message)
+                                streamingMessage = nil
+                                chat.objectWillChange.send()
+                            }
+                        }
+                        return
+                    }
+                    if deferImageResponse {
+                        return
+                    }
+
+                    chunkBuffer += chunk
+                    flushChunkBuffer(force: streamingMessage == nil)
                 }
                 let elapsed = Date().timeIntervalSince(streamStart)
                 print("⚡️ Stream finished: \(chunkCount) chunk(s) in \(String(format: "%.2f", elapsed))s")
+                flushChunkBuffer(force: true)
                 // Normal completion path - stream finished successfully
-                guard let lastMessage = chat.lastMessage else {
-                    if let toolCalls = toolCalls, !toolCalls.isEmpty {
-                        await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
-                        return
-                    }
-                    
-                    print("⚠️ Warning: No last message found after streaming")
-                    if !fullResponse.isEmpty {
-                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
-                        addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
-                    }
-                    completion(.success(()))
-                    return
-                }
-                
-                // Final update: append citations now
                 if !fullResponse.isEmpty {
-                    updateLastMessage(
-                        chat: chat,
-                        lastMessage: lastMessage,
-                        accumulatedResponse: fullResponse,
-                        searchUrls: searchUrls,
-                        appendCitations: true,
-                        save: true,
-                        isFinalUpdate: true
-                    )
+                    if deferImageResponse {
+                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
+                    } else if let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
+                        updateLastMessage(
+                            chat: chat,
+                            lastMessage: assistantMessage,
+                            accumulatedResponse: fullResponse,
+                            searchUrls: searchUrls,
+                            appendCitations: true,
+                            save: true,
+                            isFinalUpdate: true
+                        )
+                    } else {
+                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
+                    }
                     addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
                 }
                 
@@ -456,30 +482,28 @@ class MessageManager: ObservableObject {
                 print("⚠️ Stream cancellation stats: \(chunkCount) chunk(s), \(String(format: "%.2f", elapsed))s elapsed")
                 
                 // Save partial response even when cancelled via exception
+                flushChunkBuffer(force: true)
                 if !accumulatedResponse.isEmpty {
-                    if let lastMessage = chat.lastMessage, !lastMessage.own {
+                    if deferImageResponse {
+                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                    } else if let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
                         updateLastMessage(
                             chat: chat,
-                            lastMessage: lastMessage,
+                            lastMessage: assistantMessage,
                             accumulatedResponse: accumulatedResponse,
                             searchUrls: searchUrls,
                             appendCitations: true,
                             save: true,
                             isFinalUpdate: true
                         )
-                        addNewMessageToRequestMessages(
-                            chat: chat,
-                            content: accumulatedResponse,
-                            role: AppConstants.defaultRole
-                        )
                     } else {
                         addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                        addNewMessageToRequestMessages(
-                            chat: chat,
-                            content: accumulatedResponse,
-                            role: AppConstants.defaultRole
-                        )
                     }
+                    addNewMessageToRequestMessages(
+                        chat: chat,
+                        content: accumulatedResponse,
+                        role: AppConstants.defaultRole
+                    )
                     print("✅ Partial response saved after cancellation exception")
                 }
                 
@@ -801,15 +825,6 @@ class MessageManager: ObservableObject {
         chat.objectWillChange.send()
     }
     
-    private func appendChunkToLastMessage(chat: ChatEntity, lastMessage: MessageEntity, chunk: String) {
-        guard !chunk.isEmpty else { return }
-        lastMessage.body += chunk
-        lastMessage.timestamp = Date()
-        lastMessage.waitingForResponse = true
-        chat.waitingForResponse = true
-        chat.objectWillChange.send()
-    }
-
     private func addNewMessageToRequestMessages(chat: ChatEntity, content: String, role: String) {
         chat.requestMessages.append(["role": role, "content": content])
         self.debounceSave()

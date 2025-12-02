@@ -101,7 +101,6 @@ struct MessageListView: View {
                     .id("tool-calls")
                     .padding(.top, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if chat.waitingForResponse {
@@ -119,7 +118,6 @@ struct MessageListView: View {
                     .id(-1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 16) // Consistent padding
-                    .transition(.opacity)
             } else if let error = currentError {
                 let bubbleContent = ChatBubbleContent(
                     message: "",
