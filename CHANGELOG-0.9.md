@@ -8,7 +8,3 @@
 ## Developer Experience
 - Simplified request-history construction so we reuse the already ordered Core Data messages instead of re-sorting for every send.
 - Instrumented the streaming flow with lightweight logging to make diagnosing slow providers or tool-call loops easier in the future.
-
-## Testing Notes
-- `xcodebuild build -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS'` succeeds.
-- `xcodebuild test ...` still fails because the `WardenTests` target deploys to macOS 13.1 while the app now requires macOS 15.0 (mismatch pre-existing before this patch).
