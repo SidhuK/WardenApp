@@ -193,33 +193,31 @@ class ChatGPTHandler: BaseAPIHandler {
             #endif
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
-                if let dict = json as? [String: Any] {
-                    if let choices = dict["choices"] as? [[String: Any]],
-                        let lastIndex = choices.indices.last,
-                        let content = choices[lastIndex]["message"] as? [String: Any]
-                    {
-                        let messageRole = content["role"] as? String
-                        let messageContent = content["content"] as? String
-                        
-                        var toolCalls: [ToolCall]? = nil
-                        if let toolCallsData = content["tool_calls"] as? [[String: Any]] {
-                            // Convert dictionary to ToolCall structs
-                            // We need to encode and decode to use Codable, or map manually.
-                            // Manual mapping is safer/faster here.
-                            toolCalls = toolCallsData.compactMap { dict -> ToolCall? in
-                                guard let id = dict["id"] as? String,
-                                      let type = dict["type"] as? String,
-                                      let function = dict["function"] as? [String: Any],
-                                      let name = function["name"] as? String,
-                                      let arguments = function["arguments"] as? String else {
-                                    return nil
-                                }
-                                return ToolCall(id: id, type: type, function: ToolCall.FunctionCall(name: name, arguments: arguments))
+                if let dict = json as? [String: Any],
+                   let choices = dict["choices"] as? [[String: Any]],
+                   let lastIndex = choices.indices.last,
+                   let message = choices[lastIndex]["message"] as? [String: Any]
+                {
+                    let messageRole = message["role"] as? String
+                    let contentText = extractTextContent(from: message["content"])
+                    let reasoningText = extractTextContent(from: message["reasoning_content"] ?? message["reasoning"])
+                    
+                    var toolCalls: [ToolCall]? = nil
+                    if let toolCallsData = message["tool_calls"] as? [[String: Any]] {
+                        toolCalls = toolCallsData.compactMap { dict -> ToolCall? in
+                            guard let id = dict["id"] as? String,
+                                  let type = dict["type"] as? String,
+                                  let function = dict["function"] as? [String: Any],
+                                  let name = function["name"] as? String,
+                                  let arguments = function["arguments"] as? String else {
+                                return nil
                             }
+                            return ToolCall(id: id, type: type, function: ToolCall.FunctionCall(name: name, arguments: arguments))
                         }
-                        
-                        return (messageContent, messageRole, toolCalls)
                     }
+                    
+                    let finalContent = composeResponse(reasoningText: reasoningText, contentText: contentText)
+                    return (finalContent, messageRole, toolCalls)
                 }
             }
             catch {
@@ -250,8 +248,9 @@ class ChatGPTHandler: BaseAPIHandler {
                     let firstChoice = choices.first,
                     let delta = firstChoice["delta"] as? [String: Any]
                 {
-                    let contentPart = delta["content"] as? String
-                    
+                    let contentPart = extractTextContent(from: delta["content"])
+                    let reasoningPart = extractTextContent(from: delta["reasoning_content"] ?? delta["reasoning"])
+
                     var toolCalls: [ToolCall]? = nil
                     if let toolCallsData = delta["tool_calls"] as? [[String: Any]] {
                         toolCalls = toolCallsData.compactMap { dict -> ToolCall? in
@@ -314,10 +313,13 @@ class ChatGPTHandler: BaseAPIHandler {
                         }
                     }
 
-                    let finished = false
-                    if let finishReason = firstChoice["finish_reason"] as? String, (finishReason == "stop" || finishReason == "tool_calls") {
-                        _ = true
+                    let finishReason = firstChoice["finish_reason"] as? String
+                    let finished = finishReason == "stop" || finishReason == "tool_calls" || finishReason == "length"
+
+                    if let reasoning = reasoningPart, !reasoning.isEmpty {
+                        return (finished, nil, reasoning, "reasoning", nil)
                     }
+                    
                     return (finished, nil, contentPart, defaultRole, toolCalls)
                 }
             }
@@ -335,4 +337,46 @@ class ChatGPTHandler: BaseAPIHandler {
     }
 
 
+}
+
+private extension ChatGPTHandler {
+    func extractTextContent(from value: Any?) -> String? {
+        guard let value = value, !(value is NSNull) else { return nil }
+        if let text = value as? String {
+            return text
+        }
+        if let dict = value as? [String: Any] {
+            if let text = dict["text"] as? String {
+                return text
+            }
+            if let nested = dict["content"] {
+                return extractTextContent(from: nested)
+            }
+            if let nested = dict["value"] {
+                return extractTextContent(from: nested)
+            }
+        }
+        if let array = value as? [Any] {
+            let parts = array.compactMap { extractTextContent(from: $0) }
+            if parts.isEmpty { return nil }
+            return parts.joined()
+        }
+        return nil
+    }
+    
+    func composeResponse(reasoningText: String?, contentText: String?) -> String? {
+        let trimmedReasoning = reasoningText?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = contentText
+        var sections: [String] = []
+        if let reasoning = trimmedReasoning, !reasoning.isEmpty {
+            sections.append("<think>\n\(reasoning)\n</think>")
+        }
+        if let content = content, !content.isEmpty {
+            sections.append(content)
+        }
+        if sections.isEmpty {
+            return nil
+        }
+        return sections.joined(separator: "\n\n")
+    }
 }

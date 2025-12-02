@@ -362,11 +362,12 @@ struct ChatBubbleView: View, Equatable {
             }
             
         case .assistant:
-            if content.waitingForResponse ?? false {
-                thinkingView
-            } else {
+            VStack(alignment: .leading, spacing: 6) {
                 messageBody
                     .foregroundColor(.primary)
+                if content.waitingForResponse ?? false {
+                    thinkingView
+                }
             }
             
         case .system:

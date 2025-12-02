@@ -104,6 +104,7 @@ extension APIService {
             let request = self.prepareRequest(requestMessages: requestMessages, tools: tools, model: model, temperature: temperature, stream: true)
 
             Task {
+                var isStreamingReasoning = false
                 do {
                     let (stream, response) = try await session.bytes(for: request)
                     let result = self.handleAPIResponse(response, data: nil, error: nil)
@@ -118,22 +119,49 @@ extension APIService {
                     }
 
                     try await SSEStreamParser.parse(stream: stream) { dataString in
-                        if let jsonData = dataString.data(using: .utf8) {
-                            let (finished, error, messageData, _, toolCalls) = self.parseDeltaJSONResponse(data: jsonData)
+                        guard let jsonData = dataString.data(using: .utf8) else { return }
 
-                            if let error = error {
-                                throw error
-                            }
-                            
-                            if messageData != nil || toolCalls != nil {
-                                continuation.yield((messageData, toolCalls))
-                            }
+                        let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: jsonData)
 
-                            if finished {
-                                continuation.finish()
-                                return
-                            }
+                        if let error = error {
+                            throw error
                         }
+
+                        var pendingToolCalls = toolCalls
+
+                        if let messageData = messageData, !messageData.isEmpty {
+                            if role == "reasoning" {
+                                if !isStreamingReasoning {
+                                    isStreamingReasoning = true
+                                    continuation.yield(("<think>\n", nil))
+                                }
+                                continuation.yield((messageData, nil))
+                            } else {
+                                if isStreamingReasoning {
+                                    isStreamingReasoning = false
+                                    continuation.yield(("\n</think>\n\n", nil))
+                                }
+                                continuation.yield((messageData, pendingToolCalls))
+                                pendingToolCalls = nil
+                            }
+                        } else if let toolCallsOnly = pendingToolCalls {
+                            continuation.yield((nil, toolCallsOnly))
+                            pendingToolCalls = nil
+                        }
+
+                        if finished {
+                            if isStreamingReasoning {
+                                isStreamingReasoning = false
+                                continuation.yield(("\n</think>\n\n", nil))
+                            }
+                            continuation.finish()
+                            return
+                        }
+                    }
+
+                    if isStreamingReasoning {
+                        isStreamingReasoning = false
+                        continuation.yield(("\n</think>\n\n", nil))
                     }
                     continuation.finish()
                 } catch {

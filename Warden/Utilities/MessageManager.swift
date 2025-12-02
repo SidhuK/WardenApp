@@ -5,9 +5,6 @@ import MCP
 class MessageManager: ObservableObject {
     private var apiService: APIService
     private var viewContext: NSManagedObjectContext
-    private var lastUpdateTime = Date()
-    private let updateInterval = AppConstants.streamedResponseUpdateUIInterval
-    private let streamChunkFlushThreshold = 1200
     private var _currentStreamingTask: Task<Void, Never>?
     private let taskLock = NSLock()
     private let tavilyService = TavilySearchService()
@@ -338,27 +335,30 @@ class MessageManager: ObservableObject {
         
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
-        self.lastUpdateTime = .distantPast
 
         currentStreamingTask = Task { @MainActor in
             var accumulatedResponse = ""
-            var chunkBuffer = ""
             var chunkCount = 0
             let streamStart = Date()
-            
-            func flushBuffer(force: Bool) {
-                guard !chunkBuffer.isEmpty else { return }
-                if let lastMessage = chat.lastMessage, !lastMessage.own {
-                    let now = Date()
-                    if force || now.timeIntervalSince(self.lastUpdateTime) >= self.updateInterval {
-                        self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunkBuffer)
-                        chunkBuffer.removeAll(keepingCapacity: true)
-                        self.lastUpdateTime = now
+            var hasActiveStreamingMessage = false
+
+            func deliverChunk(_ chunk: String) {
+                guard !chunk.isEmpty else { return }
+
+                if let lastMessage = chat.lastMessage,
+                   !lastMessage.own,
+                   lastMessage.waitingForResponse
+                {
+                    self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunk)
+                } else if hasActiveStreamingMessage {
+                    if let lastMessage = chat.lastMessage, !lastMessage.own {
+                        self.appendChunkToLastMessage(chat: chat, lastMessage: lastMessage, chunk: chunk)
+                    } else {
+                        self.addMessageToChat(chat: chat, message: chunk, searchUrls: nil, isStreaming: true)
                     }
                 } else {
-                    self.addMessageToChat(chat: chat, message: chunkBuffer, searchUrls: nil, isStreaming: true)
-                    chunkBuffer.removeAll(keepingCapacity: true)
-                    self.lastUpdateTime = Date()
+                    self.addMessageToChat(chat: chat, message: chunk, searchUrls: nil, isStreaming: true)
+                    hasActiveStreamingMessage = true
                 }
             }
             
@@ -404,12 +404,8 @@ class MessageManager: ObservableObject {
                 ) { chunk, accumulated in
                     accumulatedResponse = accumulated
                     chunkCount += 1
-                    chunkBuffer.append(chunk)
-                    let forceFlush = chunkBuffer.count >= self.streamChunkFlushThreshold
-                    flushBuffer(force: forceFlush)
+                    deliverChunk(chunk)
                 }
-                
-                flushBuffer(force: true)
                 let elapsed = Date().timeIntervalSince(streamStart)
                 print("⚡️ Stream finished: \(chunkCount) chunk(s) in \(String(format: "%.2f", elapsed))s")
                 // Normal completion path - stream finished successfully
@@ -456,7 +452,6 @@ class MessageManager: ObservableObject {
             }
             catch is CancellationError {
                 print("⚠️ Streaming cancelled via exception")
-                flushBuffer(force: true)
                 let elapsed = Date().timeIntervalSince(streamStart)
                 print("⚠️ Stream cancellation stats: \(chunkCount) chunk(s), \(String(format: "%.2f", elapsed))s elapsed")
                 
