@@ -37,18 +37,6 @@ Warden is a **completely native macOS AI chat app** built with SwiftUI that supp
 
 ---
 
-## 🆕 v0.6 Highlights
-
-**Fresh, smooth, and speedy redesign** with major UI overhaul, performance improvements, and new capabilities:
-
-- **Web Search Integration**: Search the web in real-time with Tavily API support
-- **Redesigned Interface**: Cleaner, more modern UI with better spacing and visual hierarchy
-- **Smooth Animations**: Delightful subtle animations with reduce-motion accessibility support
-- **Performance Boost**: Database optimization, faster backups/restores, and improved stability
-- **Better Error Handling**: Graceful error messages instead of crashes
-- **macOS 26 Support**: Full compatibility with Apple's latest OS features
-
----
 
 ## 🚀 Features
 
