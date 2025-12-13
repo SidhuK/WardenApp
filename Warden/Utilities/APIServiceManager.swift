@@ -10,49 +10,55 @@ class APIServiceManager {
     }
     
     func createAPIService(name: String, type: String, url: URL, model: String, contextSize: Int16, useStreamResponse: Bool, generateChatNames: Bool) -> APIServiceEntity {
-        let apiService = APIServiceEntity(context: viewContext)
-        apiService.id = UUID()
-        apiService.name = name
-        apiService.type = type
-        apiService.url = url
-        apiService.model = model
-        apiService.contextSize = contextSize
-        apiService.useStreamResponse = useStreamResponse
-        apiService.generateChatNames = generateChatNames
-        apiService.tokenIdentifier = UUID().uuidString
-        
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error saving API service: \(error.localizedDescription, privacy: .public)")
+        var apiService: APIServiceEntity!
+        viewContext.performAndWait {
+            apiService = APIServiceEntity(context: viewContext)
+            apiService.id = UUID()
+            apiService.name = name
+            apiService.type = type
+            apiService.url = url
+            apiService.model = model
+            apiService.contextSize = contextSize
+            apiService.useStreamResponse = useStreamResponse
+            apiService.generateChatNames = generateChatNames
+            apiService.tokenIdentifier = UUID().uuidString
+            
+            do {
+                try viewContext.save()
+            } catch {
+                WardenLog.coreData.error("Error saving API service: \(error.localizedDescription, privacy: .public)")
+            }
         }
-        
         return apiService
     }
     
     func updateAPIService(_ apiService: APIServiceEntity, name: String, type: String, url: URL, model: String, contextSize: Int16, useStreamResponse: Bool, generateChatNames: Bool) {
-        apiService.name = name
-        apiService.type = type
-        apiService.url = url
-        apiService.model = model
-        apiService.contextSize = contextSize
-        apiService.useStreamResponse = useStreamResponse
-        apiService.generateChatNames = generateChatNames
-        
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error updating API service: \(error.localizedDescription, privacy: .public)")
+        viewContext.performAndWait {
+            apiService.name = name
+            apiService.type = type
+            apiService.url = url
+            apiService.model = model
+            apiService.contextSize = contextSize
+            apiService.useStreamResponse = useStreamResponse
+            apiService.generateChatNames = generateChatNames
+            
+            do {
+                try viewContext.save()
+            } catch {
+                WardenLog.coreData.error("Error updating API service: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     
     func deleteAPIService(_ apiService: APIServiceEntity) {
-        viewContext.delete(apiService)
-        
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error deleting API service: \(error.localizedDescription, privacy: .public)")
+        viewContext.performAndWait {
+            viewContext.delete(apiService)
+            
+            do {
+                try viewContext.save()
+            } catch {
+                WardenLog.coreData.error("Error deleting API service: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     
@@ -117,12 +123,12 @@ class APIServiceManager {
         
         // Use async/await with continuation to bridge callback-based API
         return try await withCheckedThrowingContinuation { continuation in
-            apiServiceInstance.sendMessage(requestMessages, temperature: temperature) { result in
-                switch result {
-                case .success(let (messageContent, _)):
-                    guard let messageContent = messageContent else {
-                         continuation.resume(throwing: APIError.invalidResponse)
-                         return
+	            apiServiceInstance.sendMessage(requestMessages, tools: nil, temperature: temperature) { result in
+	                switch result {
+	                case .success(let (messageContent, _)):
+	                    guard let messageContent = messageContent else {
+	                         continuation.resume(throwing: APIError.invalidResponse)
+	                         return
                     }
                     let cleanedResponse = self.cleanSummarizationResponse(messageContent)
                     continuation.resume(returning: cleanedResponse)
@@ -192,22 +198,33 @@ class APIServiceManager {
     ///   - messages: The messages to send
     ///   - tools: Optional list of tools to include in the request
     ///   - temperature: The temperature setting
-    ///   - onChunk: Closure called with each new chunk and the accumulated response so far
-    /// - Returns: The full accumulated response
+    ///   - onChunk: Closure called with each new chunk (buffered by update interval)
+    /// - Returns: Any tool calls emitted during streaming
     static func handleStream(
         apiService: APIService,
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         temperature: Float,
-        onChunk: @escaping (String, String) async -> Void
-    ) async throws -> (String, [ToolCall]?) {
+        onChunk: @escaping (String) async -> Void
+    ) async throws -> [ToolCall]? {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
-        var accumulatedResponse = ""
         var pendingChunkParts: [String] = []
         var pendingChunkCharacterCount = 0
         let updateInterval = AppConstants.streamedResponseUpdateUIInterval
         var lastFlushTime = Date()
         var allToolCalls: [ToolCall]? = nil
+        
+        #if DEBUG
+        let streamSignpostID = OSSignpostID(log: WardenSignpost.streaming)
+        os_signpost(.begin, log: WardenSignpost.streaming, name: "Stream", signpostID: streamSignpostID)
+        
+        let ttftSignpostID = OSSignpostID(log: WardenSignpost.streaming)
+        os_signpost(.begin, log: WardenSignpost.streaming, name: "TTFT", signpostID: ttftSignpostID)
+        var didEndTTFT = false
+        
+        var flushCount = 0
+        var flushedCharacterCount = 0
+        #endif
 
         func drainPendingChunkBuffer() -> String {
             var result = String()
@@ -223,8 +240,26 @@ class APIServiceManager {
         func flushPendingChunkBuffer() async {
             guard !pendingChunkParts.isEmpty else { return }
             let chunkToSend = drainPendingChunkBuffer()
-            accumulatedResponse.append(contentsOf: chunkToSend)
-            await onChunk(chunkToSend, accumulatedResponse)
+            
+            #if DEBUG
+            if !didEndTTFT {
+                didEndTTFT = true
+                os_signpost(.end, log: WardenSignpost.streaming, name: "TTFT", signpostID: ttftSignpostID)
+            }
+            flushCount += 1
+            flushedCharacterCount += chunkToSend.count
+            os_signpost(
+                .event,
+                log: WardenSignpost.streaming,
+                name: "ChunkFlush",
+                signpostID: streamSignpostID,
+                "flush=%{public}d chars=%{public}d total=%{public}d",
+                flushCount,
+                chunkToSend.count,
+                flushedCharacterCount
+            )
+            #endif
+            await onChunk(chunkToSend)
         }
         
         for try await (chunk, toolCalls) in stream {
@@ -258,7 +293,15 @@ class APIServiceManager {
 
         await flushPendingChunkBuffer()
         
-        return (accumulatedResponse, allToolCalls)
+        #if DEBUG
+        if !didEndTTFT {
+            didEndTTFT = true
+            os_signpost(.end, log: WardenSignpost.streaming, name: "TTFT", signpostID: ttftSignpostID)
+        }
+        os_signpost(.end, log: WardenSignpost.streaming, name: "Stream", signpostID: streamSignpostID)
+        #endif
+        
+        return allToolCalls
     }
     
     /// Prepares messages specifically formatted for summarization requests

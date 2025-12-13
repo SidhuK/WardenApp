@@ -1,5 +1,7 @@
+import Foundation
 import AttributedText
 import SwiftUI
+import os
 
 struct IdentifiableImage: Identifiable {
     let id = UUID()
@@ -134,7 +136,22 @@ struct MessageContentView: View {
             if isStreaming {
                 truncatedParseTask = Task.detached(priority: .userInitiated) {
                     let parser = MessageParser(colorScheme: colorScheme)
+                    #if DEBUG
+                    let signpostID = OSSignpostID(log: WardenSignpost.rendering)
+                    os_signpost(
+                        .begin,
+                        log: WardenSignpost.rendering,
+                        name: "MessageParse",
+                        signpostID: signpostID,
+                        "mode=%{public}s chars=%{public}d",
+                        "truncated",
+                        truncated.count
+                    )
+                    #endif
                     let elements = parser.parseMessageFromString(input: truncated)
+                    #if DEBUG
+                    os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
+                    #endif
                     await MainActor.run {
                         truncatedParsedElements = elements
                     }
@@ -155,7 +172,22 @@ struct MessageContentView: View {
                 try? await Task.sleep(nanoseconds: delay)
                 guard !Task.isCancelled else { return }
                 let parser = MessageParser(colorScheme: colorScheme)
+                #if DEBUG
+                let signpostID = OSSignpostID(log: WardenSignpost.rendering)
+                os_signpost(
+                    .begin,
+                    log: WardenSignpost.rendering,
+                    name: "MessageParse",
+                    signpostID: signpostID,
+                    "mode=%{public}s chars=%{public}d",
+                    "stream",
+                    message.count
+                )
+                #endif
                 let elements = parser.parseMessageFromString(input: message)
+                #if DEBUG
+                os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
+                #endif
                 await MainActor.run {
                     fullParsedElements = elements
                 }
@@ -248,7 +280,7 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderText(_ text: String) -> some View {
-        let hasMarkdown = containsMarkdownFormatting(text)
+        let hasMarkdown = containsMarkdownFormatting(text, useCache: !isStreaming)
         #if DEBUG
         let _ = WardenLog.rendering.debug(
             "renderText hasMarkdown=\(hasMarkdown, privacy: .public), length=\(text.count, privacy: .public)"
@@ -298,8 +330,12 @@ struct MessageContentView: View {
             }
         }
     }
-    
-    private func containsMarkdownFormatting(_ text: String) -> Bool {
+
+    private func containsMarkdownFormatting(_ text: String, useCache: Bool) -> Bool {
+        if useCache, let cached = Self.markdownDetectionCache.object(forKey: text as NSString) {
+            return cached.boolValue
+        }
+
         // Don't use MarkdownView if MessageParser should handle these
         if text.contains("```") || // Code blocks - handled by MessageParser
            text.contains("<think>") || // Thinking blocks - handled by MessageParser
@@ -307,6 +343,9 @@ struct MessageContentView: View {
            text.contains(MessageContent.fileTagStart) || // Files - handled by MessageParser
            text.contains("\\[") || text.contains("\\]") || // LaTeX - handled by MessageParser
            text.first == "|" { // Tables - handled by MessageParser
+            if useCache {
+                Self.markdownDetectionCache.setObject(NSNumber(value: false), forKey: text as NSString, cost: text.count)
+            }
             return false
         }
         
@@ -320,37 +359,46 @@ struct MessageContentView: View {
            !text.contains("`"),
            !text.contains("["),
            !text.contains("]") {
+            if useCache {
+                Self.markdownDetectionCache.setObject(NSNumber(value: false), forKey: text as NSString, cost: text.count)
+            }
             return false
         }
 
+        var result = false
         if let regex = Self.blockMarkdownRegex {
             let range = NSRange(text.startIndex..., in: text)
             if regex.firstMatch(in: text, options: [], range: range) != nil {
-                return true
+                result = true
             }
         }
-        if let regex = Self.linkMarkdownRegex {
+        if !result, let regex = Self.linkMarkdownRegex {
             let range = NSRange(text.startIndex..., in: text)
             if regex.firstMatch(in: text, options: [], range: range) != nil {
-                return true
+                result = true
             }
         }
         
         // Also check for inline formatting that suggests structured content
-        if text.contains("**") || text.contains("__") || // Bold
-           text.contains("~~") { // Strikethrough
-            return true
+        if !result,
+           (text.contains("**") || text.contains("__") || // Bold
+            text.contains("~~")) { // Strikethrough
+            result = true
         }
         
         // Be more selective with asterisks and underscores to avoid false positives
         // Only consider it markdown if there are pairs of them
-        if hasAtLeastTwoOccurrences(of: "*", in: text) ||
-           hasAtLeastTwoOccurrences(of: "_", in: text) ||
-           hasAtLeastTwoOccurrences(of: "`", in: text) {
-            return true
+        if !result,
+           (hasAtLeastTwoOccurrences(of: "*", in: text) ||
+            hasAtLeastTwoOccurrences(of: "_", in: text) ||
+            hasAtLeastTwoOccurrences(of: "`", in: text)) {
+            result = true
         }
-        
-        return false
+
+        if useCache {
+            Self.markdownDetectionCache.setObject(NSNumber(value: result), forKey: text as NSString, cost: text.count)
+        }
+        return result
     }
 
     private static let blockMarkdownRegex: NSRegularExpression? = {
@@ -360,6 +408,13 @@ struct MessageContentView: View {
 
     private static let linkMarkdownRegex: NSRegularExpression? = {
         try? NSRegularExpression(pattern: "\\[.*?\\]\\(.*?\\)", options: [])
+    }()
+
+    private static let markdownDetectionCache: NSCache<NSString, NSNumber> = {
+        let cache = NSCache<NSString, NSNumber>()
+        cache.countLimit = 512
+        cache.totalCostLimit = 250_000
+        return cache
     }()
 
     private func hasAtLeastTwoOccurrences(of needle: Character, in text: String) -> Bool {

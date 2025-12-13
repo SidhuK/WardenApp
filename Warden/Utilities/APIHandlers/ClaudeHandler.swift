@@ -12,8 +12,12 @@ private struct ClaudeModel: Codable {
 
 class ClaudeHandler: BaseAPIHandler {
     
-    override init(config: APIServiceConfiguration, session: URLSession) {
-        super.init(config: config, session: session)
+    override init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
+        super.init(config: config, session: session, streamingSession: streamingSession)
+    }
+    
+    convenience init(config: APIServiceConfiguration, session: URLSession) {
+        self.init(config: config, session: session, streamingSession: session)
     }
 
     override func fetchModels() async throws -> [AIModel] {

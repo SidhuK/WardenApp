@@ -91,6 +91,12 @@ extension NSManagedObjectContext {
             }
         }
     }
+
+    func performSaveWithRetry(attempts: Int) {
+        perform {
+            self.saveWithRetry(attempts: attempts)
+        }
+    }
 }
 
 extension View {

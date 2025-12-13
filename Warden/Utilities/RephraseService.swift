@@ -45,14 +45,15 @@ Rephrase the following sentence to improve clarity and readability, without chan
             ]
         ]
         
-        let apiServiceInstance = APIServiceFactory.createAPIService(config: config)
-        
-        apiServiceInstance.sendMessage(
-            requestMessages,
-            temperature: 0.3 // Lower temperature for more consistent rephrasing
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.isRephrasing = false
+	        let apiServiceInstance = APIServiceFactory.createAPIService(config: config)
+	        
+	        apiServiceInstance.sendMessage(
+	            requestMessages,
+	            tools: nil,
+	            temperature: 0.3 // Lower temperature for more consistent rephrasing
+	        ) { [weak self] result in
+	            DispatchQueue.main.async {
+	                self?.isRephrasing = false
                 
                 switch result {
                 case .success(let (rephrasedText, _)):

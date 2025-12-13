@@ -4,7 +4,7 @@ import AttributedText
 import CoreData
 
 struct SettingsView: View {
-    @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
+    @EnvironmentObject private var store: ChatStore
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedTab: PreferencesTabs = .general
     
@@ -34,12 +34,10 @@ struct SettingsView: View {
                 switch selectedTab {
                 case .general:
                     TabGeneralSettingsView()
-                        .environmentObject(store)
                 case .apiServices:
                     TabAPIServicesView()
                 case .aiPersonas:
                     TabAIPersonasView()
-                        .environmentObject(store)
                         .environment(\.managedObjectContext, viewContext)
                 case .webSearch:
                     TabTavilySearchView()
@@ -65,6 +63,7 @@ struct SettingsView: View {
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
+            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
             .frame(width: 900, height: 650)
             .previewDisplayName("Settings Window")
     }

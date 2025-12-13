@@ -6,13 +6,19 @@ class BaseAPIHandler: APIService {
     internal let apiKey: String
     let model: String
     internal let session: URLSession
+    internal let streamingSession: URLSession
     
-    init(config: APIServiceConfiguration, session: URLSession) {
+    init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
         self.name = config.name
         self.baseURL = config.apiUrl
         self.apiKey = config.apiKey
         self.model = config.model
         self.session = session
+        self.streamingSession = streamingSession
+    }
+    
+    convenience init(config: APIServiceConfiguration, session: URLSession) {
+        self.init(config: config, session: session, streamingSession: session)
     }
     
     // MARK: - APIService Protocol Implementation
@@ -42,6 +48,8 @@ class BaseAPIHandler: APIService {
         tools: [[String: Any]]? = nil,
         temperature: Float
     ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
+        // Canonical streaming implementation for all handlers.
+        // Handlers should override only `prepareRequest` and `parseDeltaJSONResponse` as needed.
         return AsyncThrowingStream { continuation in
             let request = self.prepareRequest(
                 requestMessages: requestMessages,
@@ -52,18 +60,21 @@ class BaseAPIHandler: APIService {
             )
             
             Task {
+                var isStreamingReasoning = false
                 do {
-                    let (stream, response) = try await session.bytes(for: request)
+                    let (stream, response) = try await streamingSession.bytes(for: request)
                     let result = self.handleAPIResponse(response, data: nil, error: nil)
                     
                     switch result {
                     case .failure(let error):
-                        var data = Data()
-                        for try await byte in stream {
-                            data.append(byte)
+                        let data = try await self.collectResponseBody(from: stream)
+                        let remapped = self.handleAPIResponse(response, data: data, error: nil)
+                        if case .failure(let detailedError) = remapped {
+                            continuation.finish(throwing: detailedError)
                         }
-                        let errorResponse = String(data: data, encoding: .utf8) ?? error.localizedDescription
-                        continuation.finish(throwing: APIError.serverError(errorResponse))
+                        else {
+                            continuation.finish(throwing: error)
+                        }
                         return
                     case .success:
                         break
@@ -76,23 +87,49 @@ class BaseAPIHandler: APIService {
                         try Task.checkCancellation()
                         
                         if let data = dataString.data(using: .utf8) {
-                            let (finished, error, messageData, _, toolCalls) = self.parseDeltaJSONResponse(data: data)
+                            let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: data)
                             
                             if let error = error {
                                 throw error
                             }
                             
-                            if messageData != nil || toolCalls != nil {
-                                continuation.yield((messageData, toolCalls))
+                            var pendingToolCalls = toolCalls
+
+                            if let messageData, !messageData.isEmpty {
+                                if role == "reasoning" {
+                                    if !isStreamingReasoning {
+                                        isStreamingReasoning = true
+                                        continuation.yield(("<think>\n", nil))
+                                    }
+                                    continuation.yield((messageData, nil))
+                                } else {
+                                    if isStreamingReasoning {
+                                        isStreamingReasoning = false
+                                        continuation.yield(("\n</think>\n\n", nil))
+                                    }
+                                    continuation.yield((messageData, pendingToolCalls))
+                                    pendingToolCalls = nil
+                                }
+                            } else if let toolCallsOnly = pendingToolCalls {
+                                continuation.yield((nil, toolCallsOnly))
+                                pendingToolCalls = nil
                             }
                             
                             if finished {
+                                if isStreamingReasoning {
+                                    isStreamingReasoning = false
+                                    continuation.yield(("\n</think>\n\n", nil))
+                                }
                                 continuation.finish()
                                 return
                             }
                         }
                     }
-                    
+
+                    if isStreamingReasoning {
+                        isStreamingReasoning = false
+                        continuation.yield(("\n</think>\n\n", nil))
+                    }
                     continuation.finish()
                 } catch is CancellationError {
                     // Silently finish on cancellation - don't throw
@@ -126,5 +163,22 @@ class BaseAPIHandler: APIService {
     
     func fetchModels() async throws -> [AIModel] {
         fatalError("fetchModels must be implemented by subclass")
+    }
+}
+
+private extension BaseAPIHandler {
+    func collectResponseBody(from stream: URLSession.AsyncBytes, maxBytes: Int = 1_048_576) async throws -> Data {
+        var data = Data()
+        data.reserveCapacity(min(16_384, maxBytes))
+        for try await byte in stream {
+            if data.count >= maxBytes {
+                break
+            }
+            data.append(byte)
+        }
+        #if DEBUG
+        WardenLog.streaming.debug("Captured streaming error body: \(data.count, privacy: .public) byte(s)")
+        #endif
+        return data
     }
 }

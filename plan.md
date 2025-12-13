@@ -527,23 +527,23 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 
 ### Phase 0 — Safety and Observability
 
-- [ ] Add `os.Logger` categories: `Streaming`, `Rendering`, `CoreData`
-- [ ] Add `os_signpost` points: TTFT, chunk rate, parse duration per message update
+- [x] Add `os.Logger` categories: `Streaming`, `Rendering`, `CoreData`
+- [x] Add `os_signpost` points: TTFT, chunk rate, parse duration per message update
 - [x] ~~Replace unconditional `print(...)` with `Logger` calls (wrap verbose logs in `#if DEBUG`)~~
 - [x] ~~Remove/guard logs that can leak content or bloat output (raw responses, user messages, tool schemas)~~
 - [x] ~~Verify release build has minimal/no sensitive logs (quick grep for `print(` in Warden target sources)~~
 
 ### Phase 1 — Streaming Pipeline Cleanup + Speed
 
-- [ ] Pick canonical streaming implementation (single path) and document the decision in the code
-- [ ] Refactor handlers to override only request building + delta parsing hooks (no custom streaming loops)
-- [ ] Clean up `APIProtocol.swift` drift (single `parseJSONResponse`, single `parseDeltaJSONResponse`, no `fatalError`)
+- [x] Pick canonical streaming implementation (single path) and document the decision in the code
+- [x] Refactor handlers to override only request building + delta parsing hooks (no custom streaming loops)
+- [x] Clean up `APIProtocol.swift` drift (single `parseJSONResponse`, single `parseDeltaJSONResponse`, no `fatalError`)
 - [x] Reduce streaming string-copy costs (prefer `append`, `reserveCapacity`, or chunk array materialization on throttle)
-- [ ] Improve SSE parsing to buffer multi-line events and end events on blank line (keep compatibility behavior)
+- [x] Improve SSE parsing to buffer multi-line events and end events on blank line (keep compatibility behavior)
 - [ ] Standardize `[DONE]` handling and error mapping across providers
-- [ ] Replace `NSLock` + mutable task storage for streaming cancellation with `actor` or `@MainActor`-isolated storage
+- [x] Replace `NSLock` + mutable task storage for streaming cancellation with `actor` or `@MainActor`-isolated storage
 - [x] ~~Batch chunk accumulation in `APIServiceManager.handleStream` to match UI throttle cadence (avoid per-token callback)~~
-- [ ] Confirm cancellation is checked in: parsing loop, throttle loop, tool-call execution loop
+- [x] Confirm cancellation is checked in: parsing loop, throttle loop, tool-call execution loop
 
 ### Phase 2 — Rendering + Parsing Performance
 
@@ -557,16 +557,16 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 
 ### Phase 3 — Core Data Throughput + Correctness
 
-- [ ] Remove extra `ChatStore` instantiations; standardize on `@EnvironmentObject var store: ChatStore`
-- [ ] Align Core Data mutations/saves with context queues (`perform {}`); avoid unnecessary main-queue hops
+- [x] Remove extra `ChatStore` instantiations; standardize on `@EnvironmentObject var store: ChatStore`
+- [x] Align Core Data mutations/saves with context queues (`perform {}`); avoid unnecessary main-queue hops
 - [ ] Optimize chat search via predicates (`CONTAINS[c]`, `ANY messages.body CONTAINS[c]`), fetch only what’s needed
 - [ ] Stabilize message IDs (monotonic `nextMessageID` on chat, or max+1 fetch) to avoid collisions after deletions
 
 ### Phase 4 — Networking + Session Configuration
 
-- [ ] Make streaming-friendly `URLSessionConfiguration` explicit (`waitsForConnectivity`, caching policy, conn limits)
-- [ ] Consider separate sessions for streaming vs non-streaming (same behavior, better tuning)
-- [ ] Centralize/standardize error mapping and (where safe) capture response bodies for debugging
+- [x] Make streaming-friendly `URLSessionConfiguration` explicit (`waitsForConnectivity`, caching policy, conn limits)
+- [x] Consider separate sessions for streaming vs non-streaming (same behavior, better tuning)
+- [x] Centralize/standardize error mapping and (where safe) capture response bodies for debugging
 
 ### Phase 5 — Code Health and Build-Time Improvements
 

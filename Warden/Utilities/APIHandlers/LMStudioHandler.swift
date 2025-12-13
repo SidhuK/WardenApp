@@ -7,8 +7,12 @@ import os
 /// This handler inherits from ChatGPTHandler since the API is fully compatible.
 class LMStudioHandler: ChatGPTHandler {
     
-    override init(config: APIServiceConfiguration, session: URLSession) {
-        super.init(config: config, session: session)
+    override init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
+        super.init(config: config, session: session, streamingSession: streamingSession)
+    }
+    
+    convenience init(config: APIServiceConfiguration, session: URLSession) {
+        self.init(config: config, session: session, streamingSession: session)
     }
     
     /// LM Studio uses the same OpenAI-compatible API format, so we inherit all functionality

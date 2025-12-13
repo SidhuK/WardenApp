@@ -70,7 +70,7 @@ struct TopTabItem: View {
 
 // MARK: - Main Preferences View
 struct PreferencesView: View {
-    @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
+    @EnvironmentObject private var store: ChatStore
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedTab: PreferencesTabs = .general
     
@@ -100,12 +100,10 @@ struct PreferencesView: View {
                 switch selectedTab {
                 case .general:
                     TabGeneralSettingsView()
-                        .environmentObject(store)
                 case .apiServices:
                     TabAPIServicesView()
                 case .aiPersonas:
                     TabAIPersonasView()
-                        .environmentObject(store)
                         .environment(\.managedObjectContext, viewContext)
                 case .webSearch:
                     TabTavilySearchView()
@@ -129,7 +127,7 @@ struct PreferencesView: View {
 
 // MARK: - Inline Settings View for Main Window
 struct InlineSettingsView: View {
-    @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
+    @EnvironmentObject private var store: ChatStore
     @Environment(\.managedObjectContext) private var viewContext
     
     let onDismiss: () -> Void
@@ -187,12 +185,10 @@ struct InlineSettingsView: View {
                 switch selectedTab {
                 case .general:
                     TabGeneralSettingsView()
-                        .environmentObject(store)
                 case .apiServices:
                     TabAPIServicesView()
                 case .aiPersonas:
                     TabAIPersonasView()
-                        .environmentObject(store)
                         .environment(\.managedObjectContext, viewContext)
                 case .webSearch:
                     TabTavilySearchView()
@@ -218,10 +214,12 @@ struct InlineSettingsView: View {
 struct PreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         PreferencesView()
+            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
             .frame(width: 800, height: 600)
             .previewDisplayName("Preferences Window")
         
         InlineSettingsView(onDismiss: {})
+            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
             .frame(width: 900, height: 700)
             .previewDisplayName("Inline Settings")
     }

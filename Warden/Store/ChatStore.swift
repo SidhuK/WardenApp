@@ -95,19 +95,7 @@ class ChatStore: ObservableObject {
     }
 
     func saveInCoreData() {
-        Task {
-            await MainActor.run {
-                do {
-                    try self.viewContext.saveWithRetry(attempts: 3)
-                } catch {
-                    WardenLog.coreData.error(
-                        "Failed to save Core Data changes: \(error.localizedDescription, privacy: .public)"
-                    )
-                    self.showAlert(title: "Failed to Save Changes",
-                                   message: "Your recent changes may not have been saved. Error: \(error.localizedDescription)")
-                }
-            }
-        }
+        viewContext.performSaveWithRetry(attempts: 3)
     }
 
     func loadFromCoreData() async -> Result<[ChatBackup], Error> {

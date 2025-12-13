@@ -20,7 +20,7 @@ struct ChatView: View {
     @State private var currentStreamingMessage: String = ""
     @State private var attachedImages: [ImageAttachment] = []
     @State private var attachedFiles: [FileAttachment] = []
-    @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
+    @EnvironmentObject private var store: ChatStore
     @AppStorage("useChatGptForNames") var useChatGptForNames: Bool = false
     @AppStorage("useStream") var useStream: Bool = true
     @AppStorage("apiUrl") var apiUrl: String = AppConstants.apiUrlChatCompletions
@@ -761,11 +761,11 @@ extension ChatView {
                 ["role": "user", "content": titlePrompt]
             ]
             
-            apiService.sendMessage(titleMessages, temperature: 0.3) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let (titleText, _)):
-                        guard let titleText = titleText else { return }
+	            apiService.sendMessage(titleMessages, tools: nil, temperature: 0.3) { result in
+	                DispatchQueue.main.async {
+	                    switch result {
+	                    case .success(let (titleText, _)):
+	                        guard let titleText = titleText else { return }
                         let cleanTitle = titleText.trimmingCharacters(in: .whitespacesAndNewlines)
                             .replacingOccurrences(of: "\"", with: "")
                             .replacingOccurrences(of: "Title: ", with: "")

@@ -6,8 +6,7 @@ import os
 class MessageManager: ObservableObject {
     private var apiService: APIService
     private var viewContext: NSManagedObjectContext
-    private var _currentStreamingTask: Task<Void, Never>?
-    private let taskLock = NSLock()
+    private let streamingTaskController = StreamingTaskController()
     private let tavilyService = TavilySearchService()
     private let streamUpdateInterval = AppConstants.streamedResponseUpdateUIInterval
     
@@ -27,20 +26,6 @@ class MessageManager: ObservableObject {
     
     // Map of message IDs to their completed tool calls (for persistence within session)
     @Published var messageToolCalls: [Int64: [WardenToolCallStatus]] = [:]
-    
-    // Thread-safe access to currentStreamingTask using NSLock for proper atomicity
-    private var currentStreamingTask: Task<Void, Never>? {
-        get {
-            taskLock.lock()
-            defer { taskLock.unlock() }
-            return _currentStreamingTask
-        }
-        set {
-            taskLock.lock()
-            defer { taskLock.unlock() }
-            _currentStreamingTask = newValue
-        }
-    }
 
     init(apiService: APIService, viewContext: NSManagedObjectContext) {
         self.apiService = apiService
@@ -57,13 +42,9 @@ class MessageManager: ObservableObject {
     }
     
     func stopStreaming() {
-        taskLock.lock()
-        let taskToCancel = _currentStreamingTask
-        _currentStreamingTask = nil
-        taskLock.unlock()
-        
-        // Cancel outside the lock to avoid deadlock
-        taskToCancel?.cancel()
+        Task {
+            await streamingTaskController.cancelAndClear()
+        }
         
         // Force save if pending
         if let workItem = saveDebounceWorkItem {
@@ -76,9 +57,7 @@ class MessageManager: ObservableObject {
     private func debounceSave() {
         saveDebounceWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
-            Task { @MainActor in
-                self?.viewContext.saveWithRetry(attempts: 1)
-            }
+            self?.viewContext.performSaveWithRetry(attempts: 1)
         }
         saveDebounceWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
@@ -344,8 +323,8 @@ class MessageManager: ObservableObject {
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
 
-        currentStreamingTask = Task { @MainActor in
-            var accumulatedResponse = ""
+        let streamTaskID = UUID()
+        let streamTask = Task { @MainActor in
             var chunkCount = 0
             let streamStart = Date()
             var streamingMessage: MessageEntity?
@@ -353,9 +332,20 @@ class MessageManager: ObservableObject {
             var lastUpdateTime = Date.distantPast
             var chunkBufferParts: [String] = []
             var chunkBufferCharacterCount = 0
+            var deferredResponseParts: [String] = []
+            var deferredResponseCharacterCount = 0
             let updateInterval = self.streamUpdateInterval
+            
+            defer {
+                Task {
+                    await self.streamingTaskController.clearIfCurrent(taskID: streamTaskID)
+                }
+            }
 
             func flushChunkBuffer(force: Bool = false) {
+                if Task.isCancelled && !force {
+                    return
+                }
                 guard !chunkBufferParts.isEmpty else { return }
 
                 func drainChunkBuffer() -> String {
@@ -397,6 +387,23 @@ class MessageManager: ObservableObject {
                     lastUpdateTime = now
                 }
             }
+
+            func drainDeferredResponse() -> String {
+                guard !deferredResponseParts.isEmpty else { return "" }
+                var result = String()
+                result.reserveCapacity(deferredResponseCharacterCount)
+                for part in deferredResponseParts {
+                    result.append(contentsOf: part)
+                }
+                deferredResponseParts.removeAll(keepingCapacity: true)
+                deferredResponseCharacterCount = 0
+                return result
+            }
+
+            func appendDeferredResponse(_ chunk: String) {
+                deferredResponseParts.append(chunk)
+                deferredResponseCharacterCount += chunk.count
+            }
             
             // Fetch tools
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
@@ -434,31 +441,38 @@ class MessageManager: ObservableObject {
             do {
                 chat.waitingForResponse = true
                 
-                let (fullResponse, toolCalls) = try await ChatService.shared.sendStream(
+                let toolCalls = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
                     temperature: temperature
-                ) { chunk, accumulated in
-                    accumulatedResponse = accumulated
+                ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }
 
-                    if chunk.contains("<image-uuid>") {
-                        if !deferImageResponse {
-                            deferImageResponse = true
-                            chunkBufferParts.removeAll(keepingCapacity: true)
-                            chunkBufferCharacterCount = 0
-                            if let message = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
-                                chat.removeFromMessages(message)
-                                self.viewContext.delete(message)
-                                streamingMessage = nil
-                                chat.objectWillChange.send()
-                            }
+                    let containsDeferredAttachmentTag =
+                        chunk.contains("<image-uuid>") || chunk.contains("<file-uuid>")
+
+                    if containsDeferredAttachmentTag, !deferImageResponse {
+                        flushChunkBuffer(force: true)
+                        let existingMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
+                        if let existingMessage, !existingMessage.body.isEmpty {
+                            deferredResponseParts = [existingMessage.body]
+                            deferredResponseCharacterCount = existingMessage.body.count
                         }
-                        return
+
+                        deferImageResponse = true
+                        chunkBufferParts.removeAll(keepingCapacity: true)
+                        chunkBufferCharacterCount = 0
+                        if let message = existingMessage {
+                            chat.removeFromMessages(message)
+                            self.viewContext.delete(message)
+                            streamingMessage = nil
+                            chat.objectWillChange.send()
+                        }
                     }
                     if deferImageResponse {
+                        appendDeferredResponse(chunk)
                         return
                     }
 
@@ -473,28 +487,32 @@ class MessageManager: ObservableObject {
                 )
                 #endif
                 flushChunkBuffer(force: true)
+
+                let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
+                let finalResponse = deferImageResponse ? drainDeferredResponse() : (assistantMessage?.body ?? "")
                 // Normal completion path - stream finished successfully
-                if !fullResponse.isEmpty {
+                if !finalResponse.isEmpty {
                     if deferImageResponse {
-                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
-                    } else if let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
+                        addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
+                    } else if let assistantMessage {
                         updateLastMessage(
                             chat: chat,
                             lastMessage: assistantMessage,
-                            accumulatedResponse: fullResponse,
+                            accumulatedResponse: finalResponse,
                             searchUrls: searchUrls,
                             appendCitations: true,
                             save: true,
                             isFinalUpdate: true
                         )
                     } else {
-                        addMessageToChat(chat: chat, message: fullResponse, searchUrls: searchUrls)
+                        addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
                     }
-                    addNewMessageToRequestMessages(chat: chat, content: fullResponse, role: AppConstants.defaultRole)
+                    addNewMessageToRequestMessages(chat: chat, content: finalResponse, role: AppConstants.defaultRole)
                 }
                 
                 // Handle tool calls if any
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                    try Task.checkCancellation()
                     await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
                     return
                 }
@@ -515,25 +533,27 @@ class MessageManager: ObservableObject {
                 
                 // Save partial response even when cancelled via exception
                 flushChunkBuffer(force: true)
-                if !accumulatedResponse.isEmpty {
+                let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
+                let partialResponse = deferImageResponse ? drainDeferredResponse() : (assistantMessage?.body ?? "")
+                if !partialResponse.isEmpty {
                     if deferImageResponse {
-                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
-                    } else if let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
+                        addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
+                    } else if let assistantMessage {
                         updateLastMessage(
                             chat: chat,
                             lastMessage: assistantMessage,
-                            accumulatedResponse: accumulatedResponse,
+                            accumulatedResponse: partialResponse,
                             searchUrls: searchUrls,
                             appendCitations: true,
                             save: true,
                             isFinalUpdate: true
                         )
                     } else {
-                        addMessageToChat(chat: chat, message: accumulatedResponse, searchUrls: searchUrls)
+                        addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
                     }
                     addNewMessageToRequestMessages(
                         chat: chat,
-                        content: accumulatedResponse,
+                        content: partialResponse,
                         role: AppConstants.defaultRole
                     )
                     #if DEBUG
@@ -549,6 +569,10 @@ class MessageManager: ObservableObject {
                 chat.waitingForResponse = false
                 completion(.failure(error))
             }
+        }
+        
+        Task {
+            await streamingTaskController.replace(taskID: streamTaskID, task: streamTask)
         }
     }
     
@@ -582,6 +606,15 @@ class MessageManager: ObservableObject {
         
         // Execute each tool call
         for toolCall in toolCalls {
+            if Task.isCancelled {
+                await MainActor.run {
+                    self.toolCallStatus = nil
+                }
+                await MainActor.run {
+                    completion(.failure(CancellationError()))
+                }
+                return
+            }
             let callId = toolCall.id
             let functionName = toolCall.function.name
             let arguments = toolCall.function.arguments
@@ -728,9 +761,13 @@ class MessageManager: ObservableObject {
         // Use a timeout-based approach to prevent hanging
         let deadline = Date(timeIntervalSinceNow: 30.0) // 30 second timeout
         
-        apiService.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) {
-            [weak self] result in
-            guard let self = self else { return }
+	        apiService.sendMessage(
+	            requestMessages,
+	            tools: nil,
+	            temperature: AppConstants.defaultTemperatureForChatNameGeneration
+	        ) {
+	            [weak self] result in
+	            guard let self = self else { return }
             
             // Skip if deadline has passed
             guard Date() < deadline else {
@@ -810,10 +847,10 @@ class MessageManager: ObservableObject {
                 "content": "This is a test message.",
             ])
 
-        apiService.sendMessage(requestMessages, temperature: temperature) { result in
-            switch result {
-            case .success(_):
-                completion(.success(()))
+	        apiService.sendMessage(requestMessages, tools: nil, temperature: temperature) { result in
+	            switch result {
+	            case .success(_):
+	                completion(.success(()))
 
             case .failure(let error):
                 completion(.failure(error))

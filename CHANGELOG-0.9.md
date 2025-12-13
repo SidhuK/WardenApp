@@ -1,10 +1,33 @@
-# Warden 0.9 Changelog
+# Warden v0.9 🎉
 
-## Performance & Reliability
-- Reworked the streaming engine to buffer SSE chunks, reducing redundant Core Data writes while keeping the UI feeling live.
-- Added adaptive flush logic that falls back to a minimum cadence so long responses no longer stall or arrive in huge bursts.
-- Tightened state transitions on `waitingForResponse` so the composer, typing indicators, and chat metadata accurately reflect when a reply is truly finished.
+## ✨ Highlights
+- Faster, smoother streaming replies (less “jank” during long answers).
+- Better performance in large chats (scrolling and loading stay snappy).
+- Cleaner markdown handling (plain text stays lightweight, formatting still looks great).
+- Improved stability and cancellation behavior for streaming.
 
-## Developer Experience
-- Simplified request-history construction so we reuse the already ordered Core Data messages instead of re-sorting for every send.
-- Instrumented the streaming flow with lightweight logging to make diagnosing slow providers or tool-call loops easier in the future.
+## 🚀 Performance & Smoothness
+- Streaming updates are buffered and applied in smarter batches so the UI stays responsive.
+- Reduced behind-the-scenes overhead during streaming to help with long responses.
+- Long conversations render more efficiently, reducing memory pressure.
+- Smarter markdown detection avoids heavy work for normal plain-text messages.
+
+## 🧠 Streaming & Reliability
+- More resilient streaming parsing (handles real-world stream formatting more reliably).
+- Better “waiting/typing” state accuracy so the UI reflects when a reply is truly finished.
+- More reliable cancellation and task lifecycle handling during streams.
+- Tool-call and multi-agent streaming flows are more consistent.
+
+## 🖼️ Attachments & Rich Content
+- Attachments (images/files) are handled more safely during streaming and render without blocking the chat UI.
+
+## 🔒 Privacy & Debugging
+- Reduced noisy/unsafe logging in production builds; detailed diagnostics stay in Debug only.
+- Added lightweight internal performance instrumentation for future tuning (no telemetry).
+
+## 🐛 Fixes From Code Review
+- Fixed a state-management bug in the message parser that could cause incorrect behavior.
+- Removed always-on debug work from the render path.
+- Avoided repeated expensive markdown checks during rendering.
+- Removed duplicate streamed-response accumulation to cut down wasted work.
+- Improved performance for large chats by virtualizing the message list.

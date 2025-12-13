@@ -11,7 +11,6 @@ struct QuickChatView: View {
     @State private var isExpanded: Bool = false
     @State private var selectedModel: String = AppConstants.chatGptDefaultModel
     @State private var clipboardContext: String?
-    @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
     @State private var contentHeight: CGFloat = 60 // Initial compact height
     
     // We'll use a dedicated ChatEntity for quick chat
@@ -402,14 +401,14 @@ struct QuickChatView: View {
             }
         }
         
-        Task {
-            do {
-                let stream = try await handler.sendMessageStream(messages, temperature: 0.7)
-                
-                await MainActor.run {
-                    aiMessage.waitingForResponse = false
-                    try? viewContext.save()
-                }
+	        Task {
+	            do {
+	                let stream = try await handler.sendMessageStream(messages, tools: nil, temperature: 0.7)
+	                
+	                await MainActor.run {
+	                    aiMessage.waitingForResponse = false
+	                    try? viewContext.save()
+	                }
                 
                 var currentBody = ""
                 for try await chunk in stream {
@@ -450,15 +449,19 @@ struct QuickChatView: View {
         guard let config = APIServiceManager.createAPIConfiguration(for: apiService) else { return }
         let handler = APIServiceFactory.createAPIService(config: config)
         
-        let instruction = AppConstants.chatGptGenerateChatInstruction
-        let requestMessages = chat.constructRequestMessages(forUserMessage: instruction, contextSize: 3)
-        
-        handler.sendMessage(requestMessages, temperature: AppConstants.defaultTemperatureForChatNameGeneration) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let (messageText, _)):
-                    guard let name = messageText else { return }
-                    let sanitized = name.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+	        let instruction = AppConstants.chatGptGenerateChatInstruction
+	        let requestMessages = chat.constructRequestMessages(forUserMessage: instruction, contextSize: 3)
+	        
+	        handler.sendMessage(
+	            requestMessages,
+	            tools: nil,
+	            temperature: AppConstants.defaultTemperatureForChatNameGeneration
+	        ) { result in
+	            DispatchQueue.main.async {
+	                switch result {
+	                case .success(let (messageText, _)):
+	                    guard let name = messageText else { return }
+	                    let sanitized = name.replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
                     if !sanitized.isEmpty {
                         chat.name = sanitized
                         try? viewContext.save()

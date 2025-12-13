@@ -133,14 +133,21 @@ class MultiAgentMessageManager: ObservableObject {
     ) {
         let task = Task {
             do {
-                let (fullResponse, _) = try await ChatService.shared.sendStream(
+                await MainActor.run {
+                    if agentIndex < self.activeAgents.count {
+                        self.activeAgents[agentIndex].response = ""
+                        self.activeAgents[agentIndex].timestamp = Date()
+                    }
+                }
+
+                _ = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     temperature: temperature
-                ) { chunk, accumulated in
+                ) { chunk in
                     await MainActor.run {
                         if agentIndex < self.activeAgents.count {
-                            self.activeAgents[agentIndex].response = accumulated
+                            self.activeAgents[agentIndex].response.append(contentsOf: chunk)
                             self.activeAgents[agentIndex].timestamp = Date()
                         }
                     }
@@ -150,7 +157,6 @@ class MultiAgentMessageManager: ObservableObject {
                 if !Task.isCancelled {
                     await MainActor.run {
                         if agentIndex < self.activeAgents.count {
-                            self.activeAgents[agentIndex].response = fullResponse
                             self.activeAgents[agentIndex].isComplete = true
                             self.activeAgents[agentIndex].timestamp = Date()
                         }

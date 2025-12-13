@@ -95,14 +95,16 @@ class SelectedModelsManager: ObservableObject {
     
     /// Save all selections to Core Data for all services
     func saveAllToServices(_ apiServices: [APIServiceEntity], context: NSManagedObjectContext) {
-        for service in apiServices {
-            saveToService(service, context: context)
-        }
-        
-        do {
-            try context.save()
-        } catch {
-            WardenLog.coreData.error("Failed to save selected models: \(error.localizedDescription, privacy: .public)")
+        context.performAndWait {
+            for service in apiServices {
+                saveToService(service, context: context)
+            }
+            
+            do {
+                try context.save()
+            } catch {
+                WardenLog.coreData.error("Failed to save selected models: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 }
