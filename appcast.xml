@@ -7,6 +7,32 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9</title>
+            <description><![CDATA[
+                <ul>
+                <li>Faster, smoother streaming replies</li>
+                <li>Better performance in large chats</li>
+                <li>Cleaner markdown handling</li>
+                <li>Improved stability and cancellation behavior</li>
+                <li>Smarter buffering for UI responsiveness</li>
+                <li>More resilient streaming parsing</li>
+                <li>Safer attachment handling</li>
+                <li>Better logging and diagnostics</li>
+                <li>Virtual message list for large conversations</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 13 Dec 2025 00:00:00 +0000</pubDate>
+            <sparkle:version>0.9</sparkle:version>
+            <sparkle:shortVersionString>0.9</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9/Warden.zip"
+                       sparkle:version="0.9"
+                       sparkle:shortVersionString="0.9"
+                       type="application/zip"
+                       length="12933770"
+                       sparkle:edSignature="xdusjiqp+ZW8SNG1X4o6NToVRuUE8bwXqCXtrV7ZdLR5WMjzZlcURhWNczmeP067xx1OvhC6j+KtymqCnqTTCg==" />
+        </item>
+        
+        <item>
             <title>Version 0.8</title>
             <description><![CDATA[
                 <ul>
