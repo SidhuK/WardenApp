@@ -203,16 +203,27 @@ class APIServiceManager {
     ) async throws -> (String, [ToolCall]?) {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
         var accumulatedResponse = ""
-        var pendingChunkBuffer = ""
+        var pendingChunkParts: [String] = []
+        var pendingChunkCharacterCount = 0
         let updateInterval = AppConstants.streamedResponseUpdateUIInterval
         var lastFlushTime = Date()
         var allToolCalls: [ToolCall]? = nil
 
+        func drainPendingChunkBuffer() -> String {
+            var result = String()
+            result.reserveCapacity(pendingChunkCharacterCount)
+            for part in pendingChunkParts {
+                result.append(contentsOf: part)
+            }
+            pendingChunkParts.removeAll(keepingCapacity: true)
+            pendingChunkCharacterCount = 0
+            return result
+        }
+
         func flushPendingChunkBuffer() async {
-            guard !pendingChunkBuffer.isEmpty else { return }
-            accumulatedResponse.append(contentsOf: pendingChunkBuffer)
-            let chunkToSend = pendingChunkBuffer
-            pendingChunkBuffer = ""
+            guard !pendingChunkParts.isEmpty else { return }
+            let chunkToSend = drainPendingChunkBuffer()
+            accumulatedResponse.append(contentsOf: chunkToSend)
             await onChunk(chunkToSend, accumulatedResponse)
         }
         
@@ -222,12 +233,13 @@ class APIServiceManager {
             if let chunk = chunk, !chunk.isEmpty {
                 let shouldFlushImmediately = chunk.contains("<image-uuid>") || chunk.contains("<file-uuid>")
 
-                if shouldFlushImmediately, !pendingChunkBuffer.isEmpty {
+                if shouldFlushImmediately, !pendingChunkParts.isEmpty {
                     await flushPendingChunkBuffer()
                     lastFlushTime = Date()
                 }
 
-                pendingChunkBuffer.append(contentsOf: chunk)
+                pendingChunkParts.append(chunk)
+                pendingChunkCharacterCount += chunk.count
 
                 let now = Date()
                 if shouldFlushImmediately || now.timeIntervalSince(lastFlushTime) >= updateInterval {

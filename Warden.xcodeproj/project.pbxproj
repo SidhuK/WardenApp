@@ -158,6 +158,8 @@
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 		C4FF23862EED66E300C17D8B /* WardenLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23852EED66E300C17D8B /* WardenLog.swift */; };
+		C4FF23882EED7A4100C17D8B /* StreamingAttributedTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */; };
+		C4FF238A2EED7B3000C17D8B /* AttachmentResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */; };
 		DAD2E19560A64CC290850A1D /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C5F31F2F664B9BBD13C0CC /* ChatService.swift */; };
 		F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E14DF97A8974C028719A178 /* MCPSettingsView.swift */; };
 		FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */; };
@@ -342,6 +344,8 @@
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 		C4FF23852EED66E300C17D8B /* WardenLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenLog.swift; sourceTree = "<group>"; };
+		C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAttributedTextView.swift; sourceTree = "<group>"; };
+		C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentResolver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -437,6 +441,7 @@
 				C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */,
 				C4EB88D52ECC421C00AA0829 /* ModernButton.swift */,
 				C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */,
+				C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */,
 				C44EA8BA2ED5E600008DAA73 /* GlassEffectModifiers.swift */,
 				C450598D2ED6A49900AF3449 /* SubmitTextEditor.swift */,
 				C4642A532EC200C000326693 /* AnimatedStateView.swift */,
@@ -579,6 +584,7 @@
 			children = (
 				56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
+				C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */,
 				C4FF23852EED66E300C17D8B /* WardenLog.swift */,
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
@@ -888,6 +894,7 @@
 			files = (
 				C43A76382ED5672E006DA5E2 /* SearchResultsPreviewView.swift in Sources */,
 				C43A76392ED5672E006DA5E2 /* ToolCallProgressView.swift in Sources */,
+				C4FF23882EED7A4100C17D8B /* StreamingAttributedTextView.swift in Sources */,
 				C43A763A2ED5672E006DA5E2 /* SearchProgressView.swift in Sources */,
 				C43A763B2ED5672E006DA5E2 /* CitationBadgeView.swift in Sources */,
 				C43A763C2ED5672E006DA5E2 /* SearchErrorView.swift in Sources */,
@@ -913,6 +920,7 @@
 				C45059942ED6C4F200AF3449 /* BranchPopover.swift in Sources */,
 				4AE3CEB72C93A88D00A9CF4C /* TabAPIServicesView.swift in Sources */,
 				4A8E2E0B2C56FCFD00F077F2 /* ChatViewModel.swift in Sources */,
+				C4FF238A2EED7B3000C17D8B /* AttachmentResolver.swift in Sources */,
 				7F4955AA2E06FAFF00516E2D /* FileAttachment.swift in Sources */,
 				C4642A5A2EC200E700326693 /* AnimationShowcase.swift in Sources */,
 				4A399C9B29BC8FEF00E98796 /* ContentView.swift in Sources */,

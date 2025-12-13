@@ -1,11 +1,8 @@
-import CoreData
 import Foundation
-import Highlightr
 import SwiftUI
-import os
 
 struct MessageParser {
-    @State var colorScheme: ColorScheme
+    let colorScheme: ColorScheme
 
     enum BlockType {
         case text
@@ -178,28 +175,6 @@ struct MessageParser {
             return nil
         }
 
-        func loadImageFromCoreData(uuid: UUID) -> NSImage? {
-            let viewContext = PersistenceController.shared.container.viewContext
-
-            let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            fetchRequest.fetchLimit = 1
-
-            do {
-                let results = try viewContext.fetch(fetchRequest)
-                if let imageEntity = results.first, let imageData = imageEntity.image {
-                    return NSImage(data: imageData)
-                }
-            }
-            catch {
-                WardenLog.coreData.error(
-                    "Error fetching image from Core Data: \(error.localizedDescription, privacy: .public)"
-                )
-            }
-
-            return nil
-        }
-
         func extractFileUUID(_ line: String) -> UUID? {
             let pattern = "<file-uuid>(.*?)</file-uuid>"
             if let range = line.range(of: pattern, options: .regularExpression) {
@@ -208,28 +183,6 @@ struct MessageParser {
                     .replacingOccurrences(of: "</file-uuid>", with: "")
                 return UUID(uuidString: uuidString)
             }
-            return nil
-        }
-
-        func loadFileFromCoreData(uuid: UUID) -> FileAttachment? {
-            let viewContext = PersistenceController.shared.container.viewContext
-
-            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            fetchRequest.fetchLimit = 1
-
-            do {
-                let results = try viewContext.fetch(fetchRequest)
-                if let fileEntity = results.first {
-                    return FileAttachment(fileEntity: fileEntity)
-                }
-            }
-            catch {
-                WardenLog.coreData.error(
-                    "Error fetching file from Core Data: \(error.localizedDescription, privacy: .public)"
-                )
-            }
-
             return nil
         }
 
@@ -308,18 +261,18 @@ struct MessageParser {
                 }
 
             case .imageUUID:
-                if let uuid = extractImageUUID(line), let image = loadImageFromCoreData(uuid: uuid) {
+                if let uuid = extractImageUUID(line) {
                     combineTextLinesIfNeeded()
-                    elements.append(.image(image))
+                    elements.append(.image(uuid))
                 }
                 else {
                     textLines.append(line)
                 }
 
             case .fileUUID:
-                if let uuid = extractFileUUID(line), let fileAttachment = loadFileFromCoreData(uuid: uuid) {
+                if let uuid = extractFileUUID(line) {
                     combineTextLinesIfNeeded()
-                    elements.append(.file(fileAttachment))
+                    elements.append(.file(uuid))
                 }
                 else {
                     textLines.append(line)

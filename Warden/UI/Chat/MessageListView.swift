@@ -36,7 +36,7 @@ struct MessageListView: View {
 
     var body: some View {
         // Leading-aligned stack; individual bubbles handle their own horizontal position.
-        VStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: 0) {
             if !chat.systemMessage.isEmpty {
                 ChatBubbleView(
                     content: ChatBubbleContent(
@@ -55,43 +55,41 @@ struct MessageListView: View {
             }
 
             if !sortedMessages.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(sortedMessages.indices, id: \.self) { index in
-                        let messageEntity = sortedMessages[index]
-                        let previous = index > 0 ? sortedMessages[index - 1] : nil
-                        let sameAuthorAsPrevious = previous?.own == messageEntity.own
+                ForEach(sortedMessages.indices, id: \.self) { index in
+                    let messageEntity = sortedMessages[index]
+                    let previous = index > 0 ? sortedMessages[index - 1] : nil
+                    let sameAuthorAsPrevious = previous?.own == messageEntity.own
 
-                        // Slightly increased spacing for better separation
-                        let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 16
+                    // Slightly increased spacing for better separation
+                    let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 16
 
-                        let bubbleContent = ChatBubbleContent(
-                            message: messageEntity.body,
-                            own: messageEntity.own,
-                            waitingForResponse: messageEntity.waitingForResponse,
-                            errorMessage: nil,
-                            systemMessage: false,
-                            isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
-                            isLatestMessage: messageEntity.id == sortedMessages.last?.id
-                        )
-                        
-                        // Show tool calls associated with this AI message (if any)
-                        // Prefer persisted tool calls from entity, fallback to in-memory dictionary
-                        let entityToolCalls = messageEntity.toolCalls
-                        let displayToolCalls = !entityToolCalls.isEmpty ? entityToolCalls : (messageToolCalls[messageEntity.id] ?? [])
-                        
-                        if !messageEntity.own, !displayToolCalls.isEmpty {
-                            CompletedToolCallsView(toolCalls: displayToolCalls)
-                                .padding(.top, topPadding)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-
-                        ChatBubbleView(content: bubbleContent, message: messageEntity)
-                            .id(messageEntity.id)
-                            .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
-                            // Adjusted max width for better readability on large screens
-                            .frame(maxWidth: viewWidth * 0.8, alignment: messageEntity.own ? .trailing : .leading)
-                            .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
+                    let bubbleContent = ChatBubbleContent(
+                        message: messageEntity.body,
+                        own: messageEntity.own,
+                        waitingForResponse: messageEntity.waitingForResponse,
+                        errorMessage: nil,
+                        systemMessage: false,
+                        isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
+                        isLatestMessage: messageEntity.id == sortedMessages.last?.id
+                    )
+                    
+                    // Show tool calls associated with this AI message (if any)
+                    // Prefer persisted tool calls from entity, fallback to in-memory dictionary
+                    let entityToolCalls = messageEntity.toolCalls
+                    let displayToolCalls = !entityToolCalls.isEmpty ? entityToolCalls : (messageToolCalls[messageEntity.id] ?? [])
+                    
+                    if !messageEntity.own, !displayToolCalls.isEmpty {
+                        CompletedToolCallsView(toolCalls: displayToolCalls)
+                            .padding(.top, topPadding)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+
+                    ChatBubbleView(content: bubbleContent, message: messageEntity)
+                        .id(messageEntity.id)
+                        .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
+                        // Adjusted max width for better readability on large screens
+                        .frame(maxWidth: viewWidth * 0.8, alignment: messageEntity.own ? .trailing : .leading)
+                        .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                 }
             }
 

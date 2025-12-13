@@ -102,6 +102,33 @@ class FileAttachment: Identifiable, ObservableObject {
         
         self.loadFromEntity()
     }
+
+    init(
+        id: UUID,
+        fileName: String,
+        fileSize: Int64,
+        fileTypeExtension: String,
+        textContent: String,
+        imageData: Data?,
+        thumbnailData: Data?
+    ) {
+        self.id = id
+        self.url = nil
+        self.fileName = fileName
+        self.fileSize = fileSize
+        self.textContent = textContent
+        self.originalUTType = UTType(filenameExtension: fileTypeExtension) ?? .data
+        self.fileType = self.determineFileType(from: fileTypeExtension)
+
+        if let imageData, let image = NSImage(data: imageData) {
+            self.image = image
+        }
+        if let thumbnailData, let thumbnail = NSImage(data: thumbnailData) {
+            self.thumbnail = thumbnail
+        }
+
+        self.isLoading = false
+    }
     
     private func determineFileType(from `extension`: String) -> FileAttachmentType {
         let ext = `extension`.lowercased()

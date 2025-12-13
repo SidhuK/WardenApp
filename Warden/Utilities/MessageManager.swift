@@ -351,11 +351,23 @@ class MessageManager: ObservableObject {
             var streamingMessage: MessageEntity?
             var deferImageResponse = false
             var lastUpdateTime = Date.distantPast
-            var chunkBuffer = ""
+            var chunkBufferParts: [String] = []
+            var chunkBufferCharacterCount = 0
             let updateInterval = self.streamUpdateInterval
 
             func flushChunkBuffer(force: Bool = false) {
-                guard !chunkBuffer.isEmpty else { return }
+                guard !chunkBufferParts.isEmpty else { return }
+
+                func drainChunkBuffer() -> String {
+                    var result = String()
+                    result.reserveCapacity(chunkBufferCharacterCount)
+                    for part in chunkBufferParts {
+                        result.append(contentsOf: part)
+                    }
+                    chunkBufferParts.removeAll(keepingCapacity: true)
+                    chunkBufferCharacterCount = 0
+                    return result
+                }
 
                 if streamingMessage == nil {
                     if let existing = chat.lastMessage, !existing.own, existing.waitingForResponse {
@@ -364,22 +376,24 @@ class MessageManager: ObservableObject {
                 }
 
                 if streamingMessage == nil {
-                    self.addMessageToChat(chat: chat, message: chunkBuffer, searchUrls: nil, isStreaming: true)
+                    let chunkToApply = drainChunkBuffer()
+                    self.addMessageToChat(chat: chat, message: chunkToApply, searchUrls: nil, isStreaming: true)
                     streamingMessage = chat.lastMessage
-                    chunkBuffer = ""
                     lastUpdateTime = Date()
                     return
                 }
 
                 guard let message = streamingMessage else { return }
                 let now = Date()
-                if force || now.timeIntervalSince(lastUpdateTime) >= updateInterval {
-                    message.body += chunkBuffer
+                guard force || now.timeIntervalSince(lastUpdateTime) >= updateInterval else { return }
+
+                let chunkToApply = drainChunkBuffer()
+                if !chunkToApply.isEmpty {
+                    message.body.append(contentsOf: chunkToApply)
                     message.timestamp = Date()
                     message.waitingForResponse = true
                     chat.waitingForResponse = true
                     chat.objectWillChange.send()
-                    chunkBuffer = ""
                     lastUpdateTime = now
                 }
             }
@@ -433,7 +447,8 @@ class MessageManager: ObservableObject {
                     if chunk.contains("<image-uuid>") {
                         if !deferImageResponse {
                             deferImageResponse = true
-                            chunkBuffer = ""
+                            chunkBufferParts.removeAll(keepingCapacity: true)
+                            chunkBufferCharacterCount = 0
                             if let message = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil) {
                                 chat.removeFromMessages(message)
                                 self.viewContext.delete(message)
@@ -447,7 +462,8 @@ class MessageManager: ObservableObject {
                         return
                     }
 
-                    chunkBuffer += chunk
+                    chunkBufferParts.append(chunk)
+                    chunkBufferCharacterCount += chunk.count
                     flushChunkBuffer(force: streamingMessage == nil)
                 }
                 let elapsed = Date().timeIntervalSince(streamStart)

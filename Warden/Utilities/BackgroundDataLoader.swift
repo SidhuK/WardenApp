@@ -74,4 +74,36 @@ class BackgroundDataLoader {
         
         return result
     }
+
+    func loadFileAttachment(uuid: UUID) -> FileAttachment? {
+        let backgroundContext = persistenceController.container.newBackgroundContext()
+        var result: FileAttachment? = nil
+
+        backgroundContext.performAndWait {
+            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+            fetchRequest.fetchLimit = 1
+
+            do {
+                let results = try backgroundContext.fetch(fetchRequest)
+                guard let fileEntity = results.first else { return }
+
+                result = FileAttachment(
+                    id: fileEntity.id ?? uuid,
+                    fileName: fileEntity.fileName ?? "Unknown",
+                    fileSize: fileEntity.fileSize,
+                    fileTypeExtension: fileEntity.fileType ?? "unknown",
+                    textContent: fileEntity.textContent ?? "",
+                    imageData: fileEntity.imageData,
+                    thumbnailData: fileEntity.thumbnailData
+                )
+            } catch {
+                WardenLog.coreData.error(
+                    "Error fetching file from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
+            }
+        }
+
+        return result
+    }
 }

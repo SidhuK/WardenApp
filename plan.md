@@ -538,7 +538,7 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 - [ ] Pick canonical streaming implementation (single path) and document the decision in the code
 - [ ] Refactor handlers to override only request building + delta parsing hooks (no custom streaming loops)
 - [ ] Clean up `APIProtocol.swift` drift (single `parseJSONResponse`, single `parseDeltaJSONResponse`, no `fatalError`)
-- [ ] Reduce streaming string-copy costs (prefer `append`, `reserveCapacity`, or chunk array materialization on throttle)
+- [x] Reduce streaming string-copy costs (prefer `append`, `reserveCapacity`, or chunk array materialization on throttle)
 - [ ] Improve SSE parsing to buffer multi-line events and end events on blank line (keep compatibility behavior)
 - [ ] Standardize `[DONE]` handling and error mapping across providers
 - [ ] Replace `NSLock` + mutable task storage for streaming cancellation with `actor` or `@MainActor`-isolated storage
@@ -549,10 +549,10 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 
 - [x] ~~Cache parsed message elements outside `MessageContentView.body` (throttled updates, background parse, main publish)~~
 - [x] ~~Move all render-path diagnostics behind `#if DEBUG` (no work/prints in release render paths)~~
-- [ ] Fix `MessageParser` to avoid `@State` misuse (use `let colorScheme`) and ensure thread-safety
-- [ ] Remove Core Data fetches from parsing; emit attachment references and resolve lazily via background loader + cache
-- [ ] Virtualize message list (`LazyVStack`) while preserving stable IDs and existing scroll-to-bottom behavior
-- [ ] Evaluate and (if acceptable) implement `NSTextView` bridge for streaming-only text rendering
+- [x] Fix `MessageParser` to avoid `@State` misuse (use `let colorScheme`) and ensure thread-safety
+- [x] Remove Core Data fetches from parsing; emit attachment references and resolve lazily via background loader + cache
+- [x] Virtualize message list (`LazyVStack`) while preserving stable IDs and existing scroll-to-bottom behavior
+- [x] Evaluate and (if acceptable) implement `NSTextView` bridge for streaming-only text rendering
 - [ ] (Optional) Prototype incremental/streaming markdown parsing to avoid O(n²) reparsing; full reparse on completion
 
 ### Phase 3 — Core Data Throughput + Correctness
@@ -576,8 +576,8 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 
 ### Known Issues to Fix (From Code Review)
 
-- [ ] Fix `MessageParser` misuse of `@State` outside `View` (change to `let colorScheme: ColorScheme`)
+- [x] Fix `MessageParser` misuse of `@State` outside `View` (change to `let colorScheme: ColorScheme`)
 - [x] ~~Guard/unwind unconditional render-path prints in `MessageContentView` (`#if DEBUG`)~~
 - [x] ~~Reduce/avoid expensive per-render regex checks in `containsMarkdownFormatting()` (cache or cheaper heuristic)~~
 - [ ] Remove double accumulation of streamed text (avoid accumulating full response in two places)
-- [ ] Switch `MessageListView` to `LazyVStack` for large chats
+- [x] Switch `MessageListView` to `LazyVStack` for large chats

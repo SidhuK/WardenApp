@@ -15,6 +15,10 @@ struct MessageContentView: View {
     @State private var showFullMessage = false
     @State private var isParsingFullMessage = false
     @State private var selectedImage: IdentifiableImage?
+    @State private var resolvedImages: [UUID: NSImage] = [:]
+    @State private var resolvedFiles: [UUID: FileAttachment] = [:]
+    @State private var missingImages: Set<UUID> = []
+    @State private var missingFiles: Set<UUID> = []
 
     @State private var truncatedParsedElements: [MessageElements]
     @State private var fullParsedElements: [MessageElements]
@@ -188,11 +192,57 @@ struct MessageContentView: View {
                     .padding(.vertical, 16)
             }
 
-        case .image(let image):
-            renderImage(image)
+        case .image(let imageUUID):
+            renderImageAttachment(uuid: imageUUID)
         
-        case .file(let fileAttachment):
-            renderFileAttachment(fileAttachment)
+        case .file(let fileUUID):
+            renderFileAttachmentReference(uuid: fileUUID)
+        }
+    }
+
+    @ViewBuilder
+    private func renderImageAttachment(uuid: UUID) -> some View {
+        if let image = resolvedImages[uuid] {
+            renderImage(image)
+        } else if missingImages.contains(uuid) {
+            Text("\(MessageContent.imageTagStart)\(uuid.uuidString)\(MessageContent.imageTagEnd)")
+                .textSelection(.enabled)
+        } else {
+            ProgressView()
+                .scaleEffect(0.8)
+                .frame(width: 24, height: 24)
+                .padding(.bottom, 3)
+                .task(id: uuid) {
+                    let image = await AttachmentResolver.shared.image(for: uuid)
+                    if let image {
+                        resolvedImages[uuid] = image
+                    } else {
+                        missingImages.insert(uuid)
+                    }
+                }
+        }
+    }
+
+    @ViewBuilder
+    private func renderFileAttachmentReference(uuid: UUID) -> some View {
+        if let attachment = resolvedFiles[uuid] {
+            renderFileAttachment(attachment)
+        } else if missingFiles.contains(uuid) {
+            Text("\(MessageContent.fileTagStart)\(uuid.uuidString)\(MessageContent.fileTagEnd)")
+                .textSelection(.enabled)
+        } else {
+            ProgressView()
+                .scaleEffect(0.8)
+                .frame(width: 24, height: 24)
+                .padding(.bottom, 3)
+                .task(id: uuid) {
+                    let attachment = await AttachmentResolver.shared.fileAttachment(for: uuid)
+                    if let attachment {
+                        resolvedFiles[uuid] = attachment
+                    } else {
+                        missingFiles.insert(uuid)
+                    }
+                }
         }
     }
 
@@ -237,11 +287,12 @@ struct MessageContentView: View {
                 return mutableAttributedString
             }()
 
-            if text.count > AppConstants.longStringCount {
+            if isStreaming {
+                StreamingAttributedTextView(attributedString: attributedString)
+            } else if text.count > AppConstants.longStringCount {
                 AttributedText(attributedString)
                     .textSelection(.enabled)
-            }
-            else {
+            } else {
                 Text(.init(attributedString))
                     .textSelection(.enabled)
             }
