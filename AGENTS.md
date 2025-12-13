@@ -1,22 +1,21 @@
 # Warden Development Guide
 
 **Warden** is a native macOS AI chat client (SwiftUI, Core Data) supporting 10+ AI providers.
-**Rules**: See `.cursor/rules/warden-development.mdc` for comprehensive patterns.
 
 ## Build & Test
-- **Run**: Open `Warden.xcodeproj` in Xcode, press Cmd+R.
-- **Test**: Press Cmd+U in Xcode.
-- **CLI Test**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS'`
-- **Style**: 120 char lines, 4-space indent. Follow existing patterns.
+- **Build**: `xcodebuild -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS' build`
+- **Test All**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS'`
+- **Single Test**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS' -only-testing:WardenTests/TestClassName/testMethodName`
+- **Format**: Uses `.swift-format` (120 char lines, 4-space indent).
 
 ## Architecture
-- **Structure**: `UI/` (Views) → `Models/` (Data) → `Utilities/` (Helpers) → `Store/` (Persistence).
-- **Pattern**: MVVM. `ChatStore.swift` is the single source of truth (Core Data).
-- **AI**: `Utilities/APIHandlers/` implements `APIProtocol`. Handlers created via `APIServiceFactory`.
-- **Data**: Local-only (Privacy First). Schema in `warenDataModel.xcdatamodeld`.
+- **Structure**: `Warden/UI/` (Views) → `Models/` (Data) → `Utilities/` (Helpers) → `Store/` (Core Data).
+- **Pattern**: MVVM. `ChatStore.swift` is single source of truth. `APIServiceFactory` creates handlers.
+- **AI Handlers**: `Utilities/APIHandlers/` implements `APIProtocol` for each provider.
+- **Data**: Local-only Core Data. Schema in `warenDataModel.xcdatamodeld`. Privacy first—NO telemetry.
 
-## Code Style & Conventions
+## Code Style
 - **Naming**: `*View`, `*ViewModel`, `*Handler`. PascalCase types, camelCase properties.
-- **State**: Use `@StateObject` (lifecycle), `@ObservedObject` (passed), `@EnvironmentObject` (global).
-- **Concurrency**: Use `async`/`await`. Perform heavy ops on background queues.
-- **Security**: NEVER log API keys. Use Keychain. NO telemetry/analytics.
+- **State**: `@StateObject` (owner), `@ObservedObject` (passed in), `@EnvironmentObject` (global).
+- **Concurrency**: `async`/`await`. Heavy work on background queues.
+- **Security**: NEVER log API keys. Use Keychain for secrets. NO analytics/tracking.
