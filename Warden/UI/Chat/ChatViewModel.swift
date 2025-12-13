@@ -6,6 +6,7 @@ import os
 
 class ChatViewModel: ObservableObject {
     @Published var messages: NSOrderedSet
+    @Published var streamingAssistantText: String = ""
     private let chat: ChatEntity
     private let viewContext: NSManagedObjectContext
 
@@ -21,6 +22,12 @@ class ChatViewModel: ObservableObject {
                 if let cachedQuery = cachedSearchQuery {
                     _messageManager?.lastSearchQuery = cachedQuery
                 }
+                if let manager = _messageManager {
+                    setupStreamingBindings(for: manager)
+                } else {
+                    streamingAssistantText = ""
+                    messageManagerCancellables.removeAll()
+                }
             }
             return _messageManager
         }
@@ -34,6 +41,7 @@ class ChatViewModel: ObservableObject {
     private var cachedSearchQuery: String?
 
     private var cancellables = Set<AnyCancellable>()
+    private var messageManagerCancellables = Set<AnyCancellable>()
 
     init(chat: ChatEntity, viewContext: NSManagedObjectContext) {
         self.chat = chat
@@ -42,6 +50,9 @@ class ChatViewModel: ObservableObject {
         
         // Subscribe to search results changes to cache them
         setupSearchResultsCaching()
+        if let manager = messageManager {
+            setupStreamingBindings(for: manager)
+        }
         
         // Load selected MCP agents
         loadSelectedMCPAgents()
@@ -80,6 +91,17 @@ class ChatViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+    
+    private func setupStreamingBindings(for manager: MessageManager) {
+        messageManagerCancellables.removeAll()
+        
+        manager.$streamingAssistantText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] text in
+                self?.streamingAssistantText = text
+            }
+            .store(in: &messageManagerCancellables)
     }
 
     func sendMessage(_ message: String, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -187,6 +209,12 @@ class ChatViewModel: ObservableObject {
         WardenLog.app.debug("Recreating MessageManager for chat \(self.chat.id.uuidString, privacy: .public)")
         #endif
         _messageManager = createMessageManager()
+        if let manager = _messageManager {
+            setupStreamingBindings(for: manager)
+        } else {
+            streamingAssistantText = ""
+            messageManagerCancellables.removeAll()
+        }
     }
 
     var canSendMessage: Bool {

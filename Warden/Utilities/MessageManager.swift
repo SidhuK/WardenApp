@@ -26,6 +26,9 @@ class MessageManager: ObservableObject {
     
     // Map of message IDs to their completed tool calls (for persistence within session)
     @Published var messageToolCalls: [Int64: [WardenToolCallStatus]] = [:]
+    
+    // In-progress assistant response (kept in-memory; persisted on completion)
+    @Published var streamingAssistantText: String = ""
 
     init(apiService: APIService, viewContext: NSManagedObjectContext) {
         self.apiService = apiService
@@ -45,6 +48,8 @@ class MessageManager: ObservableObject {
         Task {
             await streamingTaskController.cancelAndClear()
         }
+        
+        streamingAssistantText = ""
         
         // Force save if pending
         if let workItem = saveDebounceWorkItem {
@@ -327,7 +332,6 @@ class MessageManager: ObservableObject {
         let streamTask = Task { @MainActor in
             var chunkCount = 0
             let streamStart = Date()
-            var streamingMessage: MessageEntity?
             var deferImageResponse = false
             var lastUpdateTime = Date.distantPast
             var chunkBufferParts: [String] = []
@@ -335,6 +339,9 @@ class MessageManager: ObservableObject {
             var deferredResponseParts: [String] = []
             var deferredResponseCharacterCount = 0
             let updateInterval = self.streamUpdateInterval
+            
+            self.streamingAssistantText = ""
+            chat.waitingForResponse = true
             
             defer {
                 Task {
@@ -358,32 +365,14 @@ class MessageManager: ObservableObject {
                     chunkBufferCharacterCount = 0
                     return result
                 }
-
-                if streamingMessage == nil {
-                    if let existing = chat.lastMessage, !existing.own, existing.waitingForResponse {
-                        streamingMessage = existing
-                    }
-                }
-
-                if streamingMessage == nil {
-                    let chunkToApply = drainChunkBuffer()
-                    self.addMessageToChat(chat: chat, message: chunkToApply, searchUrls: nil, isStreaming: true)
-                    streamingMessage = chat.lastMessage
-                    lastUpdateTime = Date()
-                    return
-                }
-
-                guard let message = streamingMessage else { return }
+                
                 let now = Date()
                 guard force || now.timeIntervalSince(lastUpdateTime) >= updateInterval else { return }
 
                 let chunkToApply = drainChunkBuffer()
                 if !chunkToApply.isEmpty {
-                    message.body.append(contentsOf: chunkToApply)
-                    message.timestamp = Date()
-                    message.waitingForResponse = true
                     chat.waitingForResponse = true
-                    chat.objectWillChange.send()
+                    self.streamingAssistantText.append(contentsOf: chunkToApply)
                     lastUpdateTime = now
                 }
             }
@@ -455,21 +444,15 @@ class MessageManager: ObservableObject {
 
                     if containsDeferredAttachmentTag, !deferImageResponse {
                         flushChunkBuffer(force: true)
-                        let existingMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
-                        if let existingMessage, !existingMessage.body.isEmpty {
-                            deferredResponseParts = [existingMessage.body]
-                            deferredResponseCharacterCount = existingMessage.body.count
+                        if !self.streamingAssistantText.isEmpty {
+                            deferredResponseParts = [self.streamingAssistantText]
+                            deferredResponseCharacterCount = self.streamingAssistantText.count
                         }
 
                         deferImageResponse = true
                         chunkBufferParts.removeAll(keepingCapacity: true)
                         chunkBufferCharacterCount = 0
-                        if let message = existingMessage {
-                            chat.removeFromMessages(message)
-                            self.viewContext.delete(message)
-                            streamingMessage = nil
-                            chat.objectWillChange.send()
-                        }
+                        self.streamingAssistantText = ""
                     }
                     if deferImageResponse {
                         appendDeferredResponse(chunk)
@@ -478,7 +461,7 @@ class MessageManager: ObservableObject {
 
                     chunkBufferParts.append(chunk)
                     chunkBufferCharacterCount += chunk.count
-                    flushChunkBuffer(force: streamingMessage == nil)
+                    flushChunkBuffer()
                 }
                 let elapsed = Date().timeIntervalSince(streamStart)
                 #if DEBUG
@@ -488,22 +471,11 @@ class MessageManager: ObservableObject {
                 #endif
                 flushChunkBuffer(force: true)
 
-                let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
-                let finalResponse = deferImageResponse ? drainDeferredResponse() : (assistantMessage?.body ?? "")
+                let finalResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
                 // Normal completion path - stream finished successfully
                 if !finalResponse.isEmpty {
                     if deferImageResponse {
                         addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
-                    } else if let assistantMessage {
-                        updateLastMessage(
-                            chat: chat,
-                            lastMessage: assistantMessage,
-                            accumulatedResponse: finalResponse,
-                            searchUrls: searchUrls,
-                            appendCitations: true,
-                            save: true,
-                            isFinalUpdate: true
-                        )
                     } else {
                         addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
                     }
@@ -512,6 +484,7 @@ class MessageManager: ObservableObject {
                 
                 // Handle tool calls if any
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
+                    self.streamingAssistantText = ""
                     try Task.checkCancellation()
                     await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
                     return
@@ -520,7 +493,7 @@ class MessageManager: ObservableObject {
                 // Auto-rename chat if needed
                 generateChatNameIfNeeded(chat: chat)
                 chat.waitingForResponse = false
-                chat.lastMessage?.waitingForResponse = false
+                self.streamingAssistantText = ""
                 completion(.success(()))
             }
             catch is CancellationError {
@@ -533,21 +506,10 @@ class MessageManager: ObservableObject {
                 
                 // Save partial response even when cancelled via exception
                 flushChunkBuffer(force: true)
-                let assistantMessage = streamingMessage ?? (chat.lastMessage?.own == false ? chat.lastMessage : nil)
-                let partialResponse = deferImageResponse ? drainDeferredResponse() : (assistantMessage?.body ?? "")
+                let partialResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
                 if !partialResponse.isEmpty {
                     if deferImageResponse {
                         addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
-                    } else if let assistantMessage {
-                        updateLastMessage(
-                            chat: chat,
-                            lastMessage: assistantMessage,
-                            accumulatedResponse: partialResponse,
-                            searchUrls: searchUrls,
-                            appendCitations: true,
-                            save: true,
-                            isFinalUpdate: true
-                        )
                     } else {
                         addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
                     }
@@ -562,11 +524,13 @@ class MessageManager: ObservableObject {
                 }
                 
                 chat.waitingForResponse = false
+                self.streamingAssistantText = ""
                 completion(.failure(CancellationError()))
             }
             catch {
                 WardenLog.streaming.error("Streaming error: \(error.localizedDescription, privacy: .public)")
                 chat.waitingForResponse = false
+                self.streamingAssistantText = ""
                 completion(.failure(error))
             }
         }

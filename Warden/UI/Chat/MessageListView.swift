@@ -9,6 +9,7 @@ struct MessageListView: View {
     let chat: ChatEntity
     let sortedMessages: [MessageEntity]
     let isStreaming: Bool
+    let streamingAssistantText: String
     let currentError: ErrorMessage?
     let enableMultiAgentMode: Bool
     let isMultiAgentMode: Bool
@@ -93,6 +94,24 @@ struct MessageListView: View {
                 }
             }
 
+            if isStreaming, !streamingAssistantText.isEmpty {
+                let bubbleContent = ChatBubbleContent(
+                    message: streamingAssistantText,
+                    own: false,
+                    waitingForResponse: true,
+                    errorMessage: nil,
+                    systemMessage: false,
+                    isStreaming: true,
+                    isLatestMessage: true
+                )
+                
+                ChatBubbleView(content: bubbleContent)
+                    .id("streaming_message")
+                    .frame(maxWidth: viewWidth * 0.8, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 16)
+            }
+            
             // Tool call progress view
             if !activeToolCalls.isEmpty {
                 ToolCallProgressView(toolCalls: activeToolCalls)
@@ -101,7 +120,7 @@ struct MessageListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            if chat.waitingForResponse {
+            if chat.waitingForResponse && !(isStreaming && !streamingAssistantText.isEmpty) {
                 let bubbleContent = ChatBubbleContent(
                     message: "",
                     own: false,
@@ -188,6 +207,17 @@ struct MessageListView: View {
                     withAnimation(.easeOut(duration: 0.25)) {
                         scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                     }
+                }
+            }
+            scrollDebounceWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
+        }
+        .onChange(of: streamingAssistantText) { _, _ in
+            guard isStreaming, !userIsScrolling, !streamingAssistantText.isEmpty else { return }
+            scrollDebounceWorkItem?.cancel()
+            let workItem = DispatchWorkItem {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    scrollView.scrollTo("streaming_message", anchor: .bottom)
                 }
             }
             scrollDebounceWorkItem = workItem

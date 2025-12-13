@@ -279,6 +279,7 @@ struct ChatView: View {
                             chat: chat,
                             sortedMessages: chatViewModel.sortedMessages,
                             isStreaming: isStreaming,
+                            streamingAssistantText: chatViewModel.streamingAssistantText,
                             currentError: currentError,
                             enableMultiAgentMode: enableMultiAgentMode,
                             isMultiAgentMode: isMultiAgentMode,
