@@ -517,3 +517,67 @@ For large chats, this loads all message views into memory. Use `LazyVStack`.
 - No new UI flows, toggles, or settings.
 - No changes to what is sent to providers or how responses are shown (beyond performance and log hygiene).
 - No analytics/telemetry.
+
+---
+
+## Running TODO Checklist (Check Off Per Phase)
+
+Use this as the single “source of truth” checklist. Check items off when the work is completed and validated (e.g.,
+Instruments/signposts captured, manual streaming sanity check, CI/tests green).
+
+### Phase 0 — Safety and Observability
+
+- [ ] Add `os.Logger` categories: `Streaming`, `Rendering`, `CoreData`
+- [ ] Add `os_signpost` points: TTFT, chunk rate, parse duration per message update
+- [ ] Replace unconditional `print(...)` with `Logger` calls (wrap verbose logs in `#if DEBUG`)
+- [ ] Remove/guard logs that can leak content or bloat output (raw responses, user messages, tool schemas)
+- [ ] Verify release build has minimal/no sensitive logs (quick grep for `print(` in Warden target sources)
+
+### Phase 1 — Streaming Pipeline Cleanup + Speed
+
+- [ ] Pick canonical streaming implementation (single path) and document the decision in the code
+- [ ] Refactor handlers to override only request building + delta parsing hooks (no custom streaming loops)
+- [ ] Clean up `APIProtocol.swift` drift (single `parseJSONResponse`, single `parseDeltaJSONResponse`, no `fatalError`)
+- [ ] Reduce streaming string-copy costs (prefer `append`, `reserveCapacity`, or chunk array materialization on throttle)
+- [ ] Improve SSE parsing to buffer multi-line events and end events on blank line (keep compatibility behavior)
+- [ ] Standardize `[DONE]` handling and error mapping across providers
+- [ ] Replace `NSLock` + mutable task storage for streaming cancellation with `actor` or `@MainActor`-isolated storage
+- [ ] Batch chunk accumulation in `APIServiceManager.handleStream` to match UI throttle cadence (avoid per-token callback)
+- [ ] Confirm cancellation is checked in: parsing loop, throttle loop, tool-call execution loop
+
+### Phase 2 — Rendering + Parsing Performance
+
+- [ ] Cache parsed message elements outside `MessageContentView.body` (throttled updates, background parse, main publish)
+- [ ] Move all render-path diagnostics behind `#if DEBUG` (no work/prints in release render paths)
+- [ ] Fix `MessageParser` to avoid `@State` misuse (use `let colorScheme`) and ensure thread-safety
+- [ ] Remove Core Data fetches from parsing; emit attachment references and resolve lazily via background loader + cache
+- [ ] Virtualize message list (`LazyVStack`) while preserving stable IDs and existing scroll-to-bottom behavior
+- [ ] Evaluate and (if acceptable) implement `NSTextView` bridge for streaming-only text rendering
+- [ ] (Optional) Prototype incremental/streaming markdown parsing to avoid O(n²) reparsing; full reparse on completion
+
+### Phase 3 — Core Data Throughput + Correctness
+
+- [ ] Remove extra `ChatStore` instantiations; standardize on `@EnvironmentObject var store: ChatStore`
+- [ ] Align Core Data mutations/saves with context queues (`perform {}`); avoid unnecessary main-queue hops
+- [ ] Optimize chat search via predicates (`CONTAINS[c]`, `ANY messages.body CONTAINS[c]`), fetch only what’s needed
+- [ ] Stabilize message IDs (monotonic `nextMessageID` on chat, or max+1 fetch) to avoid collisions after deletions
+
+### Phase 4 — Networking + Session Configuration
+
+- [ ] Make streaming-friendly `URLSessionConfiguration` explicit (`waitsForConnectivity`, caching policy, conn limits)
+- [ ] Consider separate sessions for streaming vs non-streaming (same behavior, better tuning)
+- [ ] Centralize/standardize error mapping and (where safe) capture response bodies for debugging
+
+### Phase 5 — Code Health and Build-Time Improvements
+
+- [ ] Remove/resolve stray invalid code and “draft” comments that reduce trust (no behavior change)
+- [ ] Add “profiling recipes” doc for repeatable performance work (Instruments templates, TTFT measurement, repro steps)
+- [ ] Tighten tests around invariants: SSE buffering, `[DONE]`, malformed JSON chunks, tool-call parsing, Core Data safety
+
+### Known Issues to Fix (From Code Review)
+
+- [ ] Fix `MessageParser` misuse of `@State` outside `View` (change to `let colorScheme: ColorScheme`)
+- [ ] Guard/unwind unconditional render-path prints in `MessageContentView` (`#if DEBUG`)
+- [ ] Reduce/avoid expensive per-render regex checks in `containsMarkdownFormatting()` (cache or cheaper heuristic)
+- [ ] Remove double accumulation of streamed text (avoid accumulating full response in two places)
+- [ ] Switch `MessageListView` to `LazyVStack` for large chats
