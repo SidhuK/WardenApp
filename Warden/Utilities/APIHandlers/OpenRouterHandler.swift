@@ -37,7 +37,7 @@ class OpenRouterHandler: ChatGPTHandler {
                     #if DEBUG
                     if let dict = json as? [String: Any] {
                         WardenLog.app.debug(
-                            "OpenRouter parsing failed: structure mismatch. Keys: \(dict.keys.joined(separator: \", \"), privacy: .public)"
+                            "OpenRouter parsing failed: structure mismatch. Keys: \(dict.keys.joined(separator: ", "), privacy: .public)"
                         )
                     } else {
                         WardenLog.app.debug("OpenRouter parsing failed: response is not a dictionary")

@@ -529,9 +529,9 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 
 - [ ] Add `os.Logger` categories: `Streaming`, `Rendering`, `CoreData`
 - [ ] Add `os_signpost` points: TTFT, chunk rate, parse duration per message update
-- [ ] Replace unconditional `print(...)` with `Logger` calls (wrap verbose logs in `#if DEBUG`)
-- [ ] Remove/guard logs that can leak content or bloat output (raw responses, user messages, tool schemas)
-- [ ] Verify release build has minimal/no sensitive logs (quick grep for `print(` in Warden target sources)
+- [x] ~~Replace unconditional `print(...)` with `Logger` calls (wrap verbose logs in `#if DEBUG`)~~
+- [x] ~~Remove/guard logs that can leak content or bloat output (raw responses, user messages, tool schemas)~~
+- [x] ~~Verify release build has minimal/no sensitive logs (quick grep for `print(` in Warden target sources)~~
 
 ### Phase 1 — Streaming Pipeline Cleanup + Speed
 
@@ -542,13 +542,13 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 - [ ] Improve SSE parsing to buffer multi-line events and end events on blank line (keep compatibility behavior)
 - [ ] Standardize `[DONE]` handling and error mapping across providers
 - [ ] Replace `NSLock` + mutable task storage for streaming cancellation with `actor` or `@MainActor`-isolated storage
-- [ ] Batch chunk accumulation in `APIServiceManager.handleStream` to match UI throttle cadence (avoid per-token callback)
+- [x] ~~Batch chunk accumulation in `APIServiceManager.handleStream` to match UI throttle cadence (avoid per-token callback)~~
 - [ ] Confirm cancellation is checked in: parsing loop, throttle loop, tool-call execution loop
 
 ### Phase 2 — Rendering + Parsing Performance
 
-- [ ] Cache parsed message elements outside `MessageContentView.body` (throttled updates, background parse, main publish)
-- [ ] Move all render-path diagnostics behind `#if DEBUG` (no work/prints in release render paths)
+- [x] ~~Cache parsed message elements outside `MessageContentView.body` (throttled updates, background parse, main publish)~~
+- [x] ~~Move all render-path diagnostics behind `#if DEBUG` (no work/prints in release render paths)~~
 - [ ] Fix `MessageParser` to avoid `@State` misuse (use `let colorScheme`) and ensure thread-safety
 - [ ] Remove Core Data fetches from parsing; emit attachment references and resolve lazily via background loader + cache
 - [ ] Virtualize message list (`LazyVStack`) while preserving stable IDs and existing scroll-to-bottom behavior
@@ -577,7 +577,7 @@ Instruments/signposts captured, manual streaming sanity check, CI/tests green).
 ### Known Issues to Fix (From Code Review)
 
 - [ ] Fix `MessageParser` misuse of `@State` outside `View` (change to `let colorScheme: ColorScheme`)
-- [ ] Guard/unwind unconditional render-path prints in `MessageContentView` (`#if DEBUG`)
-- [ ] Reduce/avoid expensive per-render regex checks in `containsMarkdownFormatting()` (cache or cheaper heuristic)
+- [x] ~~Guard/unwind unconditional render-path prints in `MessageContentView` (`#if DEBUG`)~~
+- [x] ~~Reduce/avoid expensive per-render regex checks in `containsMarkdownFormatting()` (cache or cheaper heuristic)~~
 - [ ] Remove double accumulation of streamed text (avoid accumulating full response in two places)
 - [ ] Switch `MessageListView` to `LazyVStack` for large chats

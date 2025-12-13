@@ -165,7 +165,9 @@ class ChatViewModel: ObservableObject {
     private func createMessageManager() -> MessageManager? {
         guard let config = self.loadCurrentAPIConfig() else {
             #if DEBUG
-            WardenLog.app.debug("No valid API configuration found for chat \(chat.id.uuidString, privacy: .public)")
+            WardenLog.app.debug(
+                "No valid API configuration found for chat \(self.chat.id.uuidString, privacy: .public)"
+            )
             #endif
             return nil
         }
@@ -182,7 +184,7 @@ class ChatViewModel: ObservableObject {
 
     func recreateMessageManager() {
         #if DEBUG
-        WardenLog.app.debug("Recreating MessageManager for chat \(chat.id.uuidString, privacy: .public)")
+        WardenLog.app.debug("Recreating MessageManager for chat \(self.chat.id.uuidString, privacy: .public)")
         #endif
         _messageManager = createMessageManager()
     }
@@ -200,7 +202,9 @@ class ChatViewModel: ObservableObject {
     private func loadCurrentAPIConfig() -> APIServiceConfiguration? {
         guard let apiService = chat.apiService else {
             #if DEBUG
-            WardenLog.app.debug("Missing required API service configuration for chat \(chat.id.uuidString, privacy: .public)")
+            WardenLog.app.debug(
+                "Missing required API service configuration for chat \(self.chat.id.uuidString, privacy: .public)"
+            )
             #endif
             return nil
         }

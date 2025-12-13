@@ -173,7 +173,7 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
         if !capabilities.isEmpty {
             #if DEBUG
             WardenLog.app.debug(
-                "OpenRouter model \(model.id, privacy: .public) capabilities: \(capabilities.joined(separator: \", \"), privacy: .public)"
+                "OpenRouter model \(model.id, privacy: .public) capabilities: \(capabilities.joined(separator: ", "), privacy: .public)"
             )
             #endif
         }

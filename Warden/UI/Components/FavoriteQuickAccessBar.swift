@@ -85,7 +85,7 @@ struct FavoriteQuickAccessBar: View {
         
         guard let serviceUrl = service.url, !serviceUrl.absoluteString.isEmpty else {
             #if DEBUG
-            WardenLog.app.debug("API service has invalid URL: \(service.name ?? \"Unknown\", privacy: .public)")
+            WardenLog.app.debug("API service has invalid URL: \(service.name ?? "Unknown", privacy: .public)")
             #endif
             return
         }

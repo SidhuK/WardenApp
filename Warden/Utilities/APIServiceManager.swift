@@ -203,14 +203,37 @@ class APIServiceManager {
     ) async throws -> (String, [ToolCall]?) {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
         var accumulatedResponse = ""
+        var pendingChunkBuffer = ""
+        let updateInterval = AppConstants.streamedResponseUpdateUIInterval
+        var lastFlushTime = Date()
         var allToolCalls: [ToolCall]? = nil
+
+        func flushPendingChunkBuffer() async {
+            guard !pendingChunkBuffer.isEmpty else { return }
+            accumulatedResponse.append(contentsOf: pendingChunkBuffer)
+            let chunkToSend = pendingChunkBuffer
+            pendingChunkBuffer = ""
+            await onChunk(chunkToSend, accumulatedResponse)
+        }
         
         for try await (chunk, toolCalls) in stream {
             try Task.checkCancellation()
             
-            if let chunk = chunk {
-                accumulatedResponse += chunk
-                await onChunk(chunk, accumulatedResponse)
+            if let chunk = chunk, !chunk.isEmpty {
+                let shouldFlushImmediately = chunk.contains("<image-uuid>") || chunk.contains("<file-uuid>")
+
+                if shouldFlushImmediately, !pendingChunkBuffer.isEmpty {
+                    await flushPendingChunkBuffer()
+                    lastFlushTime = Date()
+                }
+
+                pendingChunkBuffer.append(contentsOf: chunk)
+
+                let now = Date()
+                if shouldFlushImmediately || now.timeIntervalSince(lastFlushTime) >= updateInterval {
+                    await flushPendingChunkBuffer()
+                    lastFlushTime = now
+                }
             }
             
             if let calls = toolCalls {
@@ -220,6 +243,8 @@ class APIServiceManager {
                 allToolCalls?.append(contentsOf: calls)
             }
         }
+
+        await flushPendingChunkBuffer()
         
         return (accumulatedResponse, allToolCalls)
     }

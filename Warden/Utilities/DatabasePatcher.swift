@@ -103,9 +103,9 @@ class DatabasePatcher {
 	                    service.imageUploadsAllowed = true
 	                    needsSave = true
 	                    #if DEBUG
-	                    WardenLog.coreData.debug(
-	                        "Enabled image uploads for API service: \(service.name ?? \"Unnamed\", privacy: .public)"
-	                    )
+		                    WardenLog.coreData.debug(
+		                        "Enabled image uploads for API service: \(service.name ?? "Unnamed", privacy: .public)"
+		                    )
 	                    #endif
 	                }
 	            }
@@ -177,9 +177,9 @@ class DatabasePatcher {
 	            let defaultPersonas = try context.fetch(personaFetchRequest)
 	            if let defaultPersona = defaultPersonas.first {
 	                #if DEBUG
-	                WardenLog.coreData.debug(
-	                    "Found default assistant persona: \(defaultPersona.name ?? \"\", privacy: .public)"
-	                )
+		                WardenLog.coreData.debug(
+		                    "Found default assistant persona: \(defaultPersona.name ?? "", privacy: .public)"
+		                )
 	                #endif
 	                apiService.defaultPersona = defaultPersona
 	                try context.save()
@@ -263,9 +263,9 @@ class DatabasePatcher {
                     persona.color = symbol
                     needsSave = true
                     #if DEBUG
-                    WardenLog.coreData.debug(
-                        "Migrated persona '\(persona.name ?? \"\", privacy: .public)' from color to symbol"
-                    )
+	                    WardenLog.coreData.debug(
+	                        "Migrated persona '\(persona.name ?? "", privacy: .public)' from color to symbol"
+	                    )
                     #endif
                 }
             }

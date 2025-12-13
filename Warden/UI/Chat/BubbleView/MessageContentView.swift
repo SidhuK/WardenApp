@@ -16,7 +16,35 @@ struct MessageContentView: View {
     @State private var isParsingFullMessage = false
     @State private var selectedImage: IdentifiableImage?
 
+    @State private var truncatedParsedElements: [MessageElements]
+    @State private var fullParsedElements: [MessageElements]
+    @State private var lastTruncatedMessage: String
+    @State private var fullParseTask: Task<Void, Never>?
+    @State private var truncatedParseTask: Task<Void, Never>?
+
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
+
+    init(message: String, isStreaming: Bool, own: Bool, effectiveFontSize: Double, colorScheme: ColorScheme) {
+        self.message = message
+        self.isStreaming = isStreaming
+        self.own = own
+        self.effectiveFontSize = effectiveFontSize
+        self.colorScheme = colorScheme
+
+        let shouldRenderPartial = message.count > AppConstants.largeMessageSymbolsThreshold && !message.containsAttachment
+        if shouldRenderPartial {
+            let truncated = String(message.prefix(AppConstants.largeMessageSymbolsThreshold))
+            let parser = MessageParser(colorScheme: colorScheme)
+            _truncatedParsedElements = State(initialValue: parser.parseMessageFromString(input: truncated))
+            _fullParsedElements = State(initialValue: [])
+            _lastTruncatedMessage = State(initialValue: truncated)
+        } else {
+            let parser = MessageParser(colorScheme: colorScheme)
+            _truncatedParsedElements = State(initialValue: [])
+            _fullParsedElements = State(initialValue: parser.parseMessageFromString(input: message))
+            _lastTruncatedMessage = State(initialValue: "")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -29,6 +57,12 @@ struct MessageContentView: View {
             }
         }
         .animation(nil, value: message)
+        .onChange(of: message) { _ in
+            refreshParsedElements()
+        }
+        .onChange(of: colorScheme) { _ in
+            refreshParsedElements(force: true)
+        }
     }
 
     private func containsImageData(_ message: String) -> Bool {
@@ -37,24 +71,21 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderPartialContent() -> some View {
-        let truncatedMessage = String(message.prefix(largeMessageSymbolsThreshold))
-        let parser = MessageParser(colorScheme: colorScheme)
-        let parsedElements = parser.parseMessageFromString(input: truncatedMessage)
-
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(parsedElements.indices, id: \.self) { index in
-                renderElement(parsedElements[index])
+            ForEach(truncatedParsedElements.indices, id: \.self) { index in
+                renderElement(truncatedParsedElements[index])
             }
 
             HStack(spacing: 8) {
                 Button(action: {
                     isParsingFullMessage = true
                     // Parse the full message in background: very long messages may take long time to parse (and even cause app crash)
-                    DispatchQueue.global(qos: .userInitiated).async {
+                    fullParseTask?.cancel()
+                    fullParseTask = Task.detached(priority: .userInitiated) {
                         let parser = MessageParser(colorScheme: colorScheme)
-                        _ = parser.parseMessageFromString(input: message)
-
-                        DispatchQueue.main.async {
+                        let elements = parser.parseMessageFromString(input: message)
+                        await MainActor.run {
+                            fullParsedElements = elements
                             showFullMessage = true
                             isParsingFullMessage = false
                         }
@@ -82,14 +113,55 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderFullContent() -> some View {
-        let parser = MessageParser(colorScheme: colorScheme)
-        let parsedElements = parser.parseMessageFromString(input: message)
-
-        ForEach(parsedElements.indices, id: \.self) { index in
-            renderElement(parsedElements[index])
+        ForEach(fullParsedElements.indices, id: \.self) { index in
+            renderElement(fullParsedElements[index])
         }
     }
 
+    private func refreshParsedElements(force: Bool = false) {
+        let shouldRenderPartial = message.count > largeMessageSymbolsThreshold && !showFullMessage && !containsImageData(message)
+
+        if shouldRenderPartial {
+            let truncated = String(message.prefix(largeMessageSymbolsThreshold))
+            guard force || truncated != lastTruncatedMessage else { return }
+            lastTruncatedMessage = truncated
+
+            truncatedParseTask?.cancel()
+            if isStreaming {
+                truncatedParseTask = Task.detached(priority: .userInitiated) {
+                    let parser = MessageParser(colorScheme: colorScheme)
+                    let elements = parser.parseMessageFromString(input: truncated)
+                    await MainActor.run {
+                        truncatedParsedElements = elements
+                    }
+                }
+            } else {
+                let parser = MessageParser(colorScheme: colorScheme)
+                truncatedParsedElements = parser.parseMessageFromString(input: truncated)
+            }
+            return
+        }
+
+        truncatedParseTask?.cancel()
+
+        if isStreaming {
+            fullParseTask?.cancel()
+            fullParseTask = Task.detached(priority: .userInitiated) {
+                let delay = UInt64(AppConstants.streamedResponseUpdateUIInterval * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: delay)
+                guard !Task.isCancelled else { return }
+                let parser = MessageParser(colorScheme: colorScheme)
+                let elements = parser.parseMessageFromString(input: message)
+                await MainActor.run {
+                    fullParsedElements = elements
+                }
+            }
+        } else {
+            let parser = MessageParser(colorScheme: colorScheme)
+            fullParsedElements = parser.parseMessageFromString(input: message)
+        }
+    }
+    
     @ViewBuilder
     private func renderElement(_ element: MessageElements) -> some View {
         switch element {
@@ -126,17 +198,14 @@ struct MessageContentView: View {
 
     @ViewBuilder
     private func renderText(_ text: String) -> some View {
-        let _ = {
-            // Debug logging
-            if text.contains("[") && text.contains("](") {
-                print("🎨 [UI] Text contains markdown links: \(String(text.prefix(200)))")
-            }
-            let hasMarkdown = containsMarkdownFormatting(text)
-            print("🎨 [UI] hasMarkdown: \(hasMarkdown), text length: \(text.count)")
-        }()
-        
-        // Check if this text contains markdown formatting that should be rendered properly
-        if containsMarkdownFormatting(text) {
+        let hasMarkdown = containsMarkdownFormatting(text)
+        #if DEBUG
+        let _ = WardenLog.rendering.debug(
+            "renderText hasMarkdown=\(hasMarkdown, privacy: .public), length=\(text.count, privacy: .public)"
+        )
+        #endif
+
+        if hasMarkdown {
             MarkdownView(
                 markdownText: text,
                 effectiveFontSize: effectiveFontSize,
@@ -190,25 +259,29 @@ struct MessageContentView: View {
             return false
         }
         
-        // Check for common markdown patterns that indicate block-level formatting
-        let markdownPatterns = [
-            "^#{1,6}\\s+", // Headers
-            "^\\s*[*+-]\\s+", // Unordered lists
-            "^\\s*\\d+\\.\\s+", // Ordered lists
-            "^\\s*>\\s+", // Block quotes
-            "^\\s*---\\s*$", // Horizontal rules
-            "^\\s*\\*\\*\\*\\s*$", // Horizontal rules
-            "\\[.*?\\]\\(.*?\\)" // Any markdown links
-        ]
-        
-        let lines = text.components(separatedBy: .newlines)
-        
-        // Check each line for markdown patterns
-        for line in lines {
-            for pattern in markdownPatterns {
-                if line.range(of: pattern, options: .regularExpression) != nil {
-                    return true
-                }
+        // Cheap pre-filter to avoid regex work for plain text.
+        if !text.contains("#"),
+           !text.contains("*"),
+           !text.contains("_"),
+           !text.contains("~"),
+           !text.contains(">"),
+           !text.contains("-"),
+           !text.contains("`"),
+           !text.contains("["),
+           !text.contains("]") {
+            return false
+        }
+
+        if let regex = Self.blockMarkdownRegex {
+            let range = NSRange(text.startIndex..., in: text)
+            if regex.firstMatch(in: text, options: [], range: range) != nil {
+                return true
+            }
+        }
+        if let regex = Self.linkMarkdownRegex {
+            let range = NSRange(text.startIndex..., in: text)
+            if regex.firstMatch(in: text, options: [], range: range) != nil {
+                return true
             }
         }
         
@@ -220,16 +293,34 @@ struct MessageContentView: View {
         
         // Be more selective with asterisks and underscores to avoid false positives
         // Only consider it markdown if there are pairs of them
-        let asteriskCount = text.filter { $0 == "*" }.count
-        let underscoreCount = text.filter { $0 == "_" }.count
-        let backtickCount = text.filter { $0 == "`" }.count
-        
-        if (asteriskCount >= 2 && asteriskCount % 2 == 0) ||
-           (underscoreCount >= 2 && underscoreCount % 2 == 0) ||
-           (backtickCount >= 2 && backtickCount % 2 == 0) {
+        if hasAtLeastTwoOccurrences(of: "*", in: text) ||
+           hasAtLeastTwoOccurrences(of: "_", in: text) ||
+           hasAtLeastTwoOccurrences(of: "`", in: text) {
             return true
         }
         
+        return false
+    }
+
+    private static let blockMarkdownRegex: NSRegularExpression? = {
+        let pattern = "^#{1,6}\\s+|^\\s*[*+-]\\s+|^\\s*\\d+\\.\\s+|^\\s*>\\s+|^\\s*(---|\\*\\*\\*)\\s*$"
+        return try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
+    }()
+
+    private static let linkMarkdownRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "\\[.*?\\]\\(.*?\\)", options: [])
+    }()
+
+    private func hasAtLeastTwoOccurrences(of needle: Character, in text: String) -> Bool {
+        var count = 0
+        for character in text {
+            if character == needle {
+                count += 1
+                if count >= 2 {
+                    return true
+                }
+            }
+        }
         return false
     }
 
