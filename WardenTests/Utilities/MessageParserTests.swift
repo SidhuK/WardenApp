@@ -260,3 +260,42 @@ class MessageParserTests: XCTestCase {
     }
 }
 
+final class SSEStreamParserTests: XCTestCase {
+    func testParsesSingleSSEDataLineWithoutTrailingNewline() async throws {
+        let input = "data: {\"a\":1}"
+        let data = Data(input.utf8)
+
+        var events: [String] = []
+        try await SSEStreamParser.parse(data: data) { payload in
+            events.append(payload)
+        }
+
+        XCTAssertEqual(events, ["{\"a\":1}"])
+    }
+
+    func testParsesDoneWithoutTrailingNewline() async throws {
+        let input = "data: [DONE]"
+        let data = Data(input.utf8)
+
+        var events: [String] = []
+        try await SSEStreamParser.parse(data: data) { payload in
+            events.append(payload)
+        }
+
+        XCTAssertEqual(events, ["[DONE]"])
+    }
+
+    func testParsesLastEventWhenFinalNewlineMissing() async throws {
+        let first = "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}"
+        let second = "data: [DONE]"
+        let input = "\(first)\n\n\(second)"
+        let data = Data(input.utf8)
+
+        var events: [String] = []
+        try await SSEStreamParser.parse(data: data) { payload in
+            events.append(payload)
+        }
+
+        XCTAssertEqual(events, ["{\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}", "[DONE]"])
+    }
+}
