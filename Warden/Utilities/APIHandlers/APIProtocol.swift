@@ -1,5 +1,5 @@
-
 import Foundation
+import os
 
 enum APIError: Error {
     case requestFailed(Error)
@@ -346,9 +346,11 @@ extension APIService {
         case .success(let responseData):
             if let responseData = responseData {
                 guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
-                    if let responseString = String(data: responseData, encoding: .utf8) {
-                        print("APIProtocol Default Parsing Failed. Handler: \(self.name). Raw Response: \(responseString)")
-                    }
+                    #if DEBUG
+                    WardenLog.app.debug(
+                        "Default parsing failed. Handler: \(self.name, privacy: .public). Response bytes: \(responseData.count, privacy: .public)"
+                    )
+                    #endif
                     throw APIError.decodingFailed("Failed to parse response")
                 }
                 return (messageContent, toolCalls)
@@ -385,9 +387,11 @@ extension APIService {
                 case .success(let responseData):
                     if let responseData = responseData {
                         guard let (messageContent, _) = self.parseJSONResponse(data: responseData) else {
-                            if let responseString = String(data: responseData, encoding: .utf8) {
-                                print("APIProtocol Default Parsing Failed. Handler: \(self.name). Raw Response: \(responseString)")
-                            }
+                            #if DEBUG
+                            WardenLog.app.debug(
+                                "Default parsing failed. Handler: \(self.name, privacy: .public). Response bytes: \(responseData.count, privacy: .public)"
+                            )
+                            #endif
                             completion(.failure(.decodingFailed("Failed to parse response")))
                             return
                         }

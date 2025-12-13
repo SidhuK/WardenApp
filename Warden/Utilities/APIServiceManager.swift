@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import os
 
 class APIServiceManager {
     private let viewContext: NSManagedObjectContext
@@ -23,7 +24,7 @@ class APIServiceManager {
         do {
             try viewContext.save()
         } catch {
-            print("Error saving API service: \(error)")
+            WardenLog.coreData.error("Error saving API service: \(error.localizedDescription, privacy: .public)")
         }
         
         return apiService
@@ -41,7 +42,7 @@ class APIServiceManager {
         do {
             try viewContext.save()
         } catch {
-            print("Error updaring API service: \(error)")
+            WardenLog.coreData.error("Error updating API service: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -51,7 +52,7 @@ class APIServiceManager {
         do {
             try viewContext.save()
         } catch {
-            print("Error deleting API service: \(error)")
+            WardenLog.coreData.error("Error deleting API service: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -61,7 +62,7 @@ class APIServiceManager {
         do {
             return try viewContext.fetch(fetchRequest)
         } catch {
-            print("Error fetching API services: \(error)")
+            WardenLog.coreData.error("Error fetching API services: \(error.localizedDescription, privacy: .public)")
             return []
         }
     }
@@ -74,7 +75,7 @@ class APIServiceManager {
             let results = try viewContext.fetch(fetchRequest)
             return results.first
         } catch {
-            print("Error fetching API service: \(error)")
+            WardenLog.coreData.error("Error fetching API service: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -110,8 +111,8 @@ class APIServiceManager {
         let requestMessages = prepareSummarizationMessages(prompt: prompt, model: service.model ?? "")
         
         #if DEBUG
-        print("🤖 Generating summary using \(service.name ?? "Unknown") service")
-        print("📝 Model: \(service.model ?? "Unknown")")
+        WardenLog.app.debug("Generating summary using service: \(service.name ?? "Unknown", privacy: .public)")
+        WardenLog.app.debug("Summary model: \(service.model ?? "Unknown", privacy: .public)")
         #endif
         
         // Use async/await with continuation to bridge callback-based API
@@ -170,7 +171,7 @@ class APIServiceManager {
         do {
             apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
         } catch {
-            print("Error extracting token: \(error)")
+            WardenLog.app.error("Error extracting token: \(error.localizedDescription, privacy: .public)")
             return nil
         }
         

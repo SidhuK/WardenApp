@@ -1,10 +1,12 @@
 import Foundation
+import os
 
 class OpenRouterHandler: ChatGPTHandler {    
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
-            // Always print response for debugging
-            print("OpenRouter Raw Response: \(responseString)")
+            #if DEBUG
+            WardenLog.app.debug("OpenRouter response received: \(responseString.count, privacy: .public) char(s)")
+            #endif
             
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
@@ -24,27 +26,26 @@ class OpenRouterHandler: ChatGPTHandler {
                     
                     // If we have neither content nor reasoning, it's a failure
                     if messageContent == nil && message["reasoning"] == nil {
-                         print("Error: Both content and reasoning are missing in OpenRouter response")
+                        #if DEBUG
+                        WardenLog.app.debug("OpenRouter response missing both content and reasoning")
+                        #endif
                          return nil
                     }
                     
                     return (finalContent, messageRole, nil)
                 } else {
-                    print("OpenRouter Parsing Failed: Structure mismatch")
+                    #if DEBUG
                     if let dict = json as? [String: Any] {
-                        print("Keys found: \(dict.keys)")
-                        if let choices = dict["choices"] as? [[String: Any]] {
-                            print("Choices count: \(choices.count)")
-                            if let first = choices.first {
-                                print("First choice keys: \(first.keys)")
-                            }
-                        } else {
-                            print("Choices missing or not array of dicts")
-                        }
+                        WardenLog.app.debug(
+                            "OpenRouter parsing failed: structure mismatch. Keys: \(dict.keys.joined(separator: \", \"), privacy: .public)"
+                        )
+                    } else {
+                        WardenLog.app.debug("OpenRouter parsing failed: response is not a dictionary")
                     }
+                    #endif
                 }
             } catch {
-                print("Error parsing JSON: \(error.localizedDescription)")
+                WardenLog.app.error("OpenRouter JSON parse error: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         }
@@ -53,7 +54,6 @@ class OpenRouterHandler: ChatGPTHandler {
     
     override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
-            print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
@@ -92,8 +92,9 @@ class OpenRouterHandler: ChatGPTHandler {
             }
         } catch {
             #if DEBUG
-                print(String(data: data, encoding: .utf8) ?? "Data cannot be converted into String")
-                print("Error parsing JSON: \(error)")
+            WardenLog.app.debug(
+                "OpenRouter delta JSON parse error: \(error.localizedDescription, privacy: .public) (\(data.count, privacy: .public) byte(s))"
+            )
             #endif
             
             return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)
@@ -205,7 +206,7 @@ class OpenRouterHandler: ChatGPTHandler {
             
             return modifiedString.trimmingCharacters(in: .whitespacesAndNewlines)
         } catch {
-            print("Error creating regex: \(error.localizedDescription)")
+            WardenLog.app.error("OpenRouter regex creation error: \(error.localizedDescription, privacy: .public)")
             return content
         }
     }

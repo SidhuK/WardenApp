@@ -157,7 +157,9 @@ class MCPManager: ObservableObject {
             }
             return tools
         } catch {
-            print("Error fetching tools for server \(id): \(error)")
+            WardenLog.app.error(
+                "Error fetching tools for server \(id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
             return []
         }
     }
@@ -181,7 +183,9 @@ class MCPManager: ObservableObject {
                     toolOwner[tool.name] = id
                 }
             } catch {
-                print("Error fetching tools for agent \(id): \(error)")
+                WardenLog.app.error(
+                    "Error fetching tools for agent \(id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
             }
         }
         
@@ -327,7 +331,9 @@ actor ProcessStdioTransport: Transport {
         stderrPipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
             if !data.isEmpty, let str = String(data: data, encoding: .utf8) {
-                print("[MCP stderr] \(str)")
+                #if DEBUG
+                WardenLog.app.debug("[MCP] stderr received: \(str.count, privacy: .public) char(s)")
+                #endif
             }
         }
         

@@ -157,6 +157,7 @@
 		C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */; };
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
+		C4FF23862EED66E300C17D8B /* WardenLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23852EED66E300C17D8B /* WardenLog.swift */; };
 		DAD2E19560A64CC290850A1D /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C5F31F2F664B9BBD13C0CC /* ChatService.swift */; };
 		F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E14DF97A8974C028719A178 /* MCPSettingsView.swift */; };
 		FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */; };
@@ -340,6 +341,7 @@
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
+		C4FF23852EED66E300C17D8B /* WardenLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenLog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -577,6 +579,7 @@
 			children = (
 				56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
+				C4FF23852EED66E300C17D8B /* WardenLog.swift */,
 				4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */,
 				7F8D7C9F2DE9CE2C003E7BCA /* ChatSharingService.swift */,
 				C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */,
@@ -1007,6 +1010,7 @@
 				7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */,
 				7F8D7CA32DE9CE66003E7BCA /* ChatShareMenu.swift in Sources */,
 				7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */,
+				C4FF23862EED66E300C17D8B /* WardenLog.swift in Sources */,
 				4ABB86792CFBDBD3004EC7B1 /* HighlightedText.swift in Sources */,
 				4A8A78C82D4C41A00057A6CC /* TabGeneralSettingsView.swift in Sources */,
 				4AFEE7252C472FB1006F99FB /* OllamaHandler.swift in Sources */,

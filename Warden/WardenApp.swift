@@ -3,6 +3,7 @@ import UserNotifications
 import CoreData
 import Sparkle
 import Darwin
+import os
 
 class PersistenceController {
     static let shared = PersistenceController()
@@ -24,9 +25,11 @@ class PersistenceController {
         description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                print("❌ Critical: Core Data failed to load: \(error), \(error.userInfo)")
+	        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+	            if let error = error as NSError? {
+	                WardenLog.coreData.critical(
+	                    "Core Data failed to load: \(error.localizedDescription, privacy: .public)"
+	                )
                 
                 // Show user-friendly error dialog
                 DispatchQueue.main.async {
@@ -38,19 +41,21 @@ class PersistenceController {
                     alert.runModal()
                 }
                 
-                // Fall back to in-memory store as last resort
-                print("⚠️ Falling back to in-memory database")
-                let inMemoryDescription = NSPersistentStoreDescription()
-                inMemoryDescription.type = NSInMemoryStoreType
-                self.container.persistentStoreDescriptions = [inMemoryDescription]
-                self.container.loadPersistentStores { _, fallbackError in
-                    if let fallbackError = fallbackError {
-                        print("❌ Even in-memory store failed: \(fallbackError)")
-                    }
-                }
-                return
-            }
-        })
+	                // Fall back to in-memory store as last resort
+	                WardenLog.coreData.warning("Falling back to in-memory database")
+	                let inMemoryDescription = NSPersistentStoreDescription()
+	                inMemoryDescription.type = NSInMemoryStoreType
+	                self.container.persistentStoreDescriptions = [inMemoryDescription]
+	                self.container.loadPersistentStores { _, fallbackError in
+	                    if let fallbackError = fallbackError {
+	                        WardenLog.coreData.critical(
+	                            "In-memory store fallback failed: \(fallbackError.localizedDescription, privacy: .public)"
+	                        )
+	                    }
+	                }
+	                return
+	            }
+	        })
     }
 }
 
@@ -274,10 +279,12 @@ struct WardenApp: App {
             Task.detached(priority: .background) {
                 await self.initializeMetadataCache(for: apiServices)
             }
-        } catch {
-            print("Error fetching API services for model cache initialization: \(error)")
-        }
-    }
+	        } catch {
+	            WardenLog.coreData.error(
+	                "Error fetching API services for model cache initialization: \(error.localizedDescription, privacy: .public)"
+	            )
+	        }
+	    }
     
     private func initializeMetadataCache(for apiServices: [APIServiceEntity]) async {
         for service in apiServices {
@@ -285,12 +292,14 @@ struct WardenApp: App {
             
             // Get the API key for this service
             var apiKey = ""
-            do {
-                apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
-            } catch {
-                print("⚠️ Failed to get token for \(providerType): \(error)")
-                continue
-            }
+	            do {
+	                apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
+	            } catch {
+	                WardenLog.app.error(
+	                    "Failed to get token for \(providerType, privacy: .public): \(error.localizedDescription, privacy: .public)"
+	                )
+	                continue
+	            }
             
             // Skip if no API key (except for providers that don't require it)
             guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" else {
@@ -317,11 +326,12 @@ struct WardenApp: App {
             // Wait 3 seconds to ensure app is fully initialized
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             
-            // Connect all enabled MCP servers in the background
-            await MCPManager.shared.restartAll()
-            
-            print("✅ Auto-connected MCP servers")
-        }
-    }
+	            // Connect all enabled MCP servers in the background
+	            await MCPManager.shared.restartAll()
+	            #if DEBUG
+	            WardenLog.app.debug("Auto-connected MCP servers")
+	            #endif
+	        }
+	    }
 
 }

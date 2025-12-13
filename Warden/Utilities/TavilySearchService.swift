@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // MARK: - Tavily Error
 
@@ -58,8 +59,10 @@ class TavilySearchService {
         query: String,
         onStatusUpdate: @MainActor @escaping (SearchStatus) -> Void
     ) async throws -> (context: String, urls: [String], sources: [SearchSource]) {
-        print("🔍 [WebSearch] performSearch called with query: \(query)")
-        
+        #if DEBUG
+        WardenLog.app.debug("[WebSearch] performSearch called")
+        #endif
+
         // Update status: starting search
         await onStatusUpdate(.searching(query: query))
         
@@ -69,14 +72,11 @@ class TavilySearchService {
         let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
         let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
         
-        print("🔍 [WebSearch] Search settings - depth: \(searchDepth), maxResults: \(resultsLimit), includeAnswer: \(includeAnswer)")
-        
-        // Check if API key exists
-        if let apiKey = getApiKey() {
-            print("🔍 [WebSearch] API key found: \(String(apiKey.prefix(10)))...")
-        } else {
-            print("❌ [WebSearch] No API key found!")
-        }
+        #if DEBUG
+        WardenLog.app.debug(
+            "[WebSearch] Settings depth=\(searchDepth, privacy: .public), maxResults=\(resultsLimit, privacy: .public), includeAnswer=\(includeAnswer, privacy: .public)"
+        )
+        #endif
         
         // Update status: fetching results
         await onStatusUpdate(.fetchingResults(sources: resultsLimit))
@@ -88,7 +88,9 @@ class TavilySearchService {
             includeAnswer: includeAnswer
         )
         
-        print("🔍 [WebSearch] Got \(response.results.count) results from Tavily")
+        #if DEBUG
+        WardenLog.app.debug("[WebSearch] Received \(response.results.count, privacy: .public) result(s)")
+        #endif
         
         // Update status: processing results
         await onStatusUpdate(.processingResults)
@@ -139,9 +141,7 @@ class TavilySearchService {
             let (data, response) = try await session.data(for: request)
             
             #if DEBUG
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("🔍 Tavily Response: \(responseString)")
-            }
+            WardenLog.app.debug("[WebSearch] Tavily response received: \(data.count, privacy: .public) byte(s)")
             #endif
             
             let result = handleResponse(response, data: data, error: nil)
@@ -206,7 +206,9 @@ class TavilySearchService {
         }
         
         var result = text
-        print("🔗 [Citations] Converting inline citations with \(urls.count) URLs")
+        #if DEBUG
+        WardenLog.app.debug("[Citations] Converting citations with \(urls.count, privacy: .public) URL(s)")
+        #endif
         
         // Regex to match standalone [n] style citations:
         // - \[(\d+)\] captures the number
@@ -268,12 +270,16 @@ class TavilySearchService {
                 let url = urls[urlIndex]
                 let replacement = "[\(number)](\(url))"
                 mutableResult = mutableResult.replacingCharacters(in: fullRange, with: replacement) as NSString
-                print("🔗 [Citations] Replaced [\(number)] with markdown link -> \(url)")
+                #if DEBUG
+                WardenLog.app.debug("[Citations] Replaced citation [\(number, privacy: .public)]")
+                #endif
             }
             
             result = mutableResult as String
         } else {
-            print("❌ [Citations] Failed to create regex for inline citations")
+            #if DEBUG
+            WardenLog.app.debug("[Citations] Failed to create regex for inline citations")
+            #endif
         }
         
         return result
@@ -300,10 +306,6 @@ class TavilySearchService {
         } catch {
             throw TavilyError.invalidRequest
         }
-        
-        #if DEBUG
-        print("🔍 Tavily Search Request: \(searchRequest.query)")
-        #endif
         
         return request
     }

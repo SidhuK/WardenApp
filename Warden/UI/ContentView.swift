@@ -3,6 +3,7 @@ import Combine
 import CoreData
 import Foundation
 import SwiftUI
+import os
 
 struct ContentView: View {
     @State private var window: NSWindow?
@@ -126,9 +127,13 @@ struct ContentView: View {
     }
 
     private func setupScenePhaseChange(phase: ScenePhase) {
-        print("Scene phase changed: \(phase)")
+        #if DEBUG
+        WardenLog.app.debug("Scene phase changed: \(String(describing: phase), privacy: .public)")
+        #endif
         if phase == .inactive {
-            print("Saving state...")
+            #if DEBUG
+            WardenLog.app.debug("Saving state...")
+            #endif
         }
     }
 
@@ -197,7 +202,7 @@ struct ContentView: View {
                 }
             }
             catch {
-                print("Default API service not found: \(error)")
+                WardenLog.coreData.error("Default API service not found: \(error.localizedDescription, privacy: .public)")
             }
         }
 
@@ -208,7 +213,7 @@ struct ContentView: View {
             selectedChat = newChat
         }
         catch {
-            print("Error saving new chat: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error saving new chat: \(error.localizedDescription, privacy: .public)")
             viewContext.rollback()
         }
     }
@@ -222,7 +227,9 @@ struct ContentView: View {
             return index
         }
         else {
-            print("⚠️ Warning: Chat not found in array, returning 0")
+            #if DEBUG
+            WardenLog.app.debug("Chat not found in array, returning 0")
+            #endif
             return 0
         }
     }
@@ -684,4 +691,3 @@ struct VisualEffectView: NSViewRepresentable {
         visualEffectView.blendingMode = blendingMode
     }
 }
-

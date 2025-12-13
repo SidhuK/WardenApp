@@ -1,6 +1,7 @@
 import CoreData
 import Foundation
 import SwiftUI
+import os
 
 let migrationKey = "com.example.chatApp.migrationFromJSONCompleted"
 
@@ -55,7 +56,9 @@ class ChatStore: ObservableObject {
         do {
             return try viewContext.fetch(fetchRequest)
         } catch {
-            print("Error fetching \(entityName): \(error)")
+            WardenLog.coreData.error(
+                "Error fetching \(entityName, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
             return []
         }
     }
@@ -72,7 +75,9 @@ class ChatStore: ObservableObject {
         do {
             return try viewContext.count(for: fetchRequest)
         } catch {
-            print("Error counting \(entityName): \(error)")
+            WardenLog.coreData.error(
+                "Error counting \(entityName, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
             return 0
         }
     }
@@ -95,7 +100,9 @@ class ChatStore: ObservableObject {
                 do {
                     try self.viewContext.saveWithRetry(attempts: 3)
                 } catch {
-                    print("❌ Critical: Failed to save Core Data changes: \(error.localizedDescription)")
+                    WardenLog.coreData.error(
+                        "Failed to save Core Data changes: \(error.localizedDescription, privacy: .public)"
+                    )
                     self.showAlert(title: "Failed to Save Changes",
                                    message: "Your recent changes may not have been saved. Error: \(error.localizedDescription)")
                 }
@@ -257,7 +264,7 @@ class ChatStore: ObservableObject {
                 }
                 self.saveContext()
             } catch {
-                print("Error deleting \(T.self): \(error)")
+                WardenLog.coreData.error("Error deleting \(String(describing: T.self), privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -267,7 +274,7 @@ class ChatStore: ObservableObject {
             do {
                 try self.viewContext.save()
             } catch {
-                print("Error saving context: \(error)")
+                WardenLog.coreData.error("Error saving context: \(error.localizedDescription, privacy: .public)")
                 self.viewContext.rollback()
             }
         }
@@ -293,11 +300,13 @@ class ChatStore: ObservableObject {
             Task {
                 let result = await saveToCoreData(chats: oldChats)
                 if case .failure(let error) = result {
-                    print("❌ Migration failed: \(error.localizedDescription)")
+                    WardenLog.coreData.error("Migration from JSON failed: \(error.localizedDescription, privacy: .public)")
                     self.showAlert(title: "Migration Error",
                                    message: "Failed to migrate old chat data. Your existing chats may not be available. Error: \(error.localizedDescription)")
                 } else {
-                    print("✅ Migration from JSON successful")
+                    #if DEBUG
+                    WardenLog.coreData.debug("Migration from JSON successful")
+                    #endif
                 }
                 
                 UserDefaults.standard.set(true, forKey: migrationKey)
@@ -305,7 +314,7 @@ class ChatStore: ObservableObject {
             }
         } catch {
             UserDefaults.standard.set(true, forKey: migrationKey)
-            print("Error migrating chats: \(error)")
+            WardenLog.coreData.error("Error migrating chats: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -392,14 +401,14 @@ class ChatStore: ObservableObject {
         
         do {
             guard let apiServiceEntity = try viewContext.fetch(apiServiceFetch).first else {
-                print("❌ No API service available for title regeneration")
+                WardenLog.app.error("No API service available for title regeneration")
                 showError(message: "No API service configured. Please add an API service in Settings.")
                 return
             }
             
             // Create API service configuration using centralized logic
             guard let apiConfig = APIServiceManager.createAPIConfiguration(for: apiServiceEntity) else {
-                print("❌ Failed to create API configuration")
+                WardenLog.app.error("Failed to create API configuration for title regeneration")
                 showError(message: "Failed to create API configuration. Please check your API service settings (URL, API Key).")
                 return
             }
@@ -421,11 +430,14 @@ class ChatStore: ObservableObject {
                     successCount += 1
                 }
             }
-            
-            print("✅ Started title regeneration for \(successCount) chats")
+            #if DEBUG
+            WardenLog.app.debug("Started title regeneration for \(successCount, privacy: .public) chat(s)")
+            #endif
             
         } catch {
-            print("❌ Error fetching API service for title regeneration: \(error)")
+            WardenLog.app.error(
+                "Error fetching API service for title regeneration: \(error.localizedDescription, privacy: .public)"
+            )
             showError(message: "Failed to regenerate titles: \(error.localizedDescription)")
         }
     }
@@ -536,7 +548,7 @@ class ChatStore: ObservableObject {
                 return lastProject.sortOrder + 1
             }
         } catch {
-            print("Error getting next sort order: \(error)")
+            WardenLog.coreData.error("Error getting next sort order: \(error.localizedDescription, privacy: .public)")
         }
         
         return 0
@@ -566,7 +578,9 @@ class ChatStore: ObservableObject {
                         (project.chats?.allObjects as? [ChatEntity])?.forEach { _ = $0.messages.count }
                     }
                 } catch {
-                    print("Error preloading project data: \(error)")
+                    WardenLog.coreData.error(
+                        "Error preloading project data: \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
         }

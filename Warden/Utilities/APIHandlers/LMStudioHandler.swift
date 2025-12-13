@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import os
 
 /// Handler for LM Studio API integration.
 /// LM Studio provides OpenAI-compatible endpoints for local LLM inference.
@@ -101,7 +102,7 @@ class LMStudioHandler: ChatGPTHandler {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
-            print("Error serializing request body: \(error)")
+            WardenLog.app.error("LMStudio request body serialization error: \(error.localizedDescription, privacy: .public)")
         }
 
         return request

@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 private struct DeepseekModelsResponse: Codable {
     let data: [DeepseekModel]
@@ -12,7 +13,7 @@ class DeepseekHandler: ChatGPTHandler {
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
-                print("Response: \(responseString)")
+            WardenLog.app.debug("Deepseek response received: \(responseString.count, privacy: .public) char(s)")
             #endif
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
@@ -33,7 +34,7 @@ class DeepseekHandler: ChatGPTHandler {
                     return (finalContent, messageRole, nil)
                 }
             } catch {
-                print("Error parsing JSON: \(error.localizedDescription)")
+                WardenLog.app.error("Deepseek JSON parse error: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         }
@@ -42,7 +43,6 @@ class DeepseekHandler: ChatGPTHandler {
     
     override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
-            print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
@@ -81,8 +81,9 @@ class DeepseekHandler: ChatGPTHandler {
             }
         } catch {
             #if DEBUG
-                print(String(data: data, encoding: .utf8) ?? "Data cannot be converted into String")
-                print("Error parsing JSON: \(error)")
+            WardenLog.app.debug(
+                "Deepseek delta JSON parse error: \(error.localizedDescription, privacy: .public) (\(data.count, privacy: .public) byte(s))"
+            )
             #endif
             
             return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)
@@ -186,7 +187,7 @@ class DeepseekHandler: ChatGPTHandler {
             
             return modifiedString.trimmingCharacters(in: .whitespacesAndNewlines)
         } catch {
-            print("Error creating regex: \(error.localizedDescription)")
+            WardenLog.app.error("Deepseek regex creation error: \(error.localizedDescription, privacy: .public)")
             return content
         }
     }

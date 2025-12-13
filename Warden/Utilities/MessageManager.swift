@@ -1,6 +1,7 @@
 import CoreData
 import Foundation
 import MCP
+import os
 
 class MessageManager: ObservableObject {
     private var apiService: APIService
@@ -106,7 +107,9 @@ class MessageManager: ObservableObject {
         useWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
-        print("🔍 [WebSearch] sendMessageStreamWithSearch called")
+        #if DEBUG
+        WardenLog.app.debug("[WebSearch] sendMessageStreamWithSearch called")
+        #endif
         
         var finalMessage = message
          
@@ -145,7 +148,7 @@ class MessageManager: ObservableObject {
                 }
                 return
             } catch {
-                print("❌ [WebSearch] Search failed with error: \(error)")
+                WardenLog.app.error("[WebSearch] Search failed: \(error.localizedDescription, privacy: .public)")
                 chat.waitingForResponse = false
                 
                 // Update status: failed
@@ -171,7 +174,9 @@ class MessageManager: ObservableObject {
         useWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) async {
-        print("🔍 [WebSearch NON-STREAM] sendMessageWithSearch called")
+        #if DEBUG
+        WardenLog.app.debug("[WebSearch] sendMessageWithSearch called (non-stream)")
+        #endif
         
         var finalMessage = message
          
@@ -210,7 +215,7 @@ class MessageManager: ObservableObject {
                 }
                 return
             } catch {
-                print("❌ [WebSearch NON-STREAM] Search failed with error: \(error)")
+                WardenLog.app.error("[WebSearch] Search failed (non-stream): \(error.localizedDescription, privacy: .public)")
                 chat.waitingForResponse = false
                 
                 // Update status: failed
@@ -258,18 +263,18 @@ class MessageManager: ObservableObject {
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
             
-            print("🛠️ [MCP] Fetching tools for \(selectedAgents.count) selected agent(s)")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Fetching tools for \(selectedAgents.count, privacy: .public) selected agent(s)")
+            #endif
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
-            print("🛠️ [MCP] Found \(tools.count) tool(s)")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Found \(tools.count, privacy: .public) tool(s)")
+            #endif
             
             // Convert MCP Tool to OpenAI format
             let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
-                print("🛠️ [MCP] Converting tool: \(tool.name) - \(tool.description ?? "no description")")
-                
                 // Convert MCP Value inputSchema to JSON-compatible dictionary
                 let parameters = convertValueToDict(tool.inputSchema)
-                
-                print("🛠️ [MCP] Tool \(tool.name) schema: \(parameters)")
                 
                 return [
                     "type": "function",
@@ -281,10 +286,12 @@ class MessageManager: ObservableObject {
                 ]
             }
             
-            print("🛠️ [MCP] Sending \(toolDefinitions.count) tool definition(s) to API")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Sending \(toolDefinitions.count, privacy: .public) tool definition(s) to API")
             if !toolDefinitions.isEmpty {
-                print("🛠️ [MCP] Tool names: \(tools.map { $0.name }.joined(separator: ", "))")
+                WardenLog.app.debug("[MCP] Tool names: \(tools.map { $0.name }.joined(separator: ", "), privacy: .public)")
             }
+            #endif
             
             ChatService.shared.sendMessage(
                 apiService: apiService,
@@ -381,17 +388,17 @@ class MessageManager: ObservableObject {
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
             
-            print("🛠️ [MCP Stream] Fetching tools for \(selectedAgents.count) selected agent(s)")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Fetching tools for \(selectedAgents.count, privacy: .public) selected agent(s) (stream)")
+            #endif
             let tools = await MCPManager.shared.getTools(for: selectedAgents)
-            print("🛠️ [MCP Stream] Found \(tools.count) tool(s)")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Found \(tools.count, privacy: .public) tool(s) (stream)")
+            #endif
             
             let toolDefinitions = tools.compactMap { tool -> [String: Any]? in
-                print("🛠️ [MCP Stream] Converting tool: \(tool.name) - \(tool.description ?? "no description")")
-                
                 // Convert MCP Value inputSchema to JSON-compatible dictionary
                 let parameters = convertValueToDict(tool.inputSchema)
-                
-                print("🛠️ [MCP Stream] Tool \(tool.name) schema: \(parameters)")
                 
                 return [
                     "type": "function",
@@ -403,10 +410,12 @@ class MessageManager: ObservableObject {
                 ]
             }
             
-            print("🛠️ [MCP Stream] Sending \(toolDefinitions.count) tool definition(s) to API")
+            #if DEBUG
+            WardenLog.app.debug("[MCP] Sending \(toolDefinitions.count, privacy: .public) tool definition(s) to API (stream)")
             if !toolDefinitions.isEmpty {
-                print("🛠️ [MCP Stream] Tool names: \(tools.map { $0.name }.joined(separator: ", "))")
+                WardenLog.app.debug("[MCP] Tool names: \(tools.map { $0.name }.joined(separator: ", "), privacy: .public)")
             }
+            #endif
             
             do {
                 chat.waitingForResponse = true
@@ -442,7 +451,11 @@ class MessageManager: ObservableObject {
                     flushChunkBuffer(force: streamingMessage == nil)
                 }
                 let elapsed = Date().timeIntervalSince(streamStart)
-                print("⚡️ Stream finished: \(chunkCount) chunk(s) in \(String(format: "%.2f", elapsed))s")
+                #if DEBUG
+                WardenLog.streaming.debug(
+                    "Stream finished: \(chunkCount, privacy: .public) chunk(s) in \(String(format: "%.2f", elapsed), privacy: .public)s"
+                )
+                #endif
                 flushChunkBuffer(force: true)
                 // Normal completion path - stream finished successfully
                 if !fullResponse.isEmpty {
@@ -477,9 +490,12 @@ class MessageManager: ObservableObject {
                 completion(.success(()))
             }
             catch is CancellationError {
-                print("⚠️ Streaming cancelled via exception")
                 let elapsed = Date().timeIntervalSince(streamStart)
-                print("⚠️ Stream cancellation stats: \(chunkCount) chunk(s), \(String(format: "%.2f", elapsed))s elapsed")
+                #if DEBUG
+                WardenLog.streaming.debug(
+                    "Streaming cancelled: \(chunkCount, privacy: .public) chunk(s), \(String(format: "%.2f", elapsed), privacy: .public)s elapsed"
+                )
+                #endif
                 
                 // Save partial response even when cancelled via exception
                 flushChunkBuffer(force: true)
@@ -504,14 +520,16 @@ class MessageManager: ObservableObject {
                         content: accumulatedResponse,
                         role: AppConstants.defaultRole
                     )
-                    print("✅ Partial response saved after cancellation exception")
+                    #if DEBUG
+                    WardenLog.streaming.debug("Partial response saved after cancellation")
+                    #endif
                 }
                 
                 chat.waitingForResponse = false
                 completion(.failure(CancellationError()))
             }
             catch {
-                print("❌ Streaming error: \(error)")
+                WardenLog.streaming.error("Streaming error: \(error.localizedDescription, privacy: .public)")
                 chat.waitingForResponse = false
                 completion(.failure(error))
             }
@@ -521,7 +539,9 @@ class MessageManager: ObservableObject {
     // MARK: - Tool Execution
     
     private func handleToolCalls(_ toolCalls: [ToolCall], in chat: ChatEntity, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) async {
-        print("🛠️ Handling \(toolCalls.count) tool calls")
+        #if DEBUG
+        WardenLog.app.debug("Handling \(toolCalls.count, privacy: .public) tool call(s)")
+        #endif
         
         // Serialize tool calls to JSON string for Core Data storage
         let toolCallsDict = toolCalls.map { toolCall -> [String: Any] in
@@ -550,7 +570,9 @@ class MessageManager: ObservableObject {
             let functionName = toolCall.function.name
             let arguments = toolCall.function.arguments
             
-            print("🛠️ Executing tool: \(functionName)")
+            #if DEBUG
+            WardenLog.app.debug("Executing tool: \(functionName, privacy: .public)")
+            #endif
             
             // Update UI with tool call status
             await MainActor.run {
@@ -586,6 +608,9 @@ class MessageManager: ObservableObject {
             } catch {
                 resultString = "{\"error\": \"\(error.localizedDescription)\"}"
                 success = false
+                WardenLog.app.error(
+                    "Tool execution failed (\(functionName, privacy: .public)): \(error.localizedDescription, privacy: .public)"
+                )
                 await MainActor.run {
                     self.toolCallStatus = .failed(toolName: functionName, error: error.localizedDescription)
                     if let index = self.activeToolCalls.firstIndex(where: { $0.toolName == functionName }) {
@@ -603,7 +628,11 @@ class MessageManager: ObservableObject {
                 }
             }
             
-            print("🛠️ Tool result: \(resultString)")
+            #if DEBUG
+            WardenLog.app.debug(
+                "Tool result (\(functionName, privacy: .public)): \(resultString.count, privacy: .public) char(s)"
+            )
+            #endif
             
             // Append tool result message
             chat.requestMessages.append([
@@ -661,7 +690,7 @@ class MessageManager: ObservableObject {
     func generateChatNameIfNeeded(chat: ChatEntity, force: Bool = false) {
         guard force || chat.name == "" || chat.name == "New Chat", chat.messages.count > 1 else {
             #if DEBUG
-                print("Chat name not needed (requires at least 2 messages), skipping generation")
+                WardenLog.app.debug("Chat name not needed (requires at least 2 messages), skipping generation")
             #endif
             return
         }
@@ -669,7 +698,7 @@ class MessageManager: ObservableObject {
         // Only generate names if explicitly enabled on the API service
         guard chat.apiService?.generateChatNames ?? false else {
             #if DEBUG
-                print("Chat name generation not enabled for this API service, skipping")
+                WardenLog.app.debug("Chat name generation not enabled for this API service, skipping")
             #endif
             return
         }
@@ -689,20 +718,26 @@ class MessageManager: ObservableObject {
             
             // Skip if deadline has passed
             guard Date() < deadline else {
-                print("⚠️ Chat name generation timeout, skipping")
+                #if DEBUG
+                WardenLog.app.debug("Chat name generation timeout, skipping")
+                #endif
                 return
             }
 
             switch result {
             case .success(let (messageText, _)):
                 guard let messageText = messageText else {
-                    print("⚠️ Generated message was empty, skipping")
+                    #if DEBUG
+                    WardenLog.app.debug("Generated chat name message was empty, skipping")
+                    #endif
                     return
                 }
                 
                 let chatName = self.sanitizeChatName(messageText)
                 guard !chatName.isEmpty else {
-                    print("⚠️ Generated chat name was empty, skipping")
+                    #if DEBUG
+                    WardenLog.app.debug("Generated chat name was empty after sanitization, skipping")
+                    #endif
                     return
                 }
                 
@@ -710,13 +745,17 @@ class MessageManager: ObservableObject {
                     chat.name = chatName
                     chat.updatedDate = Date()
                     self.debounceSave()
-                    print("✅ Chat name generated: \(chatName)")
+                    #if DEBUG
+                    WardenLog.app.debug("Chat name generated: \(chatName, privacy: .public)")
+                    #endif
                 }
                 
             case .failure(let error):
                 // Silently skip - chat name generation is optional
                 #if DEBUG
-                    print("ℹ️ Chat name generation skipped: \(error)")
+                    WardenLog.app.debug(
+                        "Chat name generation skipped: \(error.localizedDescription, privacy: .public)"
+                    )
                 #endif
             }
         }
@@ -771,8 +810,9 @@ class MessageManager: ObservableObject {
     }
 
     private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil, isStreaming: Bool = false) {
-        print("💬 [Message] AI response received, length: \(message.count)")
-        print("💬 [Message] Response preview: \(String(message.prefix(200)))...")
+        #if DEBUG
+        WardenLog.app.debug("AI response received: \(message.count, privacy: .public) char(s)")
+        #endif
         
         // Convert citations to clickable links if we have search URLs
         let finalMessage: String
@@ -782,8 +822,9 @@ class MessageManager: ObservableObject {
             finalMessage = message
         }
         
-        print("💬 [Message] After conversion, length: \(finalMessage.count)")
-        print("💬 [Message] Final preview: \(String(finalMessage.prefix(200)))...")
+        #if DEBUG
+        WardenLog.app.debug("AI response after conversion: \(finalMessage.count, privacy: .public) char(s)")
+        #endif
         
         let newMessage = MessageEntity(context: self.viewContext)
         newMessage.id = Int64(chat.messages.count + 1)
@@ -814,7 +855,9 @@ class MessageManager: ObservableObject {
                 searchTime: Date(),
                 resultCount: sources.count
             )
-            print("💬 [Message] Saved search metadata with \(sources.count) sources for query: \(query)")
+            #if DEBUG
+            WardenLog.app.debug("Saved search metadata: \(sources.count, privacy: .public) source(s)")
+            #endif
         }
 
         chat.updatedDate = Date()
@@ -839,7 +882,9 @@ class MessageManager: ObservableObject {
         save: Bool = false,
         isFinalUpdate: Bool = false
     ) {
-        print("Streaming chunk received: \(accumulatedResponse.suffix(20))")
+        #if DEBUG
+        WardenLog.streaming.debug("Streaming update: \(accumulatedResponse.count, privacy: .public) char(s) accumulated")
+        #endif
         
         // Only convert citations at the final update, not during intermediate streaming updates
         let finalMessage: String
@@ -864,4 +909,3 @@ class MessageManager: ObservableObject {
     }
 
 }
-

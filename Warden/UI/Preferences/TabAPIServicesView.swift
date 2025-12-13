@@ -1,5 +1,6 @@
 import CoreData
 import SwiftUI
+import os
 
 struct TabAPIServicesView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -126,7 +127,7 @@ struct TabAPIServicesView: View {
             selectedServiceID = newService.objectID
             refreshList()
         } catch {
-            print("Error creating new service: \(error)")
+            WardenLog.coreData.error("Error creating new service: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -146,7 +147,7 @@ struct TabAPIServicesView: View {
                     try TokenManager.setToken(token, for: newServiceID.uuidString)
                 }
             } catch {
-                print("Error copying API token: \(error)")
+                WardenLog.app.error("Error copying API token: \(error.localizedDescription, privacy: .public)")
             }
         }
 
@@ -155,7 +156,7 @@ struct TabAPIServicesView: View {
             selectedServiceID = newService.objectID
             refreshList()
         } catch {
-            print("Error duplicating service: \(error)")
+            WardenLog.coreData.error("Error duplicating service: \(error.localizedDescription, privacy: .public)")
         }
     }
 

@@ -1,6 +1,7 @@
 
 import Foundation
 import CoreData
+import os
 
 /// Service responsible for rephrasing user input using AI
 class RephraseService: ObservableObject {
@@ -82,7 +83,7 @@ Rephrase the following sentence to improve clarity and readability, without chan
         do {
             apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
         } catch {
-            print("Error extracting token: \(error) for \(service.id?.uuidString ?? "")")
+            WardenLog.app.error("Error extracting token: \(error.localizedDescription, privacy: .public)")
         }
         
         return APIServiceConfig(

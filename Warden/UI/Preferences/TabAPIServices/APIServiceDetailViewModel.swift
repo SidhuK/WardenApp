@@ -1,6 +1,7 @@
 
 import Combine
 import SwiftUI
+import os
 
 class APIServiceDetailViewModel: ObservableObject {
     private let viewContext: NSManagedObjectContext
@@ -72,7 +73,7 @@ class APIServiceDetailViewModel: ObservableObject {
                     apiKey = try TokenManager.getToken(for: serviceIDString) ?? ""
                 }
                 catch {
-                    print("Failed to get token: \(error.localizedDescription)")
+                    WardenLog.app.error("Failed to get token: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -169,14 +170,11 @@ class APIServiceDetailViewModel: ObservableObject {
                         message: "Failed to fetch models: \(self.getUserFriendlyErrorMessage(error))"
                     )
                     
-                    // Log detailed error for debugging
-                    print("""
-                    ❌ Model fetch failed for API service
-                    Service Type: \(self.type)
-                    Service Name: \(self.name)
-                    API URL: \(self.url)
-                    Error: \(error.localizedDescription)
-                    """)
+                    #if DEBUG
+                    WardenLog.app.debug(
+                        "Model fetch failed (type=\(self.type, privacy: .public), name=\(self.name, privacy: .public), url=\(self.url, privacy: .public)): \(error.localizedDescription, privacy: .public)"
+                    )
+                    #endif
                 }
             }
         }
@@ -217,7 +215,7 @@ class APIServiceDetailViewModel: ObservableObject {
                 try TokenManager.setToken(apiKey, for: serviceIDString)
             }
             catch {
-                print("Failed to set token: \(error.localizedDescription)")
+                WardenLog.app.error("Failed to set token: \(error.localizedDescription, privacy: .public)")
             }
         }
 
@@ -228,7 +226,7 @@ class APIServiceDetailViewModel: ObservableObject {
             try viewContext.save()
         }
         catch {
-            print("Error saving context: \(error)")
+            WardenLog.coreData.error("Error saving context: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -239,7 +237,7 @@ class APIServiceDetailViewModel: ObservableObject {
             try viewContext.save()
         }
         catch {
-            print("Error deleting API service: \(error)")
+            WardenLog.coreData.error("Error deleting API service: \(error.localizedDescription, privacy: .public)")
         }
     }
 

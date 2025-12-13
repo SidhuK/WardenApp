@@ -1,6 +1,7 @@
 
 import CoreData
 import Foundation
+import os
 
 class DatabasePatcher {
     static func applyPatches(context: NSManagedObjectContext) {
@@ -25,14 +26,18 @@ class DatabasePatcher {
                 newPersona.order = Int16(index)
             }
 
-            do {
-                try context.save()
-                defaults.set(true, forKey: AppConstants.defaultPersonasFlag)
-                print("Default assistants added successfully")
-            }
-            catch {
-                print("Failed to add default assistants: \(error)")
-            }
+	            do {
+	                try context.save()
+	                defaults.set(true, forKey: AppConstants.defaultPersonasFlag)
+	                #if DEBUG
+	                WardenLog.coreData.debug("Default assistants added successfully")
+	                #endif
+	            }
+	            catch {
+	                WardenLog.coreData.error(
+	                    "Failed to add default assistants: \(error.localizedDescription, privacy: .public)"
+	                )
+	            }
         }
     }
 
@@ -51,34 +56,38 @@ class DatabasePatcher {
                 }
             }
 
-            if needsSave {
-                try context.save()
-                print("Successfully patched persona ordering")
-            }
-        }
-        catch {
-            print("Error patching persona ordering: \(error)")
-        }
-    }
+	            if needsSave {
+	                try context.save()
+	                #if DEBUG
+	                WardenLog.coreData.debug("Successfully patched persona ordering")
+	                #endif
+	            }
+	        }
+	        catch {
+	            WardenLog.coreData.error("Error patching persona ordering: \(error.localizedDescription, privacy: .public)")
+	        }
+	    }
 
     static func resetPersonaOrdering(context: NSManagedObjectContext) {
         let fetchRequest = NSFetchRequest<PersonaEntity>(entityName: "PersonaEntity")
 
-        do {
+	        do {
             let personas = try context.fetch(fetchRequest)
             for persona in personas {
                 persona.order = 0
             }
-            try context.save()
-            print("Successfully reset all persona ordering")
+	            try context.save()
+	            #if DEBUG
+	            WardenLog.coreData.debug("Successfully reset all persona ordering")
+	            #endif
 
             // Re-apply the ordering patch
             patchPersonaOrdering(context: context)
         }
-        catch {
-            print("Error resetting persona ordering: \(error)")
-        }
-    }
+	        catch {
+	            WardenLog.coreData.error("Error resetting persona ordering: \(error.localizedDescription, privacy: .public)")
+	        }
+	    }
 
     static func patchImageUploadsForAPIServices(context: NSManagedObjectContext) {
         let fetchRequest = NSFetchRequest<APIServiceEntity>(entityName: "APIServiceEntity")
@@ -87,25 +96,33 @@ class DatabasePatcher {
             let apiServices = try context.fetch(fetchRequest)
             var needsSave = false
             
-            for service in apiServices {
-                if let type = service.type, 
-                   let config = AppConstants.defaultApiConfigurations[type], 
-                   config.imageUploadsSupported && !service.imageUploadsAllowed {
-                    service.imageUploadsAllowed = true
-                    needsSave = true
-                    print("Enabled image uploads for API service: \(service.name ?? "Unnamed")")
-                }
-            }
+	            for service in apiServices {
+	                if let type = service.type, 
+	                   let config = AppConstants.defaultApiConfigurations[type], 
+	                   config.imageUploadsSupported && !service.imageUploadsAllowed {
+	                    service.imageUploadsAllowed = true
+	                    needsSave = true
+	                    #if DEBUG
+	                    WardenLog.coreData.debug(
+	                        "Enabled image uploads for API service: \(service.name ?? \"Unnamed\", privacy: .public)"
+	                    )
+	                    #endif
+	                }
+	            }
             
-            if needsSave {
-                try context.save()
-                print("Successfully patched image uploads for API services")
-            }
-        }
-        catch {
-            print("Error patching image uploads for API services: \(error)")
-        }
-    }
+	            if needsSave {
+	                try context.save()
+	                #if DEBUG
+	                WardenLog.coreData.debug("Successfully patched image uploads for API services")
+	                #endif
+	            }
+	        }
+	        catch {
+	            WardenLog.coreData.error(
+	                "Error patching image uploads for API services: \(error.localizedDescription, privacy: .public)"
+	            )
+	        }
+	    }
     
     static func migrateExistingConfiguration(context: NSManagedObjectContext) {
         let apiServiceManager = APIServiceManager(viewContext: context)
@@ -142,39 +159,53 @@ class DatabasePatcher {
             generateChatNames: useChatGptForNames
         )
 
-        if let token = defaults.string(forKey: "gptToken") {
-            print("Token found: \(token)")
-            if token != "", let apiServiceId = apiService.id {
-                try? TokenManager.setToken(token, for: apiServiceId.uuidString)
-                defaults.set("", forKey: "gptToken")
-            }
-        }
+	        if let token = defaults.string(forKey: "gptToken") {
+	            if token != "", let apiServiceId = apiService.id {
+	                try? TokenManager.setToken(token, for: apiServiceId.uuidString)
+	                defaults.set("", forKey: "gptToken")
+	                #if DEBUG
+	                WardenLog.app.debug("Migrated legacy token to Keychain")
+	                #endif
+	            }
+	        }
 
         // Set Default Assistant as the default for default API service
         let personaFetchRequest = NSFetchRequest<PersonaEntity>(entityName: "PersonaEntity")
         personaFetchRequest.predicate = NSPredicate(format: "name == %@", "Default Assistant")
 
-        do {
-            let defaultPersonas = try context.fetch(personaFetchRequest)
-            if let defaultPersona = defaultPersonas.first {
-                print("Found default assistant: \(defaultPersona.name ?? "")")
-                apiService.defaultPersona = defaultPersona
-                try context.save()
-                print("Successfully set default assistant for API service")
-            }
-            else {
-                print("Warning: Default Assistant not found")
-            }
-        }
-        catch {
-            print("Error setting default assistant: \(error)")
-        }
+	        do {
+	            let defaultPersonas = try context.fetch(personaFetchRequest)
+	            if let defaultPersona = defaultPersonas.first {
+	                #if DEBUG
+	                WardenLog.coreData.debug(
+	                    "Found default assistant persona: \(defaultPersona.name ?? \"\", privacy: .public)"
+	                )
+	                #endif
+	                apiService.defaultPersona = defaultPersona
+	                try context.save()
+	                #if DEBUG
+	                WardenLog.coreData.debug("Successfully set default assistant for API service")
+	                #endif
+	            }
+	            else {
+	                #if DEBUG
+	                WardenLog.coreData.debug("Default Assistant persona not found")
+	                #endif
+	            }
+	        }
+	        catch {
+	            WardenLog.coreData.error(
+	                "Error setting default assistant: \(error.localizedDescription, privacy: .public)"
+	            )
+	        }
 
         // Update Chats
         let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
         do {
             let existingChats = try context.fetch(fetchRequest)
-            print("Found \(existingChats.count) existing chats to update")
+            #if DEBUG
+            WardenLog.coreData.debug("Found \(existingChats.count, privacy: .public) existing chat(s) to update")
+            #endif
 
             for chat in existingChats {
                 chat.apiService = apiService
@@ -182,10 +213,14 @@ class DatabasePatcher {
             }
 
             try context.save()
-            print("Successfully updated all existing chats with new API service")
+            #if DEBUG
+            WardenLog.coreData.debug("Successfully updated all existing chats with new API service")
+            #endif
         }
         catch {
-            print("Error updating existing chats: \(error)")
+            WardenLog.coreData.error(
+                "Error updating existing chats: \(error.localizedDescription, privacy: .public)"
+            )
         }
 
         defaults.set(apiService.objectID.uriRepresentation().absoluteString, forKey: "defaultApiService")
@@ -227,19 +262,27 @@ class DatabasePatcher {
                     let symbol = colorToSymbolMap[color] ?? "person.circle"
                     persona.color = symbol
                     needsSave = true
-                    print("Migrated persona '\(persona.name ?? "")' from color \(color) to symbol \(symbol)")
+                    #if DEBUG
+                    WardenLog.coreData.debug(
+                        "Migrated persona '\(persona.name ?? \"\", privacy: .public)' from color to symbol"
+                    )
+                    #endif
                 }
             }
             
             if needsSave {
                 try context.save()
-                print("Successfully migrated persona colors to symbols")
+                #if DEBUG
+                WardenLog.coreData.debug("Successfully migrated persona colors to symbols")
+                #endif
             }
             
             defaults.set(true, forKey: "PersonaSymbolMigrationCompleted")
         }
         catch {
-            print("Error migrating persona colors to symbols: \(error)")
+            WardenLog.coreData.error(
+                "Error migrating persona colors to symbols: \(error.localizedDescription, privacy: .public)"
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import os
 
 class TavilyKeyManager {
     static let shared = TavilyKeyManager()
@@ -29,9 +30,9 @@ class TavilyKeyManager {
         
         #if DEBUG
         if status == errSecSuccess {
-            print("✅ Tavily API key saved successfully")
+            WardenLog.app.debug("Tavily API key saved successfully")
         } else {
-            print("❌ Failed to save Tavily API key: \(status)")
+            WardenLog.app.debug("Failed to save Tavily API key (status: \(status, privacy: .public))")
         }
         #endif
         
@@ -57,7 +58,7 @@ class TavilyKeyManager {
               let apiKey = String(data: data, encoding: .utf8) else {
             #if DEBUG
             if status != errSecItemNotFound {
-                print("⚠️ Failed to retrieve Tavily API key: \(status)")
+                WardenLog.app.debug("Failed to retrieve Tavily API key (status: \(status, privacy: .public))")
             }
             #endif
             return nil
@@ -79,9 +80,9 @@ class TavilyKeyManager {
         
         #if DEBUG
         if status == errSecSuccess {
-            print("✅ Tavily API key deleted successfully")
+            WardenLog.app.debug("Tavily API key deleted successfully")
         } else if status != errSecItemNotFound {
-            print("❌ Failed to delete Tavily API key: \(status)")
+            WardenLog.app.debug("Failed to delete Tavily API key (status: \(status, privacy: .public))")
         }
         #endif
         

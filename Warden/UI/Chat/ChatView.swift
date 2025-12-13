@@ -1,6 +1,7 @@
 import CoreData
 import SwiftUI
 import UniformTypeIdentifiers
+import os
 
 struct ChatView: View {
     let viewContext: NSManagedObjectContext
@@ -238,7 +239,11 @@ struct ChatView: View {
             if let chatId = notification.userInfo?["chatId"] as? UUID,
                 chatId == chat.id
             {
-                print("RecreateMessageManager notification received for chat \(chatId)")
+                #if DEBUG
+                WardenLog.app.debug(
+                    "RecreateMessageManager notification received for chat \(chatId.uuidString, privacy: .public)"
+                )
+                #endif
                 chatViewModel.recreateMessageManager()
             }
         }
@@ -433,14 +438,18 @@ extension ChatView {
 
         userIsScrolling = false
         
-        print("📤 [ChatView] Sending message, webSearchEnabled: \(webSearchEnabled)")
-        print("📤 [ChatView] useStreamResponse: \(chat.apiService?.useStreamResponse ?? false)")
+        #if DEBUG
+        WardenLog.app.debug("Sending message. webSearchEnabled: \(webSearchEnabled, privacy: .public)")
+        WardenLog.app.debug("useStreamResponse: \(chat.apiService?.useStreamResponse ?? false, privacy: .public)")
+        #endif
         
         let useStream = chat.apiService?.useStreamResponse ?? false
         
         // Unified sending logic
         if useStream {
-            print("📤 [ChatView] Using STREAMING path")
+            #if DEBUG
+            WardenLog.streaming.debug("Using STREAMING path")
+            #endif
             self.isStreaming = true
             if webSearchEnabled { self.isSearchingWeb = true }
             
@@ -454,7 +463,9 @@ extension ChatView {
                 }
             }
         } else {
-            print("📤 [ChatView] Using NON-STREAMING path")
+            #if DEBUG
+            WardenLog.streaming.debug("Using NON-STREAMING path")
+            #endif
             self.waitingForResponse = true
             if webSearchEnabled { self.isSearchingWeb = true }
             
@@ -484,7 +495,7 @@ extension ChatView {
                     self.handleResponseFinished()
                 }
             case .failure(let error):
-                print("Error sending message: \(error)")
+                WardenLog.app.error("Error sending message: \(error.localizedDescription, privacy: .public)")
                 self.currentError = ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date())
                 self.handleResponseFinished()
             }
@@ -725,7 +736,9 @@ extension ChatView {
                     }
                     
                 case .failure(let error):
-                    print("Error in multi-agent message: \(error)")
+                    WardenLog.app.error(
+                        "Error in multi-agent message: \(error.localizedDescription, privacy: .public)"
+                    )
                     self.currentError = ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date())
                 }
                 
@@ -777,7 +790,9 @@ extension ChatView {
         guard let selectedService = selectedMultiAgentServices.first(where: {
             $0.name == agentResponse.serviceName && $0.model == agentResponse.model
         }) else {
-            print("⚠️ Could not find service for agent: \(agentResponse.serviceName)")
+            #if DEBUG
+            WardenLog.app.debug("Could not find service for agent: \(agentResponse.serviceName, privacy: .public)")
+            #endif
             return
         }
         
@@ -794,7 +809,11 @@ extension ChatView {
         chat.updatedDate = Date()
         try? viewContext.save()
         
-        print("✅ Switched to \(agentResponse.serviceName) - \(agentResponse.model)")
+        #if DEBUG
+        WardenLog.app.debug(
+            "Switched to \(agentResponse.serviceName, privacy: .public) - \(agentResponse.model, privacy: .public)"
+        )
+        #endif
         
         // Show visual feedback
         showTemporaryFeedback("Continuing with \(agentResponse.serviceName)", icon: "checkmark.circle.fill")
@@ -855,4 +874,3 @@ extension ChatView {
         )
     }
 }
-

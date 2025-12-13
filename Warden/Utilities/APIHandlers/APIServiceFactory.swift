@@ -1,5 +1,6 @@
 
 import Foundation
+import os
 
 class APIServiceFactory {
     static let session: URLSession = {
@@ -34,7 +35,9 @@ class APIServiceFactory {
             return LMStudioHandler(config: config, session: session)
         default:
             // Fall back to ChatGPT handler for unknown services
-            print("⚠️ Warning: Unsupported API service '\(config.name)', falling back to ChatGPT-compatible handler")
+            WardenLog.app.warning(
+                "Unsupported API service '\(config.name, privacy: .public)', falling back to ChatGPT-compatible handler"
+            )
             return ChatGPTHandler(config: config, session: session)
         }
     }

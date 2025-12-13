@@ -1,5 +1,6 @@
 
 import Foundation
+import os
 
 private struct ClaudeModelsResponse: Codable {
     let data: [ClaudeModel]
@@ -114,7 +115,7 @@ class ClaudeHandler: BaseAPIHandler {
             }
         }
         catch {
-            print("Error parsing JSON: \(error.localizedDescription)")
+            WardenLog.app.error("Claude JSON parse error: \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }

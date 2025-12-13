@@ -3,6 +3,7 @@ import CommonCrypto
 import CoreData
 import Foundation
 import SwiftUI
+import os
 
 extension Data {
     public func sha256() -> String {
@@ -75,16 +76,18 @@ extension NSManagedObjectContext {
             try self.save()
         }
         catch {
-            print("Core Data save failed: \(error)")
+            WardenLog.coreData.error("Core Data save failed: \(error.localizedDescription, privacy: .public)")
 
             self.rollback()
 
             if attempts > 0 {
-                print("Retrying save operation...")
+                #if DEBUG
+                WardenLog.coreData.debug("Retrying save operation...")
+                #endif
                 self.saveWithRetry(attempts: attempts - 1)
             }
             else {
-                print("Failed to save after multiple attempts")
+                WardenLog.coreData.error("Failed to save after multiple attempts")
             }
         }
     }
@@ -214,11 +217,10 @@ extension ChatEntity {
 
         // Build comprehensive system message with project context
         let systemMessage = buildSystemMessageWithProjectContext()
-        
         #if DEBUG
-        print("🤖 Persona: \(self.persona?.name ?? "None")")
-        print("🗂️ Project: \(self.project?.name ?? "None")")
-        print("📝 System Message: \(systemMessage)")
+        WardenLog.app.debug(
+            "Building request messages with project context (persona: \((self.persona?.name != nil), privacy: .public), project: \((self.project?.name != nil), privacy: .public))"
+        )
         #endif
 
         if !AppConstants.openAiReasoningModels.contains(self.gptModel) {
@@ -361,4 +363,3 @@ struct PreviewHTMLGenerator {
         """
     }
 }
-

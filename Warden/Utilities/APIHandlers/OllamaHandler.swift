@@ -1,5 +1,6 @@
 
 import Foundation
+import os
 
 private struct OllamaModelsResponse: Codable {
     let models: [OllamaModel]
@@ -73,7 +74,7 @@ class OllamaHandler: BaseAPIHandler {
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
-                print("Response: \(responseString)")
+            WardenLog.app.debug("Ollama response received: \(responseString.count, privacy: .public) char(s)")
             #endif
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
@@ -87,7 +88,7 @@ class OllamaHandler: BaseAPIHandler {
                 }
             }
             catch {
-                print("Error parsing JSON: \(error.localizedDescription)")
+                WardenLog.app.error("Ollama JSON parse error: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         }
@@ -96,7 +97,6 @@ class OllamaHandler: BaseAPIHandler {
 
     override func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?) {
         guard let data = data else {
-            print("No data received.")
             return (true, APIError.decodingFailed("No data received in SSE event"), nil, nil, nil)
         }
 
@@ -121,8 +121,9 @@ class OllamaHandler: BaseAPIHandler {
         }
         catch {
             #if DEBUG
-                print(String(data: data, encoding: .utf8) ?? "Data cannot be converted into String")
-                print("Error parsing JSON: \(error)")
+            WardenLog.app.debug(
+                "Ollama delta JSON parse error: \(error.localizedDescription, privacy: .public) (\(data.count, privacy: .public) byte(s))"
+            )
             #endif
 
             return (false, APIError.decodingFailed("Failed to parse JSON: \(error.localizedDescription)"), nil, nil, nil)

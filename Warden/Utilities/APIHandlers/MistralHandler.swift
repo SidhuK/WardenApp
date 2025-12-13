@@ -1,4 +1,5 @@
 import Foundation
+import os
 import CoreData
 
 private struct MistralModelsResponse: Codable {
@@ -85,7 +86,7 @@ class MistralHandler: BaseAPIHandler {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
         } catch {
-            print("Error creating request body: \(error)")
+            WardenLog.app.error("Mistral request body creation error: \(error.localizedDescription, privacy: .public)")
         }
 
         return request
@@ -102,7 +103,7 @@ class MistralHandler: BaseAPIHandler {
                 return (content, "assistant", nil)
             }
         } catch {
-            print("Error parsing JSON response: \(error)")
+            WardenLog.app.error("Mistral JSON parse error: \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }
