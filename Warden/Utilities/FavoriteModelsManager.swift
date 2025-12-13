@@ -1,6 +1,7 @@
 
 import Foundation
 import SwiftUI
+import os
 
 /// Manages favorite models across all providers
 /// Stores favorites persistently using UserDefaults
@@ -86,7 +87,7 @@ class FavoriteModelsManager: ObservableObject {
             let favoriteArray = try decoder.decode([String].self, from: favoriteModelsData)
             favoriteModels = Set(favoriteArray)
         } catch {
-            print("Failed to load favorite models: \(error)")
+            WardenLog.app.error("Failed to load favorite models: \(error.localizedDescription, privacy: .public)")
             favoriteModels = []
         }
     }
@@ -97,7 +98,7 @@ class FavoriteModelsManager: ObservableObject {
             let favoriteArray = Array(favoriteModels)
             favoriteModelsData = try encoder.encode(favoriteArray)
         } catch {
-            print("Failed to save favorite models: \(error)")
+            WardenLog.app.error("Failed to save favorite models: \(error.localizedDescription, privacy: .public)")
         }
     }
 } 

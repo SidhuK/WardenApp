@@ -1,6 +1,7 @@
 import CoreData
 import SwiftUI
 import UniformTypeIdentifiers
+import os
 
 struct TabAIPersonasView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -159,7 +160,9 @@ struct TabAIPersonasView: View {
                 do {
                     try viewContext.save()
                 } catch {
-                    print("Failed to save reordering: \(error)")
+                    WardenLog.coreData.error(
+                        "Failed to save reordering: \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
         )
@@ -513,7 +516,7 @@ struct PersonaDetailView: View {
             presentationMode.wrappedValue.dismiss()
         } catch {
             let nsError = error as NSError
-            print("Failed to save persona: \(nsError)")
+            WardenLog.coreData.error("Failed to save persona: \(nsError.localizedDescription, privacy: .public)")
             
             DispatchQueue.main.async {
                 let alert = NSAlert()
@@ -534,7 +537,7 @@ struct PersonaDetailView: View {
                 presentationMode.wrappedValue.dismiss()
             } catch {
                 let nsError = error as NSError
-                print("Failed to delete persona: \(nsError)")
+                WardenLog.coreData.error("Failed to delete persona: \(nsError.localizedDescription, privacy: .public)")
             }
         }
     }

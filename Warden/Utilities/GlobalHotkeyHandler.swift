@@ -1,5 +1,6 @@
 import Cocoa
 import Carbon
+import os
 
 class GlobalHotkeyHandler: ObservableObject {
     static let shared = GlobalHotkeyHandler()
@@ -21,7 +22,11 @@ class GlobalHotkeyHandler: ObservableObject {
         if shortcut.modifiers.contains("shift") { carbonModifiers |= UInt32(shiftKey) }
         
         guard let keyCode = keyCode(for: shortcut.key) else {
-            print("⚠️ GlobalHotkeyHandler: Could not map key '\(shortcut.key)' to key code")
+            #if DEBUG
+            WardenLog.app.debug(
+                "GlobalHotkeyHandler: Could not map key '\(shortcut.key, privacy: .public)' to key code"
+            )
+            #endif
             return
         }
         
@@ -41,7 +46,9 @@ class GlobalHotkeyHandler: ObservableObject {
             self.hotKeyRef = hotKeyRef
             installEventHandler()
         } else {
-            print("⚠️ GlobalHotkeyHandler: Failed to register hotkey (status: \(status))")
+            WardenLog.app.error(
+                "GlobalHotkeyHandler: Failed to register hotkey (status: \(status, privacy: .public))"
+            )
         }
     }
     

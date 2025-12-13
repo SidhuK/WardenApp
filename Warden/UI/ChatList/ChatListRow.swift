@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 struct ChatListRow: View {
     // Removed Equatable conformance - it was preventing proper re-renders when selection changed
@@ -173,7 +174,7 @@ struct ChatListRow: View {
                         try viewContext.save()
                     }
                     catch {
-                        print("Error deleting chat: \(error.localizedDescription)")
+                        WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -202,7 +203,7 @@ struct ChatListRow: View {
                 }
 
                 catch {
-                    print("Error renaming chat: \(error.localizedDescription)")
+                    WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -221,7 +222,7 @@ struct ChatListRow: View {
                 do {
                     try viewContext.save()
                 } catch {
-                    print("Error clearing chat: \(error.localizedDescription)")
+                    WardenLog.coreData.error("Error clearing chat: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -232,7 +233,7 @@ struct ChatListRow: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error toggling pin status: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
         }
     }
 

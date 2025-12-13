@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // Note: ModelMetadata types are defined in ModelMetadata.swift
 
@@ -170,7 +171,11 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
         
         // Debug logging to verify capability parsing
         if !capabilities.isEmpty {
-            print("📊 OpenRouter model \(model.id) capabilities: \(capabilities.joined(separator: ", "))")
+            #if DEBUG
+            WardenLog.app.debug(
+                "OpenRouter model \(model.id, privacy: .public) capabilities: \(capabilities.joined(separator: \", \"), privacy: .public)"
+            )
+            #endif
         }
         
         return capabilities

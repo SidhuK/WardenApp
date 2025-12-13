@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import os
 
 enum MessageElements {
     case text(String)
@@ -189,7 +190,7 @@ struct ChatBubbleView: View, Equatable {
             try viewContext.save()
         }
         catch {
-            print("Error deleting message: \(error)")
+            WardenLog.coreData.error("Error deleting message: \(error.localizedDescription, privacy: .public)")
         }
     }
 

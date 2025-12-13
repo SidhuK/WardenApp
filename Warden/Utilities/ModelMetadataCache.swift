@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import os
 
 /// Manages metadata caching for models with freshness tracking
 class ModelMetadataCache: ObservableObject {
@@ -50,7 +51,7 @@ class ModelMetadataCache: ObservableObject {
             lastRefreshAttempt[provider] = Date()
         }
         
-        do {/e/
+        do {
             let fetcher = ModelMetadataFetcherFactory.createFetcher(for: provider)
             let newMetadata = try await fetcher.fetchAllMetadata(apiKey: apiKey)
             
@@ -59,7 +60,9 @@ class ModelMetadataCache: ObservableObject {
                 self.saveToStorage()
             }
         } catch {
-            print("Failed to fetch metadata for \(provider): \(error)")
+            WardenLog.app.error(
+                "Failed to fetch metadata for \(provider, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
         }
     }
     
@@ -94,7 +97,7 @@ class ModelMetadataCache: ObservableObject {
             let encoder = JSONEncoder()
             metadataCacheData = try encoder.encode(cachedMetadata)
         } catch {
-            print("Failed to save metadata cache: \(error)")
+            WardenLog.app.error("Failed to save metadata cache: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -105,7 +108,7 @@ class ModelMetadataCache: ObservableObject {
             let decoder = JSONDecoder()
             cachedMetadata = try decoder.decode([String: [String: ModelMetadata]].self, from: metadataCacheData)
         } catch {
-            print("Failed to load metadata cache: \(error)")
+            WardenLog.app.error("Failed to load metadata cache: \(error.localizedDescription, privacy: .public)")
             cachedMetadata = [:]
         }
     }

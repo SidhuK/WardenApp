@@ -27,15 +27,15 @@ extension View {
     ///            .onSwipe{ event in
     ///                    switch event.direction {
     ///                        case .south:
-    ///                            print("### down")
+    ///                            // handle down swipe
     ///                        case .north:
-    ///                            print("### up")
+    ///                            // handle up swipe
     ///                        case .west:
-    ///                            print("### left")
+    ///                            // handle left swipe
     ///                        case .east:
-    ///                            print("### right")
+    ///                            // handle right swipe
     ///                        default:
-    ///                            print("### everythingelse")
+    ///                            // handle other swipe
     ///                    }
     ///            }
     ///
@@ -279,4 +279,3 @@ private struct OnSwipe: ViewModifier {
             }
     }
 }
-

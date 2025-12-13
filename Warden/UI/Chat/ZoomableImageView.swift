@@ -1,5 +1,6 @@
 
 import SwiftUI
+import os
 
 struct ZoomableImageView: View {
     let image: NSImage
@@ -129,16 +130,18 @@ struct ZoomableImageView: View {
                     let bitmap = NSBitmapImageRep(data: tiffData),
                     let imageData = bitmap.representation(using: .png, properties: [:])
                 else {
-                    print("Failed to convert image to data")
+                    WardenLog.app.error("Failed to convert image to data")
                     return
                 }
 
                 do {
                     try imageData.write(to: url)
-                    print("Image saved successfully to \(url.path)")
+                    #if DEBUG
+                    WardenLog.app.debug("Image saved successfully")
+                    #endif
                 }
                 catch {
-                    print("Failed to save image: \(error)")
+                    WardenLog.app.error("Failed to save image: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }

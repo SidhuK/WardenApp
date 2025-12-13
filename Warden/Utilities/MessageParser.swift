@@ -2,6 +2,7 @@ import CoreData
 import Foundation
 import Highlightr
 import SwiftUI
+import os
 
 struct MessageParser {
     @State var colorScheme: ColorScheme
@@ -191,7 +192,9 @@ struct MessageParser {
                 }
             }
             catch {
-                print("Error fetching image from CoreData: \(error)")
+                WardenLog.coreData.error(
+                    "Error fetching image from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
             }
 
             return nil
@@ -222,7 +225,9 @@ struct MessageParser {
                 }
             }
             catch {
-                print("Error fetching file from CoreData: \(error)")
+                WardenLog.coreData.error(
+                    "Error fetching file from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
             }
 
             return nil

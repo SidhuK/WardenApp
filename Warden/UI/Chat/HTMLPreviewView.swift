@@ -2,6 +2,7 @@
 import SwiftUI
 @preconcurrency
 import WebKit
+import os
 
 struct HTMLPreviewView: View {
     let htmlContent: String
@@ -154,12 +155,12 @@ struct WebViewWrapper: NSViewRepresentable {
         
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
-            print("WebView navigation failed: \(error.localizedDescription)")
+            WardenLog.app.error("WebView navigation failed: \(error.localizedDescription, privacy: .public)")
         }
         
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             parent.isLoading = false
-            print("WebView provisional navigation failed: \(error.localizedDescription)")
+            WardenLog.app.error("WebView provisional navigation failed: \(error.localizedDescription, privacy: .public)")
         }
         
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

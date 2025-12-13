@@ -2,6 +2,7 @@
 import Foundation
 import SwiftUI
 import AppKit
+import os
 
 
 struct TableHeaderView: View {
@@ -84,7 +85,9 @@ struct TableView: View {
                 #endif
             }
         } catch {
-            print("Failed to convert table data to JSON string: \(error)")
+            WardenLog.app.error(
+                "Failed to convert table data to JSON string: \(error.localizedDescription, privacy: .public)"
+            )
         }
     }
     

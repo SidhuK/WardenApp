@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import os
 
 struct FavoriteQuickAccessBar: View {
     @ObservedObject var chat: ChatEntity
@@ -76,19 +77,27 @@ struct FavoriteQuickAccessBar: View {
     
     private func handleModelChange(providerType: String, model: String) {
         guard let service = apiServices.first(where: { $0.type == providerType }) else {
-            print("⚠️ No API service found for provider type: \(providerType)")
+            #if DEBUG
+            WardenLog.app.debug("No API service found for provider type: \(providerType, privacy: .public)")
+            #endif
             return
         }
         
         guard let serviceUrl = service.url, !serviceUrl.absoluteString.isEmpty else {
-            print("⚠️ API service \(service.name ?? "Unknown") has invalid URL")
+            #if DEBUG
+            WardenLog.app.debug("API service has invalid URL: \(service.name ?? \"Unknown\", privacy: .public)")
+            #endif
             return
         }
         
         chat.apiService = service
         chat.gptModel = model
         
-        print("🔄 Model changed to \(providerType)/\(model) via quick access bar")
+        #if DEBUG
+        WardenLog.app.debug(
+            "Model changed via quick access bar: \(providerType, privacy: .public)/\(model, privacy: .public)"
+        )
+        #endif
         
         do {
             try viewContext.save()
@@ -99,9 +108,11 @@ struct FavoriteQuickAccessBar: View {
                 userInfo: ["chatId": chat.id]
             )
             
-            print("✅ Model change saved and notification sent")
+            #if DEBUG
+            WardenLog.app.debug("Model change saved and notification sent")
+            #endif
         } catch {
-            print("❌ Failed to save model change: \(error)")
+            WardenLog.coreData.error("Failed to save model change: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

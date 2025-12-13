@@ -1,5 +1,6 @@
 import Sparkle
 import Foundation
+import os
 
 /// Manages automatic updates for Warden using Sparkle framework
 /// Feed URL and other settings are configured in Info.plist
@@ -25,9 +26,11 @@ class UpdaterManager: NSObject {
         
         do {
             try updater.start()
-            print("✅ Sparkle updater started successfully")
+            #if DEBUG
+            WardenLog.app.debug("Sparkle updater started successfully")
+            #endif
         } catch {
-            print("❌ Failed to start Sparkle updater: \(error)")
+            WardenLog.app.error("Failed to start Sparkle updater: \(error.localizedDescription, privacy: .public)")
         }
     }
     

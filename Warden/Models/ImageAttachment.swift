@@ -3,6 +3,7 @@ import CoreData
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
+import os
 
 class ImageAttachment: Identifiable, ObservableObject {
     var id: UUID = UUID()
@@ -190,7 +191,9 @@ class ImageAttachment: Identifiable, ObservableObject {
                     try contextToUse.save()
                 }
                 catch {
-                    print("Error saving image to CoreData: \(error)")
+                    WardenLog.coreData.error(
+                        "Error saving image to Core Data: \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
         }

@@ -3,6 +3,7 @@
 import Foundation
 import SwiftUI
 import AppKit
+import os
 
 enum ChatExportFormat: String, CaseIterable {
     case plainText = "Plain Text"
@@ -70,7 +71,7 @@ class ChatSharingService {
                 do {
                     try content.write(to: url, atomically: true, encoding: .utf8)
                 } catch {
-                    print("Error saving chat export: \(error)")
+                    WardenLog.app.error("Error saving chat export: \(error.localizedDescription, privacy: .public)")
                     // Show error alert
                     DispatchQueue.main.async {
                         let alert = NSAlert()

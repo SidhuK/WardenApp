@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import os
 
 struct ProjectListView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -548,7 +549,7 @@ struct ProjectChatRow: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error toggling pin status: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -572,7 +573,7 @@ struct ProjectChatRow: View {
                     do {
                         try viewContext.save()
                     } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                        WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -598,7 +599,7 @@ struct ProjectChatRow: View {
             do {
                 try viewContext.save()
             } catch {
-                print("Error deleting chat: \(error.localizedDescription)")
+                WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -1016,7 +1017,7 @@ struct ProjectChatRowInList: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error toggling pin status: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -1040,7 +1041,7 @@ struct ProjectChatRowInList: View {
                     do {
                         try viewContext.save()
                     } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                        WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -1066,7 +1067,7 @@ struct ProjectChatRowInList: View {
             do {
                 try viewContext.save()
             } catch {
-                print("Error deleting chat: \(error.localizedDescription)")
+                WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
             }
         }
     }

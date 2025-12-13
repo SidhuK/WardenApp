@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import os
 
 struct ProjectSummaryView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -403,7 +404,7 @@ struct ProjectSummaryView: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error saving new chat: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error saving new chat: \(error.localizedDescription, privacy: .public)")
             return
         }
         
@@ -467,7 +468,7 @@ struct ProjectSummaryView: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error toggling pin status: \(error.localizedDescription)")
+            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -490,7 +491,7 @@ struct ProjectSummaryView: View {
                     do {
                         try viewContext.save()
                     } catch {
-                        print("Error renaming chat: \(error.localizedDescription)")
+                        WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -517,7 +518,7 @@ struct ProjectSummaryView: View {
                 do {
                     try viewContext.save()
                 } catch {
-                    print("Error clearing chat: \(error.localizedDescription)")
+                    WardenLog.coreData.error("Error clearing chat: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -538,7 +539,7 @@ struct ProjectSummaryView: View {
                 do {
                     try viewContext.save()
                 } catch {
-                    print("Error deleting chat: \(error.localizedDescription)")
+                    WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }

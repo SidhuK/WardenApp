@@ -3,6 +3,7 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 import PDFKit
+import os
 
 enum FileAttachmentType {
     case image
@@ -342,7 +343,9 @@ class FileAttachment: Identifiable, ObservableObject {
                 do {
                     try contextToUse.save()
                 } catch {
-                    print("Error saving file to CoreData: \(error)")
+                    WardenLog.coreData.error(
+                        "Error saving file to Core Data: \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
         }

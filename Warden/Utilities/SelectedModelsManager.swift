@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import os
 
 /// Manager for handling custom model selection per API service
 /// Allows users to select which models appear in the model selector dropdown
@@ -61,7 +62,9 @@ class SelectedModelsManager: ObservableObject {
                     // Always set the selection, even if empty (empty = "select none")
                     customSelections[serviceType] = modelIds
                 } catch {
-                    print("Failed to decode selected models for \(serviceType): \(error)")
+                    WardenLog.coreData.error(
+                        "Failed to decode selected models for \(serviceType, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
                 }
             }
         }
@@ -78,7 +81,9 @@ class SelectedModelsManager: ObservableObject {
                 let data = try JSONEncoder().encode(selection)
                 service.selectedModels = data as NSObject
             } catch {
-                print("Failed to encode selected models for \(serviceType): \(error)")
+                WardenLog.coreData.error(
+                    "Failed to encode selected models for \(serviceType, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
             }
         } else {
             // No custom selection = clear the saved data (show all models)
@@ -97,7 +102,7 @@ class SelectedModelsManager: ObservableObject {
         do {
             try context.save()
         } catch {
-            print("Failed to save selected models to Core Data: \(error)")
+            WardenLog.coreData.error("Failed to save selected models: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
@@ -112,7 +117,7 @@ extension APIServiceEntity {
         do {
             return try JSONDecoder().decode(Set<String>.self, from: data)
         } catch {
-            print("Failed to decode selected models: \(error)")
+            WardenLog.coreData.error("Failed to decode selected models: \(error.localizedDescription, privacy: .public)")
             return Set()
         }
     }
@@ -124,7 +129,7 @@ extension APIServiceEntity {
             do {
                 selectedModels = try JSONEncoder().encode(modelIds) as NSObject
             } catch {
-                print("Failed to encode selected models: \(error)")
+                WardenLog.coreData.error("Failed to encode selected models: \(error.localizedDescription, privacy: .public)")
                 selectedModels = nil
             }
         } else {

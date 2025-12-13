@@ -2,6 +2,7 @@
 import AttributedText
 import Highlightr
 import SwiftUI
+import os
 
 struct CodeView: View {
     let code: String
@@ -107,7 +108,9 @@ struct CodeView: View {
         }
         .onChange(of: code) { code in
             if isStreaming {
-                print("Code changed: \(code)")
+                #if DEBUG
+                WardenLog.rendering.debug("Code changed during streaming: \(code.count, privacy: .public) char(s)")
+                #endif
                 updateHighlightedCode(colorScheme: colorScheme, code: code)
             }
         }

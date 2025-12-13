@@ -1,5 +1,6 @@
 import CoreData
 import SwiftUI
+import os
 
 struct ChatListView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -165,7 +166,7 @@ struct ChatListView: View {
                         }
                     }
                 } catch {
-                    print("❌ Search error: \(error)")
+                    WardenLog.app.error("Search error: \(error.localizedDescription, privacy: .public)")
                 }
             }
             

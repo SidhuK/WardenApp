@@ -2,6 +2,7 @@
 import Combine
 import Foundation
 import SwiftUI
+import os
 
 class ChatViewModel: ObservableObject {
     @Published var messages: NSOrderedSet
@@ -163,10 +164,16 @@ class ChatViewModel: ObservableObject {
 
     private func createMessageManager() -> MessageManager? {
         guard let config = self.loadCurrentAPIConfig() else {
-            print("⚠️ Warning: No valid API configuration found for chat \(chat.id)")
+            #if DEBUG
+            WardenLog.app.debug("No valid API configuration found for chat \(chat.id.uuidString, privacy: .public)")
+            #endif
             return nil
         }
-        print("✅ Creating new MessageManager with URL: \(config.apiUrl) and model: \(config.model)")
+        #if DEBUG
+        WardenLog.app.debug(
+            "Creating new MessageManager with URL: \(config.apiUrl.absoluteString, privacy: .public) and model: \(config.model, privacy: .public)"
+        )
+        #endif
         return MessageManager(
             apiService: APIServiceFactory.createAPIService(config: config),
             viewContext: self.viewContext
@@ -174,7 +181,9 @@ class ChatViewModel: ObservableObject {
     }
 
     func recreateMessageManager() {
-        print("🔄 Recreating MessageManager for chat \(chat.id)")
+        #if DEBUG
+        WardenLog.app.debug("Recreating MessageManager for chat \(chat.id.uuidString, privacy: .public)")
+        #endif
         _messageManager = createMessageManager()
     }
 
@@ -190,7 +199,9 @@ class ChatViewModel: ObservableObject {
 
     private func loadCurrentAPIConfig() -> APIServiceConfiguration? {
         guard let apiService = chat.apiService else {
-            print("⚠️ Missing required API service configuration for chat \(chat.id)")
+            #if DEBUG
+            WardenLog.app.debug("Missing required API service configuration for chat \(chat.id.uuidString, privacy: .public)")
+            #endif
             return nil
         }
 

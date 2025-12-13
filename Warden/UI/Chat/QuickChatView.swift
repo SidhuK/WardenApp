@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import UniformTypeIdentifiers
+import os
 
 struct QuickChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -278,7 +279,9 @@ struct QuickChatView: View {
                         selectedModel = newChat.gptModel
                     }
                 } catch {
-                    print("Default API service not found: \(error)")
+                    WardenLog.coreData.error(
+                        "Default API service not found: \(error.localizedDescription, privacy: .public)"
+                    )
                     // Fall back to first available service
                     fallbackServiceSelectionFor(chat: newChat)
                     selectedModel = newChat.gptModel.isEmpty ? AppConstants.chatGptDefaultModel : newChat.gptModel
@@ -461,7 +464,7 @@ struct QuickChatView: View {
                         try? viewContext.save()
                     }
                 case .failure(let error):
-                    print("Failed to generate chat name: \(error)")
+                    WardenLog.app.error("Failed to generate chat name: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -480,7 +483,7 @@ struct QuickChatView: View {
                 try? viewContext.save()
             }
         } catch {
-            print("Error fetching services: \(error)")
+            WardenLog.coreData.error("Error fetching services: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -510,7 +513,9 @@ struct QuickChatView: View {
                     selectedModel = newChat.gptModel
                 }
             } catch {
-                print("Default API service not found: \(error)")
+                WardenLog.coreData.error(
+                    "Default API service not found: \(error.localizedDescription, privacy: .public)"
+                )
                 fallbackServiceSelectionFor(chat: newChat)
                 newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
                 selectedModel = newChat.gptModel
@@ -543,7 +548,7 @@ struct QuickChatView: View {
                 chat.apiService = service
             }
         } catch {
-            print("Error fetching services: \(error)")
+            WardenLog.coreData.error("Error fetching services: \(error.localizedDescription, privacy: .public)")
         }
     }
     

@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import os
 
 /// Thread-safe utility for loading data from Core Data on any thread
 /// Prevents threading violations by creating and using background contexts
@@ -26,7 +27,9 @@ class BackgroundDataLoader {
                 let results = try backgroundContext.fetch(fetchRequest)
                 result = results.first?.image
             } catch {
-                print("❌ Error fetching image from CoreData: \(error)")
+                WardenLog.coreData.error(
+                    "Error fetching image from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
             }
         }
         
@@ -63,7 +66,9 @@ class BackgroundDataLoader {
                     """
                 }
             } catch {
-                print("❌ Error fetching file from CoreData: \(error)")
+                WardenLog.coreData.error(
+                    "Error fetching file from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
             }
         }
         

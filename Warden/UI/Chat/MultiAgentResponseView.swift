@@ -253,9 +253,7 @@ struct AgentResponseColumn: View {
             )
         ],
         isProcessing: false,
-        onContinue: { response in
-            print("Continue with \(response.serviceName)")
-        }
+        onContinue: { _ in }
     )
     .frame(width: 800, height: 500)
 } 

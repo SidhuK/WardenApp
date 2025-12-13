@@ -1,5 +1,6 @@
 import SwiftUI
 import AttributedText
+import os
 
 struct TabGeneralSettingsView: View {
     @AppStorage("chatFontSize") var chatFontSize: Double = 14.0
@@ -219,7 +220,7 @@ struct TabGeneralSettingsView: View {
     private func handleExportResult(_ result: Result<[ChatBackup], Error>) {
         switch result {
         case .failure(let error):
-            print("Failed to load chats for export: \(error.localizedDescription)")
+            WardenLog.app.error("Failed to load chats for export: \(error.localizedDescription, privacy: .public)")
             showErrorAlert("Export Failed", "Failed to load chat data: \(error.localizedDescription)")
         case .success(let chats):
             let encoder = JSONEncoder()
@@ -256,7 +257,7 @@ struct TabGeneralSettingsView: View {
                 }
             }
         } catch {
-            print(error)
+            WardenLog.app.error("Import failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     
