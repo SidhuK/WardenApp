@@ -66,6 +66,12 @@ struct MessageContentView: View {
         .onChange(of: message) { _ in
             refreshParsedElements()
         }
+        .onChange(of: isStreaming) { _, newValue in
+            guard !newValue else { return }
+            truncatedParseTask?.cancel()
+            fullParseTask?.cancel()
+            refreshParsedElements(force: true)
+        }
         .onChange(of: colorScheme) { _ in
             refreshParsedElements(force: true)
         }
