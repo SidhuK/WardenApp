@@ -1,213 +1,77 @@
-# 🛡️ Warden - A Fully Native AI Chat App For macOS
-
 <div align="center">
 
-![](/assets/Logo.png)
+<img src="./assets/Logo.png" width="128" />
+
+# Warden
+### The Native AI Chat Experience for macOS
 
 ![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
-![SwiftUI](https://img.shields.io/badge/SwiftUI-0066CC?style=for-the-badge&logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
-![Open Source](https://img.shields.io/badge/Open%20Source-❤️-red?style=for-the-badge)
 
-**A fast, beautiful, feature-rich, and truly native macOS AI chat app**  
-**100% Open Source • 100% Private • 100% Native**
+<br/>
 
-**Download Latest Release** 
+Warden is a fast, beautiful, and privacy-focused AI client built purely in SwiftUI.
+No Electron, no web wrappers—just a premium native experience.
 
-[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-blue?style=for-the-badge)](https://github.com/SidhuK/WardenApp/releases)
+[Download for macOS](https://github.com/SidhuK/WardenApp/releases) • [View Website](https://karatsidhu.gumroad.com/l/warden)
 
+<br/>
 
-
-![](/assets/Dark%20Mode.png)
-
-[![](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://x.com/karat_sidhu) [![](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/SidhuK) [![](https://img.shields.io/badge/Gumroad-000000?style=for-the-badge&logo=gumroad&logoColor=white)](https://karatsidhu.gumroad.com/l/warden) [![](https://img.shields.io/badge/BuyMeACoffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/karatsidhu) [![](https://img.shields.io/badge/Wispr%20Flow-0891B2?style=for-the-badge&logoColor=white)](https://wisprflow.ai/r?KARAT1)
-
-[Download Latest Release](https://github.com/SidhuK/WardenApp/releases) • [Gumroad Page](https://karatsidhu.gumroad.com/l/warden) • [Report Issues](https://github.com/SidhuK/WardenApp/issues) • [View Source Code](https://github.com/SidhuK/WardenApp)
+![Warden Dark Mode](./assets/Dark%20Mode.png)
 
 </div>
 
----
+## ✨ Why Warden?
 
-## ✨ What Makes Warden Special
+Most AI apps today are just websites wrapped in a window (Electron). They feel heavy, drain battery, and don't integrate well with macOS.
 
-Warden is a **completely native macOS AI chat app** built with SwiftUI that supports multiple AI providers. No Electron bloat, no web wrappers - just a proper, native Mac experience that feels like something Apple would create.
-
-### Core Philosophy
-
-- **Native First**: Built entirely with SwiftUI for true macOS integration
-- **Privacy Focused**: Zero telemetry, all data stays on your Mac
-- **Open Source**: 100% open source under Apache 2.0 license
-- **Lightweight**: Under 20MB app size, typically uses less than 150MB RAM
-- **Beautiful**: Subtle animations and design choices that make daily use a joy
-
----
-
+Warden is different. It's built with 100% native code, making it:
+- **Blazing Fast**: Launches instantly, uses minimal RAM (<150MB).
+- **Battery Friendly**: Optimized for Apple Silicon efficiency.
+- **Truly Private**: Your data never leaves your device (except to your chosen AI provider).
 
 ## 🚀 Features
 
-### AI Provider Support
-
-- **OpenAI** (ChatGPT, including o1 reasoning models)
-- **Anthropic** (Claude)
-- **xAI** (Grok)
-- **Google Gemini**
-- **Perplexity**
-- **Groq**
-- **Mistral AI**
-- **LM Studio** (Local model hosting) - **NEW**
-- **Ollama** (Local LLMs)
-- **OpenRouter** (50+ models)
-- **Deepseek**
-- **Any OpenAI-compatible API**
-
-### Chat & Interaction Features
-
-- **Web Search**: Search the web in real-time with Tavily integration; see clickable sources directly in responses
-- **Code Running**: Use inbuilt SwiftUI code editor to run code
-- **Stop Streaming/Stop Generating**: Cancel ongoing AI responses instantly with dynamic send/stop button functionality
-- **Smooth Animations**: Subtle, delightful animations throughout with reduce-motion support
-- **Searchable Model Selector**: Find models quickly with minimalist interface design
-- **Project-Scoped New Chat**: Create new chats directly within specific projects
-
-### Organization & UX Features
-
-- **Native Swipe Actions**: Intuitive swipe gestures for quick delete, rename, and move operations
-- **Model Visibility Control**: Choose exactly which models appear in your selector via multi-select interface
-- **Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
-- **Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
-- **Redesigned UI**: Modern, flat interface with cleaner spacing and better visual hierarchy
-- **Streamlined Settings**: Easier preference navigation and configuration
-
-### Projects & Organization
-
-![](/assets/Projects.png)
-
-- **Projects/Folders Support**: Organize your chats into logical groups for better workflow management
-- **Project-Scoped New Chat**: Create new chats directly within specific projects
-- **Subtle Visual Design**: Clean folder highlighting with only icons tinted for minimal distraction
-- **Native Swipe Actions**: Intuitive swipe gestures for quick delete, rename, and move operations
-- **Model Visibility Control**: Choose exactly which models appear in your selector via multi-select interface
-- **Optional Sidebar Icons**: Toggle AI provider logos on/off for a cleaner sidebar appearance
-
-### Enhanced Chat Management
-
-- Powerful bulk chat actions & native macOS shortcuts.
-
-### Multi-Agent Chat System
-
-![](/assets/Multi%20Models.png)
-
-- Chat with multiple AI models simultaneously for diverse perspectives.
-
-### Great User Experience
-
-![](/assets/Welcome%20Page.png)
-
-- Beautiful onboarding, centered input, attachment support, and rich formatting.
-
-### Advanced Model Management
-
-![](/assets/Model%20Selector.png)
-
-- Favorite, search, and filter models with an improved selector UI.
-
-
-### Privacy & Performance
-
-- Zero telemetry, lightweight, and blazing fast responses.
-
----
+- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity,Oenrouter and more using your own API key.
+- **Local AI**: Full support for Ollama and LM Studio.
+- **Search Capabilities**: Real-time web search integration with citation support.
+- **Developer Tools**: Native code execution and syntax highlighting.
+- **Fluid Design**: Animations and interactions that feel right at home on your Mac, including liquid glass support for MacOS 26.
 
 ## 📥 Installation
 
-### Option 1: Download from GitHub (Recommended)
+<div align="center">
 
-1. **Download** the latest release from [GitHub Releases](https://github.com/SidhuK/WardenApp/releases)
-2. **Enable installation from unknown developers**:
-   - Go to **System Preferences** → **Privacy & Security**
-   - Enable **"Allow applications downloaded from: App Store and identified/known developers"**
-   - Or run: `sudo spctl --master-disable` in Terminal (not recommended, just use the option above)
-3. **Install** by dragging Warden to your Applications folder
-4. **First Launch**: You may need to right-click and select "Open" on first launch
+| **Typical User** | **Developer** |
+| :---: | :---: |
+| [**Download Installer**](https://github.com/SidhuK/WardenApp/releases)<br>Simply drag to Applications | [**Build from Source**](#build-from-source)<br>Clone and run in Xcode |
 
-### Option 2: Build from Source (Open Source)
+</div>
 
-1. **Clone the repository**:
-    ```bash
-    git clone https://github.com/SidhuK/WardenApp.git
-    cd WardenApp
-    ```
-2. **Open in Xcode**: Open `Warden.xcodeproj` in Xcode 14.3 or later
-3. **Build and Run**: Press Cmd+R to build and run the app
-4. **Requirements**: macOS 13.0+, Xcode 14.3+ (v0.6+ supports macOS 26)
+<br>
 
-### Option 3: Gumroad (Pay What You Want)
+### Build from Source
 
-- Visit [Gumroad Page](https://karatsidhu.gumroad.com/l/warden) for pay-what-you-want download
+```bash
+git clone https://github.com/SidhuK/WardenApp.git
+cd WardenApp
+open Warden.xcodeproj
+# Press Cmd+R to run
+```
 
-### Having Installation Issues?
+## ❤️ Support
 
-- Contact on [Twitter](https://x.com/karat_sidhu) or [GitHub Issues](https://github.com/SidhuK/WardenApp/issues)
+Warden is open source and free. If you enjoy using it, you can support development:
+
+- [Star this repo](https://github.com/SidhuK/WardenApp) 🌟
+- [Buy Me a Coffee](https://www.buymeacoffee.com/karatsidhu) ☕️
 
 ---
-
-## 🔄 Updates
-
-Currently, the app doesn't auto-update. Check this GitHub repository for new releases:
-
-**⭐ Star this repo to get notified of updates!**
-
----
-
-## 💝 Support Development
-
-Warden is **completely free and open source** and always will be! However, if you'd like to support further development:
-
-- [Buy Me A Coffee](https://www.buymeacoffee.com/karatsidhu)
-- [Support on Gumroad](https://karatsidhu.gumroad.com/l/warden) (pay what you want)
-- Star this repository
-- Report bugs and suggest features
-- Share with friends and colleagues
-- **Contribute Code**: Submit pull requests and help improve Warden!
-
----
-
-## 🤝 Contributing
-
-Warden is **100% open source** and welcomes contributions! Here's how you can help:
-
-### Bug Reports & Feature Requests
-
-- Check [existing issues](https://github.com/SidhuK/WardenApp/issues) first
-- Create detailed bug reports with steps to reproduce
-- Suggest new features with clear use cases
-
-### Code Contributions
-
-- Fork the repository
-- Create a feature branch (`git checkout -b feature/amazing-feature`)
-- Follow the existing code style and patterns
-- Test your changes thoroughly
-- Submit a pull request with a clear description
-
---
-
-## 🙏 Credits
-
-This project is forked and heavily inspired by the [MacAI app](https://github.com/Renset/macai) created by Renat. Huge props for making their source code open source and Apache-licensed!
-
-**Created and maintained by [Karat Sidhu](https://x.com/karat_sidhu)**
-
-## 📄 License
-
-This project is **100% open source** and licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Made with ❤️ by [Karat Sidhu](https://x.com/karat_sidhu)**  
-**100% Open Source • Forever Free • Community Driven**
-
-[⬆️ Back to Top](#️-warden---a-fully-native-ai-chat-app-for-macos)
+Created by [Karat Sidhu](https://x.com/karat_sidhu)
+Licensed under Apache 2.0
 
 </div>
