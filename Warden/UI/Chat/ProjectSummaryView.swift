@@ -201,14 +201,10 @@ struct ProjectSummaryView: View {
     
     private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.1))
-                    .frame(width: 48, height: 48)
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-            }
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundStyle(color)
+                .frame(width: 48, height: 48)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)

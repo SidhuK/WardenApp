@@ -869,12 +869,7 @@ struct ProjectChatRowInList: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                if let lastMessage = getLastMessage() {
-                    Text(lastMessage)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
+                // Text(getChatDisplayName()) only
             }
             
             Spacer()

@@ -90,13 +90,7 @@ struct MessageCell: View {
                             .truncationMode(.tail)
                     }
                     
-                    if !filteredMessage.isEmpty {
-                        Text(filteredMessage)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
+                    // Snippet removed
                 }
                 .padding(.vertical, 8)
                 .padding(.trailing, 8)
