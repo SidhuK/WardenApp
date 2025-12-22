@@ -59,6 +59,9 @@ cd WardenApp
 open Warden.xcodeproj
 # Press Cmd+R to run
 ```
+### Automatic Updates: 
+
+Users who have downloaded the app version 0.9 or lower, please download the latest version from the [releases page](https://github.com/SidhuK/WardenApp/releases) to get automatic updates. Earlier versions will not receive updates.
 
 ## ❤️ Support
 
