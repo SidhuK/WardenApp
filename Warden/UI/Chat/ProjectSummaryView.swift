@@ -18,6 +18,7 @@ struct ProjectSummaryView: View {
     }
     
     @State private var recentChats: [ChatEntity] = []
+    @State private var allChats: [ChatEntity] = []
     @State private var messageCount: Int = 0
     @State private var activeDays: Int = 0
     @State private var isLoadingStats = true
@@ -34,18 +35,14 @@ struct ProjectSummaryView: View {
                 // Bottom compact cards - Stats and Insights
                 bottomCompactSection
                 
+                // All Chats List
+                allChatsSection
+                
                 Spacer(minLength: 100)
             }
             .padding(24)
         }
         .navigationTitle("")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Text(project.name ?? "Project Summary")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-            }
-        }
         .sheet(isPresented: $showingMoveToProject) {
             if let chatToMove = selectedChatForMove {
                 MoveToProjectView(
@@ -83,10 +80,11 @@ struct ProjectSummaryView: View {
                  // Since we are inside viewContext.perform, we can use the context.
                  
                  // Fetch recent chats (limit 5)
+                 // Fetch all chats updated recently
                  let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
                  request.predicate = NSPredicate(format: "project == %@", context.object(with: projectId))
                  request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
-                 request.fetchLimit = 5
+                 // request.fetchLimit = 5 // Removed limit to fetch all chats
                  
                  // Fetch oldest chat date for days active
                  let oldestRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
@@ -120,7 +118,8 @@ struct ProjectSummaryView: View {
         }.value
         
         if let data = result {
-             self.recentChats = data.chats
+             self.allChats = data.chats
+             self.recentChats = Array(data.chats.prefix(3))
              self.messageCount = data.count
              self.activeDays = data.days
         }
@@ -129,228 +128,206 @@ struct ProjectSummaryView: View {
     
     private var horizontalProjectHeader: some View {
         HStack(alignment: .top, spacing: 24) {
-            Spacer()
+             // Hero Icon on the left
+             ZStack {
+                 RoundedRectangle(cornerRadius: 16)
+                     .fill(
+                         LinearGradient(
+                             colors: [projectColor.opacity(0.15), projectColor.opacity(0.05)],
+                             startPoint: .topLeading,
+                             endPoint: .bottomTrailing
+                         )
+                     )
+                     .frame(width: 80, height: 80)
+                     .overlay(
+                         RoundedRectangle(cornerRadius: 16)
+                             .strokeBorder(projectColor.opacity(0.2), lineWidth: 1)
+                     )
+                 
+                 Image(systemName: "folder.fill")
+                     .font(.system(size: 40))
+                     .foregroundStyle(projectColor.gradient)
+                     .shadow(color: projectColor.opacity(0.3), radius: 8, x: 0, y: 4)
+             }
             
-            // Right side - Project info
-            VStack(alignment: .trailing, spacing: 16) {
-                // Project icon aligned to the right
-                HStack {
-                    Spacer()
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 48))
-                        .foregroundColor(projectColor)
-                }
+            // Project Identity
+            VStack(alignment: .leading, spacing: 8) {
+                Text(project.name ?? "Untitled Project")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
                 
-                VStack(alignment: .trailing, spacing: 8) {
-                    Text(project.name ?? "Untitled Project")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.trailing)
-                    
-                    if let description = project.projectDescription, !description.isEmpty {
-                        Text(description)
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.trailing)
-                    }
-                }
-                
-                HStack(spacing: 20) {
+                HStack(spacing: 12) {
                     if project.isArchived {
-                        Label("Archived", systemImage: "archivebox")
-                            .font(.subheadline)
-                            .foregroundColor(.orange)
+                        Text("Archived")
+                            .font(.xsCaps)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.orange.opacity(0.1))
-                            )
+                            .background(Color.orange.opacity(0.1))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
                     }
                     
-                    Label("Created \(project.createdAt ?? Date(), style: .date)", systemImage: "calendar")
+                    Text("Created \(project.createdAt ?? Date(), style: .date)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
-
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    private var bottomCompactSection: some View {
-        // Stats Card only
-        compactStatsCard
-    }
-    
-    private var compactStatsCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .font(.title3)
-                    .foregroundColor(.blue)
-                Text("Project Stats")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
+                if let description = project.projectDescription, !description.isEmpty {
+                    Text(description)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
             
-            // 2x2 Grid Layout
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16)
-            ], spacing: 12) {
-                // Row 1, Column 1
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Chats")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(project.chats?.count ?? 0)")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Row 1, Column 2
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Messages")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(messageCount)")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Row 2, Column 1
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Days Active")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(activeDays)")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Row 2, Column 2
-                if let lastActivity = recentChats.first?.updatedDate {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Last Activity")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(formatDateString(lastActivity))
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Last Activity")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("No activity")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+            Spacer()
+            
+            // Primary Action
+            newChatButton
+        }
+    }
+    
+    // Custom Font modifier helper (will need to be defined or just generic system font)
+    // using .caption.weight(.medium) for xsCaps feel
+
+    
+    private var bottomCompactSection: some View {
+        HStack(spacing: 16) {
+            statCard(title: "Total Chats", value: "\(project.chats?.count ?? 0)", icon: "bubble.left.and.bubble.right.fill", color: .blue)
+            statCard(title: "Messages", value: "\(messageCount)", icon: "text.bubble.fill", color: .purple)
+            statCard(title: "Days Active", value: "\(activeDays)", icon: "calendar.badge.clock", color: .orange)
+        }
+    }
+    
+    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.1))
+                    .frame(width: 48, height: 48)
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(color)
             }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.primary)
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.clear)
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 0.5)
+        )
     }
     
 
     
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // New Thread button above Recent Activity heading
-            if !project.isArchived {
-                HStack {
-                    newChatButton
-                    Spacer()
-                }
-                .padding(.bottom, 8)
-            }
-            
             Text("Recent Activity")
                 .font(.title2)
-                .fontWeight(.semibold)
+                .fontWeight(.bold)
             
             if recentChats.isEmpty && !isLoadingStats {
-                ProjectEmptyStateView(
-                    icon: "message",
-                    title: "No Chats Yet",
-                    description: "Add some chats to this project to see activity here.",
-                    action: nil
-                )
+                // Show nothing here if empty, empty state is likely handled elsewhere or acceptable
+                Text("No recent activity")
+                    .foregroundStyle(.secondary)
+                    .italic()
             } else {
-                VStack(spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)], spacing: 16) {
                     ForEach(recentChats, id: \.objectID) { chat in
-                        Button(action: {
-                            // Post notification to select the chat
+                        ChatCard(chat: chat, projectColor: projectColor, showDate: false) {
                             NotificationCenter.default.post(
                                 name: NSNotification.Name("SelectChatFromProjectSummary"),
                                 object: chat
                             )
-                        }) {
-                            HStack {
-                                // AI Model Logo (same as regular chats) - aligned with proper padding
-                                Image("logo_\(chat.apiService?.type ?? "")")
-                                    .resizable()
-                                    .renderingMode(.template)
-                                    .interpolation(.high)
-                                    .frame(width: 16, height: 16)
-                                    .foregroundColor(.primary)
-                                    .padding(.leading, 8)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(chat.name)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .lineLimit(1)
-                                        .foregroundColor(.primary)
-                                    
-                                    if let lastMessage = chat.lastMessage {
-                                        Text(lastMessage.body)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(2)
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                Text(chat.updatedDate, style: .date)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.clear)
-                            )
                         }
-                        .buttonStyle(.plain)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.clear, lineWidth: 2)
-                        )
                         .contextMenu {
                             chatContextMenu(for: chat)
                         }
                     }
                 }
             }
+        }
+    }
+    
+    private var allChatsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("All Chats")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+             if allChats.isEmpty && !isLoadingStats {
+                 ProjectEmptyStateView(
+                     icon: "bubble.left.and.bubble.right",
+                     title: "No Chats Yet",
+                     description: "Start a new conversation to see activity here.",
+                     action: ("Create New Chat", { createNewChatInProject() })
+                 )
+             } else {
+                 VStack(spacing: 0) {
+                     ForEach(allChats, id: \.objectID) { chat in
+                         Button(action: {
+                             NotificationCenter.default.post(
+                                 name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                 object: chat
+                             )
+                         }) {
+                             HStack(spacing: 12) {
+                                 Image("logo_\(chat.apiService?.type ?? "")")
+                                     .resizable()
+                                     .renderingMode(.template)
+                                     .interpolation(.high)
+                                     .frame(width: 16, height: 16)
+                                     .foregroundStyle(.primary)
+                                 
+                                 Text(chat.name)
+                                     .font(.body)
+                                     .foregroundStyle(.primary)
+                                 
+                                 Spacer()
+                                 
+                                 Text(chat.updatedDate, style: .date)
+                                     .font(.caption)
+                                     .foregroundStyle(.secondary)
+                             }
+                             .padding(.vertical, 12)
+                             .padding(.horizontal, 16)
+                             .contentShape(Rectangle())
+                         }
+                         .buttonStyle(.plain)
+                         .background(
+                            Color(NSColor.controlBackgroundColor).opacity(0.5)
+                         ) 
+                         .contextMenu {
+                             chatContextMenu(for: chat)
+                         }
+                         
+                         Divider()
+                             .padding(.leading, 16)
+                     }
+                 }
+                 .background(
+                     RoundedRectangle(cornerRadius: 12)
+                         .fill(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                         .strokeBorder(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 0.5)
+                 )
+             }
         }
     }
     
@@ -370,66 +347,20 @@ struct ProjectSummaryView: View {
             createNewChatInProject()
         }) {
             HStack(spacing: 8) {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 16, weight: .medium))
-                Text("New Thread")
-                    .font(.system(size: 14, weight: .medium))
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .bold))
+                Text("New Chat")
+                    .font(.system(size: 14, weight: .bold))
             }
-            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 40)
-            .background(
-                ZStack {
-                    // Base gradient background with project color
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            projectColor.opacity(0.85),
-                            projectColor.opacity(0.75)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    
-                    // Subtle angled glassy overlay effect
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: .white.opacity(0.15), location: 0.0),
-                            .init(color: .white.opacity(0.05), location: 0.4),
-                            .init(color: .clear, location: 0.6),
-                            .init(color: .black.opacity(0.03), location: 1.0)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    
-                    // Very subtle material texture
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(.ultraThinMaterial)
-                        .opacity(0.05)
-                        .blendMode(.overlay)
-                }
-            )
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0.2),
-                                projectColor.opacity(0.2)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .shadow(color: projectColor.opacity(0.25), radius: 2, x: 0, y: 1)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(projectColor)
+            .foregroundStyle(.white)
+            .clipShape(Capsule())
+            .shadow(color: projectColor.opacity(0.3), radius: 4, x: 0, y: 2)
         }
-        .buttonStyle(PlainButtonStyle())
-        .frame(maxWidth: 240)
+        .buttonStyle(.plain)
+        .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
     }
     
     // MARK: - Helper Methods
@@ -624,6 +555,85 @@ private struct ProjectEmptyStateView: View {
     }
 }
 
+struct ChatCard: View {
+    let chat: ChatEntity
+    let projectColor: Color
+    var showDate: Bool = true
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.1))
+                            .frame(width: 32, height: 32)
+                        
+                        Image("logo_\(chat.apiService?.type ?? "")")
+                            .resizable()
+                            .renderingMode(.template)
+                            .interpolation(.high)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 18, height: 18)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(chat.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .foregroundStyle(.primary)
+                        // Removed relative time Text
+                    }
+                    
+                    Spacer()
+                    
+                    if chat.isPinned {
+                         Image(systemName: "pin.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(45))
+                    }
+                }
+                
+                // Snippet
+                if let lastMessage = chat.lastMessage?.body {
+                    Text(lastMessage.trimmingCharacters(in: .whitespacesAndNewlines))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                } else {
+                    Text("No messages yet")
+                        .font(.caption)
+                        .italic()
+                        .foregroundStyle(.secondary.opacity(0.7))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.controlBackgroundColor))
+                    .shadow(color: Color.black.opacity(isHovered ? 0.08 : 0.04), radius: isHovered ? 12 : 6, x: 0, y: isHovered ? 4 : 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(isHovered ? projectColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isHovered ? 1 : 0.5)
+            )
+            .scaleEffect(isHovered ? 1.01 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+}
+
 #Preview {
     if let sampleProject = PreviewStateManager.shared.sampleProject {
         ProjectSummaryView(project: sampleProject)
@@ -633,3 +643,9 @@ private struct ProjectEmptyStateView: View {
         Text("No sample project available")
     }
 } 
+
+extension Font {
+    static var xsCaps: Font {
+        .caption.weight(.bold)
+    }
+}
