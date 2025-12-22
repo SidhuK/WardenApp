@@ -12,6 +12,7 @@ struct MoveToProjectView: View {
     @State private var selectedProject: ProjectEntity?
     @State private var showingCreateProject = false
     @State private var searchText = ""
+    @State private var projectChatCounts: [UUID: Int] = [:]
     
     @FetchRequest(
         entity: ProjectEntity.entity(),
@@ -70,6 +71,7 @@ struct MoveToProjectView: View {
                     ForEach(filteredProjects, id: \.id) { project in
                         ProjectOptionRow(
                             project: project,
+                            chatCount: projectChatCounts[project.id ?? UUID()] ?? 0,
                             isSelected: selectedProject?.objectID == project.objectID,
                             isCurrentProject: currentProject?.objectID == project.objectID,
                             onSelect: {
@@ -98,6 +100,13 @@ struct MoveToProjectView: View {
                minHeight: 420, idealHeight: 520, maxHeight: 640)
         .onAppear {
             selectedProject = currentProject
+            // Load chat counts efficiently
+            Task {
+                let counts = await MainActor.run { store.getChatCountsByProject() }
+                await MainActor.run {
+                    self.projectChatCounts = counts
+                }
+            }
         }
         .sheet(isPresented: $showingCreateProject) {
             CreateProjectView(
@@ -105,6 +114,14 @@ struct MoveToProjectView: View {
                     // Close the sheet, bind new project back and immediately apply selection.
                     selectedProject = project
                     showingCreateProject = false
+                    
+                    // Update counts
+                    Task {
+                        let counts = await MainActor.run { store.getChatCountsByProject() }
+                        await MainActor.run {
+                            self.projectChatCounts = counts
+                        }
+                    }
                 },
                 onCancel: {
                     showingCreateProject = false
@@ -338,16 +355,13 @@ struct MoveToProjectView: View {
 
 struct ProjectOptionRow: View {
     @ObservedObject var project: ProjectEntity
+    let chatCount: Int
     let isSelected: Bool
     let isCurrentProject: Bool
     let onSelect: () -> Void
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
-    }
-    
-    private var chatCount: Int {
-        project.chats?.count ?? 0
     }
     
     var body: some View {

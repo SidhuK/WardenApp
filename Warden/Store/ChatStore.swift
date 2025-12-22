@@ -548,29 +548,50 @@ class ChatStore: ObservableObject {
     
     // MARK: - Performance Optimization Methods
     
-    func preloadProjectData(for projects: [ProjectEntity]) {
-        let projectIds = projects.compactMap { $0.id }
+    // MARK: - Performance Optimization Methods
+    
+    /// Efficiently counts chats grouped by project using a dictionary result type
+    /// avoiding full relationship faults.
+    func getChatCountsByProject() -> [UUID: Int] {
+        let fetchRequest = NSFetchRequest<NSDictionary>(entityName: "ChatEntity")
+        fetchRequest.resultType = .dictionaryResultType
         
-        Task.detached(priority: .background) {
-            let bgContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
-            bgContext.parent = self.viewContext
+        let countExpression = NSExpressionDescription()
+        countExpression.name = "count"
+        countExpression.expression = NSExpression(forFunction: "count:", arguments: [NSExpression(forKeyPath: "id")])
+        countExpression.expressionResultType = .integer32AttributeType
+        
+        // Group by project.id
+        fetchRequest.propertiesToFetch = ["project.id", countExpression]
+        fetchRequest.propertiesToGroupBy = ["project.id"]
+        
+        do {
+            let results = try viewContext.fetch(fetchRequest)
+            var counts: [UUID: Int] = [:]
             
-            await bgContext.perform {
-                let fetchRequest: NSFetchRequest<ProjectEntity> = ProjectEntity.fetchRequest()
-                fetchRequest.predicate = NSPredicate(format: "id IN %@", projectIds)
-                
-                do {
-                    let projects = try bgContext.fetch(fetchRequest)
-                    projects.forEach { project in
-                        _ = project.chats?.count
-                        (project.chats?.allObjects as? [ChatEntity])?.forEach { _ = $0.messages.count }
-                    }
-                } catch {
-                    WardenLog.coreData.error(
-                        "Error preloading project data: \(error.localizedDescription, privacy: .public)"
-                    )
+            for result in results {
+                if let projectId = result["project.id"] as? UUID,
+                   let count = result["count"] as? Int {
+                    counts[projectId] = count
                 }
             }
+            return counts
+        } catch {
+            WardenLog.coreData.error("Error fetching chat counts: \(error.localizedDescription)")
+            return [:]
+        }
+    }
+    
+    func countMessages(in project: ProjectEntity) -> Int {
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "MessageEntity")
+        fetchRequest.predicate = NSPredicate(format: "chat.project == %@", project)
+        fetchRequest.resultType = .countResultType
+        
+        do {
+            return try viewContext.count(for: fetchRequest)
+        } catch {
+            WardenLog.coreData.error("Error counting messages in project: \(error.localizedDescription)")
+            return 0
         }
     }
     
@@ -584,6 +605,70 @@ class ChatStore: ObservableObject {
     
     func getPerformanceStats() -> (chatCount: Int, projectCount: Int, registeredObjects: Int) {
         (chatCount: countChats(), projectCount: getAllProjects().count, registeredObjects: viewContext.registeredObjects.count)
+    }
+    
+    // MARK: - Chat Operations
+    
+    func createChat(in project: ProjectEntity? = nil) -> ChatEntity {
+        let newChat = ChatEntity(context: viewContext)
+        newChat.id = UUID()
+        newChat.newChat = true
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+        newChat.newMessage = ""
+        newChat.name = "New Chat"
+        
+        // Set default values logic
+        newChat.temperature = 0.8
+        newChat.top_p = 1.0
+        newChat.behavior = "default"
+        newChat.systemMessage = AppConstants.chatGptSystemMessage
+        
+        // Set Default API Service and Model
+        if let defaultService = getDefaultAPIService() {
+            newChat.apiService = defaultService
+            
+            // If the service has a preferred/default model, use it
+            // We need to check if we can get the default model from the service entity or config
+            // For now, we'll try to use the one stored in AppConstants or the service's default
+            
+            // Note: The logic to determine the "default model" might be split. 
+            // Often it's stored inUserDefaults or derived from the service.
+            // Here we ensure it uses the app-wide default if not set.
+             newChat.gptModel = AppConstants.chatGptDefaultModel
+        } else {
+             // Fallback if no service is found
+             newChat.gptModel = AppConstants.chatGptDefaultModel
+        }
+        
+        // Assign to project if provided
+        if let project = project {
+            newChat.project = project
+            project.updatedAt = Date()
+            
+            // Apply custom instructions if available
+            if let instructions = project.customInstructions, !instructions.isEmpty {
+                newChat.systemMessage = instructions
+            }
+        }
+        
+        saveInCoreData()
+        return newChat
+    }
+    
+    func regenerateChatName(chat: ChatEntity) {
+        guard let apiService = chat.apiService else { return }
+        
+        guard let apiConfig = APIServiceManager.createAPIConfiguration(for: apiService, modelOverride: chat.gptModel.isEmpty ? nil : chat.gptModel) else {
+            return
+        }
+        
+        let messageManager = MessageManager(
+            apiService: APIServiceFactory.createAPIService(config: apiConfig),
+            viewContext: viewContext
+        )
+        
+        messageManager.generateChatNameIfNeeded(chat: chat, force: true)
     }
 }
 

@@ -101,13 +101,15 @@ struct CreateProjectView: View {
         }
         .onChange(of: selectedTemplate) { _, newValue in
             if let template = newValue {
-                projectName = template.name
-                customInstructions = template.customInstructions
-                selectedColor = template.colorCode
-                if projectDescription.isEmpty {
+                // formatting check
+                if !template.name.isEmpty { projectName = template.name }
+                if !template.customInstructions.isEmpty { customInstructions = template.customInstructions }
+                if !template.colorCode.isEmpty { selectedColor = template.colorCode }
+                if projectDescription.isEmpty && !template.description.isEmpty {
                     projectDescription = template.description
                 }
             }
+            // If nil (Custom), do NOT clear fields. Keep user input.
         }
 
     }
@@ -191,10 +193,7 @@ struct CreateProjectView: View {
                             isSelected: selectedTemplate == nil,
                             onSelect: {
                                 selectedTemplate = nil
-                                customInstructions = ""
-                                projectName = ""
-                                projectDescription = ""
-                                selectedColor = "#007AFF"
+                                // Do not clear fields when selecting Custom
                             }
                         )
                         

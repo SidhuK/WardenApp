@@ -56,8 +56,6 @@ struct ProjectListView: View {
                                 expandedProjects.remove(projectId)
                             } else {
                                 expandedProjects.insert(projectId)
-                                // Preload project data when expanded for better performance
-                                store.preloadProjectData(for: [project])
                             }
                         },
                         onEditProject: {
@@ -71,10 +69,7 @@ struct ProjectListView: View {
                             onNewChatInProject(project)
                         }
                     )
-                    .onAppear {
-                        // Preload next few projects when this one appears
-                        preloadNearbyProjects(for: project)
-                    }
+
                 }
             }
             
@@ -197,31 +192,11 @@ struct ProjectListView: View {
     // MARK: - Performance Optimization Methods
     
     private func preloadNearbyProjects(for currentProject: ProjectEntity) {
-        guard let currentIndex = activeProjects.firstIndex(of: currentProject) else { return }
-        
-        // Preload next 3 projects for smoother scrolling
-        let startIndex = max(0, currentIndex)
-        let endIndex = min(activeProjects.count - 1, currentIndex + 3)
-        let projectsToPreload = Array(activeProjects[startIndex...endIndex])
-        
-        Task.detached(priority: .background) {
-            await MainActor.run {
-                store.preloadProjectData(for: projectsToPreload)
-            }
-        }
+        // Removed ineffective background preload
     }
     
     private func optimizePerformanceIfNeeded() {
-        Task.detached(priority: .background) {
-            let stats = await MainActor.run { store.getPerformanceStats() }
-            
-            // Optimize if we have too many registered objects
-            if stats.registeredObjects > 500 {
-                await MainActor.run {
-                    store.optimizeMemoryUsage()
-                }
-            }
-        }
+        // Removed aggressive optimization check
     }
 }
 
@@ -444,13 +419,11 @@ struct ProjectChatRow: View {
     @EnvironmentObject private var store: ChatStore
     @State private var isHovered = false
     @State private var showingMoveToProject = false
-    @StateObject private var chatViewModel: ChatViewModel
     
     init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
         self.chat = chat
         self._selectedChat = selectedChat
         self.searchText = searchText
-        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: chat.managedObjectContext!))
     }
     
     private var isSelected: Bool {
@@ -526,7 +499,7 @@ struct ProjectChatRow: View {
             
             if chat.apiService?.generateChatNames ?? false {
                 Button(action: {
-                    chatViewModel.regenerateChatName()
+                    store.regenerateChatName(chat: chat)
                 }) {
                     Label("Regenerate Name", systemImage: "arrow.clockwise")
                 }
@@ -865,13 +838,10 @@ struct ProjectChatRowInList: View {
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
     @State private var isHovered = false
     @State private var showingMoveToProject = false
-    @StateObject private var chatViewModel: ChatViewModel
-    
     init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
         self.chat = chat
         self._selectedChat = selectedChat
         self.searchText = searchText
-        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: chat.managedObjectContext!))
     }
     
     private var isSelected: Bool {
@@ -948,7 +918,7 @@ struct ProjectChatRowInList: View {
             
             if chat.apiService?.generateChatNames ?? false {
                 Button(action: {
-                    chatViewModel.regenerateChatName()
+                    store.regenerateChatName(chat: chat)
                 }) {
                     Label("Regenerate Name", systemImage: "arrow.clockwise")
                 }
@@ -978,7 +948,16 @@ struct ProjectChatRowInList: View {
     private func getLastMessage() -> String? {
         if let messages = chat.messages.array as? [MessageEntity],
            let lastMessage = messages.last {
-            return lastMessage.body.trimmingCharacters(in: .whitespacesAndNewlines)
+            var body = lastMessage.body
+            if body.starts(with: "<think>") {
+                body = body.replacingOccurrences(of: "\n", with: " ")
+                body = body.replacingOccurrences(
+                    of: "<think>.*?</think>",
+                    with: "",
+                    options: .regularExpression
+                )
+            }
+            return body.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return nil
     }

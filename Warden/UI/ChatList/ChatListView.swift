@@ -503,25 +503,7 @@ struct ChatListView: View {
                     showingEditProject: $showingEditProject,
                     projectToEdit: $projectToEdit,
                     onNewChatInProject: { project in
-                        let uuid = UUID()
-                        let newChat = ChatEntity(context: viewContext)
-                        
-                        newChat.id = uuid
-                        newChat.newChat = true
-                        newChat.temperature = 0.8
-                        newChat.top_p = 1.0
-                        newChat.behavior = "default"
-                        newChat.newMessage = ""
-                        newChat.createdDate = Date()
-                        newChat.updatedDate = Date()
-                        newChat.systemMessage = AppConstants.chatGptSystemMessage
-                        newChat.name = "New Chat"
-                        
-                        // Save the chat first to ensure it exists in the database
-                        try? viewContext.save()
-                        
-                        // Then move it to the project
-                        store.moveChatsToProject(project, chats: [newChat])
+                        let newChat = store.createChat(in: project)
                         selectedChat = newChat
                     }
                 )
@@ -609,25 +591,9 @@ struct ChatListView: View {
                         showingEditProject: $showingEditProject,
                         projectToEdit: $projectToEdit,
                         onNewChatInProject: { project in
-                            let uuid = UUID()
-                            let newChat = ChatEntity(context: viewContext)
-                            
-                            newChat.id = uuid
-                            newChat.newChat = true
-                            newChat.temperature = 0.8
-                            newChat.top_p = 1.0
-                            newChat.behavior = "default"
-                            newChat.newMessage = ""
-                            newChat.createdDate = Date()
-                            newChat.updatedDate = Date()
-                            newChat.systemMessage = AppConstants.chatGptSystemMessage
-                            newChat.name = "New Chat"
-                            
-                            // Save the chat first to ensure it exists in the database
-                            try? viewContext.save()
-                            
-                            // Then move it to the project
-                            store.moveChatsToProject(project, chats: [newChat])
+                            // Unarchive if adding a new chat? Or allow adding to archived?
+                            // Current behavior allows it, so we keep allowing it.
+                            let newChat = store.createChat(in: project)
                             selectedChat = newChat
                         },
                         isArchived: true

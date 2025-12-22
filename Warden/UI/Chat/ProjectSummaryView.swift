@@ -17,10 +17,10 @@ struct ProjectSummaryView: View {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
     }
     
-    private var projectChats: [ChatEntity] {
-        guard let chats = project.chats?.allObjects as? [ChatEntity] else { return [] }
-        return chats.sorted { $0.updatedDate > $1.updatedDate }
-    }
+    @State private var recentChats: [ChatEntity] = []
+    @State private var messageCount: Int = 0
+    @State private var activeDays: Int = 0
+    @State private var isLoadingStats = true
     
     var body: some View {
         ScrollView {
@@ -57,6 +57,74 @@ struct ProjectSummaryView: View {
                 )
             }
         }
+
+        .task {
+            // Must launch a new task to perform async work
+            await loadProjectData()
+        }
+    }
+    
+    // Marked explicitly as @MainActor to safely update state
+    @MainActor
+    private func loadProjectData() async {
+        isLoadingStats = true
+        
+        let context = viewContext
+        let projectId = project.objectID
+        
+        // Move heavy Core Data work to a background thread, but return data to MainActor
+        let result = await Task.detached(priority: .userInitiated) { () -> (chats: [ChatEntity], count: Int, days: Int)? in
+            // Create a background context for thread safety if viewing complex graphs
+            // But here "project" is passed in.
+            // Safer pattern: use perform on the viewContext but return values.
+            
+            return await context.perform { () -> (chats: [ChatEntity], count: Int, days: Int) in
+                 // Re-fetch project to be safe or just use ID if passing across contexts
+                 // Since we are inside viewContext.perform, we can use the context.
+                 
+                 // Fetch recent chats (limit 5)
+                 let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+                 request.predicate = NSPredicate(format: "project == %@", context.object(with: projectId))
+                 request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
+                 request.fetchLimit = 5
+                 
+                 // Fetch oldest chat date for days active
+                 let oldestRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+                 oldestRequest.predicate = NSPredicate(format: "project == %@", context.object(with: projectId))
+                 oldestRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.createdDate, ascending: true)]
+                 oldestRequest.fetchLimit = 1
+
+                 var chats: [ChatEntity] = []
+                 var count = 0
+                 var days = 0
+
+                 do {
+                     chats = try context.fetch(request)
+                     // Simple count query locally or via helper if thread-safe
+                     // We'll reproduce the count logic here to be safe within the context block
+                     let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "MessageEntity")
+                     countRequest.predicate = NSPredicate(format: "chat.project == %@", context.object(with: projectId))
+                     countRequest.resultType = .countResultType
+                     count = try context.count(for: countRequest)
+                     
+                     if let newest = chats.first?.updatedDate,
+                        let oldest = try context.fetch(oldestRequest).first?.createdDate {
+                         days = Calendar.current.dateComponents([.day], from: oldest, to: newest).day ?? 0
+                     }
+                 } catch {
+                     WardenLog.coreData.error("Error loading project summary: \(error.localizedDescription)")
+                 }
+                 
+                 return (chats, count, days)
+            }
+        }.value
+        
+        if let data = result {
+             self.recentChats = data.chats
+             self.messageCount = data.count
+             self.activeDays = data.days
+        }
+        self.isLoadingStats = false
     }
     
     private var horizontalProjectHeader: some View {
@@ -138,7 +206,7 @@ struct ProjectSummaryView: View {
                     Text("Chats")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("\(projectChats.count)")
+                    Text("\(project.chats?.count ?? 0)")
                         .font(.title2)
                         .fontWeight(.semibold)
                 }
@@ -149,7 +217,7 @@ struct ProjectSummaryView: View {
                     Text("Messages")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("\(totalMessages)")
+                    Text("\(messageCount)")
                         .font(.title2)
                         .fontWeight(.semibold)
                 }
@@ -160,14 +228,14 @@ struct ProjectSummaryView: View {
                     Text("Days Active")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("\(daysActive)")
+                    Text("\(activeDays)")
                         .font(.title2)
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Row 2, Column 2
-                if let lastActivity = projectChats.first?.updatedDate {
+                if let lastActivity = recentChats.first?.updatedDate {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Last Activity")
                             .font(.caption)
@@ -217,7 +285,7 @@ struct ProjectSummaryView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            if projectChats.isEmpty {
+            if recentChats.isEmpty && !isLoadingStats {
                 ProjectEmptyStateView(
                     icon: "message",
                     title: "No Chats Yet",
@@ -226,7 +294,7 @@ struct ProjectSummaryView: View {
                 )
             } else {
                 VStack(spacing: 8) {
-                    ForEach(Array(projectChats.prefix(5)), id: \.objectID) { chat in
+                    ForEach(recentChats, id: \.objectID) { chat in
                         Button(action: {
                             // Post notification to select the chat
                             NotificationCenter.default.post(
@@ -288,19 +356,7 @@ struct ProjectSummaryView: View {
     
     // MARK: - Computed Properties
     
-    private var totalMessages: Int {
-        projectChats.reduce(0) { total, chat in
-            total + chat.messagesArray.count
-        }
-    }
-    
-    private var daysActive: Int {
-        guard let firstActivity = projectChats.last?.createdDate,
-              let lastActivity = projectChats.first?.updatedDate else {
-            return 0
-        }
-        return Calendar.current.dateComponents([.day], from: firstActivity, to: lastActivity).day ?? 0
-    }
+    // Removed computed properties totalMessages and daysActive in favor of async loaded state
     
 
     
@@ -386,30 +442,8 @@ struct ProjectSummaryView: View {
     }
     
     private func createNewChatInProject() {
-        let uuid = UUID()
-        let newChat = ChatEntity(context: viewContext)
         
-        newChat.id = uuid
-        newChat.newChat = true
-        newChat.temperature = 0.8
-        newChat.top_p = 1.0
-        newChat.behavior = "default"
-        newChat.newMessage = ""
-        newChat.createdDate = Date()
-        newChat.updatedDate = Date()
-        newChat.systemMessage = AppConstants.chatGptSystemMessage
-        newChat.name = "New Chat"
-        
-        // Save the chat first to ensure it exists in the database
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error saving new chat: \(error.localizedDescription, privacy: .public)")
-            return
-        }
-        
-        // Then move it to the project
-        store.moveChatsToProject(project, chats: [newChat])
+        let newChat = store.createChat(in: project)
         
         // Post notification to select the new chat
         NotificationCenter.default.post(
@@ -499,9 +533,7 @@ struct ProjectSummaryView: View {
     }
     
     private func regenerateChatName(_ chat: ChatEntity) {
-        // Create a ChatViewModel for this specific chat to use the regenerate functionality
-        let chatViewModel = ChatViewModel(chat: chat, viewContext: viewContext)
-        chatViewModel.regenerateChatName()
+        store.regenerateChatName(chat: chat)
     }
     
     private func clearChat(_ chat: ChatEntity) {
@@ -543,8 +575,10 @@ struct ProjectSummaryView: View {
                 }
             }
         }
+
     }
 }
+
 
 // MARK: - Supporting Views
 
