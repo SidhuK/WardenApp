@@ -20,7 +20,15 @@ All notable changes to Warden are documented here.
 - **App Icon Update** — Updated app icon for MacOS 26 Tahoe, now icons for dark, light and liquid glass modes are available
 
 
-### 🐛 Bug Fixes
+### � Projects
+
+- **Faster loading** — Projects tab now loads instantly without lag or heavy memory usage
+- **Smoother "Move to Project"** — Moving chats to projects is now instant and doesn't freeze the app
+- **Fixed data loss** — Creating a custom project no longer wipes your description when switching options
+- **Cleaner previews** — Sidebar previews now correctly hide internal thinking tags (`<think>`)
+- **Correct defaults** — New chats created inside projects now use your default AI model
+
+### �🐛 Bug Fixes
 
 - **Fixed Settings crash** — Settings window no longer crashes when opened
 
