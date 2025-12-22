@@ -32,6 +32,7 @@ All notable changes to Warden are documented here.
 ### 🐛 Bug Fixes
 
 - **Fixed Settings crash** — Settings window no longer crashes when opened
+- **Model Temp Fix** — Model temperature is now saved correctly, 1.0 by default to reduce the chance of any errors
 
 ---
 

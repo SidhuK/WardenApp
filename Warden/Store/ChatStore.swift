@@ -619,7 +619,7 @@ class ChatStore: ObservableObject {
         newChat.name = "New Chat"
         
         // Set default values logic
-        newChat.temperature = 0.8
+        newChat.temperature = Double(AppConstants.defaultTemperatureForChat)
         newChat.top_p = 1.0
         newChat.behavior = "default"
         newChat.systemMessage = AppConstants.chatGptSystemMessage

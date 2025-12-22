@@ -33,9 +33,9 @@ struct AppConstants {
     
     // MARK: - Temperature Settings
     struct Temperature {
-        static let persona: Float = 0.7
-        static let chatNameGeneration: Float = 0.6
-        static let chat: Float = 0.7
+        static let persona: Float = 1.0
+        static let chatNameGeneration: Float = 1.0
+        static let chat: Float = 1.0
     }
     
     // Backward compatibility
@@ -88,7 +88,7 @@ struct AppConstants {
     /// Provides predefined persona configurations.
     struct PersonaPresets {
         private static let personasData: [(name: String, symbol: String, message: String, temp: Float)] = [
-            ("Default Assistant", "person.circle", "", 0.7),
+            ("Default Assistant", "person.circle", "", 1.0),
             ("The Wordsmith", "pencil.and.outline", "You are a personal writing coach and editor. You excel at refining text, improving grammar, enhancing clarity, adjusting tone (e.g., more formal, more friendly, persuasive), and expanding or condensing content. Your focus is on effective and professional communication.", 0.3),
             ("The Idea Sparker", "lightbulb", "You are a creative brainstorming partner designed to help users overcome mental blocks and generate innovative ideas. You suggest diverse perspectives, offer unconventional solutions, and help expand on nascent concepts.", 0.8),
             ("The Knowledge Navigator", "book.circle", "You are a personal research assistant and information summarizer. You are adept at quickly processing large amounts of information, extracting key facts, summarizing lengthy documents or articles, and answering specific questions based on provided data or general knowledge.", 0.2),
@@ -99,7 +99,7 @@ struct AppConstants {
             ("The Goal Setter & Motivator", "target", "You are a supportive and encouraging agent focused on helping users define clear goals, track progress, and stay motivated. You help break down long-term aspirations into actionable steps and offer positive reinforcement.", 0.7),
         ]
         
-        static let defaultAssistant = Persona(name: "Default Assistant", symbol: "person.circle", message: "", temperature: 0.7)
+        static let defaultAssistant = Persona(name: "Default Assistant", symbol: "person.circle", message: "", temperature: 1.0)
         static let theWordsmith = Persona(name: "The Wordsmith", symbol: "pencil.and.outline", message: "You are a personal writing coach and editor. You excel at refining text, improving grammar, enhancing clarity, adjusting tone (e.g., more formal, more friendly, persuasive), and expanding or condensing content. Your focus is on effective and professional communication.", temperature: 0.3)
         static let theIdeaSparker = Persona(name: "The Idea Sparker", symbol: "lightbulb", message: "You are a creative brainstorming partner designed to help users overcome mental blocks and generate innovative ideas. You suggest diverse perspectives, offer unconventional solutions, and help expand on nascent concepts.", temperature: 0.8)
         static let theKnowledgeNavigator = Persona(name: "The Knowledge Navigator", symbol: "book.circle", message: "You are a personal research assistant and information summarizer. You are adept at quickly processing large amounts of information, extracting key facts, summarizing lengthy documents or articles, and answering specific questions based on provided data or general knowledge.", temperature: 0.2)
