@@ -16,7 +16,7 @@ struct AppConstants {
     // MARK: - Message & Content Configuration
     static let defaultRole: String = "assistant"
     static let longStringCount = 1000
-    static let streamedResponseUpdateUIInterval: TimeInterval = 0.2
+    static let streamedResponseUpdateUIInterval: TimeInterval = 0.05
     static let largeMessageSymbolsThreshold = 25000
     
     // MARK: - UI Configuration

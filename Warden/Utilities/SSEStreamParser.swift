@@ -30,9 +30,19 @@ final class SSEStreamParser {
             try await onEvent(payload)
         }
 
-        func isValidJSON(_ string: String) -> Bool {
-            guard let data = string.data(using: .utf8) else { return false }
-            return (try? JSONSerialization.jsonObject(with: data, options: [])) != nil
+        /// Fast structural check for JSON completeness - avoids expensive JSONSerialization parse
+        func looksLikeCompleteJSON(_ string: String) -> Bool {
+            let trimmed = string.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { return false }
+            
+            // Check for balanced braces/brackets as a quick heuristic
+            if trimmed.hasPrefix("{") && trimmed.hasSuffix("}") {
+                return true
+            }
+            if trimmed.hasPrefix("[") && trimmed.hasSuffix("]") {
+                return true
+            }
+            return false
         }
 
         func processLine(_ line: String) async throws {
@@ -85,7 +95,7 @@ final class SSEStreamParser {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !candidate.isEmpty else { return }
 
-                if candidate == "[DONE]" || isValidJSON(candidate) {
+                if candidate == "[DONE]" || looksLikeCompleteJSON(candidate) {
                     try await flushBufferedEvent()
                 }
             }
@@ -141,9 +151,19 @@ final class SSEStreamParser {
             try await onEvent(payload)
         }
 
-        func isValidJSON(_ string: String) -> Bool {
-            guard let jsonData = string.data(using: .utf8) else { return false }
-            return (try? JSONSerialization.jsonObject(with: jsonData, options: [])) != nil
+        /// Fast structural check for JSON completeness - avoids expensive JSONSerialization parse
+        func looksLikeCompleteJSON(_ string: String) -> Bool {
+            let trimmed = string.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { return false }
+            
+            // Check for balanced braces/brackets as a quick heuristic
+            if trimmed.hasPrefix("{") && trimmed.hasSuffix("}") {
+                return true
+            }
+            if trimmed.hasPrefix("[") && trimmed.hasSuffix("]") {
+                return true
+            }
+            return false
         }
 
         func processLine(_ line: String) async throws {
@@ -191,7 +211,7 @@ final class SSEStreamParser {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !candidate.isEmpty else { return }
 
-                if candidate == "[DONE]" || isValidJSON(candidate) {
+                if candidate == "[DONE]" || looksLikeCompleteJSON(candidate) {
                     try await flushBufferedEvent()
                 }
             }

@@ -174,8 +174,6 @@ struct MessageContentView: View {
         if isStreaming {
             fullParseTask?.cancel()
             fullParseTask = Task.detached(priority: .userInitiated) {
-                let delay = UInt64(AppConstants.streamedResponseUpdateUIInterval * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: delay)
                 guard !Task.isCancelled else { return }
                 let parser = MessageParser(colorScheme: colorScheme)
                 #if DEBUG
