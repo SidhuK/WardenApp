@@ -526,12 +526,6 @@ struct APIServiceDetailContent: View {
     }
 }
 
-// MARK: - Inline Version (kept for compatibility)
-struct InlineTabAPIServicesView: View {
-    var body: some View {
-        TabAPIServicesView()
-    }
-}
 
 struct APIServiceRowView: View {
     let service: APIServiceEntity

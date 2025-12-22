@@ -178,15 +178,10 @@ struct MCPAgentDetailView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
                 HStack(spacing: 16) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(statusColor.opacity(0.15))
-                            .frame(width: 52, height: 52)
-                        
-                        Image(systemName: config.transportType == .stdio ? "terminal.fill" : "network")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(statusColor)
-                    }
+                    Image(systemName: config.transportType == .stdio ? "terminal.fill" : "network")
+                        .font(.system(size: 32, weight: .medium))
+                        .foregroundStyle(statusColor)
+                        .frame(width: 52, height: 52)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(config.name)

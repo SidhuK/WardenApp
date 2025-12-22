@@ -24,7 +24,7 @@ struct TabContributionsView: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        VStack(spacing: 12) {
+                        VStack(spacing: 0) {
                             SupportRow(
                                 icon: "cup.and.saucer.fill",
                                 iconColor: .orange,
@@ -34,6 +34,8 @@ struct TabContributionsView: View {
                                 url: "https://buymeacoffee.com/karatsidhu"
                             )
                             
+                            SettingsDivider()
+                            
                             SupportRow(
                                 icon: "bubble.left.and.bubble.right.fill",
                                 iconColor: .blue,
@@ -42,6 +44,8 @@ struct TabContributionsView: View {
                                 buttonTitle: "Open Issue",
                                 url: "https://github.com/SidhuK/WardenApp/issues/new"
                             )
+                            
+                            SettingsDivider()
                             
                             SupportRow(
                                 icon: "chevron.left.forwardslash.chevron.right",
@@ -137,15 +141,10 @@ struct SupportRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(iconColor)
-            }
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(iconColor)
+                .frame(width: 32, height: 32)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -164,11 +163,8 @@ struct SupportRow: View {
             }
             .buttonStyle(.bordered)
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.primary.opacity(0.03))
-        )
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
     }
 }
 

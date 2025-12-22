@@ -258,12 +258,6 @@ struct TabAIPersonasView: View {
     }
 }
 
-// MARK: - Inline Version
-struct InlineTabAIPersonasView: View {
-    var body: some View {
-        TabAIPersonasView()
-    }
-}
 
 // MARK: - Persona Detail View
 struct PersonaDetailView: View {

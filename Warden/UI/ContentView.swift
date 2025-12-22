@@ -38,9 +38,6 @@ struct ContentView: View {
     @State private var showingCreateProject = false
     @State private var showingEditProject = false
     @State private var projectToEdit: ProjectEntity?
-    
-    // New state variable for inline settings
-    @State private var showingSettings = false
 
     var body: some View {
         ZStack {
@@ -82,16 +79,13 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenInlineSettings"))) { _ in
-            showingSettings = true
+            SettingsWindowManager.shared.openSettingsWindow()
         }
         .onChange(of: selectedChat) { oldValue, newValue in
             setupSelectedChatChange(oldValue: oldValue, newValue: newValue)
         }
         .onChange(of: selectedProject) { oldValue, newValue in
             setupSelectedProjectChange(oldValue: oldValue, newValue: newValue)
-        }
-        .onChange(of: showingSettings) { oldValue, newValue in
-            setupShowingSettingsChange(oldValue: oldValue, newValue: newValue)
         }
         .environmentObject(previewStateManager)
         .overlay(alignment: .top) {
@@ -144,25 +138,16 @@ struct ContentView: View {
         }
         if newValue != nil {
             selectedProject = nil
-            showingSettings = false
         }
     }
 
     private func setupSelectedProjectChange(oldValue: ProjectEntity?, newValue: ProjectEntity?) {
         if newValue != nil {
             selectedChat = nil
-            showingSettings = false
             previewStateManager.hidePreview()
         }
     }
 
-    private func setupShowingSettingsChange(oldValue: Bool, newValue: Bool) {
-        if newValue {
-            selectedChat = nil
-            selectedProject = nil
-            previewStateManager.hidePreview()
-        }
-    }
 
     func newChat() {
         let uuid = UUID()
@@ -218,8 +203,8 @@ struct ContentView: View {
         }
     }
 
-    func openInlineSettings() {
-        showingSettings = true
+    func openSettings() {
+        SettingsWindowManager.shared.openSettingsWindow()
     }
 
     private func getIndex(for chat: ChatEntity) -> Int {
@@ -236,13 +221,7 @@ struct ContentView: View {
     
     private var detailView: some View {
         HSplitView {
-            if showingSettings {
-                // Show settings inline in the main content area
-                InlineSettingsView(onDismiss: {
-                    showingSettings = false
-                })
-                .frame(minWidth: 400)
-            } else if showingCreateProject {
+            if showingCreateProject {
                 // Show create project view inline
                 CreateProjectView(
                     onProjectCreated: { project in
@@ -275,12 +254,12 @@ struct ContentView: View {
                     chatsCount: chats.count,
                     apiServiceIsPresent: apiServices.count > 0,
                     customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
-                    openPreferencesView: openInlineSettings,
+                    openPreferencesView: openSettings,
                     newChat: newChat
                 )
             }
 
-            if previewStateManager.isPreviewVisible && selectedProject == nil && !showingSettings {
+            if previewStateManager.isPreviewVisible && selectedProject == nil {
                 PreviewPane(stateManager: previewStateManager)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)

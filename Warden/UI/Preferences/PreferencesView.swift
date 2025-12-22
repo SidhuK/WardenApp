@@ -3,17 +3,6 @@ import SwiftUI
 import AttributedText
 import CoreData
 
-struct APIRequestData: Codable {
-    let model: String
-    let messages = [
-        [
-            "role": "system",
-            "content": "You are ChatGPT, a large language model trained by OpenAI. Say hi, if you're there",
-        ]
-    ]
-}
-
-// MARK: - Preferences Tabs Enum
 enum PreferencesTabs: String, CaseIterable, Identifiable {
     case general = "General"
     case apiServices = "API Services"
@@ -125,90 +114,6 @@ struct PreferencesView: View {
     }
 }
 
-// MARK: - Inline Settings View for Main Window
-struct InlineSettingsView: View {
-    @EnvironmentObject private var store: ChatStore
-    @Environment(\.managedObjectContext) private var viewContext
-    
-    let onDismiss: () -> Void
-    
-    @State private var selectedTab: PreferencesTabs = .general
-    @State private var isHoveringClose = false
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header with top tabs
-            VStack(spacing: 0) {
-                // Title bar with close button
-                HStack {
-                    Text("Settings")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: onDismiss) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(isHoveringClose ? .primary : .tertiary)
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringClose = $0 }
-                    .help("Close Settings")
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                
-                // Top Tab Bar
-                HStack(spacing: 8) {
-                    ForEach(PreferencesTabs.allCases) { tab in
-                        TopTabItem(tab: tab, isSelected: selectedTab == tab) {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                selectedTab = tab
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-            }
-            .background(Color(NSColor.windowBackgroundColor))
-            
-            // Divider
-            Rectangle()
-                .fill(Color(NSColor.separatorColor))
-                .frame(height: 1)
-            
-            // Content
-            Group {
-                switch selectedTab {
-                case .general:
-                    TabGeneralSettingsView()
-                case .apiServices:
-                    TabAPIServicesView()
-                case .aiPersonas:
-                    TabAIPersonasView()
-                        .environment(\.managedObjectContext, viewContext)
-                case .webSearch:
-                    TabTavilySearchView()
-                case .keyboardShortcuts:
-                    TabHotkeysView()
-                case .mcp:
-                    MCPSettingsView()
-                case .contributions:
-                    TabContributionsView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(NSColor.windowBackgroundColor))
-        }
-        .background(Color(NSColor.windowBackgroundColor))
-        .onAppear {
-            store.saveInCoreData()
-        }
-    }
-}
 
 #if DEBUG
 struct PreferencesView_Previews: PreviewProvider {
@@ -217,11 +122,6 @@ struct PreferencesView_Previews: PreviewProvider {
             .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
             .frame(width: 800, height: 600)
             .previewDisplayName("Preferences Window")
-        
-        InlineSettingsView(onDismiss: {})
-            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
-            .frame(width: 900, height: 700)
-            .previewDisplayName("Inline Settings")
     }
 }
 #endif

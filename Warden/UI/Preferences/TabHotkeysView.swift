@@ -269,12 +269,6 @@ class KeyCaptureView: NSView {
     }
 }
 
-// MARK: - Inline Version
-struct InlineTabHotkeysView: View {
-    var body: some View {
-        TabHotkeysView()
-    }
-}
 
 #Preview {
     TabHotkeysView()
