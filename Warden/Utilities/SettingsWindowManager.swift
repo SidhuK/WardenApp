@@ -19,8 +19,9 @@ class SettingsWindowManager: ObservableObject {
             return
         }
         
-        // Create the settings view
+        // Create the settings view with required environment objects
         let settingsView = SettingsView()
+            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
             .environment(\.managedObjectContext, PersistenceController.shared.container.viewContext)
         
         // Create and configure the window with no title bar
