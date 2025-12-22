@@ -4,7 +4,8 @@ All notable changes to Warden are documented here.
 
 ---
 
-## 🚀 v0.9.1 - Streaming Speed Boost
+## 🚀 v0.9.1 - Streaming Speed Boost and App Icon Update
+
 
 *December 22, 2025*
 
@@ -13,6 +14,8 @@ All notable changes to Warden are documented here.
 - **Faster streaming** — Responses now appear 4x faster on screen (50ms updates instead of 200ms)
 - **Smarter parsing** — New incremental parser only processes new text instead of re-parsing everything
 - **Leaner under the hood** — Removed unnecessary delays and optimized network data handling
+- **App Icon Update** — Updated app icon for MacOS 26 Tahoe, now icons for dark, light and liquid glass modes are available
+
 
 ### 🐛 Bug Fixes
 
