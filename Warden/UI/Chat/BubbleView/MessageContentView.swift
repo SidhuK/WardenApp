@@ -27,6 +27,10 @@ struct MessageContentView: View {
     @State private var lastTruncatedMessage: String
     @State private var fullParseTask: Task<Void, Never>?
     @State private var truncatedParseTask: Task<Void, Never>?
+    
+    // Incremental parsing state
+    @State private var incrementalParser: IncrementalMessageParser?
+    @State private var lastProcessedLength: Int = 0
 
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
 
@@ -68,6 +72,9 @@ struct MessageContentView: View {
         }
         .onChange(of: isStreaming) { _, newValue in
             guard !newValue else { return }
+            // Streaming ended - reset incremental parser and do final full parse
+            incrementalParser = nil
+            lastProcessedLength = 0
             truncatedParseTask?.cancel()
             fullParseTask?.cancel()
             refreshParsedElements(force: true)
@@ -172,33 +179,64 @@ struct MessageContentView: View {
         truncatedParseTask?.cancel()
 
         if isStreaming {
-            fullParseTask?.cancel()
-            fullParseTask = Task.detached(priority: .userInitiated) {
-                guard !Task.isCancelled else { return }
-                let parser = MessageParser(colorScheme: colorScheme)
-                #if DEBUG
-                let signpostID = OSSignpostID(log: WardenSignpost.rendering)
-                os_signpost(
-                    .begin,
-                    log: WardenSignpost.rendering,
-                    name: "MessageParse",
-                    signpostID: signpostID,
-                    "mode=%{public}s chars=%{public}d",
-                    "stream",
-                    message.count
-                )
-                #endif
-                let elements = parser.parseMessageFromString(input: message)
-                #if DEBUG
-                os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
-                #endif
-                await MainActor.run {
-                    fullParsedElements = elements
-                }
+            // Use incremental parsing if enabled
+            if AppConstants.useIncrementalParsing {
+                refreshWithIncrementalParser()
+            } else {
+                refreshWithFullParser()
             }
         } else {
             let parser = MessageParser(colorScheme: colorScheme)
             fullParsedElements = parser.parseMessageFromString(input: message)
+        }
+    }
+    
+    /// Incremental parsing - only process new content
+    private func refreshWithIncrementalParser() {
+        // Initialize parser if needed
+        if incrementalParser == nil {
+            incrementalParser = IncrementalMessageParser(colorScheme: colorScheme)
+            lastProcessedLength = 0
+        }
+        
+        guard let parser = incrementalParser else { return }
+        
+        // Only process new content
+        if message.count > lastProcessedLength {
+            let newContent = String(message.dropFirst(lastProcessedLength))
+            parser.appendChunk(newContent)
+            lastProcessedLength = message.count
+        }
+        
+        // Get all elements including pending
+        fullParsedElements = parser.getAllElements()
+    }
+    
+    /// Full re-parsing (original behavior)
+    private func refreshWithFullParser() {
+        fullParseTask?.cancel()
+        fullParseTask = Task.detached(priority: .userInitiated) {
+            guard !Task.isCancelled else { return }
+            let parser = MessageParser(colorScheme: colorScheme)
+            #if DEBUG
+            let signpostID = OSSignpostID(log: WardenSignpost.rendering)
+            os_signpost(
+                .begin,
+                log: WardenSignpost.rendering,
+                name: "MessageParse",
+                signpostID: signpostID,
+                "mode=%{public}s chars=%{public}d",
+                "stream",
+                message.count
+            )
+            #endif
+            let elements = parser.parseMessageFromString(input: message)
+            #if DEBUG
+            os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
+            #endif
+            await MainActor.run {
+                fullParsedElements = elements
+            }
         }
     }
     

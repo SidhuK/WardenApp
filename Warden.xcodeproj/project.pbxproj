@@ -119,6 +119,7 @@
 		83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C86128DDF04984BD311C41 /* MCPManager.swift */; };
 		99AFD11B6B4C420C833BE674 /* BaseAPIHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */; };
 		B8812F7F78EB42119EF7E04D /* SSEStreamParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */; };
+		C42D99FF2EF900470028D1BB /* IncrementalMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */; };
 		C43A76382ED5672E006DA5E2 /* SearchResultsPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76352ED5672E006DA5E2 /* SearchResultsPreviewView.swift */; };
 		C43A76392ED5672E006DA5E2 /* ToolCallProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76362ED5672E006DA5E2 /* ToolCallProgressView.swift */; };
 		C43A763A2ED5672E006DA5E2 /* SearchProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76342ED5672E006DA5E2 /* SearchProgressView.swift */; };
@@ -308,6 +309,7 @@
 		87C86128DDF04984BD311C41 /* MCPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPManager.swift; sourceTree = "<group>"; };
 		8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPAgentSelector.swift; sourceTree = "<group>"; };
 		91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseAPIHandler.swift; sourceTree = "<group>"; };
+		C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalMessageParser.swift; sourceTree = "<group>"; };
 		C43A76322ED5672E006DA5E2 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
 		C43A76332ED5672E006DA5E2 /* SearchErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchErrorView.swift; sourceTree = "<group>"; };
 		C43A76342ED5672E006DA5E2 /* SearchProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProgressView.swift; sourceTree = "<group>"; };
@@ -587,6 +589,7 @@
 			isa = PBXGroup;
 			children = (
 				56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */,
+				C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
 				C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */,
@@ -1039,6 +1042,7 @@
 				FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */,
 				83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */,
 				7669725253364D3D81FDD060 /* AddMCPAgentSheet.swift in Sources */,
+				C42D99FF2EF900470028D1BB /* IncrementalMessageParser.swift in Sources */,
 				F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */,
 				1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */,
 			);
