@@ -7,6 +7,44 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.1</title>
+            <description><![CDATA[
+                <h3>⚡ Performance</h3>
+                <ul>
+                <li>Smoother scrolling — Chat messages now use stable identities</li>
+                <li>Faster chat list — Sidebar no longer creates heavy objects for every row</li>
+                <li>Smarter code highlighting — Code blocks skip redundant re-highlighting</li>
+                <li>Faster search — Chat search now uses database-level queries</li>
+                <li>Less CPU usage — Messages array is now cached</li>
+                <li>Faster streaming — Responses now appear 4x faster (50ms vs 200ms)</li>
+                <li>Smarter parsing — New incremental parser only processes new text</li>
+                <li>App Icon Update — New icons for dark, light, and liquid glass modes</li>
+                </ul>
+                <h3>📂 Projects</h3>
+                <ul>
+                <li>Faster loading — Projects tab now loads instantly</li>
+                <li>UI Overhaul — Modern interface with recent chats and all chats list</li>
+                <li>Smoother "Move to Project" — Moving chats is now instant</li>
+                <li>Fixed data loss — Creating custom projects no longer wipes descriptions</li>
+                </ul>
+                <h3>🐛 Bug Fixes</h3>
+                <ul>
+                <li>Fixed Settings crash</li>
+                <li>Model temperature now saved correctly (1.0 by default)</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sun, 22 Dec 2025 00:00:00 +0000</pubDate>
+            <sparkle:version>0.9.1</sparkle:version>
+            <sparkle:shortVersionString>0.9.1</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.1/Warden.zip"
+                       sparkle:version="0.9.1"
+                       sparkle:shortVersionString="0.9.1"
+                       type="application/zip"
+                       length="15068385"
+                       sparkle:edSignature="rDj6uVHHjF1/LMWgEgIHeJhHUn1R9NeGGvGUteqZkdFxS9QJtrsIvkEAIFemn2O1Z6BH0xxtlbrfV9yRhuD7CQ==" />
+        </item>
+        
+        <item>
             <title>Version 0.9</title>
             <description><![CDATA[
                 <ul>
