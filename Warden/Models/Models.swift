@@ -32,8 +32,24 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var branchSourceRole: String?
     @NSManaged public var branchRootID: UUID?
 
+    // Cache for messagesArray to avoid repeated array conversion
+    private static var messagesArrayCacheKey: UInt8 = 0
+    private static var messagesArrayCacheCountKey: UInt8 = 1
+    
     public var messagesArray: [MessageEntity] {
-        messages.array as? [MessageEntity] ?? []
+        // Check if cached array is still valid (same count means no changes)
+        let currentCount = messages.count
+        if let cachedCount = objc_getAssociatedObject(self, &ChatEntity.messagesArrayCacheCountKey) as? Int,
+           cachedCount == currentCount,
+           let cached = objc_getAssociatedObject(self, &ChatEntity.messagesArrayCacheKey) as? [MessageEntity] {
+            return cached
+        }
+        
+        // Create new array and cache it
+        let array = messages.array as? [MessageEntity] ?? []
+        objc_setAssociatedObject(self, &ChatEntity.messagesArrayCacheKey, array, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        objc_setAssociatedObject(self, &ChatEntity.messagesArrayCacheCountKey, currentCount, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        return array
     }
 
     public var lastMessage: MessageEntity? {

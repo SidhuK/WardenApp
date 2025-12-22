@@ -13,9 +13,10 @@ struct ChatListRow: View {
     var isSelected: Bool = false
     var onSelectionToggle: ((UUID, Bool) -> Void)?
     var onKeyboardSelection: ((UUID, Bool, Bool) -> Void)?
-    @StateObject private var chatViewModel: ChatViewModel
     @State private var showingMoveToProject = false
     @State private var isHovered = false
+    @State private var isRegeneratingName = false
+    
     init(
         chat: ChatEntity,
         selectedChat: Binding<ChatEntity?>,
@@ -35,7 +36,6 @@ struct ChatListRow: View {
         self.isSelected = isSelected
         self.onSelectionToggle = onSelectionToggle
         self.onKeyboardSelection = onKeyboardSelection
-        self._chatViewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, viewContext: viewContext))
     }
 
     private var computedIsActive: Bool {
@@ -251,10 +251,22 @@ struct ChatListRow: View {
         
         if chat.apiService?.generateChatNames ?? false {
             Button(action: {
-                chatViewModel.regenerateChatName()
+                // Lazily create ChatViewModel only when needed to avoid expensive MessageManager creation for all rows
+                isRegeneratingName = true
+                let tempViewModel = ChatViewModel(chat: chat, viewContext: viewContext)
+                tempViewModel.regenerateChatName()
+                // Give it time to complete, then reset state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    isRegeneratingName = false
+                }
             }) {
-                Label("Regenerate Name", systemImage: "arrow.clockwise")
+                if isRegeneratingName {
+                    Label("Regenerating...", systemImage: "arrow.clockwise")
+                } else {
+                    Label("Regenerate Name", systemImage: "arrow.clockwise")
+                }
             }
+            .disabled(isRegeneratingName)
         }
         
         Button(action: { clearChat(chat) }) {

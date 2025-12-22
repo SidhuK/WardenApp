@@ -7,6 +7,15 @@ class HighlighterManager {
     private let highlightr = Highlightr()
     private let cache = NSCache<NSString, NSAttributedString>()
     @AppStorage("codeFont") private var codeFont: String = AppConstants.firaCode
+    
+    // Streaming optimization: track last highlighted content to avoid redundant work
+    private var lastStreamingCodeLength: Int = 0
+    private var lastStreamingResult: NSAttributedString?
+    private var lastStreamingLanguage: String = ""
+    private var lastStreamingTheme: String = ""
+    
+    // Minimum character change to trigger re-highlight during streaming
+    private let streamingRehighlightThreshold = 50
 
     func highlight(code: String, language: String, theme: String, fontSize: Double = 14, isStreaming: Bool = false) -> NSAttributedString? {
         var cacheKey: NSString = ""
@@ -15,6 +24,15 @@ class HighlighterManager {
 
             if let cached = cache.object(forKey: cacheKey) {
                 return cached
+            }
+        } else {
+            // Streaming optimization: skip re-highlighting if content hasn't grown enough
+            let currentLength = code.count
+            if let lastResult = lastStreamingResult,
+               language == lastStreamingLanguage,
+               theme == lastStreamingTheme,
+               currentLength - lastStreamingCodeLength < streamingRehighlightThreshold {
+                return lastResult
             }
         }
 
@@ -29,6 +47,12 @@ class HighlighterManager {
 
             if !isStreaming {
                 cache.setObject(attributedString, forKey: cacheKey)
+            } else {
+                // Cache streaming result for next comparison
+                lastStreamingCodeLength = code.count
+                lastStreamingResult = attributedString
+                lastStreamingLanguage = language
+                lastStreamingTheme = theme
             }
             return attributedString
         }
@@ -37,6 +61,18 @@ class HighlighterManager {
     
     func invalidateCache() {
         cache.removeAllObjects()
+        // Also clear streaming cache
+        lastStreamingCodeLength = 0
+        lastStreamingResult = nil
+    }
+    
+    /// Call this when streaming ends to clear the streaming cache
+    func clearStreamingCache() {
+        lastStreamingCodeLength = 0
+        lastStreamingResult = nil
+        lastStreamingLanguage = ""
+        lastStreamingTheme = ""
     }
     
 }
+

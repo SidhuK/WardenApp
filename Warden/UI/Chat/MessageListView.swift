@@ -56,8 +56,7 @@ struct MessageListView: View {
             }
 
             if !sortedMessages.isEmpty {
-                ForEach(sortedMessages.indices, id: \.self) { index in
-                    let messageEntity = sortedMessages[index]
+                ForEach(Array(sortedMessages.enumerated()), id: \.element.objectID) { index, messageEntity in
                     let previous = index > 0 ? sortedMessages[index - 1] : nil
                     let sameAuthorAsPrevious = previous?.own == messageEntity.own
 

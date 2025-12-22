@@ -119,52 +119,49 @@ struct ChatListView: View {
         isSearching = true
         
         searchTask = Task.detached(priority: .userInitiated) {
-            let searchQuery = query.lowercased()
             var matchingChatIDs: Set<UUID> = []
             
             // Perform search in background context
             let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
             
             await backgroundContext.perform {
+                // Use NSPredicate for database-level filtering (much faster than in-memory iteration)
+                // This leverages SQLite indices for faster search
                 let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
                 
+                // Build compound predicate for name, system message, and persona name
+                // Case-insensitive, diacritic-insensitive search with CONTAINS[cd]
+                let namePredicate = NSPredicate(format: "name CONTAINS[cd] %@", query)
+                let systemMessagePredicate = NSPredicate(format: "systemMessage CONTAINS[cd] %@", query)
+                let personaNamePredicate = NSPredicate(format: "persona.name CONTAINS[cd] %@", query)
+                
+                // Combine predicates with OR for initial fast filtering
+                fetchRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    namePredicate,
+                    systemMessagePredicate,
+                    personaNamePredicate
+                ])
+                
                 do {
-                    let allChats = try backgroundContext.fetch(fetchRequest)
-                    
-                    for chat in allChats {
-                        // Check cancellation periodically
+                    // First pass: get chats matching name/system/persona (database-level, fast)
+                    let matchedByMetadata = try backgroundContext.fetch(fetchRequest)
+                    for chat in matchedByMetadata {
                         if Task.isCancelled { return }
-                        
-                        // Search in chat name
-                        if (chat.name ?? "").lowercased().contains(searchQuery) {
-                            matchingChatIDs.insert(chat.id)
-                            continue
-                        }
-                        
-                        // Search in system message
-                        if chat.systemMessage.lowercased().contains(searchQuery) {
-                            matchingChatIDs.insert(chat.id)
-                            continue
-                        }
-                        
-                        // Search in persona name
-                        if let personaName = chat.persona?.name?.lowercased(),
-                           personaName.contains(searchQuery) {
-                            matchingChatIDs.insert(chat.id)
-                            continue
-                        }
-                        
-                        // Search in messages (batch load)
-                        if let messages = chat.messages.array as? [MessageEntity] {
-                            for message in messages {
-                                if Task.isCancelled { return }
-                                if message.body.lowercased().contains(searchQuery) {
-                                    matchingChatIDs.insert(chat.id)
-                                    break
-                                }
-                            }
-                        }
+                        matchingChatIDs.insert(chat.id)
                     }
+                    
+                    // Second pass: search in message bodies for chats not yet matched
+                    // This requires relationship traversal so we do it separately
+                    // Only fetch chats that weren't already matched to avoid redundant work
+                    let messageSearchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+                    messageSearchRequest.predicate = NSPredicate(format: "ANY messages.body CONTAINS[cd] %@", query)
+                    
+                    let matchedByMessages = try backgroundContext.fetch(messageSearchRequest)
+                    for chat in matchedByMessages {
+                        if Task.isCancelled { return }
+                        matchingChatIDs.insert(chat.id)
+                    }
+                    
                 } catch {
                     WardenLog.app.error("Search error: \(error.localizedDescription, privacy: .public)")
                 }
