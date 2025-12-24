@@ -99,18 +99,26 @@ struct WardenApp: App {
                 .preferredColorScheme(preferredColorScheme)
                 .environmentObject(store)
                 .onAppear {
-                    // Set initial window size to 85% of screen for first launch
-                    if let screen = NSScreen.main {
-                        let screenWidth = screen.frame.width
-                        let screenHeight = screen.frame.height
-                        let windowWidth = screenWidth * 0.85
-                        let windowHeight = screenHeight * 0.85
+                    // Configure main window with proper sizing
+                    if let window = NSApp.windows.first {
+                        // Set frame autosave name for persistence
+                        window.setFrameAutosaveName("MainWindow")
                         
-                        // Center the window on screen
-                        let x = (screenWidth - windowWidth) / 2
-                        let y = (screenHeight - windowHeight) / 2
+                        // Only set initial size if no saved frame exists
+                        // The key format is "NSWindow Frame MainWindow"
+                        let savedFrame = UserDefaults.standard.string(forKey: "NSWindow Frame MainWindow")
                         
-                        if let window = NSApp.windows.first {
+                        if savedFrame == nil, let screen = NSScreen.main {
+                            // Set initial window size to 70% of screen for first launch
+                            let screenWidth = screen.frame.width
+                            let screenHeight = screen.frame.height
+                            let windowWidth = screenWidth * 0.70
+                            let windowHeight = screenHeight * 0.70
+                            
+                            // Center the window on screen
+                            let x = (screenWidth - windowWidth) / 2
+                            let y = (screenHeight - windowHeight) / 2
+                            
                             window.setFrame(
                                 NSRect(x: x, y: y, width: windowWidth, height: windowHeight),
                                 display: true
@@ -132,7 +140,7 @@ struct WardenApp: App {
                 }
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 1200, height: 800)
+        .defaultSize(width: 1000, height: 700)
         
         .commands {
             CommandGroup(replacing: .appInfo) {
