@@ -81,10 +81,10 @@ struct CenteredInputView: View {
                                     onAddFile: onAddFile,
                                     onAddAssistant: onAddAssistant,
                                     onStopStreaming: onStopStreaming,
-                                    inputPlaceholderText: "Type a message...",
-                                    cornerRadius: 16.0
+                                    inputPlaceholderText: "Enter a message here, press ⏎ to send",
+                                    cornerRadius: 18.0
                                 )
-                                .frame(maxWidth: 640)
+                                .frame(maxWidth: 1000)
                                 .padding(6)
                                 .scaleEffect(isInputFocused ? 1.01 : 1.0)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
@@ -140,7 +140,7 @@ struct CenteredInputView: View {
                                     )
                                     .frame(maxWidth: .infinity)
                                 }
-                                .frame(maxWidth: 640)
+                                .frame(maxWidth: 1000)
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                             }
                         }

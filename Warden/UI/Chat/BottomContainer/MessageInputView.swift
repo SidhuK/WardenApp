@@ -35,8 +35,11 @@ struct MessageInputView: View {
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
     @State private var showingMCPMenu = false
+    @State private var showingPersonaPopover = false
     @StateObject private var rephraseService = RephraseService()
+
     @State private var originalText = ""
+
     @State private var showingRephraseError = false
     @State private var rephraseErrorMessage = ""
     @State private var inputPulseAnimation = false
@@ -144,16 +147,27 @@ struct MessageInputView: View {
                             }
                         }
                         
-                        // Personas (Sparkles/Person icon)
+                        // Personas (Persona icon)
                         Button(action: {
-                            onAddAssistant?()
+                            showingPersonaPopover.toggle()
                         }) {
-                            Image(systemName: "person.and.sparkles.fill")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
+                            Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(chat?.persona != nil ? .accentColor : .secondary)
                         }
                         .buttonStyle(PlainButtonStyle())
                         .help("Assistant Personas")
+                        .popover(isPresented: $showingPersonaPopover, arrowEdge: .top) {
+                            if let chat = chat {
+                                PersonaSelectorView(chat: chat)
+                                    .environment(\.managedObjectContext, viewContext)
+                                    .frame(width: 400, height: 80)
+                                    .background(Color(nsColor: .windowBackgroundColor))
+                            } else {
+                                Text("Persona selection only available in active chats")
+                                    .padding()
+                            }
+                        }
                     }
                     
                     Spacer()

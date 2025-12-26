@@ -300,9 +300,11 @@ struct ChatView: View {
                                 continueWithSelectedAgent(response)
                             },
                             scrollView: scrollView,
-                            viewWidth: geometry.size.width
+                            viewWidth: min(geometry.size.width, 1000) // Match input box width exactly
                         )
-                        .padding(.horizontal, 24) // Reduced horizontal padding for a wider feel
+                        .frame(maxWidth: 1000) // Match input box width exactly
+                        .frame(maxWidth: .infinity) // Center the constrained list
+                        .padding(.horizontal, 24)
                         .padding(.top, 20)
                         .padding(.bottom, 40) // Increased bottom padding for floating input
                         .onAppear {

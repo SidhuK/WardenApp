@@ -77,46 +77,38 @@ struct ChatBottomContainerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Persona selector integrated into the same chrome
-             if isExpanded {
-                 PersonaSelectorView(chat: chat)
-                     .padding(.horizontal, 16)
-                     .padding(.top, 8)
-                     .padding(.bottom, 4)
-                     .background(Material.regular) // Use material for floating feel
-                     .cornerRadius(12)
-                     .padding(.horizontal, 16)
-                     .transition(.move(edge: .bottom).combined(with: .opacity))
+              // Main input area with normalized padding
+              MessageInputView(
+                  text: $newMessage,
+                  attachedImages: $attachedImages,
+                  attachedFiles: $attachedFiles,
+                  webSearchEnabled: $webSearchEnabled,
+                  selectedMCPAgents: $selectedMCPAgents,
+                  chat: chat,
+                  imageUploadsAllowed: imageUploadsAllowed,
+                  isStreaming: isStreaming,
+                  isMultiAgentMode: $isMultiAgentMode,
+                  selectedMultiAgentServices: $selectedMultiAgentServices,
+                  showServiceSelector: $showServiceSelector,
+                  enableMultiAgentMode: enableMultiAgentMode,
+                  onEnter: onSendMessage,
+                  onAddImage: onAddImage,
+                  onAddFile: onAddFile,
+                  onAddAssistant: {
+                      // Unified persona toggle for both normal and centered views
+                      withAnimation(.easeInOut(duration: 0.2)) {
+                          isExpanded.toggle()
+                          onExpandedStateChange?(isExpanded)
+                      }
+                  },
+                  onStopStreaming: onStopStreaming
+              )
+              .frame(maxWidth: 1000) // Slightly wider, about 90% of typical window
+              .padding(.horizontal, 24)
+              .padding(.bottom, 20) // Bottom padding for floating effect
              }
+             .frame(maxWidth: .infinity) // Center the 1000px wide input
+             .background(Color.clear) // Clear background to let content behind show
 
-             // Main input area with normalized padding
-             MessageInputView(
-                 text: $newMessage,
-                 attachedImages: $attachedImages,
-                 attachedFiles: $attachedFiles,
-                 webSearchEnabled: $webSearchEnabled,
-                 selectedMCPAgents: $selectedMCPAgents,
-                 chat: chat,
-                 imageUploadsAllowed: imageUploadsAllowed,
-                 isStreaming: isStreaming,
-                 isMultiAgentMode: $isMultiAgentMode,
-                 selectedMultiAgentServices: $selectedMultiAgentServices,
-                 showServiceSelector: $showServiceSelector,
-                 enableMultiAgentMode: enableMultiAgentMode,
-                 onEnter: onSendMessage,
-                 onAddImage: onAddImage,
-                 onAddFile: onAddFile,
-                 onAddAssistant: {
-                     withAnimation(.easeInOut(duration: 0.18)) {
-                         isExpanded.toggle()
-                         onExpandedStateChange?(isExpanded)
-                     }
-                 },
-                 onStopStreaming: onStopStreaming
-             )
-             .padding(.horizontal, 24)
-             .padding(.bottom, 20) // Bottom padding for floating effect
-            }
-            .background(Color.clear) // Clear background to let content behind show
     }
 }

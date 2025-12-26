@@ -87,8 +87,8 @@ struct MessageListView: View {
                     ChatBubbleView(content: bubbleContent, message: messageEntity)
                         .id(messageEntity.id)
                         .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
-                        // Adjusted max width for better readability on large screens
-                        .frame(maxWidth: viewWidth * 0.8, alignment: messageEntity.own ? .trailing : .leading)
+                        // Align with input box width
+                        .frame(maxWidth: viewWidth, alignment: messageEntity.own ? .trailing : .leading)
                         .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                 }
             }
@@ -106,7 +106,7 @@ struct MessageListView: View {
                 
                 ChatBubbleView(content: bubbleContent)
                     .id("streaming_message")
-                    .frame(maxWidth: viewWidth * 0.8, alignment: .leading)
+                    .frame(maxWidth: viewWidth, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 16)
             }
