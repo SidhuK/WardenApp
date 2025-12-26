@@ -6,8 +6,6 @@ struct ProjectListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var store: ChatStore
     
-    @State private var expandedProjects: Set<UUID> = []
-    
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
@@ -46,18 +44,9 @@ struct ProjectListView: View {
                 ForEach(activeProjects, id: \.id) { project in
                     ProjectRow(
                         project: project,
-                        isExpanded: expandedProjects.contains(project.id ?? UUID()),
                         selectedChat: $selectedChat,
                         selectedProject: $selectedProject,
                         searchText: $searchText,
-                        onToggleExpansion: {
-                            guard let projectId = project.id else { return }
-                            if expandedProjects.contains(projectId) {
-                                expandedProjects.remove(projectId)
-                            } else {
-                                expandedProjects.insert(projectId)
-                            }
-                        },
                         onEditProject: {
                             projectToEdit = project
                             showingEditProject = true
@@ -141,18 +130,9 @@ struct ProjectListView: View {
                 ForEach(archivedProjects, id: \.id) { project in
                     ProjectRow(
                         project: project,
-                        isExpanded: expandedProjects.contains(project.id ?? UUID()),
                         selectedChat: $selectedChat,
                         selectedProject: $selectedProject,
                         searchText: $searchText,
-                        onToggleExpansion: {
-                            guard let projectId = project.id else { return }
-                            if expandedProjects.contains(projectId) {
-                                expandedProjects.remove(projectId)
-                            } else {
-                                expandedProjects.insert(projectId)
-                            }
-                        },
                         onEditProject: {
                             projectToEdit = project
                             showingEditProject = true
@@ -203,31 +183,14 @@ struct ProjectListView: View {
 struct ProjectRow: View {
     @EnvironmentObject private var store: ChatStore
     @ObservedObject var project: ProjectEntity
-    let isExpanded: Bool
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
     
-    let onToggleExpansion: () -> Void
     let onEditProject: () -> Void
     let onDeleteProject: () -> Void
     let onNewChatInProject: () -> Void
     var isArchived: Bool = false
-    
-    private var projectChats: [ChatEntity] {
-        // Use optimized Core Data query instead of relationship access for better performance
-        let chats = store.getChatsInProject(project)
-        
-        // Apply search filter if needed
-        guard !searchText.isEmpty else { return chats }
-        
-        let searchQuery = searchText.lowercased()
-        return chats.filter { chat in
-            chat.name.lowercased().contains(searchQuery) ||
-            chat.systemMessage.lowercased().contains(searchQuery) ||
-            (chat.persona?.name?.lowercased().contains(searchQuery) ?? false)
-        }
-    }
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -284,38 +247,18 @@ struct ProjectRow: View {
                     .tint(.secondary)
                 }
                 .opacity(isArchived ? 0.7 : 1.0)
-            
-            // Project chats (when expanded) - separate from swipe actions
-            if isExpanded {
-                VStack(spacing: 0) {
-                    // Chats in project
-                    ForEach(projectChats, id: \.id) { chat in
-                        ProjectChatRow(
-                            chat: chat,
-                            selectedChat: $selectedChat,
-                            searchText: searchText
-                        )
-                    }
-                    
-                    // Empty state for projects without chats
-                    if projectChats.isEmpty {
-                        emptyProjectState
-                    }
-                }
-            }
         }
     }
     
     private var projectHeaderRow: some View {
-        // Single button containing folder + name + arrow as one entity
+        // Single button containing folder + name
         Button(action: {
-            // Combined action: select project and toggle expansion
+            // Action: select project
             if isSelected {
                 selectedProject = nil
             } else {
                 selectedProject = project
             }
-            onToggleExpansion()
         }) {
             HStack(spacing: 12) {
                 // Colored folder icon - aligned exactly with AI logos
@@ -336,19 +279,11 @@ struct ProjectRow: View {
                 .padding(.trailing, 8)
                 
                 Spacer()
-                
-                // Expansion arrow
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                    .padding(.trailing, 8)
             }
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.primary.opacity(0.08) : (isExpanded ? Color.primary.opacity(0.04) : Color.clear))
+                    .fill(isSelected ? Color.primary.opacity(0.08) : Color.clear)
             )
             .contentShape(Rectangle())
         }
@@ -391,191 +326,6 @@ struct ProjectRow: View {
             }
         }
     }
-    
-    private var emptyProjectState: some View {
-        VStack(spacing: 4) {
-            Text("No chats in this project")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Button("Start New Chat") {
-                onNewChatInProject()
-            }
-            .font(.caption)
-            .foregroundColor(.accentColor)
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 8)
-    }
-}
-
-struct ProjectChatRow: View {
-    @ObservedObject var chat: ChatEntity
-    @Binding var selectedChat: ChatEntity?
-    let searchText: String
-    @Environment(\.colorScheme) var colorScheme
-    @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var store: ChatStore
-    @State private var isHovered = false
-    @State private var showingMoveToProject = false
-    
-    init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
-        self.chat = chat
-        self._selectedChat = selectedChat
-        self.searchText = searchText
-    }
-    
-    private var isSelected: Bool {
-        selectedChat?.objectID == chat.objectID
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // AI Model Logo (same as regular chats)
-            Image("logo_\(chat.apiService?.type ?? "")")
-                .resizable()
-                .renderingMode(.template)
-                .interpolation(.high)
-                .frame(width: 16, height: 16)
-                .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
-                .padding(.leading, 8)
-            
-            VStack(alignment: .leading) {
-                if !chat.name.isEmpty {
-                    HighlightedText(chat.name, highlight: searchText)
-                        .font(.body)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-            }
-            .padding(.vertical, 8)
-            .padding(.trailing, 8)
-            
-            Spacer()
-            
-            if chat.isPinned {
-                Image(systemName: "pin.fill")
-                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .gray)
-                    .font(.caption)
-                    .padding(.trailing, 8)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            selectedChat = chat
-        }
-        .contextMenu {
-            chatContextMenu
-        }
-        .sheet(isPresented: $showingMoveToProject) {
-            MoveToProjectView(
-                chats: [chat],
-                onComplete: {
-                    // Refresh or update as needed
-                }
-            )
-        }
-    }
-    
-    private var chatContextMenu: some View {
-        Group {
-            Button(action: { 
-                togglePinChat() 
-            }) {
-                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
-            }
-            
-            Button(action: { renameChat() }) {
-                Label("Rename", systemImage: "pencil")
-            }
-            .tint(.green)
-            
-            if chat.apiService?.generateChatNames ?? false {
-                Button(action: {
-                    store.regenerateChatName(chat: chat)
-                }) {
-                    Label("Regenerate Name", systemImage: "arrow.clockwise")
-                }
-            }
-            
-            Button(action: { showingMoveToProject = true }) {
-                Label("Move to Project", systemImage: "folder")
-            }
-            
-            Divider()
-            
-            Button(action: { deleteChat() }) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-    }
-    
-    private func togglePinChat() {
-        chat.isPinned.toggle()
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-    
-    private func renameChat() {
-        // Implementation for renaming chat
-        let alert = NSAlert()
-        alert.messageText = "Rename Chat"
-        alert.informativeText = "Enter a new name for this chat:"
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
-        
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-        textField.stringValue = chat.name
-        alert.accessoryView = textField
-        
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
-            if response == .alertFirstButtonReturn {
-                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !newName.isEmpty {
-                    chat.name = newName
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
-                    }
-                }
-            }
-        }
-    }
-    
-    private func deleteChat() {
-        let alert = NSAlert()
-        alert.messageText = "Delete Chat?"
-        alert.informativeText = "Are you sure you want to delete \"\(chat.name)\"? This action cannot be undone."
-        alert.alertStyle = .warning
-        
-        alert.addButton(withTitle: "Delete")
-        alert.addButton(withTitle: "Cancel")
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            // Clear selection if this chat is selected
-            if selectedChat?.objectID == chat.objectID {
-                selectedChat = nil
-            }
-            
-            viewContext.delete(chat)
-            do {
-                try viewContext.save()
-            } catch {
-                WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-    }
 }
 
 #Preview {
@@ -596,7 +346,6 @@ struct ProjectChatRow: View {
 struct ProjectRowInList: View {
     @EnvironmentObject private var store: ChatStore
     @ObservedObject var project: ProjectEntity
-    @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
     @Binding var searchText: String
     @Binding var showingCreateProject: Bool
@@ -605,23 +354,6 @@ struct ProjectRowInList: View {
     
     let onNewChatInProject: (ProjectEntity) -> Void
     var isArchived: Bool = false
-    
-    @State private var isExpanded = false
-    
-    private var projectChats: [ChatEntity] {
-        // Use optimized Core Data query instead of relationship access for better performance
-        let chats = store.getChatsInProject(project)
-        
-        // Apply search filter if needed
-        guard !searchText.isEmpty else { return chats }
-        
-        let searchQuery = searchText.lowercased()
-        return chats.filter { chat in
-            chat.name.lowercased().contains(searchQuery) ||
-            chat.systemMessage.lowercased().contains(searchQuery) ||
-            (chat.persona?.name?.lowercased().contains(searchQuery) ?? false)
-        }
-    }
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -633,16 +365,13 @@ struct ProjectRowInList: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Project header row - Single button containing folder + name + arrow as one entity
+            // Project header row - Single button containing folder + name
             Button(action: {
-                // Combined action: select project and toggle expansion
+                // Action: select project
                 if isSelected {
                     selectedProject = nil
                 } else {
                     selectedProject = project
-                }
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
                 }
             }) {
                 HStack(spacing: 2) {
@@ -661,45 +390,18 @@ struct ProjectRowInList: View {
                         .padding(.leading, 8) // Add spacing between folder and name
                     
                     Spacer()
-                    
-                    // Expansion arrow - now part of the same button
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
-                        .padding(.trailing, 8)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? Color.primary.opacity(0.08) : (isExpanded ? Color.primary.opacity(0.04) : Color.clear))
+                        .fill(isSelected ? Color.primary.opacity(0.08) : Color.clear)
                 )
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
             .contextMenu {
                 projectContextMenu
-            }
-            
-            // Project chats (when expanded) - separate from swipe actions
-            if isExpanded {
-                VStack(spacing: 0) {
-                    // Chats in project
-                    ForEach(projectChats, id: \.id) { chat in
-                        ProjectChatRowInList(
-                            chat: chat,
-                            selectedChat: $selectedChat,
-                            searchText: searchText
-                        )
-                    }
-                    
-                    // Empty state for projects without chats
-                    if projectChats.isEmpty {
-                        emptyProjectState
-                    }
-                }
             }
         }
         .opacity(isArchived ? 0.7 : 1.0)
@@ -785,23 +487,6 @@ struct ProjectRowInList: View {
         }
     }
     
-    private var emptyProjectState: some View {
-        VStack(spacing: 4) {
-            Text("No chats in this project")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Button("Start New Chat") {
-                onNewChatInProject(project)
-            }
-            .font(.caption)
-            .foregroundColor(.accentColor)
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 8)
-    }
-    
     private func editProject() {
         projectToEdit = project
         showingEditProject = true
@@ -826,223 +511,4 @@ struct ProjectRowInList: View {
         }
     }
 }
-
-// MARK: - ProjectChatRowInList for use in main List
-struct ProjectChatRowInList: View {
-    @ObservedObject var chat: ChatEntity
-    @Binding var selectedChat: ChatEntity?
-    let searchText: String
-    @Environment(\.colorScheme) var colorScheme
-    @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var store: ChatStore
-    @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
-    @State private var isHovered = false
-    @State private var showingMoveToProject = false
-    init(chat: ChatEntity, selectedChat: Binding<ChatEntity?>, searchText: String) {
-        self.chat = chat
-        self._selectedChat = selectedChat
-        self.searchText = searchText
-    }
-    
-    private var isSelected: Bool {
-        selectedChat?.objectID == chat.objectID
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // AI service logo (conditionally shown) - aligned with project folder icons
-            if showSidebarAIIcons {
-                Image("logo_\(chat.apiService?.type ?? "")")
-                    .resizable()
-                    .renderingMode(.template)
-                    .interpolation(.high)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
-                    .foregroundColor(isSelected ? (colorScheme == .dark ? .white : .black) : .primary)
-                    .padding(.leading, 8) // Align with project folder and regular chat icons
-            }
-            
-            // Chat info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(getChatDisplayName())
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                // Text(getChatDisplayName()) only
-            }
-            
-            Spacer()
-            
-            // Pin indicator
-            if chat.isPinned {
-                Image(systemName: "pin.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.orange)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            selectedChat = chat
-        }
-        .contextMenu {
-            chatContextMenu
-        }
-        .sheet(isPresented: $showingMoveToProject) {
-            // Move to project sheet would go here
-        }
-    }
-    
-    private var chatContextMenu: some View {
-        Group {
-            Button(action: { 
-                togglePinChat() 
-            }) {
-                Label(chat.isPinned ? "Unpin" : "Pin", systemImage: chat.isPinned ? "pin.slash" : "pin")
-            }
-            
-            Button(action: { renameChat() }) {
-                Label("Rename", systemImage: "pencil")
-            }
-            
-            if chat.apiService?.generateChatNames ?? false {
-                Button(action: {
-                    store.regenerateChatName(chat: chat)
-                }) {
-                    Label("Regenerate Name", systemImage: "arrow.clockwise")
-                }
-            }
-            
-            Button(action: { showingMoveToProject = true }) {
-                Label("Move to Project", systemImage: "folder")
-            }
-            
-            Divider()
-            
-            Button(action: { deleteChat() }) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-    }
-    
-    private func getChatDisplayName() -> String {
-        if searchText.isEmpty {
-            return chat.name
-        }
-        
-        // Return highlighted name if there's a search
-        return chat.name
-    }
-    
-    private func getLastMessage() -> String? {
-        if let messages = chat.messages.array as? [MessageEntity],
-           let lastMessage = messages.last {
-            var body = lastMessage.body
-            if body.starts(with: "<think>") {
-                body = body.replacingOccurrences(of: "\n", with: " ")
-                body = body.replacingOccurrences(
-                    of: "<think>.*?</think>",
-                    with: "",
-                    options: .regularExpression
-                )
-            }
-            return body.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return nil
-    }
-    
-    private func getServiceLogo(for serviceName: String) -> Image? {
-        switch serviceName.lowercased() {
-        case "openai", "chatgpt":
-            return Image("logo_chatgpt")
-        case "anthropic", "claude":
-            return Image("logo_claude")
-        case "google", "gemini":
-            return Image("logo_gemini")
-        case "ollama":
-            return Image("logo_ollama")
-        case "openrouter":
-            return Image("logo_openrouter")
-        case "perplexity":
-            return Image("logo_perplexity")
-        case "deepseek":
-            return Image("logo_deepseek")
-        case "groq":
-            return Image("logo_groq")
-        case "mistral":
-            return Image("logo_mistral")
-        case "xai", "grok":
-            return Image("logo_xai")
-        case "lm studio", "lmstudio":
-            return Image("logo_lmstudio")
-        default:
-            return nil
-        }
-    }
-    
-    private func togglePinChat() {
-        chat.isPinned.toggle()
-        do {
-            try viewContext.save()
-        } catch {
-            WardenLog.coreData.error("Error toggling pin status: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-    
-    private func renameChat() {
-        // Implementation for renaming chat
-        let alert = NSAlert()
-        alert.messageText = "Rename Chat"
-        alert.informativeText = "Enter a new name for this chat:"
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
-        
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-        textField.stringValue = chat.name
-        alert.accessoryView = textField
-        
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
-            if response == .alertFirstButtonReturn {
-                let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !newName.isEmpty {
-                    chat.name = newName
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        WardenLog.coreData.error("Error renaming chat: \(error.localizedDescription, privacy: .public)")
-                    }
-                }
-            }
-        }
-    }
-    
-    private func deleteChat() {
-        let alert = NSAlert()
-        alert.messageText = "Delete Chat?"
-        alert.informativeText = "Are you sure you want to delete \"\(chat.name)\"? This action cannot be undone."
-        alert.alertStyle = .warning
-        
-        alert.addButton(withTitle: "Delete")
-        alert.addButton(withTitle: "Cancel")
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            // Clear selection if this chat is selected
-            if selectedChat?.objectID == chat.objectID {
-                selectedChat = nil
-            }
-            
-            viewContext.delete(chat)
-            do {
-                try viewContext.save()
-            } catch {
-                WardenLog.coreData.error("Error deleting chat: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-    }
-} 
+ 

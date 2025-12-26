@@ -246,6 +246,14 @@ struct WardenApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
+                Button("New Project") {
+                    NotificationCenter.default.post(
+                        name: AppConstants.createNewProjectNotification,
+                        object: nil
+                    )
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+
                 Button("New Window") {
                     NSApplication.shared.sendAction(Selector(("newWindowForTab:")), to: nil, from: nil)
                 }

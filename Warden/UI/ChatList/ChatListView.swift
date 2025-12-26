@@ -483,20 +483,10 @@ struct ChatListView: View {
     
     private var projectsSection: some View {
         Group {
-            // Projects header
-            if !store.getActiveProjects().isEmpty || !getArchivedProjects().isEmpty {
-                Section {
-                    EmptyView()
-                } header: {
-                    projectsHeader
-                }
-            }
-            
             // Active projects - each as individual list item
             ForEach(store.getActiveProjects(), id: \.id) { project in
                 ProjectRowInList(
                     project: project,
-                    selectedChat: $selectedChat,
                     selectedProject: $selectedProject,
                     searchText: $searchText,
                     showingCreateProject: $showingCreateProject,
@@ -521,29 +511,6 @@ struct ChatListView: View {
     private func getArchivedProjects() -> [ProjectEntity] {
         return store.getProjectsPaginated(limit: 100, offset: 0, includeArchived: true)
             .filter { $0.isArchived }
-    }
-    
-    private var projectsHeader: some View {
-        HStack {
-            Text("Projects")
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-            
-            Spacer()
-            
-            Button(action: {
-                showingCreateProject = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.accentColor)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .help("Create New Project")
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
     
     private var archivedProjectsSection: some View {
@@ -584,7 +551,6 @@ struct ChatListView: View {
                 ForEach(getArchivedProjects(), id: \.id) { project in
                     ProjectRowInList(
                         project: project,
-                        selectedChat: $selectedChat,
                         selectedProject: $selectedProject,
                         searchText: $searchText,
                         showingCreateProject: $showingCreateProject,
@@ -605,23 +571,6 @@ struct ChatListView: View {
     
     private var chatsWithoutProjectSection: some View {
         Group {
-            // If there are projects, show "No Project" header first
-            if !store.getActiveProjects().isEmpty && !chatsWithoutProject.isEmpty {
-                Section {
-                    EmptyView()
-                } header: {
-                    HStack {
-                        Text("No Project")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                }
-            }
-            
             // Show pinned chats first (at the very top, before any date groups)
             if !pinnedChatsWithoutProject.isEmpty {
                 Section {

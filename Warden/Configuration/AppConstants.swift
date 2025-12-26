@@ -593,6 +593,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     
     // MARK: - Notifications
     static let newChatNotification = Notification.Name("newChatNotification")
+    static let createNewProjectNotification = Notification.Name("createNewProjectNotification")
     static let openInlineSettingsNotification = Notification.Name("openInlineSettingsNotification")
     static let openSettingsWindowNotification = Notification.Name("openSettingsWindowNotification")
     static let copyLastResponseNotification = Notification.Name("copyLastResponseNotification")

@@ -64,6 +64,9 @@ struct ContentView: View {
                 newChat()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppConstants.createNewProjectNotification)) { _ in
+            showingCreateProject = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SelectChatFromProjectSummary"))) { notification in
             if let chat = notification.object as? ChatEntity {
                 selectedChat = chat
