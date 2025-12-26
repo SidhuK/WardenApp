@@ -24,8 +24,8 @@ struct MessageInputView: View {
     var onAddFile: () -> Void
     var onAddAssistant: (() -> Void)?
     var onStopStreaming: (() -> Void)?
-    var inputPlaceholderText: String = "Type your message..."
-    var cornerRadius: Double = 11.0
+    var inputPlaceholderText: String = "Enter a message here, press ⏎ to send"
+    var cornerRadius: Double = 18.0
     
     @StateObject private var mcpManager = MCPManager.shared
 
@@ -34,7 +34,7 @@ struct MessageInputView: View {
     @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
-    @State private var showingPlusMenu = false
+    @State private var showingMCPMenu = false
     @StateObject private var rephraseService = RephraseService()
     @State private var originalText = ""
     @State private var showingRephraseError = false
@@ -71,30 +71,110 @@ struct MessageInputView: View {
         VStack(spacing: 0) {
             attachmentPreviewsSection
             
-            // Unified Input Bar
-            HStack(alignment: .center, spacing: 12) {
-                // Paperclip Icon (Menu)
-                plusButtonMenu
-                
-                // Text Input
+            VStack(alignment: .leading, spacing: 10) {
+                // Text Input Area
                 textInputArea
                 
-                Spacer()
-                
-                // Model Selector (compact)
-                if let chat = chat {
-                    CompactModelSelector(chat: chat)
+                // Bottom Toolbar
+                HStack(alignment: .center, spacing: 0) {
+                    HStack(spacing: 12) {
+                        // Attachments
+                        attachmentMenu
+                        
+                        // Web Search
+                        Button(action: {
+                            webSearchEnabled.toggle()
+                        }) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Web Search")
+                        
+                        // Rephrase (Text tool icon)
+                        Button(action: rephraseText) {
+                            ZStack {
+                                if rephraseService.isRephrasing {
+                                    ProgressView()
+                                        .scaleEffect(0.5)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: "pencil.and.outline")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
+                                }
+                            }
+                            .frame(width: 24, height: 24)
+                            .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Rephrase Message")
+                        
+                        // MCP Agents (Tool icon)
+                        mcpMenuButton
+                        
+                        // Multi-Agent Mode
+                        if enableMultiAgentMode {
+                            HStack(spacing: 8) {
+                                Button(action: {
+                                    isMultiAgentMode.toggle()
+                                }) {
+                                    Image(systemName: isMultiAgentMode ? "person.3.fill" : "person.3")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(isMultiAgentMode ? .accentColor : .secondary)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .help("Multi-Agent Mode")
+                                
+                                if isMultiAgentMode {
+                                    Button(action: {
+                                        showServiceSelector = true
+                                    }) {
+                                        Text("\(selectedMultiAgentServices.count)/3")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.secondary)
+                                            .padding(.horizontal, 4)
+                                            .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help("Select Multi-Agent Models")
+                                }
+                            }
+                        }
+                        
+                        // Personas (Sparkles/Person icon)
+                        Button(action: {
+                            onAddAssistant?()
+                        }) {
+                            Image(systemName: "person.and.sparkles.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Assistant Personas")
+                    }
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        // Model Selector
+                        if let chat = chat {
+                            BetterCompactModelSelector(chat: chat)
+                        }
+                        
+                        sendStopButton
+                    }
                 }
-                
-                // Send / Stop Button
-                sendStopButton
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.top, 10)
+            .padding(.bottom, 10)
             .background(Color(nsColor: .controlBackgroundColor))
-            .cornerRadius(24)
+            .cornerRadius(cornerRadius)
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
             )
         }
@@ -110,6 +190,65 @@ struct MessageInputView: View {
             Button("OK") { }
         } message: {
             Text(rephraseErrorMessage)
+        }
+    }
+
+    private var attachmentMenu: some View {
+        Menu {
+            if imageUploadsAllowed {
+                Button(action: onAddImage) {
+                    Label("Add Image", systemImage: "photo")
+                }
+            }
+            Button(action: onAddFile) {
+                Label("Add File", systemImage: "doc")
+            }
+        } label: {
+            Image(systemName: "paperclip")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Add attachments")
+    }
+
+    private var mcpMenuButton: some View {
+        Button(action: {
+            showingMCPMenu.toggle()
+        }) {
+            ZStack {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(!selectedMCPAgents.isEmpty ? .white : .secondary)
+            }
+            .frame(width: 24, height: 24)
+            .background(!selectedMCPAgents.isEmpty ? Color.accentColor : Color.clear)
+            .cornerRadius(6)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help("MCP Tools")
+        .popover(isPresented: $showingMCPMenu, arrowEdge: .bottom) {
+            if !mcpManager.configs.isEmpty {
+                MCPAgentMenuSection(
+                    configs: mcpManager.configs,
+                    selectedAgents: $selectedMCPAgents,
+                    statuses: mcpManager.serverStatuses
+                )
+                .padding(.vertical, 8)
+                .frame(minWidth: 200)
+            } else {
+                VStack(spacing: 12) {
+                    Text("No MCP Agents configured")
+                        .font(.headline)
+                    Text("Configure MCP servers in Settings to use them here.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                .frame(width: 220)
+            }
         }
     }
 
@@ -144,183 +283,6 @@ struct MessageInputView: View {
             .padding(.bottom, 8)
         }
         .frame(height: hasAttachments ? 80 : 0)
-    }
-    
-    private var plusButtonMenu: some View {
-        Button(action: {
-            showingPlusMenu.toggle()
-        }) {
-            Image(systemName: "paperclip")
-                .font(.system(size: 18, weight: .regular))
-                .foregroundColor(.secondary)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .help("Add attachments")
-        .popover(isPresented: $showingPlusMenu, arrowEdge: .bottom) {
-            VStack(spacing: 8) {
-                // Rephrase option
-                Button(action: {
-                    showingPlusMenu = false
-                    rephraseText()
-                }) {
-                    HStack {
-                        if rephraseService.isRephrasing {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 14))
-                        }
-                        Text("Rephrase")
-                        Spacer()
-                    }
-                    .foregroundColor(canRephrase ? AppConstants.textPrimary : AppConstants.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(!canRephrase)
-                
-                // Web Search toggle
-                Button(action: {
-                    webSearchEnabled.toggle()
-                }) {
-                    HStack {
-                        Image(systemName: "globe")
-                            .font(.system(size: 14))
-                        Text("Web Search")
-                        Spacer()
-                        if webSearchEnabled {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.accentColor)
-                        }
-                    }
-                    .foregroundColor(AppConstants.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Multi-Agent Mode toggle (if enabled in settings)
-                if enableMultiAgentMode {
-                    Button(action: {
-                        isMultiAgentMode.toggle()
-                    }) {
-                        HStack {
-                            Image(systemName: isMultiAgentMode ? "person.3.fill" : "person.3")
-                                .font(.system(size: 14))
-                            Text("Multi-Agent")
-                            Spacer()
-                            if isMultiAgentMode {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.accentColor)
-                            }
-                        }
-                        .foregroundColor(AppConstants.textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Model selector button (shown when multi-agent is on)
-                    if isMultiAgentMode {
-                        Button(action: {
-                            showingPlusMenu = false
-                            showServiceSelector = true
-                        }) {
-                            HStack {
-                                Image(systemName: "gearshape")
-                                    .font(.system(size: 14))
-                                Text("Select Models")
-                                Spacer()
-                                Text("\(selectedMultiAgentServices.count)/3")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.secondary)
-                            }
-                            .foregroundColor(AppConstants.textPrimary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                
-                Divider()
-                    .padding(.horizontal, 8)
-                
-                // Add Image option (if allowed)
-                if imageUploadsAllowed {
-                    Button(action: {
-                        showingPlusMenu = false
-                        onAddImage()
-                    }) {
-                        HStack {
-                            Image(systemName: "photo.badge.plus")
-                                .font(.system(size: 14))
-                            Text("Add Image")
-                            Spacer()
-                        }
-                        .foregroundColor(AppConstants.textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                // Add File option
-                Button(action: {
-                    showingPlusMenu = false
-                    onAddFile()
-                }) {
-                    HStack {
-                        Image(systemName: "doc.badge.plus")
-                            .font(.system(size: 14))
-                        Text("Add File")
-                        Spacer()
-                    }
-                    .foregroundColor(AppConstants.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Add Assistant option (if available)
-                if let onAddAssistant = onAddAssistant {
-                    Button(action: {
-                        showingPlusMenu = false
-                        onAddAssistant()
-                    }) {
-                        HStack {
-                            Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.badge.plus")
-                                .font(.system(size: 14))
-                            Text(chat?.persona != nil ? "Edit Assistant" : "Add Assistant")
-                            Spacer()
-                        }
-                        .foregroundColor(AppConstants.textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                // MCP Agents option (if any configured)
-                if !mcpManager.configs.isEmpty {
-                    Divider()
-                        .padding(.horizontal, 8)
-                    
-                    MCPAgentMenuSection(
-                        configs: mcpManager.configs,
-                        selectedAgents: $selectedMCPAgents,
-                        statuses: mcpManager.serverStatuses
-                    )
-                }
-            }
-            .padding(.vertical, 8)
-            .frame(minWidth: 180)
-        }
     }
     
     @ViewBuilder
@@ -562,6 +524,87 @@ struct ImagePreviewView: View {
 }
 
 // MARK: - MCP Agent Menu Section
+
+// MARK: - Better Compact Model Selector
+
+struct BetterCompactModelSelector: View {
+    @ObservedObject var chat: ChatEntity
+    @Environment(\.managedObjectContext) private var viewContext
+    
+    @StateObject private var modelCache = ModelCacheManager.shared
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
+        animation: .default
+    )
+    private var apiServices: FetchedResults<APIServiceEntity>
+    
+    @State private var isExpanded = false
+    @State private var isHovered = false
+    
+    private var currentProviderType: String {
+        chat.apiService?.type ?? AppConstants.defaultApiType
+    }
+    
+    private var currentModelLabel: String {
+        let modelId = chat.gptModel
+        if modelId.isEmpty { return "Select Model" }
+        return ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
+    }
+
+    private var shortModelLabel: String {
+        let label = currentModelLabel
+        // If label is "Gemini-3-Flash/Google", we want "Gemini-3-Flash"
+        return label.components(separatedBy: "/").first ?? label
+    }
+    
+    var body: some View {
+        Button(action: {
+            isExpanded = true
+            let services = Array(apiServices)
+            if !services.isEmpty {
+                modelCache.fetchAllModels(from: services)
+            }
+        }) {
+            HStack(spacing: 6) {
+                Image("logo_\(currentProviderType)")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 14, height: 14)
+                    .foregroundStyle(isHovered ? Color.accentColor : .secondary)
+                
+                Text(shortModelLabel)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(isHovered ? Color.accentColor : .secondary)
+                    .lineLimit(1)
+                
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.03))
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isHovered = hovering
+            }
+        }
+        .popover(isPresented: $isExpanded, arrowEdge: .top) {
+            StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
+                isExpanded = false
+            })
+            .environment(\.managedObjectContext, viewContext)
+            .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
+        }
+        .help(currentModelLabel)
+    }
+}
 
 struct MCPAgentMenuSection: View {
     let configs: [MCPServerConfig]
