@@ -9,6 +9,14 @@
 ![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
 
+<a href="https://findly.tools/wardenapp?utm_source=wardenapp" target="_blank">
+  <img 
+    src="https://findly.tools/badges/findly-tools-badge-light.svg" 
+    alt="Featured on findly.tools" 
+    width="150" 
+  />
+</a>
+
 <br/>
 
 Warden is a fast, beautiful, and privacy-focused AI client built purely in SwiftUI.
