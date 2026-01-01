@@ -18,7 +18,7 @@ final class SSEStreamParser {
     static func parse(
         stream: URLSession.AsyncBytes,
         deliveryMode: DeliveryMode = .bufferedWithCompatibilityFlush,
-        onEvent: (String) async throws -> Void
+        onEvent: @escaping (String) async throws -> Void
     ) async throws {
         var parser = Parser(deliveryMode: deliveryMode, onEvent: onEvent)
 
@@ -60,7 +60,7 @@ final class SSEStreamParser {
     static func parse(
         data: Data,
         deliveryMode: DeliveryMode = .bufferedWithCompatibilityFlush,
-        onEvent: (String) async throws -> Void
+        onEvent: @escaping (String) async throws -> Void
     ) async throws {
         var parser = Parser(deliveryMode: deliveryMode, onEvent: onEvent)
 

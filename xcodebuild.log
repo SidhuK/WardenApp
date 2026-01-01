@@ -5,18 +5,18 @@ Resolve Package Graph
 
 
 Resolved source packages:
-  cmark-gfm: https://github.com/swiftlang/swift-cmark.git @ 0.6.0
-  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.6.4
-  AttributedText: https://github.com/gonzalezreal/AttributedText @ 1.0.1
   SwiftMath: https://github.com/mgriebling/SwiftMath @ 1.7.1
   OmenTextField: https://github.com/Renset/OmenTextField @ main (4e07709)
-  Highlightr: https://github.com/raspu/Highlightr @ master (bcf2d05)
-  swift-markdown: https://github.com/swiftlang/swift-markdown @ 0.6.0
-  EventSource: https://github.com/mattt/eventsource.git @ 1.3.0
-  swift-system: https://github.com/apple/swift-system.git @ 1.6.3
-  mcp-swift-sdk: https://github.com/modelcontextprotocol/swift-sdk @ 0.10.2
-  swift-log: https://github.com/apple/swift-log.git @ 1.6.4
   KeychainAccess: https://github.com/kishikawakatsumi/KeychainAccess @ master (e0c7eeb)
+  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.6.4
+  swift-log: https://github.com/apple/swift-log.git @ 1.6.4
+  EventSource: https://github.com/mattt/eventsource.git @ 1.3.0
+  cmark-gfm: https://github.com/swiftlang/swift-cmark.git @ 0.6.0
+  swift-markdown: https://github.com/swiftlang/swift-markdown @ 0.6.0
+  Highlightr: https://github.com/raspu/Highlightr @ master (bcf2d05)
+  mcp-swift-sdk: https://github.com/modelcontextprotocol/swift-sdk @ 0.10.2
+  swift-system: https://github.com/apple/swift-system.git @ 1.6.3
+  AttributedText: https://github.com/gonzalezreal/AttributedText @ 1.0.1
 
 ComputePackagePrebuildTargetDependencyGraph
 
@@ -152,20 +152,6 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIH
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift:23:66: error: passing non-escaping parameter 'onEvent' to function expecting an '@escaping' closure
-        var parser = Parser(deliveryMode: deliveryMode, onEvent: onEvent)
-                                                                 ^
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift:21:9: note: parameter 'onEvent' is implicitly non-escaping
-        onEvent: (String) async throws -> Void
-        ^
-                 @escaping 
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift:65:66: error: passing non-escaping parameter 'onEvent' to function expecting an '@escaping' closure
-        var parser = Parser(deliveryMode: deliveryMode, onEvent: onEvent)
-                                                                 ^
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift:63:9: note: parameter 'onEvent' is implicitly non-escaping
-        onEvent: (String) async throws -> Void
-        ^
-                 @escaping 
 
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatService.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
@@ -207,9 +193,90 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/Pr
     cd /Users/karatsidhu/Code/WardenApp
     
 
-Failed frontend command:
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/sources-1 -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchResultsPreviewView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/ToolCallProgressView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/StreamingAttributedTextView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchProgressView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/CitationBadgeView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchErrorView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/BaseAPIHandler.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatService.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ThemeMode.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/MoveToProjectView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/MessageCell.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/ErrorBubbleView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ProviderID.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryButton.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/ChatBubbleView.swift -primary-file /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ProjectListView.swift -supplementary-output-file-map /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/supplementaryOutputs-1 -emit-localized-strings -emit-localized-strings-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64 -target arm64-apple-macos15.0 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -disable-cross-import-overlay-search -swift-module-cross-import CoreData /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/CoreData.framework/Modules/CoreData.swiftcrossimport/CloudKit.swiftoverlay -swift-module-cross-import CoreData /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/CoreData.framework/Modules/CoreData.swiftcrossimport/CloudKit.swiftoverlay -swift-module-cross-import Darwin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Darwin.swiftcrossimport/xlocale.swiftoverlay -swift-module-cross-import SceneKit /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/SceneKit.framework/Modules/SceneKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import WebKit /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Cryptexes/OS/System/Library/Frameworks/WebKit.framework/Modules/WebKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import WebKit /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/WebKit.framework/Modules/WebKit.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -I /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -profile-generate -profile-coverage-mapping -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/karatsidhu/Code/WardenApp -enable-anonymous-context-mangled-names -file-compilation-dir /Users/karatsidhu/Code/WardenApp -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-generated-files.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-own-target-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden-6734d802df34cfc5f15439931c9b84c2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-project-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-system/Sources/CSystem/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/src/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/extensions/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-markdown/Sources/CAtomic/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources-normal/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name Warden -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name macosx26.2 -clang-target arm64-apple-macos26.2 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchResultsPreviewView-920cd5965ae0ea8dc5e68aad1f690ce3.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ToolCallProgressView.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/StreamingAttributedTextView.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchProgressView-757aa6665890c5f2288afe748ea20345.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/CitationBadgeView-61912da68587be483d357daa8ae8ec04.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchErrorView-659b0cae5563c2bc9dbbb1f4b16249c5.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/BaseAPIHandler.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/SSEStreamParser.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ChatService.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ThemeMode.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/MoveToProjectView.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/MessageCell.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ErrorBubbleView.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ProviderID.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ProjectSummaryButton.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ChatBubbleView.o -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ProjectListView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchResultsPreviewView-920cd5965ae0ea8dc5e68aad1f690ce3.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ToolCallProgressView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/StreamingAttributedTextView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchProgressView-757aa6665890c5f2288afe748ea20345.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/CitationBadgeView-61912da68587be483d357daa8ae8ec04.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/SearchErrorView-659b0cae5563c2bc9dbbb1f4b16249c5.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/BaseAPIHandler.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/SSEStreamParser.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ChatService.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ThemeMode.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/MoveToProjectView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/MessageCell.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ErrorBubbleView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ProviderID.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ProjectSummaryButton.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ChatBubbleView.o -index-unit-output-path /Warden.build/Debug/Warden.build/Objects-normal/arm64/ProjectListView.o -index-store-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Index.noindex/DataStore -index-system-modules
+SwiftCompile normal arm64 Compiling\ RephraseButton.swift,\ TableView.swift,\ TokenManager.swift,\ SwipeModifier.swift,\ ButtonWithStatusIndicator.swift,\ LMStudioHandler.swift,\ ChatListRow.swift,\ WelcomeScreen.swift,\ APIServiceDetailViewModel.swift,\ ToastNotification.swift,\ MessageSourcesView.swift,\ TabContributionsView.swift,\ MessageContentView.swift,\ ModelInfoTooltip.swift,\ ModelSelectionView.swift,\ InteractiveOnboardingView.swift,\ PersonaSelectorView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/RephraseButton.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/TableView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TokenManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SwipeModifier.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ButtonWithStatusIndicator.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/LMStudioHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/WelcomeScreen.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/APIServiceDetailViewModel.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToastNotification.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/MessageSourcesView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabContributionsView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelInfoTooltip.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/PersonaSelectorView.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/RephraseButton.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/TableView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TokenManager.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SwipeModifier.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ButtonWithStatusIndicator.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/LMStudioHandler.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift:202:21: warning: no calls to throwing functions occur within 'try' expression
+                    try viewContext.saveWithRetry(attempts: 3)
+                    ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift:205:17: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
+                catch {
+                ^
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/WelcomeScreen.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/APIServiceDetailViewModel.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToastNotification.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/MessageSourcesView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabContributionsView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift:70:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: message) { _ in
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift:82:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: colorScheme) { _ in
+         ^
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelInfoTooltip.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/PersonaSelectorView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
 SwiftCompile normal arm64 Compiling\ ThinkingProcessView.swift,\ FavoriteQuickAccessBar.swift,\ HotkeyModels.swift,\ MessageListView.swift,\ TabTavilySearchView.swift,\ ChatListView.swift,\ APIServiceManager.swift,\ RephraseService.swift,\ CodeView.swift,\ ModelMetadataFetcher.swift,\ PreferencesView.swift,\ MessageParser.swift,\ MultiAgentMessageManager.swift,\ DatabasePatcher.swift,\ CodeViewModel.swift,\ RequestMessagesTransformer.swift,\ UpdaterManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ThinkingProcessView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/FavoriteQuickAccessBar.swift /Users/karatsidhu/Code/WardenApp/Warden/Models/HotkeyModels.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/MessageListView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabTavilySearchView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIServiceManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/RephraseService.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataFetcher.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/PreferencesView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageParser.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MultiAgentMessageManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/DatabasePatcher.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift /Users/karatsidhu/Code/WardenApp/Warden/Models/RequestMessagesTransformer.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/UpdaterManager.swift (in target 'Warden' from project 'Warden')
+
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ThinkingProcessView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
@@ -233,6 +300,12 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
+/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListView.swift:173:42: warning: reference to captured var 'matchingChatIDs' in concurrently-executing code; this is an error in the Swift 6 language mode
+                    self.searchResults = matchingChatIDs
+                                         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListView.swift:286:33: warning: no 'async' operations occur within 'await' expression
+                                await performSearch(newValue)
+                                ^
 
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIServiceManager.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
@@ -245,6 +318,21 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Reph
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift:106:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: colorScheme) { newScheme in
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift:109:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: code) { code in
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift:117:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: viewModel.highlightedCode) { _ in
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift:129:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: chatFontSize) { _ in
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeView.swift:133:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: codeFont) { _ in
+         ^
 
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataFetcher.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
@@ -269,108 +357,42 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Data
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift:29:37: warning: conformance of 'NSAttributedString' to 'Sendable' is unavailable in macOS; this is an error in the Swift 6 language mode
+            let highlighted = await Task.detached(priority: .userInitiated) {
+                                    ^
+note: conformance of 'NSAttributedString' to 'Sendable' has been explicitly marked unavailable here
+@_nonSendable(_assumed)
+^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift:29:42: warning: conformance of 'NSAttributedString' to 'Sendable' is unavailable in macOS; this is an error in the Swift 6 language mode
+            let highlighted = await Task.detached(priority: .userInitiated) {
+                                         ^
+note: conformance of 'NSAttributedString' to 'Sendable' has been explicitly marked unavailable here
+@_nonSendable(_assumed)
+^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift:37:15: warning: conformance of 'NSAttributedString' to 'Sendable' is unavailable in macOS; this is an error in the Swift 6 language mode
+            }.value
+              ^
+note: conformance of 'NSAttributedString' to 'Sendable' has been explicitly marked unavailable here
+@_nonSendable(_assumed)
+^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift:29:37: warning: non-Sendable type 'Task<NSAttributedString?, Never>' cannot exit main actor-isolated context in call to nonisolated property 'value'; this is an error in the Swift 6 language mode
+            let highlighted = await Task.detached(priority: .userInitiated) {
+                                    ^
+_Concurrency.Task:2:23: note: generic struct 'Task' does not conform to the 'Sendable' protocol
+@frozen public struct Task<Success, Failure> : Sendable where Success : Sendable, Failure : Error {
+                      ^
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/CodeViewModel.swift:37:15: warning: non-Sendable type 'NSAttributedString?' of nonisolated property 'value' cannot be sent to main actor-isolated context; this is an error in the Swift 6 language mode
+            }.value
+              ^
+Swift.Optional:1:21: note: generic enum 'Optional' does not conform to the 'Sendable' protocol
+@frozen public enum Optional<Wrapped> : ~Copyable, ~Escapable where Wrapped : ~Copyable, Wrapped : ~Escapable {
+                    ^
 
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Models/RequestMessagesTransformer.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
 SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/UpdaterManager.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 Compiling\ OpenRouterHandler.swift,\ ChatView.swift,\ APIProtocol.swift,\ PreviewStateManager.swift,\ APIServiceFactory.swift,\ ChatBottomContainerView.swift,\ CenteredInputView.swift,\ APIServiceConfig.swift,\ ClaudeHandler.swift,\ MessageInputView.swift,\ TavilyKeyManager.swift,\ ProjectSummaryView.swift,\ ToolbarButton.swift,\ AppConstants.swift,\ TavilySearchService.swift,\ WardenApp.swift,\ Extensions.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/OpenRouterHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ChatView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIProtocol.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/PreviewStateManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceFactory.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/ChatBottomContainerView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CenteredInputView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceConfig.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/ClaudeHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilyKeyManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToolbarButton.swift /Users/karatsidhu/Code/WardenApp/Warden/Configuration/AppConstants.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilySearchService.swift /Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Extensions.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/OpenRouterHandler.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ChatView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIProtocol.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/PreviewStateManager.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceFactory.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/ChatBottomContainerView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CenteredInputView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceConfig.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/ClaudeHandler.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift:278:29: warning: result of call to 'withAnimation' is unused
-                            withAnimation {
-                            ^             ~
-/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift:289:29: warning: result of call to 'withAnimation' is unused
-                            withAnimation {
-                            ^             ~
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilyKeyManager.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToolbarButton.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Configuration/AppConstants.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilySearchService.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:258:53: warning: use '#selector' instead of explicitly constructing a 'Selector'
-                    NSApplication.shared.sendAction(Selector(("newWindowForTab:")), to: nil, from: nil)
-                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                                                    #selector(NSResponder.newWindowForTab(_:))
-/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:279:60: warning: forced cast of 'NSFetchRequest<APIServiceEntity>' to same type has no effect
-        let fetchRequest = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
-                                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                                                           
-/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:290:42: warning: call to main actor-isolated instance method 'fetchAllModels(from:)' in a synchronous nonisolated context
-                ModelCacheManager.shared.fetchAllModels(from: apiServices)
-                                         ^
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelCacheManager.swift:131:10: note: calls to instance method 'fetchAllModels(from:)' from outside of its actor context are implicitly asynchronous
-    func fetchAllModels(from apiServices: [APIServiceEntity]) {
-         ^
-/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:290:35: warning: main actor-isolated static property 'shared' can not be referenced from a Sendable closure
-                ModelCacheManager.shared.fetchAllModels(from: apiServices)
-                                  ^
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelCacheManager.swift:10:16: note: static property declared here
-    static let shared = ModelCacheManager()
-               ^
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Extensions.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
@@ -513,94 +535,133 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 Compiling\ BackgroundDataLoader.swift,\ TabHotkeysView.swift,\ SettingsView.swift,\ ModelMetadata.swift,\ ModelMetadataCache.swift,\ AdaptiveMathView.swift,\ ModelSelectorDropdown.swift,\ ChatSharingService.swift,\ AnimatedStateView.swift,\ SkeletonLoaderView.swift,\ TypingIndicatorView.swift,\ PerplexityHandler.swift,\ MessageManager.swift,\ ClickableAttributedText.swift,\ HighlighterManager.swift,\ FilePreviewView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabHotkeysView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/SettingsView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataCache.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/AdaptiveMathView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatSharingService.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/AnimatedStateView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/SkeletonLoaderView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/TypingIndicatorView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/PerplexityHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ClickableAttributedText.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/HighlighterManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/FilePreviewView.swift (in target 'Warden' from project 'Warden')
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Warden (in target 'Warden' from project 'Warden')
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift (in target 'Warden' from project 'Warden')
+EmitSwiftModule normal arm64 (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift:91:26: warning: call to main actor-isolated initializer 'init(id:fileName:fileSize:fileTypeExtension:textContent:imageData:thumbnailData:)' in a synchronous nonisolated context
-                result = FileAttachment(
-                         ^
-/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:68:5: note: calls to initializer 'init(id:fileName:fileSize:fileTypeExtension:textContent:imageData:thumbnailData:)' from outside of its actor context are implicitly asynchronous
-    init(
-    ^
+/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: warning: conformance of 'ImageAttachment' to protocol 'Identifiable' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+final class ImageAttachment: Identifiable, ObservableObject {
+                             ^
+/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: note: isolate this conformance to the main actor with '@MainActor'
+final class ImageAttachment: Identifiable, ObservableObject {
+                             ^
+                             @MainActor 
+/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: note: turn data races into runtime errors with '@preconcurrency'
+final class ImageAttachment: Identifiable, ObservableObject {
+                             ^
+                             @preconcurrency 
+/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:10:9: note: main actor-isolated property 'id' cannot satisfy nonisolated requirement
+    var id: UUID = UUID()
+        ^
+/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: warning: conformance of 'FileAttachment' to protocol 'Identifiable' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
+final class FileAttachment: Identifiable, ObservableObject {
+                            ^
+/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: note: isolate this conformance to the main actor with '@MainActor'
+final class FileAttachment: Identifiable, ObservableObject {
+                            ^
+                            @MainActor 
+/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: note: turn data races into runtime errors with '@preconcurrency'
+final class FileAttachment: Identifiable, ObservableObject {
+                            ^
+                            @preconcurrency 
+/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:23:9: note: main actor-isolated property 'id' cannot satisfy nonisolated requirement
+    var id: UUID = UUID()
+        ^
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabHotkeysView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
+SwiftCompile normal arm64 Compiling\ OpenRouterHandler.swift,\ ChatView.swift,\ APIProtocol.swift,\ PreviewStateManager.swift,\ APIServiceFactory.swift,\ ChatBottomContainerView.swift,\ CenteredInputView.swift,\ APIServiceConfig.swift,\ ClaudeHandler.swift,\ MessageInputView.swift,\ TavilyKeyManager.swift,\ ProjectSummaryView.swift,\ ToolbarButton.swift,\ AppConstants.swift,\ TavilySearchService.swift,\ WardenApp.swift,\ Extensions.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/OpenRouterHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ChatView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIProtocol.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/PreviewStateManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceFactory.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/ChatBottomContainerView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CenteredInputView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceConfig.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/ClaudeHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilyKeyManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToolbarButton.swift /Users/karatsidhu/Code/WardenApp/Warden/Configuration/AppConstants.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilySearchService.swift /Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Extensions.swift (in target 'Warden' from project 'Warden')
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/SettingsView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift:170:13: warning: variable 'name' was never mutated; consider changing to 'let' constant
-        var name = modelName
-        ~~~ ^
-        let
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataCache.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/AdaptiveMathView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift:221:18: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
-                .onChange(of: Array(apiServices)) { services in
-                 ^
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatSharingService.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/OpenRouterHandler.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/AnimatedStateView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ChatView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/SkeletonLoaderView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIProtocol.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/TypingIndicatorView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/PreviewStateManager.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/PerplexityHandler.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceFactory.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:75:29: warning: immutable value 'sources' was never used; consider replacing with '_' or removing it
-        let (context, urls, sources) = try await tavilyService.performSearch(query: query) { [weak self] status in
-                            ^~~~~~~
-                            _
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:80:40: warning: immutable value 'error' was never used; consider replacing with '_' or removing it
-            } else if case .failed(let error) = status {
-                                   ~~~~^~~~~
-                                   _
-/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:685:49: warning: immutable value 'toolCalls' was never used; consider replacing with '_' or removing it
-                case .success(let (fullMessage, toolCalls)):
-                                                ^~~~~~~~~
-                                                _
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ClickableAttributedText.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/ChatBottomContainerView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/HighlighterManager.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CenteredInputView.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/FilePreviewView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/APIServiceConfig.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/ClaudeHandler.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift:278:29: warning: result of call to 'withAnimation' is unused
+                            withAnimation {
+                            ^             ~
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/MessageInputView.swift:289:29: warning: result of call to 'withAnimation' is unused
+                            withAnimation {
+                            ^             ~
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilyKeyManager.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToolbarButton.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Configuration/AppConstants.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TavilySearchService.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:258:53: warning: use '#selector' instead of explicitly constructing a 'Selector'
+                    NSApplication.shared.sendAction(Selector(("newWindowForTab:")), to: nil, from: nil)
+                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                                    #selector(NSResponder.newWindowForTab(_:))
+/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:279:60: warning: forced cast of 'NSFetchRequest<APIServiceEntity>' to same type has no effect
+        let fetchRequest = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
+                                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                                           
+/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:290:42: warning: call to main actor-isolated instance method 'fetchAllModels(from:)' in a synchronous nonisolated context
+                ModelCacheManager.shared.fetchAllModels(from: apiServices)
+                                         ^
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelCacheManager.swift:131:10: note: calls to instance method 'fetchAllModels(from:)' from outside of its actor context are implicitly asynchronous
+    func fetchAllModels(from apiServices: [APIServiceEntity]) {
+         ^
+/Users/karatsidhu/Code/WardenApp/Warden/WardenApp.swift:290:35: warning: main actor-isolated static property 'shared' can not be referenced from a Sendable closure
+                ModelCacheManager.shared.fetchAllModels(from: apiServices)
+                                  ^
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelCacheManager.swift:10:16: note: static property declared here
+    static let shared = ModelCacheManager()
+               ^
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/Extensions.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
 
@@ -699,122 +760,6 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/QuickC
         let request = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                                       
-
-SwiftCompile normal arm64 Compiling\ RephraseButton.swift,\ TableView.swift,\ TokenManager.swift,\ SwipeModifier.swift,\ ButtonWithStatusIndicator.swift,\ LMStudioHandler.swift,\ ChatListRow.swift,\ WelcomeScreen.swift,\ APIServiceDetailViewModel.swift,\ ToastNotification.swift,\ MessageSourcesView.swift,\ TabContributionsView.swift,\ MessageContentView.swift,\ ModelInfoTooltip.swift,\ ModelSelectionView.swift,\ InteractiveOnboardingView.swift,\ PersonaSelectorView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/RephraseButton.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/TableView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TokenManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SwipeModifier.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ButtonWithStatusIndicator.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/LMStudioHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/WelcomeScreen.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/APIServiceDetailViewModel.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToastNotification.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/MessageSourcesView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabContributionsView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelInfoTooltip.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/PersonaSelectorView.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/RephraseButton.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/TableView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/TokenManager.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SwipeModifier.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ButtonWithStatusIndicator.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/LMStudioHandler.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift:202:21: warning: no calls to throwing functions occur within 'try' expression
-                    try viewContext.saveWithRetry(attempts: 3)
-                    ^
-/Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ChatListRow.swift:205:17: warning: 'catch' block is unreachable because no errors are thrown in 'do' block
-                catch {
-                ^
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/WelcomeScreen.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/APIServiceDetailViewModel.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ToastNotification.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/MessageSourcesView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabContributionsView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift:70:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
-        .onChange(of: message) { _ in
-         ^
-/Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/MessageContentView.swift:82:10: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
-        .onChange(of: colorScheme) { _ in
-         ^
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelInfoTooltip.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServices/ModelSelectionView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/InteractiveOnboardingView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BottomContainer/PersonaSelectorView.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftEmitModule normal arm64 Emitting\ module\ for\ Warden (in target 'Warden' from project 'Warden')
-
-EmitSwiftModule normal arm64 (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: warning: conformance of 'ImageAttachment' to protocol 'Identifiable' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-final class ImageAttachment: Identifiable, ObservableObject {
-                             ^
-/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: note: isolate this conformance to the main actor with '@MainActor'
-final class ImageAttachment: Identifiable, ObservableObject {
-                             ^
-                             @MainActor 
-/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:9:30: note: turn data races into runtime errors with '@preconcurrency'
-final class ImageAttachment: Identifiable, ObservableObject {
-                             ^
-                             @preconcurrency 
-/Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift:10:9: note: main actor-isolated property 'id' cannot satisfy nonisolated requirement
-    var id: UUID = UUID()
-        ^
-/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: warning: conformance of 'FileAttachment' to protocol 'Identifiable' crosses into main actor-isolated code and can cause data races; this is an error in the Swift 6 language mode
-final class FileAttachment: Identifiable, ObservableObject {
-                            ^
-/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: note: isolate this conformance to the main actor with '@MainActor'
-final class FileAttachment: Identifiable, ObservableObject {
-                            ^
-                            @MainActor 
-/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:22:29: note: turn data races into runtime errors with '@preconcurrency'
-final class FileAttachment: Identifiable, ObservableObject {
-                            ^
-                            @preconcurrency 
-/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:23:9: note: main actor-isolated property 'id' cannot satisfy nonisolated requirement
-    var id: UUID = UUID()
-        ^
 
 SwiftCompile normal arm64 Compiling\ ChatGPTHandler.swift,\ GlassEffectModifiers.swift,\ ModernButton.swift,\ SceneKitParticlesView.swift,\ MessageContent.swift,\ ImageAttachment.swift,\ DeepseekHandler.swift,\ FavoriteModelsManager.swift,\ MistralHandler.swift,\ BranchPopover.swift,\ TabAPIServicesView.swift,\ ChatViewModel.swift,\ AttachmentResolver.swift,\ FileAttachment.swift,\ AnimationShowcase.swift,\ ContentView.swift,\ HTMLPreviewView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/ChatGPTHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/GlassEffectModifiers.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModernButton.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/WelcomeScreen/SceneKitParticlesView.swift /Users/karatsidhu/Code/WardenApp/Warden/Models/MessageContent.swift /Users/karatsidhu/Code/WardenApp/Warden/Models/ImageAttachment.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/DeepseekHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/FavoriteModelsManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/MistralHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/BranchPopover.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabAPIServicesView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ChatViewModel.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/AttachmentResolver.swift /Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/AnimationShowcase.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ContentView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/HTMLPreviewView.swift (in target 'Warden' from project 'Warden')
 
@@ -918,29 +863,134 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/HTMLPr
     cd /Users/karatsidhu/Code/WardenApp
     
 
+SwiftCompile normal arm64 Compiling\ BackgroundDataLoader.swift,\ TabHotkeysView.swift,\ SettingsView.swift,\ ModelMetadata.swift,\ ModelMetadataCache.swift,\ AdaptiveMathView.swift,\ ModelSelectorDropdown.swift,\ ChatSharingService.swift,\ AnimatedStateView.swift,\ SkeletonLoaderView.swift,\ TypingIndicatorView.swift,\ PerplexityHandler.swift,\ MessageManager.swift,\ ClickableAttributedText.swift,\ HighlighterManager.swift,\ FilePreviewView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabHotkeysView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/SettingsView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataCache.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/AdaptiveMathView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatSharingService.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/AnimatedStateView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/SkeletonLoaderView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/TypingIndicatorView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/PerplexityHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ClickableAttributedText.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/HighlighterManager.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/FilePreviewView.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/BackgroundDataLoader.swift:91:26: warning: call to main actor-isolated initializer 'init(id:fileName:fileSize:fileTypeExtension:textContent:imageData:thumbnailData:)' in a synchronous nonisolated context
+                result = FileAttachment(
+                         ^
+/Users/karatsidhu/Code/WardenApp/Warden/Models/FileAttachment.swift:68:5: note: calls to initializer 'init(id:fileName:fileSize:fileTypeExtension:textContent:imageData:thumbnailData:)' from outside of its actor context are implicitly asynchronous
+    init(
+    ^
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/TabHotkeysView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/SettingsView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadata.swift:170:13: warning: variable 'name' was never mutated; consider changing to 'let' constant
+        var name = modelName
+        ~~~ ^
+        let
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ModelMetadataCache.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/AdaptiveMathView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ModelSelectorDropdown.swift:221:18: warning: 'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
+                .onChange(of: Array(apiServices)) { services in
+                 ^
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatSharingService.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/AnimatedStateView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/SkeletonLoaderView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/TypingIndicatorView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/PerplexityHandler.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:75:29: warning: immutable value 'sources' was never used; consider replacing with '_' or removing it
+        let (context, urls, sources) = try await tavilyService.performSearch(query: query) { [weak self] status in
+                            ^~~~~~~
+                            _
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:80:40: warning: immutable value 'error' was never used; consider replacing with '_' or removing it
+            } else if case .failed(let error) = status {
+                                   ~~~~^~~~~
+                                   _
+/Users/karatsidhu/Code/WardenApp/Warden/Utilities/MessageManager.swift:685:49: warning: immutable value 'toolCalls' was never used; consider replacing with '_' or removing it
+                case .success(let (fullMessage, toolCalls)):
+                                                ^~~~~~~~~
+                                                _
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ClickableAttributedText.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/CodeView/HighlighterManager.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/FilePreviewView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
 SwiftDriverJobDiscovery normal arm64 Emitting module for Warden (in target 'Warden' from project 'Warden')
 
 SwiftDriver\ Compilation\ Requirements Warden normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Warden -Onone -enforce-exclusivity\=checked @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.0 -g -module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_const_extract_protocols.json -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-generated-files.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-own-target-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden-6734d802df34cfc5f15439931c9b84c2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-project-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-system/Sources/CSystem/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/src/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/extensions/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-markdown/Sources/CAtomic/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources-normal/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-Swift.h -working-directory /Users/karatsidhu/Code/WardenApp -experimental-emit-module-separately -disable-cmo
 
-SwiftDriverJobDiscovery normal arm64 Compiling BackgroundDataLoader.swift, TabHotkeysView.swift, SettingsView.swift, ModelMetadata.swift, ModelMetadataCache.swift, AdaptiveMathView.swift, ModelSelectorDropdown.swift, ChatSharingService.swift, AnimatedStateView.swift, SkeletonLoaderView.swift, TypingIndicatorView.swift, PerplexityHandler.swift, MessageManager.swift, ClickableAttributedText.swift, HighlighterManager.swift, FilePreviewView.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling ProjectSettingsView.swift, TabDangerZoneView.swift, TavilyModels.swift, ZoomableImageView.swift, EntityListView.swift, CreateProjectView.swift, APIServiceDetailView.swift, AnimationModifiers.swift, SubmitTextEditor.swift, ChatStore.swift, SearchModels.swift, TabAIPersonasView.swift, StreamingTaskController.swift, WardenSignpost.swift, ButtonTestApiTokenAndModel.swift, MarkdownView.swift (in target 'Warden' from project 'Warden')
 
-SwiftCompile normal arm64 Compiling\ MCPServerConfig.swift /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPServerConfig.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPServerConfig.swift (in target 'Warden' from project 'Warden')
+Copy /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.swiftmodule /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftmodule (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
-    
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftmodule /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.swiftmodule
+
+Copy /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.swiftdoc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftdoc (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftdoc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.swiftdoc
 
 Copy /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.abi.json /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.abi.json (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.abi.json /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/arm64-apple-macos.abi.json
 
-SwiftDriverJobDiscovery normal arm64 Compiling MCPServerConfig.swift (in target 'Warden' from project 'Warden')
-
 Copy /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftsourceinfo (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftsourceinfo /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ IncrementalMessageParser.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftCompile normal arm64 Compiling\ MCPSettingsView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling OpenRouterHandler.swift, ChatView.swift, APIProtocol.swift, PreviewStateManager.swift, APIServiceFactory.swift, ChatBottomContainerView.swift, CenteredInputView.swift, APIServiceConfig.swift, ClaudeHandler.swift, MessageInputView.swift, TavilyKeyManager.swift, ProjectSummaryView.swift, ToolbarButton.swift, AppConstants.swift, TavilySearchService.swift, WardenApp.swift, Extensions.swift (in target 'Warden' from project 'Warden')
 
 SwiftCompile normal arm64 Compiling\ MCPAgentSelector.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/MCPAgentSelector.swift (in target 'Warden' from project 'Warden')
 
@@ -948,13 +998,63 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/MCPAge
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftDriverJobDiscovery normal arm64 Compiling MCPAgentSelector.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
 
-SwiftCompile normal arm64 Compiling\ MCPSettingsView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 Compiling\ ImageEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
     cd /Users/karatsidhu/Code/WardenApp
     
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChatBranchingManager.swift, Models.swift, MultiAgentServiceSelector.swift, MultiAgentResponseView.swift, ChatShareMenu.swift, ModelCacheManager.swift, WardenLog.swift, HighlightedText.swift, TabGeneralSettingsView.swift, OllamaHandler.swift, SelectedModelsManager.swift, SettingsWindowManager.swift, GeminiHandler.swift, GlobalHotkeyHandler.swift, FloatingPanelManager.swift, QuickChatView.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ APIServiceEntity+CoreDataClass.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ GeneratedAssetSymbols.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling MCPAgentSelector.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ ProjectEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ MCPServerConfig.swift /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPServerConfig.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPServerConfig.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ PersonaEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 Compiling\ AddMCPAgentSheet.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/AddMCPAgentSheet.swift (in target 'Warden' from project 'Warden')
+
+SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/AddMCPAgentSheet.swift (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChatGPTHandler.swift, GlassEffectModifiers.swift, ModernButton.swift, SceneKitParticlesView.swift, MessageContent.swift, ImageAttachment.swift, DeepseekHandler.swift, FavoriteModelsManager.swift, MistralHandler.swift, BranchPopover.swift, TabAPIServicesView.swift, ChatViewModel.swift, AttachmentResolver.swift, FileAttachment.swift, AnimationShowcase.swift, ContentView.swift, HTMLPreviewView.swift (in target 'Warden' from project 'Warden')
 
 SwiftCompile normal arm64 Compiling\ MCPManager.swift /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPManager.swift (in target 'Warden' from project 'Warden')
 
@@ -980,15 +1080,7 @@ SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Core/MCP/MCPMa
             switch item {
             ^
 
-SwiftDriverJobDiscovery normal arm64 Compiling ProjectSettingsView.swift, TabDangerZoneView.swift, TavilyModels.swift, ZoomableImageView.swift, EntityListView.swift, CreateProjectView.swift, APIServiceDetailView.swift, AnimationModifiers.swift, SubmitTextEditor.swift, ChatStore.swift, SearchModels.swift, TabAIPersonasView.swift, StreamingTaskController.swift, WardenSignpost.swift, ButtonTestApiTokenAndModel.swift, MarkdownView.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ IncrementalMessageParser.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling OpenRouterHandler.swift, ChatView.swift, APIProtocol.swift, PreviewStateManager.swift, APIServiceFactory.swift, ChatBottomContainerView.swift, CenteredInputView.swift, APIServiceConfig.swift, ClaudeHandler.swift, MessageInputView.swift, TavilyKeyManager.swift, ProjectSummaryView.swift, ToolbarButton.swift, AppConstants.swift, TavilySearchService.swift, WardenApp.swift, Extensions.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling MCPServerConfig.swift (in target 'Warden' from project 'Warden')
 
 SwiftCompile normal arm64 Compiling\ FileEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/FileEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
@@ -996,55 +1088,7 @@ SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftDriverJobDiscovery normal arm64 Compiling MCPManager.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ GeneratedAssetSymbols.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling IncrementalMessageParser.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ ProjectEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling ChatBranchingManager.swift, Models.swift, MultiAgentServiceSelector.swift, MultiAgentResponseView.swift, ChatShareMenu.swift, ModelCacheManager.swift, WardenLog.swift, HighlightedText.swift, TabGeneralSettingsView.swift, OllamaHandler.swift, SelectedModelsManager.swift, SettingsWindowManager.swift, GeminiHandler.swift, GlobalHotkeyHandler.swift, FloatingPanelManager.swift, QuickChatView.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ APIServiceEntity+CoreDataClass.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling FileEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ ImageEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling GeneratedAssetSymbols.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ AddMCPAgentSheet.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/AddMCPAgentSheet.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/UI/Preferences/MCP/AddMCPAgentSheet.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling ProjectEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 Compiling\ PersonaEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-
-SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
-    cd /Users/karatsidhu/Code/WardenApp
-    
-
-SwiftDriverJobDiscovery normal arm64 Compiling ImageEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
 SwiftCompile normal arm64 Compiling\ APIServiceEntity+CoreDataProperties.swift /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/CoreDataGenerated/wardenDataModel/APIServiceEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
@@ -1052,25 +1096,91 @@ SwiftCompile normal arm64 /Users/karatsidhu/Library/Developer/Xcode/DerivedData/
     cd /Users/karatsidhu/Code/WardenApp
     
 
-SwiftDriverJobDiscovery normal arm64 Compiling APIServiceEntity+CoreDataClass.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling BackgroundDataLoader.swift, TabHotkeysView.swift, SettingsView.swift, ModelMetadata.swift, ModelMetadataCache.swift, AdaptiveMathView.swift, ModelSelectorDropdown.swift, ChatSharingService.swift, AnimatedStateView.swift, SkeletonLoaderView.swift, TypingIndicatorView.swift, PerplexityHandler.swift, MessageManager.swift, ClickableAttributedText.swift, HighlighterManager.swift, FilePreviewView.swift (in target 'Warden' from project 'Warden')
 
-SwiftDriverJobDiscovery normal arm64 Compiling PersonaEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling FileEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
 SwiftDriverJobDiscovery normal arm64 Compiling APIServiceEntity+CoreDataProperties.swift (in target 'Warden' from project 'Warden')
 
-SwiftDriverJobDiscovery normal arm64 Compiling MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling MCPManager.swift (in target 'Warden' from project 'Warden')
 
 SwiftDriverJobDiscovery normal arm64 Compiling RephraseButton.swift, TableView.swift, TokenManager.swift, SwipeModifier.swift, ButtonWithStatusIndicator.swift, LMStudioHandler.swift, ChatListRow.swift, WelcomeScreen.swift, APIServiceDetailViewModel.swift, ToastNotification.swift, MessageSourcesView.swift, TabContributionsView.swift, MessageContentView.swift, ModelInfoTooltip.swift, ModelSelectionView.swift, InteractiveOnboardingView.swift, PersonaSelectorView.swift (in target 'Warden' from project 'Warden')
 
+SwiftDriverJobDiscovery normal arm64 Compiling MCPSettingsView.swift (in target 'Warden' from project 'Warden')
+
 SwiftDriverJobDiscovery normal arm64 Compiling AddMCPAgentSheet.swift (in target 'Warden' from project 'Warden')
 
-SwiftDriverJobDiscovery normal arm64 Compiling ChatGPTHandler.swift, GlassEffectModifiers.swift, ModernButton.swift, SceneKitParticlesView.swift, MessageContent.swift, ImageAttachment.swift, DeepseekHandler.swift, FavoriteModelsManager.swift, MistralHandler.swift, BranchPopover.swift, TabAPIServicesView.swift, ChatViewModel.swift, AttachmentResolver.swift, FileAttachment.swift, AnimationShowcase.swift, ContentView.swift, HTMLPreviewView.swift (in target 'Warden' from project 'Warden')
+SwiftDriverJobDiscovery normal arm64 Compiling ThinkingProcessView.swift, FavoriteQuickAccessBar.swift, HotkeyModels.swift, MessageListView.swift, TabTavilySearchView.swift, ChatListView.swift, APIServiceManager.swift, RephraseService.swift, CodeView.swift, ModelMetadataFetcher.swift, PreferencesView.swift, MessageParser.swift, MultiAgentMessageManager.swift, DatabasePatcher.swift, CodeViewModel.swift, RequestMessagesTransformer.swift, UpdaterManager.swift (in target 'Warden' from project 'Warden')
 
-** BUILD FAILED **
+SwiftDriverJobDiscovery normal arm64 Compiling SearchResultsPreviewView.swift, ToolCallProgressView.swift, StreamingAttributedTextView.swift, SearchProgressView.swift, CitationBadgeView.swift, SearchErrorView.swift, BaseAPIHandler.swift, SSEStreamParser.swift, ChatService.swift, ThemeMode.swift, MoveToProjectView.swift, MessageCell.swift, ErrorBubbleView.swift, ProviderID.swift, ProjectSummaryButton.swift, ChatBubbleView.swift, ProjectListView.swift (in target 'Warden' from project 'Warden')
 
+SwiftDriver\ Compilation Warden normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Warden -Onone -enforce-exclusivity\=checked @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.0 -g -module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_const_extract_protocols.json -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-generated-files.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-own-target-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden-6734d802df34cfc5f15439931c9b84c2-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-project-headers.hmap -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-system/Sources/CSystem/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/src/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-cmark/extensions/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/SourcePackages/checkouts/swift-markdown/Sources/CAtomic/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/include -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources-normal/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources/arm64 -Xcc -I/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-Swift.h -working-directory /Users/karatsidhu/Code/WardenApp -experimental-emit-module-separately -disable-cmo
 
-The following build commands failed:
-	SwiftCompile normal arm64 /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift (in target 'Warden' from project 'Warden')
-	SwiftCompile normal arm64 Compiling\ SearchResultsPreviewView.swift,\ ToolCallProgressView.swift,\ StreamingAttributedTextView.swift,\ SearchProgressView.swift,\ CitationBadgeView.swift,\ SearchErrorView.swift,\ BaseAPIHandler.swift,\ SSEStreamParser.swift,\ ChatService.swift,\ ThemeMode.swift,\ MoveToProjectView.swift,\ MessageCell.swift,\ ErrorBubbleView.swift,\ ProviderID.swift,\ ProjectSummaryButton.swift,\ ChatBubbleView.swift,\ ProjectListView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchResultsPreviewView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/ToolCallProgressView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/StreamingAttributedTextView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchProgressView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/CitationBadgeView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/Components/SearchErrorView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/APIHandlers/BaseAPIHandler.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/SSEStreamParser.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ChatService.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Components/ThemeMode.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/MoveToProjectView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/MessageCell.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/ErrorBubbleView.swift /Users/karatsidhu/Code/WardenApp/Warden/Utilities/ProviderID.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/ProjectSummaryButton.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/Chat/BubbleView/ChatBubbleView.swift /Users/karatsidhu/Code/WardenApp/Warden/UI/ChatList/ProjectListView.swift (in target 'Warden' from project 'Warden')
-	Building project Warden with scheme Warden
-(3 failures)
+Ld /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib normal (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos15.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -O0 -L/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -filelist /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.LinkFileList -install_name @rpath/Warden.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden-linker-args.resp -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Xlinker -no_application_extension -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -framework Sparkle -Xlinker -no_adhoc_codesign -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Highlightr.build/Debug/Highlightr.build/Objects-normal/arm64/Highlightr.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Highlightr.build/Debug/Highlightr.build/Objects-normal/arm64/Highlightr-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/OmenTextField.build/Debug/OmenTextField.build/Objects-normal/arm64/OmenTextField.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/OmenTextField.build/Debug/OmenTextField.build/Objects-normal/arm64/OmenTextField-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/KeychainAccess.build/Debug/KeychainAccess.build/Objects-normal/arm64/KeychainAccess.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/KeychainAccess.build/Debug/KeychainAccess.build/Objects-normal/arm64/KeychainAccess-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/mcp-swift-sdk.build/Debug/MCP.build/Objects-normal/arm64/MCP.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/mcp-swift-sdk.build/Debug/MCP.build/Objects-normal/arm64/MCP-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-system.build/Debug/SystemPackage.build/Objects-normal/arm64/SystemPackage.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-system.build/Debug/SystemPackage.build/Objects-normal/arm64/SystemPackage-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-log.build/Debug/Logging.build/Objects-normal/arm64/Logging.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-log.build/Debug/Logging.build/Objects-normal/arm64/Logging-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/EventSource.build/Debug/EventSource.build/Objects-normal/arm64/EventSource.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/EventSource.build/Debug/EventSource.build/Objects-normal/arm64/EventSource-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-markdown.build/Debug/Markdown.build/Objects-normal/arm64/Markdown.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/swift-markdown.build/Debug/Markdown.build/Objects-normal/arm64/Markdown-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/SwiftMath.build/Debug/SwiftMath.build/Objects-normal/arm64/SwiftMath.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/SwiftMath.build/Debug/SwiftMath.build/Objects-normal/arm64/SwiftMath-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/AttributedText.build/Debug/AttributedText.build/Objects-normal/arm64/AttributedText.swiftmodule @/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/AttributedText.build/Debug/AttributedText.build/Objects-normal/arm64/AttributedText-linker-args.resp
+
+ConstructStubExecutorLinkFileList /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-ExecutorLinkFileList-normal-arm64.txt (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    construct-stub-executor-link-file-list /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Warden' from project 'Warden')
+
+Ld /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden normal (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos15.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -O0 -L/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -F/Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden-ExecutorLinkFileList-normal-arm64.txt /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden
+
+Copy /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Resources/fonts/FiraCode-VF.ttf /Users/karatsidhu/Code/WardenApp/Warden/FiraCode-VF.ttf (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -remove-static-executable /Users/karatsidhu/Code/WardenApp/Warden/FiraCode-VF.ttf /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Resources/fonts
+
+CopySwiftLibs /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-swiftStdLibTool --copy --verbose --sign F3DA8724ACA7DFD64DF71E13322AB7052FFAD423 --scan-executable /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib --scan-folder /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Frameworks --scan-folder /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/PlugIns --scan-folder /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Library/SystemExtensions --scan-folder /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Extensions --platform macosx --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+
+ExtractAppIntentsMetadata (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name Warden --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk --xcode-version 17C52 --platform-family macOS --deployment-target 15.0 --bundle-identifier karatsidhu.WardenAI --output /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/Resources --target-triple arm64-apple-macos15.0 --binary-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden --dependency-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden_dependency_info.dat --stringsdata-file /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.SwiftFileList --metadata-file-list /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden.DependencyMetadataFileList --static-metadata-file-list /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden.DependencyStaticMetadataFileList --swift-const-vals-list /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Objects-normal/arm64/Warden.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-01-01 12:46:39.118 appintentsmetadataprocessor[68534:2684279] Starting appintentsmetadataprocessor export
+2026-01-01 12:46:39.120 appintentsmetadataprocessor[68534:2684279] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CodeSign /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+    Signing Identity:     "Apple Development: karatsinghapple@gmail.com (2PX7UEEE66)"
+    
+    /usr/bin/codesign --force --sign F3DA8724ACA7DFD64DF71E13322AB7052FFAD423 -o runtime --timestamp\=none --generate-entitlement-der /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/Warden.debug.dylib
+
+CodeSign /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/__preview.dylib (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+    Signing Identity:     "Apple Development: karatsinghapple@gmail.com (2PX7UEEE66)"
+    
+    /usr/bin/codesign --force --sign F3DA8724ACA7DFD64DF71E13322AB7052FFAD423 -o runtime --timestamp\=none --generate-entitlement-der /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app/Contents/MacOS/__preview.dylib
+
+CodeSign /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    
+    Signing Identity:     "Apple Development: karatsinghapple@gmail.com (2PX7UEEE66)"
+    
+    /usr/bin/codesign --force --sign F3DA8724ACA7DFD64DF71E13322AB7052FFAD423 -o runtime --entitlements /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Intermediates.noindex/Warden.build/Debug/Warden.build/Warden.app.xcent --timestamp\=none --generate-entitlement-der /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app
+
+RegisterExecutionPolicyException /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-RegisterExecutionPolicyException /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app
+
+Validate /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    builtin-validationUtility /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app
+
+Touch /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app (in target 'Warden' from project 'Warden')
+    cd /Users/karatsidhu/Code/WardenApp
+    /usr/bin/touch -c /Users/karatsidhu/Library/Developer/Xcode/DerivedData/Warden-csyjvhpsjahbzlgrnzoootlekrmx/Build/Products/Debug/Warden.app
+
+** BUILD SUCCEEDED **
+
