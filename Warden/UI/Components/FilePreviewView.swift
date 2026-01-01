@@ -189,3 +189,47 @@ struct FilePreviewView_Previews: PreviewProvider {
         .padding()
     }
 } 
+
+extension FileAttachmentType {
+    var icon: String {
+        switch self {
+        case .image: return "photo"
+        case .text: return "doc.text"
+        case .csv: return "tablecells"
+        case .pdf: return "doc.richtext"
+        case .json: return "doc.badge.gearshape"
+        case .xml: return "doc.badge.ellipsis"
+        case .markdown: return "doc.text"
+        case .rtf: return "doc.richtext"
+        case .other: return "doc"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .image: return .blue
+        case .text: return .gray
+        case .csv: return .green
+        case .pdf: return .red
+        case .json: return .orange
+        case .xml: return .purple
+        case .markdown: return .blue
+        case .rtf: return .brown
+        case .other: return .secondary
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .image: return "Image"
+        case .text: return "Text"
+        case .csv: return "CSV"
+        case .pdf: return "PDF"
+        case .json: return "JSON"
+        case .xml: return "XML"
+        case .markdown: return "Markdown"
+        case .rtf: return "RTF"
+        case .other(let ext): return ext.uppercased()
+        }
+    }
+}

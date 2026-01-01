@@ -149,10 +149,16 @@ class DatabasePatcher {
             chatContext = AppConstants.chatGptContextSize
         }
 
+        guard let url = URL(string: apiUrl) else {
+            WardenLog.coreData.error("Invalid migrated API URL: \(apiUrl, privacy: .public)")
+            defaults.set(true, forKey: "APIServiceMigrationCompleted")
+            return
+        }
+
         let apiService = apiServiceManager.createAPIService(
             name: name,
             type: type,
-            url: URL(string: apiUrl)!,
+            url: url,
             model: gptModel,
             contextSize: chatContext.toInt16() ?? 15,
             useStreamResponse: useStream,

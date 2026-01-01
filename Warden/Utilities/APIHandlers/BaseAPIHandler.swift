@@ -51,13 +51,19 @@ class BaseAPIHandler: APIService {
         // Canonical streaming implementation for all handlers.
         // Handlers should override only `prepareRequest` and `parseDeltaJSONResponse` as needed.
         return AsyncThrowingStream { continuation in
-            let request = self.prepareRequest(
-                requestMessages: requestMessages,
-                tools: tools,
-                model: model,
-                temperature: temperature,
-                stream: true
-            )
+            let request: URLRequest
+            do {
+                request = try self.prepareRequest(
+                    requestMessages: requestMessages,
+                    tools: tools,
+                    model: model,
+                    temperature: temperature,
+                    stream: true
+                )
+            } catch {
+                continuation.finish(throwing: error)
+                return
+            }
             
             Task {
                 var isStreamingReasoning = false
@@ -149,8 +155,8 @@ class BaseAPIHandler: APIService {
         model: String,
         temperature: Float,
         stream: Bool
-    ) -> URLRequest {
-        fatalError("prepareRequest must be implemented by subclass")
+    ) throws -> URLRequest {
+        throw APIError.noApiService("Request building not implemented for \(name)")
     }
     
     func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
@@ -162,7 +168,7 @@ class BaseAPIHandler: APIService {
     }
     
     func fetchModels() async throws -> [AIModel] {
-        fatalError("fetchModels must be implemented by subclass")
+        []
     }
 }
 

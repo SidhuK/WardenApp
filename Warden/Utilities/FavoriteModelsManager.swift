@@ -5,7 +5,8 @@ import os
 
 /// Manages favorite models across all providers
 /// Stores favorites persistently using UserDefaults
-class FavoriteModelsManager: ObservableObject {
+@MainActor
+final class FavoriteModelsManager: ObservableObject {
     static let shared = FavoriteModelsManager()
     
     @AppStorage("favoriteModels") private var favoriteModelsData: Data = Data()

@@ -92,7 +92,13 @@ class DeepseekHandler: ChatGPTHandler {
         return (false, nil, nil, nil, nil)
     }
     
-    override func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
             var newMessage = message
             if let content = message["content"] {
@@ -101,7 +107,13 @@ class DeepseekHandler: ChatGPTHandler {
             return newMessage
         }
         
-        return super.prepareRequest(requestMessages: filteredMessages, tools: tools, model: model, temperature: temperature, stream: stream)
+        return try super.prepareRequest(
+            requestMessages: filteredMessages,
+            tools: tools,
+            model: model,
+            temperature: temperature,
+            stream: stream
+        )
     }
     
     private func removeThinkingTags(from content: String) -> String {

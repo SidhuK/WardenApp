@@ -3,10 +3,12 @@ import Combine
 import SwiftUI
 import os
 
-class APIServiceDetailViewModel: ObservableObject {
+@MainActor
+final class APIServiceDetailViewModel: ObservableObject {
     private let viewContext: NSManagedObjectContext
     var apiService: APIServiceEntity?
     private var cancellables = Set<AnyCancellable>()
+    private var notificationDismissTask: Task<Void, Never>?
 
     @Published var name: String = AppConstants.defaultApiConfigurations[AppConstants.defaultApiType]?.name ?? ""
     @Published var type: String = AppConstants.defaultApiType
@@ -133,49 +135,43 @@ class APIServiceDetailViewModel: ObservableObject {
         Task {
             do {
                 let models = try await apiService.fetchModels()
-                DispatchQueue.main.async {
-                    self.fetchedModels = models
-                    self.isLoadingModels = false
+                self.fetchedModels = models
+                self.isLoadingModels = false
 
-                    if !models.contains(where: { $0.id == self.selectedModel })
-                        && !self.availableModels.contains(where: { $0 == self.selectedModel })
-                    {
-                        self.selectedModel = "custom"
-                        self.isCustomModel = true
-                    }
-                    
-                    // Success notification
-                    self.userNotification = UserNotification(
-                        type: .success,
-                        message: "✅ Fetched \(models.count) models from API"
-                    )
-                    
-                    // Auto-dismiss success notification after 3 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        if case .success? = self.userNotification?.type {
-                            self.userNotification = nil
-                        }
-                    }
+                if !models.contains(where: { $0.id == self.selectedModel })
+                    && !self.availableModels.contains(where: { $0 == self.selectedModel })
+                {
+                    self.selectedModel = "custom"
+                    self.isCustomModel = true
+                }
+
+                userNotification = UserNotification(
+                    type: .success,
+                    message: "✅ Fetched \(models.count) models from API"
+                )
+
+                notificationDismissTask?.cancel()
+                notificationDismissTask = Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    guard let self, case .success? = self.userNotification?.type else { return }
+                    self.userNotification = nil
                 }
             }
             catch {
-                DispatchQueue.main.async {
-                    self.modelFetchError = error.localizedDescription
-                    self.isLoadingModels = false
-                    self.fetchedModels = []
-                    
-                    // User-facing error notification
-                    self.userNotification = UserNotification(
-                        type: .error,
-                        message: "Failed to fetch models: \(self.getUserFriendlyErrorMessage(error))"
-                    )
-                    
-                    #if DEBUG
-                    WardenLog.app.debug(
-                        "Model fetch failed (type=\(self.type, privacy: .public), name=\(self.name, privacy: .public), url=\(self.url, privacy: .public)): \(error.localizedDescription, privacy: .public)"
-                    )
-                    #endif
-                }
+                modelFetchError = error.localizedDescription
+                isLoadingModels = false
+                fetchedModels = []
+
+                userNotification = UserNotification(
+                    type: .error,
+                    message: "Failed to fetch models: \(getUserFriendlyErrorMessage(error))"
+                )
+
+                #if DEBUG
+                WardenLog.app.debug(
+                    "Model fetch failed (type=\(self.type, privacy: .public), name=\(self.name, privacy: .public), url=\(self.url, privacy: .public)): \(error.localizedDescription, privacy: .public)"
+                )
+                #endif
             }
         }
     }

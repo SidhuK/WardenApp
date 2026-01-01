@@ -202,8 +202,12 @@ struct TabHotkeysView: View {
         return result
     }
     
-    private func handleKeyPress(key: String, modifiers: [String], for actionId: String) {
-        guard !key.isEmpty && !["cmd", "shift", "option", "control"].contains(key.lowercased()) else {
+    private func handleKeyPress(
+        key: String,
+        modifiers: KeyboardShortcut.KeyboardModifiers,
+        for actionId: String
+    ) {
+        guard !key.isEmpty else {
             return
         }
         
@@ -220,7 +224,7 @@ struct TabHotkeysView: View {
 
 struct InvisibleKeyCapture: NSViewRepresentable {
     let isActive: Bool
-    let onKeyPressed: (String, [String]) -> Void
+    let onKeyPressed: (String, KeyboardShortcut.KeyboardModifiers) -> Void
     
     func makeNSView(context: Context) -> NSView {
         let view = KeyCaptureView()
@@ -242,7 +246,7 @@ struct InvisibleKeyCapture: NSViewRepresentable {
 
 class KeyCaptureView: NSView {
     var isActive = false
-    var onKeyPressed: ((String, [String]) -> Void)?
+    var onKeyPressed: ((String, KeyboardShortcut.KeyboardModifiers) -> Void)?
     
     override var acceptsFirstResponder: Bool { return isActive }
     override var canBecomeKeyView: Bool { return isActive }
@@ -254,12 +258,12 @@ class KeyCaptureView: NSView {
         }
         
         let key = event.charactersIgnoringModifiers ?? ""
-        var modifiers: [String] = []
+        var modifiers: KeyboardShortcut.KeyboardModifiers = []
         
-        if event.modifierFlags.contains(.command) { modifiers.append("cmd") }
-        if event.modifierFlags.contains(.shift) { modifiers.append("shift") }
-        if event.modifierFlags.contains(.option) { modifiers.append("option") }
-        if event.modifierFlags.contains(.control) { modifiers.append("control") }
+        if event.modifierFlags.contains(.command) { modifiers.insert(.command) }
+        if event.modifierFlags.contains(.shift) { modifiers.insert(.shift) }
+        if event.modifierFlags.contains(.option) { modifiers.insert(.option) }
+        if event.modifierFlags.contains(.control) { modifiers.insert(.control) }
         
         onKeyPressed?(key, modifiers)
     }

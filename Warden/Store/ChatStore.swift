@@ -5,7 +5,8 @@ import os
 
 let migrationKey = "com.example.chatApp.migrationFromJSONCompleted"
 
-class ChatStore: ObservableObject {
+@MainActor
+final class ChatStore: ObservableObject {
     let persistenceController: PersistenceController
     let viewContext: NSManagedObjectContext
 

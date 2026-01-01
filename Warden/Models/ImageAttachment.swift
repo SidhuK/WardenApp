@@ -5,7 +5,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 import os
 
-class ImageAttachment: Identifiable, ObservableObject {
+@MainActor
+final class ImageAttachment: Identifiable, ObservableObject {
     var id: UUID = UUID()
     var url: URL?
     @Published var image: NSImage?
@@ -20,8 +21,9 @@ class ImageAttachment: Identifiable, ObservableObject {
         return cache
     }()
 
-    internal var imageEntity: ImageEntity?
     private var managedObjectContext: NSManagedObjectContext?
+    private var imageEntityID: NSManagedObjectID?
+    private var loadTask: Task<Void, Never>?
     private(set) var originalFileType: UTType
     private(set) var convertedToJPEG: Bool = false
 
@@ -29,12 +31,13 @@ class ImageAttachment: Identifiable, ObservableObject {
         self.url = url
         self.originalFileType = url.getUTType() ?? .jpeg
         self.managedObjectContext = context
-        self.loadImage()
+        startLoadingFromURL()
     }
 
     init(imageEntity: ImageEntity) {
-        self.imageEntity = imageEntity
+        self.imageEntityID = imageEntity.objectID
         self.id = imageEntity.id ?? UUID()
+        self.managedObjectContext = imageEntity.managedObjectContext
 
         if let formatString = imageEntity.imageFormat, !formatString.isEmpty {
             self.originalFileType = UTType(filenameExtension: formatString) ?? .jpeg
@@ -43,7 +46,7 @@ class ImageAttachment: Identifiable, ObservableObject {
             self.originalFileType = .jpeg
         }
 
-        self.loadFromEntity()
+        startLoadingFromEntity()
     }
 
     init(image: NSImage, id: UUID = UUID()) {
@@ -53,103 +56,125 @@ class ImageAttachment: Identifiable, ObservableObject {
         self.createThumbnail(from: image)
     }
 
-    private func loadImage() {
+    deinit {
+        loadTask?.cancel()
+    }
+
+    private func startLoadingFromURL() {
+        loadTask?.cancel()
         isLoading = true
+        error = nil
         
         // Check cache first
         if let cachedImage = Self.imageCache.object(forKey: id.uuidString as NSString) {
-            self.image = cachedImage
-            self.isLoading = false
+            image = cachedImage
+            isLoading = false
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self, let url = self.url else { return }
+        let id = id
+        let url = url
+        let originalFileType = originalFileType
+
+        loadTask = Task { [weak self] in
+            guard let self else { return }
 
             do {
-                if self.originalFileType == .heic || self.originalFileType == .heif {
-                    if let convertedImage = self.convertHEICToJPEG() {
-                        self.createThumbnail(from: convertedImage)
-                        self.saveToEntity(image: convertedImage)
-
-                        DispatchQueue.main.async {
-                            Self.imageCache.setObject(convertedImage, forKey: self.id.uuidString as NSString)
-                            self.image = convertedImage
-                            self.convertedToJPEG = true
-                            self.isLoading = false
-                        }
-                        return
-                    }
-                }
-
-                if let image = NSImage(contentsOf: url) {
-                    self.createThumbnail(from: image)
-                    self.saveToEntity(image: image)
-
-                    DispatchQueue.main.async {
-                        Self.imageCache.setObject(image, forKey: self.id.uuidString as NSString)
-                        self.image = image
-                        self.isLoading = false
-                    }
-                }
-                else {
+                guard let url else {
                     throw NSError(
                         domain: "ImageAttachment",
-                        code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]
+                        code: 0,
+                        userInfo: [NSLocalizedDescriptionKey: "Missing image URL"]
                     )
                 }
-            }
-            catch {
-                DispatchQueue.main.async {
-                    self.error = error
-                    self.isLoading = false
-                }
+
+                let result = try await Task.detached(priority: .userInitiated) {
+                    try Self.loadImage(from: url, originalFileType: originalFileType)
+                }.value
+
+                try Task.checkCancellation()
+
+                Self.imageCache.setObject(result.image, forKey: id.uuidString as NSString)
+                image = result.image
+                convertedToJPEG = result.convertedToJPEG
+                createThumbnail(from: result.image)
+                saveToEntity(image: result.image)
+                isLoading = false
+            } catch {
+                if Task.isCancelled { return }
+                self.error = error
+                self.isLoading = false
             }
         }
     }
 
-    private func loadFromEntity() {
+    private func startLoadingFromEntity() {
+        loadTask?.cancel()
         isLoading = true
+        error = nil
         
         // Check cache first
         if let cachedImage = Self.imageCache.object(forKey: id.uuidString as NSString) {
-            self.image = cachedImage
-            self.isLoading = false
+            image = cachedImage
+            isLoading = false
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self, let imageEntity = self.imageEntity else { return }
+        guard let context = managedObjectContext, let imageEntityID else {
+            error = NSError(
+                domain: "ImageAttachment",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Missing image database reference"]
+            )
+            isLoading = false
+            return
+        }
 
-            if let imageData = imageEntity.image, let thumbnailData = imageEntity.thumbnail {
-                if let fullImage = NSImage(data: imageData), let thumbnailImage = NSImage(data: thumbnailData) {
-                    DispatchQueue.main.async {
-                        Self.imageCache.setObject(fullImage, forKey: self.id.uuidString as NSString)
-                        self.image = fullImage
-                        self.thumbnail = thumbnailImage
-                        self.isLoading = false
+        let id = id
+
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let (imageData, thumbnailData): (Data?, Data?) = await context.performAsync {
+                    guard let object = try? context.existingObject(with: imageEntityID) as? ImageEntity else {
+                        return (nil, nil)
                     }
-                } else {
-                    DispatchQueue.main.async {
-                        self.error = NSError(
-                            domain: "ImageAttachment",
-                            code: 3,
-                            userInfo: [NSLocalizedDescriptionKey: "Failed to decode image data"]
-                        )
-                        self.isLoading = false
-                    }
+                    return (object.image, object.thumbnail)
                 }
-            }
-            else {
-                DispatchQueue.main.async {
-                    self.error = NSError(
+
+                try Task.checkCancellation()
+
+                guard let imageData, let thumbnailData else {
+                    throw NSError(
                         domain: "ImageAttachment",
                         code: 2,
                         userInfo: [NSLocalizedDescriptionKey: "Failed to load image from database"]
                     )
-                    self.isLoading = false
                 }
+
+                let decoded = try await Task.detached(priority: .userInitiated) {
+                    guard let fullImage = NSImage(data: imageData),
+                          let thumbnailImage = NSImage(data: thumbnailData) else {
+                        throw NSError(
+                            domain: "ImageAttachment",
+                            code: 3,
+                            userInfo: [NSLocalizedDescriptionKey: "Failed to decode image data"]
+                        )
+                    }
+                    return (fullImage, thumbnailImage)
+                }.value
+
+                try Task.checkCancellation()
+
+                Self.imageCache.setObject(decoded.0, forKey: id.uuidString as NSString)
+                image = decoded.0
+                thumbnail = decoded.1
+                isLoading = false
+            } catch {
+                if Task.isCancelled { return }
+                self.error = error
+                self.isLoading = false
             }
         }
     }
@@ -166,35 +191,37 @@ class ImageAttachment: Identifiable, ObservableObject {
             self.createThumbnail(from: imageToSave)
         }
 
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self = self else { return }
+        let id = id
+        let originalFileType = originalFileType
+        let thumbnail = thumbnail
+        let imageEntityID = imageEntityID
+        let formatString = Self.formatString(for: originalFileType)
+        let imageData = Self.convertImageToData(imageToSave, format: originalFileType)
+        let thumbnailData = thumbnail.flatMap { Self.convertImageToData($0, format: .jpeg, compression: 0.7) }
 
-            contextToUse.perform {
-                if self.imageEntity == nil {
-                    let newEntity = ImageEntity(context: contextToUse)
-                    newEntity.id = self.id
-                    self.imageEntity = newEntity
-                }
+        contextToUse.perform { [weak self] in
+            let entity: ImageEntity
+            if let imageEntityID, let existing = try? contextToUse.existingObject(with: imageEntityID) as? ImageEntity {
+                entity = existing
+            } else {
+                let newEntity = ImageEntity(context: contextToUse)
+                newEntity.id = id
+                entity = newEntity
 
-                self.imageEntity?.imageFormat = self.getFormatString(from: self.originalFileType)
+                let objectID = newEntity.objectID
+                Task { @MainActor [weak self] in
+                    self?.imageEntityID = objectID
+                }
+            }
 
-                if let imageData = self.convertImageToData(imageToSave, format: self.originalFileType) {
-                    self.imageEntity?.image = imageData
-                }
+            entity.imageFormat = formatString
+            entity.image = imageData
+            entity.thumbnail = thumbnailData
 
-                if let thumbnail = self.thumbnail,
-                    let thumbnailData = self.convertImageToData(thumbnail, format: .jpeg, compression: 0.7) {
-                    self.imageEntity?.thumbnail = thumbnailData
-                }
-
-                do {
-                    try contextToUse.save()
-                }
-                catch {
-                    WardenLog.coreData.error(
-                        "Error saving image to Core Data: \(error.localizedDescription, privacy: .public)"
-                    )
-                }
+            do {
+                try contextToUse.save()
+            } catch {
+                WardenLog.coreData.error("Error saving image to Core Data: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -220,37 +247,27 @@ class ImageAttachment: Identifiable, ObservableObject {
         )
         thumbnailImage.unlockFocus()
 
-        DispatchQueue.main.async {
-            self.thumbnail = thumbnailImage
-        }
-    }
-
-    private func convertHEICToJPEG() -> NSImage? {
-        guard let url = self.url else { return nil }
-        guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        guard let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else { return nil }
-
-        let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
-        guard let jpegData = bitmapRep.representation(using: .jpeg, properties: [:]) else { return nil }
-
-        return NSImage(data: jpegData)
+        thumbnail = thumbnailImage
     }
 
     func toBase64() -> String? {
         guard let image = self.image else { return nil }
 
         let resizedImage = resizeImageIfNeeded(image)
-        guard let data = convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
+        guard let data = Self.convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
 
         return data.base64EncodedString()
     }
     
     func toBase64Async() async -> String? {
-        guard let image = self.image else { return nil }
-        
+        guard let image else { return nil }
+
+        let resizedImage = resizeImageIfNeeded(image)
+        guard let tiffData = resizedImage.tiffRepresentation else { return nil }
+
         return await Task.detached(priority: .userInitiated) {
-            let resizedImage = self.resizeImageIfNeeded(image)
-            guard let data = self.convertImageToData(resizedImage, format: .jpeg, compression: 0.8) else { return nil }
+            guard let bitmapImage = NSBitmapImageRep(data: tiffData) else { return nil }
+            guard let data = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else { return nil }
             return data.base64EncodedString()
         }.value
     }
@@ -286,7 +303,7 @@ class ImageAttachment: Identifiable, ObservableObject {
         return newImage
     }
 
-    private func getFormatString(from type: UTType) -> String {
+    private static func formatString(for type: UTType) -> String {
         switch type {
         case .jpeg: return "jpeg"
         case .png: return "png"
@@ -297,7 +314,7 @@ class ImageAttachment: Identifiable, ObservableObject {
         }
     }
 
-    private func convertImageToData(_ image: NSImage, format: UTType, compression: Double = 0.9) -> Data? {
+    private static func convertImageToData(_ image: NSImage, format: UTType, compression: Double = 0.9) -> Data? {
         guard let tiffData = image.tiffRepresentation,
               let bitmapImage = NSBitmapImageRep(data: tiffData) else { return nil }
 
@@ -312,5 +329,40 @@ class ImageAttachment: Identifiable, ObservableObject {
             return bitmapImage.representation(using: .png, properties: [:])
                 ?? bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compression])
         }
+    }
+
+    private nonisolated static func loadImage(from url: URL, originalFileType: UTType) throws -> (image: NSImage, convertedToJPEG: Bool) {
+        if originalFileType == .heic || originalFileType == .heif {
+            guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil),
+                  let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+                throw NSError(
+                    domain: "ImageAttachment",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]
+                )
+            }
+
+            let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+            guard let jpegData = bitmapRep.representation(using: .jpeg, properties: [:]),
+                  let image = NSImage(data: jpegData) else {
+                throw NSError(
+                    domain: "ImageAttachment",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]
+                )
+            }
+
+            return (image: image, convertedToJPEG: true)
+        }
+
+        guard let image = NSImage(contentsOf: url) else {
+            throw NSError(
+                domain: "ImageAttachment",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]
+            )
+        }
+
+        return (image: image, convertedToJPEG: false)
     }
 }

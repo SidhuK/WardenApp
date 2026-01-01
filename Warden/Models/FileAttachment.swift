@@ -1,6 +1,7 @@
 import CoreData
+import Combine
 import Foundation
-import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 import PDFKit
 import os
@@ -15,51 +16,10 @@ enum FileAttachmentType {
     case markdown
     case rtf
     case other(String)
-    
-    var icon: String {
-        switch self {
-        case .image: return "photo"
-        case .text: return "doc.text"
-        case .csv: return "tablecells"
-        case .pdf: return "doc.richtext"
-        case .json: return "doc.badge.gearshape"
-        case .xml: return "doc.badge.ellipsis"
-        case .markdown: return "doc.text"
-        case .rtf: return "doc.richtext"
-        case .other: return "doc"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .image: return .blue
-        case .text: return .gray
-        case .csv: return .green
-        case .pdf: return .red
-        case .json: return .orange
-        case .xml: return .purple
-        case .markdown: return .blue
-        case .rtf: return .brown
-        case .other: return .secondary
-        }
-    }
-    
-    var displayName: String {
-        switch self {
-        case .image: return "Image"
-        case .text: return "Text"
-        case .csv: return "CSV"
-        case .pdf: return "PDF"
-        case .json: return "JSON"
-        case .xml: return "XML"
-        case .markdown: return "Markdown"
-        case .rtf: return "RTF"
-        case .other(let ext): return ext.uppercased()
-        }
-    }
 }
 
-class FileAttachment: Identifiable, ObservableObject {
+@MainActor
+final class FileAttachment: Identifiable, ObservableObject {
     var id: UUID = UUID()
     var url: URL?
     @Published var fileName: String = ""
@@ -72,8 +32,9 @@ class FileAttachment: Identifiable, ObservableObject {
     
     @Published var image: NSImage?
     
-    internal var fileEntity: FileEntity?
     private var managedObjectContext: NSManagedObjectContext?
+    private var fileEntityID: NSManagedObjectID?
+    private var loadTask: Task<Void, Never>?
     private(set) var originalUTType: UTType
     
     init(url: URL, context: NSManagedObjectContext? = nil) {
@@ -82,15 +43,16 @@ class FileAttachment: Identifiable, ObservableObject {
         self.originalUTType = url.getUTType() ?? .data
         self.managedObjectContext = context
         self.fileType = self.determineFileType(from: url.pathExtension)
-        self.loadFile()
+        startLoadingFromURL()
     }
     
     init(fileEntity: FileEntity) {
-        self.fileEntity = fileEntity
+        self.fileEntityID = fileEntity.objectID
         self.id = fileEntity.id ?? UUID()
         self.fileName = fileEntity.fileName ?? "Unknown"
         self.fileSize = fileEntity.fileSize
         self.textContent = fileEntity.textContent ?? ""
+        self.managedObjectContext = fileEntity.managedObjectContext
         
         if let typeString = fileEntity.fileType {
             self.originalUTType = UTType(filenameExtension: typeString) ?? .data
@@ -100,7 +62,7 @@ class FileAttachment: Identifiable, ObservableObject {
             self.fileType = .other("")
         }
         
-        self.loadFromEntity()
+        startLoadingFromEntity()
     }
 
     init(
@@ -130,6 +92,10 @@ class FileAttachment: Identifiable, ObservableObject {
         self.isLoading = false
     }
     
+    deinit {
+        loadTask?.cancel()
+    }
+
     private func determineFileType(from `extension`: String) -> FileAttachmentType {
         let ext = `extension`.lowercased()
         switch ext {
@@ -145,129 +111,148 @@ class FileAttachment: Identifiable, ObservableObject {
         }
     }
     
-    private func loadFile() {
+    private func startLoadingFromURL() {
+        loadTask?.cancel()
         isLoading = true
+        error = nil
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self, let url = self.url else { return }
-            
+        let url = url
+        let fileType = fileType
+        let fileName = fileName
+
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+
             do {
-                let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
-                let size = fileAttributes[.size] as? Int64 ?? 0
-                
-                DispatchQueue.main.async { self.fileSize = size }
-                
-                switch self.fileType {
-                case .image: self.loadImageFile(from: url)
-                case .text, .csv, .json, .xml, .markdown: self.loadTextFile(from: url)
-                case .pdf: self.loadPDFFile(from: url)
-                case .rtf: self.loadRTFFile(from: url)
-                case .other: self.loadGenericFile(from: url)
+                guard let url else {
+                    throw NSError(
+                        domain: "FileAttachment",
+                        code: 0,
+                        userInfo: [NSLocalizedDescriptionKey: "Missing file URL"]
+                    )
+                }
+
+                let size = try await Task.detached(priority: .userInitiated) {
+                    let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                    return attributes[.size] as? Int64 ?? 0
+                }.value
+
+                try Task.checkCancellation()
+                self.fileSize = size
+
+                switch fileType {
+                case .image:
+                    try await loadImageFile(from: url)
+                case .text, .csv, .json, .xml, .markdown:
+                    try await loadTextFile(from: url)
+                case .pdf:
+                    try await loadPDFFile(from: url)
+                case .rtf:
+                    try await loadRTFFile(from: url)
+                case .other:
+                    await loadGenericFile(from: url, fileName: fileName)
                 }
             } catch {
-                DispatchQueue.main.async {
-                    self.error = error
-                    self.isLoading = false
-                }
-            }
-        }
-    }
-    
-    private func loadImageFile(from url: URL) {
-        if let image = NSImage(contentsOf: url) {
-            self.createThumbnail(from: image)
-            
-            DispatchQueue.main.async {
-                self.image = image
-                self.isLoading = false
-            }
-            
-            self.saveToEntity()
-        } else {
-            DispatchQueue.main.async {
-                self.error = NSError(domain: "FileAttachment", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to load image"])
-                self.isLoading = false
-            }
-        }
-    }
-    
-    private func loadTextFile(from url: URL) {
-        do {
-            let content = try String(contentsOf: url, encoding: .utf8)
-            DispatchQueue.main.async {
-                self.textContent = content
-                self.isLoading = false
-            }
-            self.saveToEntity()
-        } catch {
-            DispatchQueue.main.async {
+                if Task.isCancelled { return }
                 self.error = error
                 self.isLoading = false
             }
         }
     }
     
-    private func loadPDFFile(from url: URL) {
-        guard let pdfDocument = PDFDocument(url: url) else {
-            DispatchQueue.main.async {
-                self.error = NSError(domain: "FileAttachment", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to load PDF"])
-                self.isLoading = false
+    private func loadImageFile(from url: URL) async throws {
+        let image = try await Task.detached(priority: .userInitiated) {
+            guard let image = NSImage(contentsOf: url) else {
+                throw NSError(
+                    domain: "FileAttachment",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]
+                )
             }
-            return
-        }
-        
-        var fullText = ""
-        for pageIndex in 0..<pdfDocument.pageCount {
-            if let page = pdfDocument.page(at: pageIndex) {
-                fullText += page.string ?? ""
-                fullText += "\n\n"
-            }
-        }
-        
-        if let firstPage = pdfDocument.page(at: 0) {
-            self.createPDFThumbnail(from: firstPage)
-        }
-        
-        DispatchQueue.main.async {
-            self.textContent = fullText
-            self.isLoading = false
-        }
-        self.saveToEntity()
+            return image
+        }.value
+
+        try Task.checkCancellation()
+        createThumbnail(from: image)
+        self.image = image
+        self.isLoading = false
+        saveToEntity()
     }
     
-    private func loadRTFFile(from url: URL) {
-        do {
+    private func loadTextFile(from url: URL) async throws {
+        let content = try await Task.detached(priority: .userInitiated) {
+            try String(contentsOf: url, encoding: .utf8)
+        }.value
+
+        try Task.checkCancellation()
+        self.textContent = content
+        self.isLoading = false
+        saveToEntity()
+    }
+    
+    private func loadPDFFile(from url: URL) async throws {
+        let result = try await Task.detached(priority: .userInitiated) {
+            guard let pdfDocument = PDFDocument(url: url) else {
+                throw NSError(
+                    domain: "FileAttachment",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to load PDF"]
+                )
+            }
+
+            var fullText = ""
+            fullText.reserveCapacity(8_000)
+
+            for pageIndex in 0..<pdfDocument.pageCount {
+                try Task.checkCancellation()
+                if let page = pdfDocument.page(at: pageIndex) {
+                    fullText += page.string ?? ""
+                    fullText += "\n\n"
+                }
+            }
+
+            let firstPage = pdfDocument.page(at: 0)
+            return (fullText, firstPage)
+        }.value
+
+        try Task.checkCancellation()
+
+        if let firstPage = result.1 {
+            createPDFThumbnail(from: firstPage)
+        }
+
+        self.textContent = result.0
+        self.isLoading = false
+        saveToEntity()
+    }
+    
+    private func loadRTFFile(from url: URL) async throws {
+        let content = try await Task.detached(priority: .userInitiated) {
             let rtfData = try Data(contentsOf: url)
-            if let attributedString = NSAttributedString(rtf: rtfData, documentAttributes: nil) {
-                DispatchQueue.main.async {
-                    self.textContent = attributedString.string
-                    self.isLoading = false
-                }
-                self.saveToEntity()
-            } else {
-                throw NSError(domain: "FileAttachment", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to parse RTF"])
+            guard let attributedString = NSAttributedString(rtf: rtfData, documentAttributes: nil) else {
+                throw NSError(
+                    domain: "FileAttachment",
+                    code: 3,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to parse RTF"]
+                )
             }
-        } catch {
-            DispatchQueue.main.async {
-                self.error = error
-                self.isLoading = false
-            }
-        }
+            return attributedString.string
+        }.value
+
+        try Task.checkCancellation()
+        self.textContent = content
+        self.isLoading = false
+        saveToEntity()
     }
     
-    private func loadGenericFile(from url: URL) {
-        if let content = try? String(contentsOf: url, encoding: .utf8) {
-            DispatchQueue.main.async {
-                self.textContent = content
-                self.isLoading = false
-            }
-        } else {
-            DispatchQueue.main.async {
-                self.textContent = "[Binary file: \(self.fileName)]"
-                self.isLoading = false
-            }
-        }
-        self.saveToEntity()
+    private func loadGenericFile(from url: URL, fileName: String) async {
+        let content = await Task.detached(priority: .userInitiated) {
+            (try? String(contentsOf: url, encoding: .utf8)) ?? "[Binary file: \(fileName)]"
+        }.value
+
+        self.textContent = content
+        self.isLoading = false
+        saveToEntity()
     }
     
     private func createThumbnail(from image: NSImage) {
@@ -313,26 +298,54 @@ class FileAttachment: Identifiable, ObservableObject {
         }
         thumbnail.unlockFocus()
         
-        DispatchQueue.main.async {
-            self.thumbnail = thumbnail
-        }
+        self.thumbnail = thumbnail
     }
     
-    private func loadFromEntity() {
+    private func startLoadingFromEntity() {
+        loadTask?.cancel()
         isLoading = true
+        error = nil
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self, let fileEntity = self.fileEntity else { return }
-            
-            if let imageData = fileEntity.imageData, let image = NSImage(data: imageData) {
-                DispatchQueue.main.async { self.image = image }
+        guard let context = managedObjectContext, let fileEntityID else {
+            error = NSError(
+                domain: "FileAttachment",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Missing file database reference"]
+            )
+            isLoading = false
+            return
+        }
+
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+
+            let values: (Data?, Data?, String?, Int64, String?) = await context.performAsync {
+                guard let object = try? context.existingObject(with: fileEntityID) as? FileEntity else {
+                    return (nil, nil, nil, 0, nil)
+                }
+                return (object.imageData, object.thumbnailData, object.textContent, object.fileSize, object.fileType)
             }
-            
-            if let thumbnailData = fileEntity.thumbnailData, let thumbnail = NSImage(data: thumbnailData) {
-                DispatchQueue.main.async { self.thumbnail = thumbnail }
+
+            if Task.isCancelled { return }
+
+            if let text = values.2 {
+                self.textContent = text
             }
-            
-            DispatchQueue.main.async { self.isLoading = false }
+            if values.3 > 0 {
+                self.fileSize = values.3
+            }
+            if let typeString = values.4 {
+                self.fileType = self.determineFileType(from: typeString)
+            }
+
+            if let imageData = values.0, let decodedImage = NSImage(data: imageData) {
+                self.image = decodedImage
+            }
+            if let thumbnailData = values.1, let decodedThumbnail = NSImage(data: thumbnailData) {
+                self.thumbnail = decodedThumbnail
+            }
+
+            self.isLoading = false
         }
     }
     
@@ -343,42 +356,47 @@ class FileAttachment: Identifiable, ObservableObject {
         if context != nil {
             self.managedObjectContext = context
         }
-        
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self = self else { return }
-            
-            contextToUse.perform {
-                if self.fileEntity == nil {
-                    let newEntity = FileEntity(context: contextToUse)
-                    newEntity.id = self.id
-                    self.fileEntity = newEntity
+
+        let id = id
+        let fileName = fileName
+        let fileSize = fileSize
+        let textContent = textContent
+        let fileTypeString = originalUTType.preferredFilenameExtension
+        let imageData = image.flatMap { Self.convertImageToData($0, compression: 0.9) }
+        let thumbnailData = thumbnail.flatMap { Self.convertImageToData($0, compression: 0.7) }
+        let fileEntityID = fileEntityID
+
+        contextToUse.perform { [weak self] in
+            let entity: FileEntity
+            if let fileEntityID, let existing = try? contextToUse.existingObject(with: fileEntityID) as? FileEntity {
+                entity = existing
+            } else {
+                let newEntity = FileEntity(context: contextToUse)
+                newEntity.id = id
+                entity = newEntity
+
+                let objectID = newEntity.objectID
+                Task { @MainActor [weak self] in
+                    self?.fileEntityID = objectID
                 }
-                
-                self.fileEntity?.fileName = self.fileName
-                self.fileEntity?.fileSize = self.fileSize
-                self.fileEntity?.textContent = self.textContent
-                self.fileEntity?.fileType = self.originalUTType.preferredFilenameExtension
-                
-                if let image = self.image, let imageData = self.convertImageToData(image, compression: 0.9) {
-                    self.fileEntity?.imageData = imageData
-                }
-                
-                if let thumbnail = self.thumbnail, let thumbnailData = self.convertImageToData(thumbnail, compression: 0.7) {
-                    self.fileEntity?.thumbnailData = thumbnailData
-                }
-                
-                do {
-                    try contextToUse.save()
-                } catch {
-                    WardenLog.coreData.error(
-                        "Error saving file to Core Data: \(error.localizedDescription, privacy: .public)"
-                    )
-                }
+            }
+
+            entity.fileName = fileName
+            entity.fileSize = fileSize
+            entity.textContent = textContent
+            entity.fileType = fileTypeString
+            entity.imageData = imageData
+            entity.thumbnailData = thumbnailData
+
+            do {
+                try contextToUse.save()
+            } catch {
+                WardenLog.coreData.error("Error saving file to Core Data: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
     
-    private func convertImageToData(_ image: NSImage, compression: Double = 0.8) -> Data? {
+    private static func convertImageToData(_ image: NSImage, compression: Double = 0.8) -> Data? {
         guard let tiffData = image.tiffRepresentation,
               let bitmapImage = NSBitmapImageRep(data: tiffData) else { return nil }
         return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compression])
@@ -387,7 +405,7 @@ class FileAttachment: Identifiable, ObservableObject {
     func toAPIContent() -> [String: Any] {
         switch fileType {
         case .image:
-            if let image = self.image, let data = convertImageToData(image, compression: 0.8) {
+            if let image = self.image, let data = Self.convertImageToData(image, compression: 0.8) {
                 return [
                     "type": "image_url",
                     "image_url": ["url": "data:image/jpeg;base64,\(data.base64EncodedString())"]

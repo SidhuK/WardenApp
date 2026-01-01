@@ -5,7 +5,8 @@ import os
 
 /// Manages automatic updates for Warden using Sparkle framework
 /// Feed URL and other settings are configured in Info.plist
-class UpdaterManager: NSObject, SPUStandardUserDriverDelegate {
+@MainActor
+final class UpdaterManager: NSObject, SPUStandardUserDriverDelegate {
     static let shared = UpdaterManager()
     
     private let updater: SPUUpdater

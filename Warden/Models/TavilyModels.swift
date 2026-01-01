@@ -43,12 +43,13 @@ struct TavilySearchResponse: Codable {
 // MARK: - Tavily Search Result
 
 struct TavilySearchResult: Codable, Identifiable {
-    let id = UUID()
     let title: String
     let url: String
     let content: String
     let score: Double
     let publishedDate: String?
+
+    var id: String { url }
     
     enum CodingKeys: String, CodingKey {
         case title

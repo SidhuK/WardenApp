@@ -121,8 +121,8 @@ enum SearchStatus: Equatable {
             return true
         case (.completed(let sources1), .completed(let sources2)):
             return sources1 == sources2
-        case (.failed, .failed):
-            return true
+        case (.failed(let e1), .failed(let e2)):
+            return e1.localizedDescription == e2.localizedDescription
         default:
             return false
         }
@@ -132,11 +132,12 @@ enum SearchStatus: Equatable {
 // MARK: - Search Source
 
 public struct SearchSource: Identifiable, Codable, Equatable {
-    public let id = UUID()
     public let title: String
     public let url: String
     public let score: Double
     public let publishedDate: String?
+
+    public var id: String { url }
     
     enum CodingKeys: String, CodingKey {
         case title, url, score, publishedDate

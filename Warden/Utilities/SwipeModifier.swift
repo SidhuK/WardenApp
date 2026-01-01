@@ -129,7 +129,9 @@ public class SwipeEvent {
         scrollingDeltaY = nsevent.scrollingDeltaY
         location = nsevent.locationInWindow
         mouseLocation = nsevent.locationInWindow
-        location = nsevent.cgEvent!.location
+        if let cgEvent = nsevent.cgEvent {
+            location = cgEvent.location
+        }
         timestamp = nsevent.timestamp
     }
 
@@ -275,7 +277,10 @@ private struct OnSwipe: ViewModifier {
         
             //----- onDisappear, remove the monitor to prevent memory leaks.
             .onDisappear {
-                NSEvent.removeMonitor(monitor!)
+                if let monitor {
+                    NSEvent.removeMonitor(monitor)
+                }
+                monitor = nil
             }
     }
 }

@@ -103,7 +103,13 @@ class OpenRouterHandler: ChatGPTHandler {
         return (false, nil, nil, nil, nil)
     }
 
-    override internal func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override internal func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
             var newMessage = message
             if let content = message["content"] {
@@ -112,7 +118,13 @@ class OpenRouterHandler: ChatGPTHandler {
             return newMessage
         }
         
-        var request = super.prepareRequest(requestMessages: filteredMessages, tools: tools, model: model, temperature: temperature, stream: stream)
+        var request = try super.prepareRequest(
+            requestMessages: filteredMessages,
+            tools: tools,
+            model: model,
+            temperature: temperature,
+            stream: stream
+        )
         
         // Add OpenRouter specific headers
         request.setValue("https://github.com/SidhuK/WardenApp", forHTTPHeaderField: "HTTP-Referer")

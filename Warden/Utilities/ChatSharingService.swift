@@ -36,9 +36,9 @@ class ChatSharingService {
         let sharingServicePicker = NSSharingServicePicker(items: [tempURL])
         
         // Get the key window to position the sharing picker
-        if let window = NSApp.keyWindow {
+        if let window = NSApp.keyWindow, let contentView = window.contentView {
             let rect = NSRect(x: window.frame.midX - 100, y: window.frame.midY, width: 200, height: 50)
-            sharingServicePicker.show(relativeTo: rect, of: window.contentView!, preferredEdge: .minY)
+            sharingServicePicker.show(relativeTo: rect, of: contentView, preferredEdge: .minY)
         }
     }
     

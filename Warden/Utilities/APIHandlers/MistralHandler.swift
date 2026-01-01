@@ -48,7 +48,7 @@ class MistralHandler: BaseAPIHandler {
         model: String,
         temperature: Float,
         stream: Bool
-    ) -> URLRequest {
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -86,7 +86,7 @@ class MistralHandler: BaseAPIHandler {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
         } catch {
-            WardenLog.app.error("Mistral request body creation error: \(error.localizedDescription, privacy: .public)")
+            throw APIError.decodingFailed(error.localizedDescription)
         }
 
         return request

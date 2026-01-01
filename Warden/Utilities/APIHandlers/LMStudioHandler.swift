@@ -28,7 +28,7 @@ class LMStudioHandler: ChatGPTHandler {
         model: String, 
         temperature: Float, 
         stream: Bool
-    ) -> URLRequest {
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         
@@ -106,7 +106,7 @@ class LMStudioHandler: ChatGPTHandler {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
-            WardenLog.app.error("LMStudio request body serialization error: \(error.localizedDescription, privacy: .public)")
+            throw APIError.decodingFailed(error.localizedDescription)
         }
 
         return request

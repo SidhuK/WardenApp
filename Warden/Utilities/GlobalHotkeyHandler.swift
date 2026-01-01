@@ -2,7 +2,8 @@ import Cocoa
 import Carbon
 import os
 
-class GlobalHotkeyHandler: ObservableObject {
+@MainActor
+final class GlobalHotkeyHandler: ObservableObject {
     static let shared = GlobalHotkeyHandler()
     
     private var hotKeyRef: EventHotKeyRef?
@@ -16,10 +17,10 @@ class GlobalHotkeyHandler: ObservableObject {
         self.onTrigger = action
         
         var carbonModifiers: UInt32 = 0
-        if shortcut.modifiers.contains("cmd") { carbonModifiers |= UInt32(cmdKey) }
-        if shortcut.modifiers.contains("option") { carbonModifiers |= UInt32(optionKey) }
-        if shortcut.modifiers.contains("control") { carbonModifiers |= UInt32(controlKey) }
-        if shortcut.modifiers.contains("shift") { carbonModifiers |= UInt32(shiftKey) }
+        if shortcut.modifiers.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
+        if shortcut.modifiers.contains(.option) { carbonModifiers |= UInt32(optionKey) }
+        if shortcut.modifiers.contains(.control) { carbonModifiers |= UInt32(controlKey) }
+        if shortcut.modifiers.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
         
         guard let keyCode = keyCode(for: shortcut.key) else {
             #if DEBUG

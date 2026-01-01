@@ -16,6 +16,24 @@ struct MessageContent {
     
     static let imageRegexPattern = "\(imageTagStart)(.*?)\(imageTagEnd)"
     static let fileRegexPattern = "\(fileTagStart)(.*?)\(fileTagEnd)"
+    fileprivate static let imageUUIDRegex = try? NSRegularExpression(pattern: imageRegexPattern, options: [])
+    fileprivate static let fileUUIDRegex = try? NSRegularExpression(pattern: fileRegexPattern, options: [])
+
+    fileprivate static func extractUUIDs(from content: String, regex: NSRegularExpression?) -> [UUID] {
+        guard let regex else { return [] }
+        let nsString = content as NSString
+        let matches = regex.matches(
+            in: content,
+            options: [],
+            range: NSRange(location: 0, length: nsString.length)
+        )
+
+        return matches.compactMap { match in
+            guard match.numberOfRanges > 1 else { return nil }
+            let uuidString = nsString.substring(with: match.range(at: 1))
+            return UUID(uuidString: uuidString)
+        }
+    }
 
     init(text: String) {
         self.content = text
@@ -25,6 +43,7 @@ struct MessageContent {
         self.content = "\(Self.imageTagStart)\(imageUUID.uuidString)\(Self.imageTagEnd)"
     }
 
+    @MainActor
     init(imageAttachment: ImageAttachment) {
         self.content = "\(Self.imageTagStart)\(imageAttachment.id.uuidString)\(Self.imageTagEnd)"
         self.imageAttachment = imageAttachment
@@ -34,22 +53,10 @@ struct MessageContent {
         self.content = "\(Self.fileTagStart)\(fileUUID.uuidString)\(Self.fileTagEnd)"
     }
     
+    @MainActor
     init(fileAttachment: FileAttachment) {
         self.content = "\(Self.fileTagStart)\(fileAttachment.id.uuidString)\(Self.fileTagEnd)"
         self.fileAttachment = fileAttachment
-    }
-}
-
-// MARK: - Shared UUID Extraction Utility
-private func extractUUIDs(from content: String, pattern: String) -> [UUID] {
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
-    let nsString = content as NSString
-    let matches = regex.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length))
-    
-    return matches.compactMap { match in
-        guard match.numberOfRanges > 1 else { return nil }
-        let uuidString = nsString.substring(with: match.range(at: 1))
-        return UUID(uuidString: uuidString)
     }
 }
 
@@ -67,11 +74,11 @@ extension Array where Element == MessageContent {
     }
 
     var imageUUIDs: [UUID] {
-        flatMap { extractUUIDs(from: $0.content, pattern: MessageContent.imageRegexPattern) }
+        flatMap { MessageContent.extractUUIDs(from: $0.content, regex: MessageContent.imageUUIDRegex) }
     }
     
     var fileUUIDs: [UUID] {
-        flatMap { extractUUIDs(from: $0.content, pattern: MessageContent.fileRegexPattern) }
+        flatMap { MessageContent.extractUUIDs(from: $0.content, regex: MessageContent.fileUUIDRegex) }
     }
 }
 
@@ -81,11 +88,11 @@ extension String {
     }
 
     func extractImageUUIDs() -> [UUID] {
-        extractUUIDs(from: self, pattern: MessageContent.imageRegexPattern)
+        MessageContent.extractUUIDs(from: self, regex: MessageContent.imageUUIDRegex)
     }
     
     func extractFileUUIDs() -> [UUID] {
-        extractUUIDs(from: self, pattern: MessageContent.fileRegexPattern)
+        MessageContent.extractUUIDs(from: self, regex: MessageContent.fileUUIDRegex)
     }
     
     var containsAttachment: Bool {

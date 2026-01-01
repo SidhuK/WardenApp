@@ -1,8 +1,68 @@
 
 import CoreData
 import Foundation
-import SwiftUI
-import UniformTypeIdentifiers
+
+enum RequestMessageRole: String, Codable, Sendable {
+    case system
+    case user
+    case assistant
+    case tool
+}
+
+struct RequestMessage: Codable, Equatable, Sendable {
+    var role: RequestMessageRole
+    var content: String?
+    var name: String?
+    var toolCallId: String?
+    var toolCallsJson: String?
+
+    init(
+        role: RequestMessageRole,
+        content: String? = nil,
+        name: String? = nil,
+        toolCallId: String? = nil,
+        toolCallsJson: String? = nil
+    ) {
+        self.role = role
+        self.content = content
+        self.name = name
+        self.toolCallId = toolCallId
+        self.toolCallsJson = toolCallsJson
+    }
+
+    init?(dictionary: [String: String]) {
+        guard let roleString = dictionary["role"], let role = RequestMessageRole(rawValue: roleString) else {
+            return nil
+        }
+
+        self.role = role
+        self.content = dictionary["content"]
+        self.name = dictionary["name"]
+        self.toolCallId = dictionary["tool_call_id"]
+        self.toolCallsJson = dictionary["tool_calls_json"]
+    }
+
+    var dictionary: [String: String] {
+        var result: [String: String] = ["role": role.rawValue]
+        if let content { result["content"] = content }
+        if let name { result["name"] = name }
+        if let toolCallId { result["tool_call_id"] = toolCallId }
+        if let toolCallsJson { result["tool_calls_json"] = toolCallsJson }
+        return result
+    }
+}
+
+extension Array where Element == [String: String] {
+    var typedRequestMessages: [RequestMessage] {
+        compactMap(RequestMessage.init(dictionary:))
+    }
+}
+
+extension Array where Element == RequestMessage {
+    var requestMessageDictionaries: [[String: String]] {
+        map(\.dictionary)
+    }
+}
 
 public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var id: UUID
@@ -32,24 +92,13 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var branchSourceRole: String?
     @NSManaged public var branchRootID: UUID?
 
-    // Cache for messagesArray to avoid repeated array conversion
-    private static var messagesArrayCacheKey: UInt8 = 0
-    private static var messagesArrayCacheCountKey: UInt8 = 1
-    
     public var messagesArray: [MessageEntity] {
-        // Check if cached array is still valid (same count means no changes)
-        let currentCount = messages.count
-        if let cachedCount = objc_getAssociatedObject(self, &ChatEntity.messagesArrayCacheCountKey) as? Int,
-           cachedCount == currentCount,
-           let cached = objc_getAssociatedObject(self, &ChatEntity.messagesArrayCacheKey) as? [MessageEntity] {
-            return cached
-        }
-        
-        // Create new array and cache it
-        let array = messages.array as? [MessageEntity] ?? []
-        objc_setAssociatedObject(self, &ChatEntity.messagesArrayCacheKey, array, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        objc_setAssociatedObject(self, &ChatEntity.messagesArrayCacheCountKey, currentCount, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        return array
+        messages.array as? [MessageEntity] ?? []
+    }
+
+    public var topP: Double {
+        get { top_p }
+        set { top_p = newValue }
     }
 
     public var lastMessage: MessageEntity? {
@@ -69,7 +118,7 @@ public class ChatEntity: NSManagedObject, Identifiable {
     }
     
     public func addUserMessage(_ message: String) {
-        self.requestMessages.append(["role": "user", "content": message])
+        requestMessages.append(RequestMessage(role: .user, content: message).dictionary)
     }
     
     public func clearMessages() {
@@ -105,21 +154,41 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var agentModel: String?
     @NSManaged public var multiAgentGroupId: UUID?
     
+    private static var toolCallsCacheKey: UInt8 = 0
+    private static var toolCallsCacheJsonKey: UInt8 = 1
+    private static var searchMetadataCacheKey: UInt8 = 2
+    private static var searchMetadataCacheJsonKey: UInt8 = 3
+
     public var toolCalls: [WardenToolCallStatus] {
         get {
             guard let json = toolCallsJson,
                   let data = json.data(using: .utf8),
                   let calls = try? JSONDecoder().decode([WardenToolCallStatus].self, from: data) else {
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheJsonKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                 return []
             }
+
+            if let cachedJson = objc_getAssociatedObject(self, &MessageEntity.toolCallsCacheJsonKey) as? String,
+               cachedJson == json,
+               let cached = objc_getAssociatedObject(self, &MessageEntity.toolCallsCacheKey) as? [WardenToolCallStatus] {
+                return cached
+            }
+
+            objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheJsonKey, json, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheKey, calls, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             return calls
         }
         set {
             if newValue.isEmpty {
                 toolCallsJson = nil
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheJsonKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheKey, [], .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             } else if let data = try? JSONEncoder().encode(newValue),
                       let json = String(data: data, encoding: .utf8) {
                 toolCallsJson = json
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheJsonKey, json, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.toolCallsCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             }
         }
     }
@@ -129,8 +198,42 @@ public class MessageEntity: NSManagedObject, Identifiable {
             guard let json = searchMetadataJson,
                   let data = json.data(using: .utf8),
                   let metadata = try? JSONDecoder().decode(MessageSearchMetadata.self, from: data) else {
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheJsonKey,
+                    nil,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheKey,
+                    nil,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
                 return nil
             }
+
+            if let cachedJson = objc_getAssociatedObject(self, &MessageEntity.searchMetadataCacheJsonKey) as? String,
+               cachedJson == json,
+               let cached = objc_getAssociatedObject(
+                   self,
+                   &MessageEntity.searchMetadataCacheKey
+               ) as? MessageSearchMetadata {
+                return cached
+            }
+
+            objc_setAssociatedObject(
+                self,
+                &MessageEntity.searchMetadataCacheJsonKey,
+                json,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
+            objc_setAssociatedObject(
+                self,
+                &MessageEntity.searchMetadataCacheKey,
+                metadata,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
             return metadata
         }
         set {
@@ -138,8 +241,32 @@ public class MessageEntity: NSManagedObject, Identifiable {
                let data = try? JSONEncoder().encode(newValue),
                let json = String(data: data, encoding: .utf8) {
                 searchMetadataJson = json
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheJsonKey,
+                    json,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheKey,
+                    newValue,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
             } else {
                 searchMetadataJson = nil
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheJsonKey,
+                    nil,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
+                objc_setAssociatedObject(
+                    self,
+                    &MessageEntity.searchMetadataCacheKey,
+                    nil,
+                    .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+                )
             }
         }
     }
@@ -221,28 +348,5 @@ extension APIServiceEntity: NSCopying {
         copy.generateChatNames = self.generateChatNames
         copy.defaultPersona = self.defaultPersona
         return copy
-    }
-}
-
-extension URL {
-    func getUTType() -> UTType? {
-        let fileExtension = pathExtension.lowercased()
-        
-        switch fileExtension {
-        case "txt": return .plainText
-        case "csv": return .commaSeparatedText
-        case "json": return .json
-        case "xml": return .xml
-        case "html", "htm": return .html
-        case "md", "markdown": return .init(filenameExtension: "md")
-        case "rtf": return .rtf
-        case "pdf": return .pdf
-        case "jpg", "jpeg": return .jpeg
-        case "png": return .png
-        case "gif": return .gif
-        case "heic": return .heic
-        case "heif": return .heif
-        default: return UTType(filenameExtension: fileExtension) ?? .data
-        }
     }
 }

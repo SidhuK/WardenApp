@@ -1,7 +1,8 @@
 
 import SwiftUI
 
-class CodeViewModel: ObservableObject {
+@MainActor
+final class CodeViewModel: ObservableObject {
     @Published var highlightedCode: NSAttributedString?
     @Published var isCopied = false
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
@@ -9,6 +10,7 @@ class CodeViewModel: ObservableObject {
     public var code: String
     private let language: String
     private let isStreaming: Bool
+    private var copiedResetTask: Task<Void, Never>?
     
     init(code: String, language: String, isStreaming: Bool) {
         self.code = code
@@ -23,18 +25,18 @@ class CodeViewModel: ObservableObject {
         let currentFontSize = chatFontSize
         let currentStreaming = isStreaming
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let highlighted = HighlighterManager.shared.highlight(
-                code: currentCode,
-                language: currentLanguage,
-                theme: theme,
-                fontSize: currentFontSize,
-                isStreaming: currentStreaming
-            )
-            
-            DispatchQueue.main.async {
-                self?.highlightedCode = highlighted
-            }
+        Task(priority: .userInitiated) { [currentCode, currentLanguage, theme, currentFontSize, currentStreaming] in
+            let highlighted = await Task.detached(priority: .userInitiated) {
+                HighlighterManager.shared.highlight(
+                    code: currentCode,
+                    language: currentLanguage,
+                    theme: theme,
+                    fontSize: currentFontSize,
+                    isStreaming: currentStreaming
+                )
+            }.value
+
+            self.highlightedCode = highlighted
         }
     }
     
@@ -47,7 +49,10 @@ class CodeViewModel: ObservableObject {
             isCopied = true
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        copiedResetTask?.cancel()
+        copiedResetTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard let self else { return }
             withAnimation {
                 self.isCopied = false
             }

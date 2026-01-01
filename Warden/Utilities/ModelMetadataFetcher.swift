@@ -15,28 +15,28 @@ protocol ModelMetadataFetcher {
 /// Factory for creating metadata fetchers for different providers
 class ModelMetadataFetcherFactory {
     static func createFetcher(for provider: String) -> ModelMetadataFetcher {
-        switch provider {
-        case "chatgpt":
+        switch ProviderID(normalizing: provider) {
+        case .chatgpt:
             return GenericMetadataFetcher(provider: "chatgpt")
-        case "claude":
+        case .claude:
             return GenericMetadataFetcher(provider: "claude")
-        case "gemini":
+        case .gemini:
             return GenericMetadataFetcher(provider: "gemini")
-        case "groq":
+        case .groq:
             return GroqMetadataFetcher()
-        case "openrouter":
+        case .openrouter:
             return OpenRouterMetadataFetcher()
-        case "mistral":
+        case .mistral:
             return GenericMetadataFetcher(provider: "mistral")
-        case "xai":
+        case .xai:
             return GenericMetadataFetcher(provider: "xai")
-        case "perplexity":
+        case .perplexity:
             return GenericMetadataFetcher(provider: "perplexity")
-        case "deepseek":
+        case .deepseek:
             return GenericMetadataFetcher(provider: "deepseek")
-        case "ollama", "lmstudio":
+        case .ollama, .lmstudio:
             return LocalModelMetadataFetcher()
-        default:
+        case nil:
             return GenericMetadataFetcher(provider: provider)
         }
     }
@@ -81,6 +81,11 @@ class GroqMetadataFetcher: ModelMetadataFetcher {
 
 class OpenRouterMetadataFetcher: ModelMetadataFetcher {
     private let baseURL = "https://openrouter.ai/api/v1/models"
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
     
     func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
         // OpenRouter exposes all models with pricing via public API
@@ -91,7 +96,7 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw NSError(domain: "OpenRouterFetcher", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])

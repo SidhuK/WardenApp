@@ -4,7 +4,8 @@ import CoreData
 import os
 
 /// Service responsible for rephrasing user input using AI
-class RephraseService: ObservableObject {
+@MainActor
+final class RephraseService: ObservableObject {
     @Published var isRephrasing = false
     
     init() {
@@ -45,34 +46,35 @@ Rephrase the following sentence to improve clarity and readability, without chan
             ]
         ]
         
-	        let apiServiceInstance = APIServiceFactory.createAPIService(config: config)
+        let apiServiceInstance = APIServiceFactory.createAPIService(config: config)
 	        
 	        apiServiceInstance.sendMessage(
 	            requestMessages,
 	            tools: nil,
 	            temperature: 0.3 // Lower temperature for more consistent rephrasing
 	        ) { [weak self] result in
-	            DispatchQueue.main.async {
-	                self?.isRephrasing = false
-                
-                switch result {
-                case .success(let (rephrasedText, _)):
-                    guard let rephrasedText = rephrasedText else {
-                        completion(.failure(.invalidResponse))
-                        return
+                Task { [weak self] in
+                    await MainActor.run {
+                        self?.isRephrasing = false
+
+                        switch result {
+                        case .success(let (rephrasedText, _)):
+                            guard let rephrasedText else {
+                                completion(.failure(.invalidResponse))
+                                return
+                            }
+
+                            let cleanedText = rephrasedText
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+                            completion(.success(cleanedText))
+
+                        case .failure(let error):
+                            completion(.failure(error))
+                        }
                     }
-                    
-                    // Clean up the response - remove quotes if the AI wrapped the response
-                    let cleanedText = rephrasedText
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-                    completion(.success(cleanedText))
-                    
-                case .failure(let error):
-                    completion(.failure(error))
                 }
-            }
-        }
+	        }
     }
     
     private func loadAPIConfig(for service: APIServiceEntity) -> APIServiceConfiguration? {
@@ -85,6 +87,7 @@ Rephrase the following sentence to improve clarity and readability, without chan
             apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
         } catch {
             WardenLog.app.error("Error extracting token: \(error.localizedDescription, privacy: .public)")
+            apiKey = ""
         }
         
         return APIServiceConfig(

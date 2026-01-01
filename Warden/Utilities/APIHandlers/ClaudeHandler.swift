@@ -56,7 +56,7 @@ class ClaudeHandler: BaseAPIHandler {
         model: String,
         temperature: Float,
         stream: Bool
-    ) -> URLRequest {
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
@@ -73,8 +73,8 @@ class ClaudeHandler: BaseAPIHandler {
             updatedRequestMessages.removeFirst()
         }
 
-        let maxTokens =
-            model == "claude-3-5-sonnet-latest" ? 8192 : AppConstants.defaultApiConfigurations["claude"]!.maxTokens!
+        let defaultMaxTokens = AppConstants.defaultApiConfigurations["claude"]?.maxTokens ?? 8192
+        let maxTokens = (model == "claude-3-5-sonnet-latest") ? 8192 : defaultMaxTokens
 
         var jsonDict: [String: Any] = [
             "model": model,
@@ -90,7 +90,11 @@ class ClaudeHandler: BaseAPIHandler {
             jsonDict["tools"] = tools
         }
 
-        request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        } catch {
+            throw APIError.decodingFailed(error.localizedDescription)
+        }
 
         return request
     }

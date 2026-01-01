@@ -15,7 +15,8 @@ class QuickChatPanel: NSPanel {
     }
 }
 
-class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
+@MainActor
+final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     static let shared = FloatingPanelManager()
     
     var panel: NSPanel?

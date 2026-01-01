@@ -40,7 +40,13 @@ class OllamaHandler: BaseAPIHandler {
         }
     }
 
-    override func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest {
+    override func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -66,7 +72,11 @@ class OllamaHandler: BaseAPIHandler {
             // jsonDict["tool_choice"] = "auto" 
         }
 
-        request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        } catch {
+            throw APIError.decodingFailed(error.localizedDescription)
+        }
 
         return request
     }

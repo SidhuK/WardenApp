@@ -9,7 +9,7 @@ class PerplexityHandler: BaseAPIHandler {
         model: String,
         temperature: Float,
         stream: Bool
-    ) -> URLRequest {
+    ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -27,7 +27,11 @@ class PerplexityHandler: BaseAPIHandler {
             jsonDict["tools"] = tools
         }
 
-        request.httpBody = try? JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: jsonDict, options: [])
+        } catch {
+            throw APIError.decodingFailed(error.localizedDescription)
+        }
 
         return request
     }

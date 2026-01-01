@@ -1,10 +1,12 @@
 
 import SwiftUI
 import CoreData
+import Foundation
 
-class PreviewStateManager: ObservableObject {
+@MainActor
+final class PreviewStateManager: ObservableObject {
     @Published var isPreviewVisible = false
-    @Published var previewContent: String = ""
+    @Published var previewContent = ""
     @AppStorage("previewPaneWidth") var previewPaneWidth: Double = 400
     
     // Singleton for preview use

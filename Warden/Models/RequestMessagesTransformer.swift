@@ -7,7 +7,7 @@ class RequestMessagesTransformer: NSSecureUnarchiveFromDataTransformer {
     static let name = NSValueTransformerName(rawValue: "RequestMessagesTransformer")
 
     override class func transformedValueClass() -> AnyClass {
-        return NSArray.self
+        return NSData.self
     }
 
     override class func allowsReverseTransformation() -> Bool {
@@ -25,6 +25,34 @@ class RequestMessagesTransformer: NSSecureUnarchiveFromDataTransformer {
         guard let data = value as? Data else {
             return nil
         }
-        return try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: data) as? [[String: String]]
+
+        let allowedClasses: [AnyClass] = [
+            NSArray.self,
+            NSDictionary.self,
+            NSString.self
+        ]
+
+        guard let unarchived = try? NSKeyedUnarchiver.unarchivedObject(
+            ofClasses: allowedClasses,
+            from: data
+        ) else {
+            return nil
+        }
+
+        guard let array = unarchived as? [Any] else {
+            return nil
+        }
+
+        var result: [[String: String]] = []
+        result.reserveCapacity(array.count)
+
+        for element in array {
+            guard let dictionary = element as? [String: String] else {
+                return nil
+            }
+            result.append(dictionary)
+        }
+
+        return result
     }
 }

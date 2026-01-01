@@ -513,16 +513,12 @@ extension ChatView {
         }
 
         for attachment in attachedImages {
-            if attachment.imageEntity == nil {
-                attachment.saveToEntity(context: viewContext)
-            }
+            attachment.saveToEntity(context: viewContext)
             messageContents.append(MessageContent(imageAttachment: attachment))
         }
         
         for attachment in attachedFiles {
-            if attachment.fileEntity == nil {
-                attachment.saveToEntity(context: viewContext)
-            }
+            attachment.saveToEntity(context: viewContext)
             messageContents.append(MessageContent(fileAttachment: attachment))
         }
 

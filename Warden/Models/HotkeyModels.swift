@@ -29,19 +29,28 @@ struct HotkeyAction: Identifiable, Codable {
 /// Represents a keyboard shortcut configuration
 struct KeyboardShortcut: Codable, Equatable {
     let key: String
-    let modifiers: [String]
+    let modifiers: KeyboardModifiers
+
+    struct KeyboardModifiers: OptionSet, Codable, Hashable {
+        let rawValue: Int
+
+        static let command = KeyboardModifiers(rawValue: 1 << 0)
+        static let option = KeyboardModifiers(rawValue: 1 << 1)
+        static let control = KeyboardModifiers(rawValue: 1 << 2)
+        static let shift = KeyboardModifiers(rawValue: 1 << 3)
+    }
     
     /// Creates a KeyboardShortcut from a display string like "⌘⇧C"
     static func from(displayString: String) -> KeyboardShortcut? {
-        var modifiers: [String] = []
+        var modifiers: KeyboardModifiers = []
         var key = ""
         
         for char in displayString {
             switch char {
-            case "⌘": modifiers.append("cmd")
-            case "⇧": modifiers.append("shift")
-            case "⌥": modifiers.append("option")
-            case "⌃": modifiers.append("control")
+            case "⌘": modifiers.insert(.command)
+            case "⇧": modifiers.insert(.shift)
+            case "⌥": modifiers.insert(.option)
+            case "⌃": modifiers.insert(.control)
             default: key += String(char)
             }
         }
@@ -52,10 +61,10 @@ struct KeyboardShortcut: Codable, Equatable {
     /// Converts to display string like "⌘⇧C"
     var displayString: String {
         var result = ""
-        if modifiers.contains("cmd") { result += "⌘" }
-        if modifiers.contains("option") { result += "⌥" }
-        if modifiers.contains("control") { result += "⌃" }
-        if modifiers.contains("shift") { result += "⇧" }
+        if modifiers.contains(.command) { result += "⌘" }
+        if modifiers.contains(.option) { result += "⌥" }
+        if modifiers.contains(.control) { result += "⌃" }
+        if modifiers.contains(.shift) { result += "⇧" }
         result += key.uppercased()
         return result
     }
@@ -65,10 +74,10 @@ struct KeyboardShortcut: Codable, Equatable {
         guard let keyEquivalent = KeyEquivalent(key) else { return nil }
         
         var eventModifiers: EventModifiers = []
-        if modifiers.contains("cmd") { eventModifiers.insert(.command) }
-        if modifiers.contains("option") { eventModifiers.insert(.option) }
-        if modifiers.contains("control") { eventModifiers.insert(.control) }
-        if modifiers.contains("shift") { eventModifiers.insert(.shift) }
+        if modifiers.contains(.command) { eventModifiers.insert(.command) }
+        if modifiers.contains(.option) { eventModifiers.insert(.option) }
+        if modifiers.contains(.control) { eventModifiers.insert(.control) }
+        if modifiers.contains(.shift) { eventModifiers.insert(.shift) }
         
         return SwiftUI.KeyboardShortcut(keyEquivalent, modifiers: eventModifiers)
     }

@@ -3,7 +3,8 @@ import SwiftUI
 import CoreData
 import AppKit
 
-class SettingsWindowManager: ObservableObject {
+@MainActor
+final class SettingsWindowManager: ObservableObject {
     static let shared = SettingsWindowManager()
     
     private var settingsWindow: NSWindow?

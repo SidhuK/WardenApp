@@ -3,7 +3,8 @@ import Foundation
 import MCP
 import os
 
-class MessageManager: ObservableObject {
+@MainActor
+final class MessageManager: ObservableObject {
     private var apiService: APIService
     private var viewContext: NSManagedObjectContext
     private let streamingTaskController = StreamingTaskController()
@@ -349,6 +350,7 @@ class MessageManager: ObservableObject {
                 }
             }
 
+            @MainActor
             func flushChunkBuffer(force: Bool = false) {
                 if Task.isCancelled && !force {
                     return
@@ -377,6 +379,7 @@ class MessageManager: ObservableObject {
                 }
             }
 
+            @MainActor
             func drainDeferredResponse() -> String {
                 guard !deferredResponseParts.isEmpty else { return "" }
                 var result = String()
@@ -389,6 +392,7 @@ class MessageManager: ObservableObject {
                 return result
             }
 
+            @MainActor
             func appendDeferredResponse(_ chunk: String) {
                 deferredResponseParts.append(chunk)
                 deferredResponseCharacterCount += chunk.count
@@ -562,10 +566,9 @@ class MessageManager: ObservableObject {
         if let toolCallsData = try? JSONSerialization.data(withJSONObject: toolCallsDict, options: []),
            let toolCallsJsonString = String(data: toolCallsData, encoding: .utf8) {
             // Append assistant message with tool calls
-            chat.requestMessages.append([
-                "role": "assistant",
-                "tool_calls_json": toolCallsJsonString
-            ])
+            chat.requestMessages.append(
+                RequestMessage(role: .assistant, toolCallsJson: toolCallsJsonString).dictionary
+            )
         }
         
         // Execute each tool call
@@ -648,12 +651,14 @@ class MessageManager: ObservableObject {
             #endif
             
             // Append tool result message
-            chat.requestMessages.append([
-                "role": "tool",
-                "tool_call_id": callId,
-                "name": functionName,
-                "content": resultString
-            ])
+            chat.requestMessages.append(
+                RequestMessage(
+                    role: .tool,
+                    content: resultString,
+                    name: functionName,
+                    toolCallId: callId
+                ).dictionary
+            )
         }
         
         // Clear tool call status after all tools complete
@@ -796,20 +801,15 @@ class MessageManager: ObservableObject {
         var temperature = AppConstants.defaultPersonaTemperature
 
         if !AppConstants.openAiReasoningModels.contains(model) {
-            requestMessages.append([
-                "role": "system",
-                "content": "You are a test assistant.",
-            ])
+            requestMessages.append(RequestMessage(role: .system, content: "You are a test assistant.").dictionary)
         }
         else {
             temperature = 1
         }
 
         requestMessages.append(
-            [
-                "role": "user",
-                "content": "This is a test message.",
-            ])
+            RequestMessage(role: .user, content: "This is a test message.").dictionary
+        )
 
 	        apiService.sendMessage(requestMessages, tools: nil, temperature: temperature) { result in
 	            switch result {
@@ -886,7 +886,8 @@ class MessageManager: ObservableObject {
     }
     
     private func addNewMessageToRequestMessages(chat: ChatEntity, content: String, role: String) {
-        chat.requestMessages.append(["role": role, "content": content])
+        let roleEnum = RequestMessageRole(rawValue: role) ?? .user
+        chat.requestMessages.append(RequestMessage(role: roleEnum, content: content).dictionary)
         self.debounceSave()
     }
 

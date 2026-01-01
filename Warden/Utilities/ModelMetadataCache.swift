@@ -3,14 +3,14 @@ import SwiftUI
 import os
 
 /// Manages metadata caching for models with freshness tracking
-class ModelMetadataCache: ObservableObject {
+@MainActor
+final class ModelMetadataCache: ObservableObject {
     static let shared = ModelMetadataCache()
     
     @AppStorage("modelMetadataCache") private var metadataCacheData: Data = Data()
     @Published private(set) var cachedMetadata: [String: [String: ModelMetadata]] = [:] // [provider][modelId]
     @Published private(set) var isFetching: [String: Bool] = [:]
     
-    private let queue = DispatchQueue(label: "model-metadata-cache", qos: .userInitiated)
     private var lastRefreshAttempt: [String: Date] = [:]
     
     private init() {
@@ -40,14 +40,10 @@ class ModelMetadataCache: ObservableObject {
             return
         }
         
-        DispatchQueue.main.async {
-            self.isFetching[provider] = true
-        }
+        isFetching[provider] = true
         
         defer {
-            DispatchQueue.main.async {
-                self.isFetching[provider] = false
-            }
+            isFetching[provider] = false
             lastRefreshAttempt[provider] = Date()
         }
         
@@ -55,10 +51,8 @@ class ModelMetadataCache: ObservableObject {
             let fetcher = ModelMetadataFetcherFactory.createFetcher(for: provider)
             let newMetadata = try await fetcher.fetchAllMetadata(apiKey: apiKey)
             
-            DispatchQueue.main.async {
-                self.cachedMetadata[provider] = newMetadata
-                self.saveToStorage()
-            }
+            cachedMetadata[provider] = newMetadata
+            saveToStorage()
         } catch {
             WardenLog.app.error(
                 "Failed to fetch metadata for \(provider, privacy: .public): \(error.localizedDescription, privacy: .public)"
@@ -74,20 +68,16 @@ class ModelMetadataCache: ObservableObject {
     
     /// Clear cache for a provider
     func clearCache(for provider: String) {
-        DispatchQueue.main.async {
-            self.cachedMetadata[provider] = nil
-            self.lastRefreshAttempt[provider] = nil
-            self.saveToStorage()
-        }
+        cachedMetadata[provider] = nil
+        lastRefreshAttempt[provider] = nil
+        saveToStorage()
     }
     
     /// Clear all cached metadata
     func clearAllCache() {
-        DispatchQueue.main.async {
-            self.cachedMetadata.removeAll()
-            self.lastRefreshAttempt.removeAll()
-            self.saveToStorage()
-        }
+        cachedMetadata.removeAll()
+        lastRefreshAttempt.removeAll()
+        saveToStorage()
     }
     
     // MARK: - Storage

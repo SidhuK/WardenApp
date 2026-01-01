@@ -44,7 +44,13 @@ protocol APIService {
     
     func fetchModels() async throws -> [AIModel]
     
-    func prepareRequest(requestMessages: [[String: String]], tools: [[String: Any]]?, model: String, temperature: Float, stream: Bool) -> URLRequest
+    func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        temperature: Float,
+        stream: Bool
+    ) throws -> URLRequest
     
     func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)?
     
@@ -115,7 +121,7 @@ extension APIService {
     /// Consolidates shared request/response handling across all handlers
     /// Handlers only need to override parseJSONResponse for their specific format
     func sendMessage(_ requestMessages: [[String: String]], tools: [[String: Any]]? = nil, temperature: Float) async throws -> (String?, [ToolCall]?) {
-        let request = prepareRequest(
+        let request = try prepareRequest(
             requestMessages: requestMessages,
             tools: tools,
             model: model,

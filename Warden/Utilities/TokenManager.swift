@@ -25,10 +25,7 @@ class TokenManager {
     static func getToken(for service: String, identifier: String? = nil) throws -> String? {
         let key = makeKey(for: service, identifier: identifier)
         do {
-            guard let token = try keychain.get(key) else {
-                throw TokenError.getFailed
-            }
-            return token
+            return try keychain.get(key)
         } catch {
             throw TokenError.getFailed
         }

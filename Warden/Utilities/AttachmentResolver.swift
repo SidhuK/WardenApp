@@ -29,7 +29,7 @@ final class AttachmentResolver {
         let dataLoader = dataLoader
         let imageCache = imageCache
 
-        return await Task.detached(priority: .userInitiated) {
+        return await Task(priority: .userInitiated) {
             guard let data = dataLoader.loadImageData(uuid: uuid), let image = NSImage(data: data) else { return nil }
             imageCache.setObject(image, forKey: key)
             return image
@@ -45,11 +45,10 @@ final class AttachmentResolver {
         let dataLoader = dataLoader
         let fileCache = fileCache
 
-        return await Task.detached(priority: .userInitiated) {
+        return await Task(priority: .userInitiated) {
             guard let attachment = dataLoader.loadFileAttachment(uuid: uuid) else { return nil }
             fileCache.setObject(attachment, forKey: key)
             return attachment
         }.value
     }
 }
-

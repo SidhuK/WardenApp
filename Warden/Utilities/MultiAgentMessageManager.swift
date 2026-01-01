@@ -2,7 +2,8 @@ import CoreData
 import Foundation
 
 /// Manages simultaneous communication with multiple AI services
-class MultiAgentMessageManager: ObservableObject {
+@MainActor
+final class MultiAgentMessageManager: ObservableObject {
     private var viewContext: NSManagedObjectContext
     private var lastUpdateTime = Date()
     private let updateInterval = AppConstants.streamedResponseUpdateUIInterval

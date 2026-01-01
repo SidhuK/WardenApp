@@ -3,6 +3,7 @@ import CommonCrypto
 import CoreData
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 import os
 
 extension Data {
@@ -97,6 +98,26 @@ extension NSManagedObjectContext {
             self.saveWithRetry(attempts: attempts)
         }
     }
+
+    func performAsync<T: Sendable>(_ work: @escaping @Sendable () throws -> T) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            self.perform {
+                do {
+                    continuation.resume(returning: try work())
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func performAsync<T: Sendable>(_ work: @escaping @Sendable () -> T) async -> T {
+        await withCheckedContinuation { continuation in
+            self.perform {
+                continuation.resume(returning: work())
+            }
+        }
+    }
 }
 
 extension View {
@@ -172,6 +193,29 @@ extension Color {
         return hexString
     }
 
+}
+
+extension URL {
+    func getUTType() -> UTType? {
+        let fileExtension = pathExtension.lowercased()
+
+        switch fileExtension {
+        case "txt": return .plainText
+        case "csv": return .commaSeparatedText
+        case "json": return .json
+        case "xml": return .xml
+        case "html", "htm": return .html
+        case "md", "markdown": return .init(filenameExtension: "md")
+        case "rtf": return .rtf
+        case "pdf": return .pdf
+        case "jpg", "jpeg": return .jpeg
+        case "png": return .png
+        case "gif": return .gif
+        case "heic": return .heic
+        case "heif": return .heif
+        default: return UTType(filenameExtension: fileExtension) ?? .data
+        }
+    }
 }
 
 extension Double {

@@ -13,7 +13,7 @@ class ChatService {
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         temperature: Float,
-        onChunk: @escaping (String) async -> Void
+        onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
         return try await APIServiceManager.handleStream(
             apiService: apiService,

@@ -178,7 +178,7 @@ class APIServiceManager {
             apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
         } catch {
             WardenLog.app.error("Error extracting token: \(error.localizedDescription, privacy: .public)")
-            return nil
+            apiKey = ""
         }
         
         // Ensure we have a valid API key (except for local services like Ollama/LMStudio which might not need one)
@@ -205,7 +205,7 @@ class APIServiceManager {
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         temperature: Float,
-        onChunk: @escaping (String) async -> Void
+        onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
         var pendingChunkParts: [String] = []

@@ -5,7 +5,8 @@ import CoreData
 
 /// Global manager for caching AI models across all providers
 /// Fetches models once per app start to improve performance and reduce API calls
-class ModelCacheManager: ObservableObject {
+@MainActor
+final class ModelCacheManager: ObservableObject {
     static let shared = ModelCacheManager()
     
     @Published private(set) var cachedModels: [String: [AIModel]] = [:]
@@ -13,7 +14,6 @@ class ModelCacheManager: ObservableObject {
     @Published private(set) var fetchErrors: [String: String] = [:]
     
     private var lastFetchedAPIKeys: [String: String] = [:]
-    private let queue = DispatchQueue(label: "model-cache-manager", qos: .userInitiated)
     private let favoriteManager = FavoriteModelsManager.shared
     
     private init() {}
@@ -144,19 +144,12 @@ class ModelCacheManager: ObservableObject {
         // Don't fetch if provider doesn't support it
         guard config.modelsFetching != false else {
             // For providers that don't support fetching, use static models
-            DispatchQueue.main.async {
-                self.cachedModels[providerType] = config.models.map { AIModel(id: $0) }
-            }
+            cachedModels[providerType] = config.models.map { AIModel(id: $0) }
             return
         }
         
         // Get current API key
-        var currentAPIKey = ""
-        do {
-            currentAPIKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
-        } catch {
-            return
-        }
+        let currentAPIKey = (try? TokenManager.getToken(for: service.id?.uuidString ?? "")) ?? ""
         
         // Check if we need to fetch:
         // 1. Never fetched before
@@ -168,16 +161,12 @@ class ModelCacheManager: ObservableObject {
         guard shouldFetch else { return }
         guard loadingStates[providerType] != true else { return }
         
-        DispatchQueue.main.async {
-            self.loadingStates[providerType] = true
-            self.fetchErrors[providerType] = nil
-        }
+        loadingStates[providerType] = true
+        fetchErrors[providerType] = nil
         
         // Create API service configuration
         guard let serviceUrl = service.url else { 
-            DispatchQueue.main.async {
-                self.loadingStates[providerType] = false
-            }
+            loadingStates[providerType] = false
             return 
         }
         
@@ -193,25 +182,21 @@ class ModelCacheManager: ObservableObject {
         Task {
             do {
                 let models = try await apiService.fetchModels()
-                DispatchQueue.main.async {
-                    self.cachedModels[providerType] = models
-                    self.lastFetchedAPIKeys[providerType] = currentAPIKey
-                    self.loadingStates[providerType] = false
-                    self.fetchErrors[providerType] = nil
-                }
+                cachedModels[providerType] = models
+                lastFetchedAPIKeys[providerType] = currentAPIKey
+                loadingStates[providerType] = false
+                fetchErrors[providerType] = nil
                 
                 // Trigger metadata fetching for this provider now that we have models
                 await triggerMetadataFetch(for: providerType, apiKey: currentAPIKey)
             } catch {
-                DispatchQueue.main.async {
-                    self.loadingStates[providerType] = false
-                    self.fetchErrors[providerType] = error.localizedDescription
-                    
-                    // Fall back to static models if fetching fails
-                    if let staticModels = AppConstants.defaultApiConfigurations[providerType]?.models {
-                        self.cachedModels[providerType] = staticModels.map { AIModel(id: $0) }
-                        self.lastFetchedAPIKeys[providerType] = currentAPIKey
-                    }
+                loadingStates[providerType] = false
+                fetchErrors[providerType] = error.localizedDescription
+                
+                // Fall back to static models if fetching fails
+                if let staticModels = AppConstants.defaultApiConfigurations[providerType]?.models {
+                    cachedModels[providerType] = staticModels.map { AIModel(id: $0) }
+                    lastFetchedAPIKeys[providerType] = currentAPIKey
                 }
             }
         }
@@ -226,12 +211,10 @@ class ModelCacheManager: ObservableObject {
     
     /// Clear all cached models
     func clearCache() {
-        DispatchQueue.main.async {
-            self.cachedModels.removeAll()
-            self.lastFetchedAPIKeys.removeAll()
-            self.loadingStates.removeAll()
-            self.fetchErrors.removeAll()
-        }
+        cachedModels.removeAll()
+        lastFetchedAPIKeys.removeAll()
+        loadingStates.removeAll()
+        fetchErrors.removeAll()
     }
     
     // MARK: - Private Helpers
@@ -246,7 +229,7 @@ class ModelCacheManager: ObservableObject {
         guard let serviceId = service.id?.uuidString else { return false }
         do {
             let token = try TokenManager.getToken(for: serviceId)
-            return token != nil && !token!.isEmpty
+            return token?.isEmpty == false
         } catch {
             return false
         }

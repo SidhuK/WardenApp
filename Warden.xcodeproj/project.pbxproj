@@ -71,6 +71,7 @@
 		4ABB867B2CFC79ED004EC7B1 /* ErrorBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABB867A2CFC79ED004EC7B1 /* ErrorBubbleView.swift */; };
 		4ABDBE6629F86B5900661B2D /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABDBE6529F86B5900661B2D /* MessageParser.swift */; };
 		4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */; };
+		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
 		4ACAD6632C13AE8F0081BDAC /* CodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACAD6622C13AE8F0081BDAC /* CodeView.swift */; };
 		4ACE2FB82D61656000DEEA6D /* SwipeModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */; };
 		4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADCA45A2C9B74E8005664A6 /* APIServiceDetailViewModel.swift */; };
@@ -119,6 +120,7 @@
 		83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C86128DDF04984BD311C41 /* MCPManager.swift */; };
 		99AFD11B6B4C420C833BE674 /* BaseAPIHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */; };
 		B8812F7F78EB42119EF7E04D /* SSEStreamParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */; };
+		C4257EE82F0652E300B832C7 /* ProviderID.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4257EE72F0652E300B832C7 /* ProviderID.swift */; };
 		C42D99FF2EF900470028D1BB /* IncrementalMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */; };
 		C42D9A032EF9078E0028D1BB /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C42D9A022EF9078E0028D1BB /* AppIcon.icon */; };
 		C43A76382ED5672E006DA5E2 /* SearchResultsPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C43A76352ED5672E006DA5E2 /* SearchResultsPreviewView.swift */; };
@@ -262,6 +264,7 @@
 		4ABB867A2CFC79ED004EC7B1 /* ErrorBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBubbleView.swift; sourceTree = "<group>"; };
 		4ABDBE6529F86B5900661B2D /* MessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParser.swift; sourceTree = "<group>"; };
 		4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParserTests.swift; sourceTree = "<group>"; };
+		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
 		4ACAD6622C13AE8F0081BDAC /* CodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeView.swift; sourceTree = "<group>"; };
 		4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeModifier.swift; sourceTree = "<group>"; };
 		4ADCA45A2C9B74E8005664A6 /* APIServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIServiceDetailViewModel.swift; sourceTree = "<group>"; };
@@ -310,6 +313,7 @@
 		87C86128DDF04984BD311C41 /* MCPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPManager.swift; sourceTree = "<group>"; };
 		8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPAgentSelector.swift; sourceTree = "<group>"; };
 		91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseAPIHandler.swift; sourceTree = "<group>"; };
+		C4257EE72F0652E300B832C7 /* ProviderID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderID.swift; sourceTree = "<group>"; };
 		C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalMessageParser.swift; sourceTree = "<group>"; };
 		C42D9A022EF9078E0028D1BB /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		C43A76322ED5672E006DA5E2 /* CitationBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBadgeView.swift; sourceTree = "<group>"; };
@@ -594,6 +598,7 @@
 				C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
+				C4257EE72F0652E300B832C7 /* ProviderID.swift */,
 				C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */,
 				C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */,
 				C4FF23852EED66E300C17D8B /* WardenLog.swift */,
@@ -700,14 +705,15 @@
 			path = Configuration;
 			sourceTree = "<group>";
 		};
-		4ABDBE6729F86E6300661B2D /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */,
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
+			4ABDBE6729F86E6300661B2D /* Utilities */ = {
+				isa = PBXGroup;
+				children = (
+					4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */,
+					C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */,
+				);
+				path = Utilities;
+				sourceTree = "<group>";
+			};
 		4AFEE71F2C472F29006F99FB /* APIHandlers */ = {
 			isa = PBXGroup;
 			children = (
@@ -918,6 +924,7 @@
 				7F6BED772DF70308006B9E6E /* MoveToProjectView.swift in Sources */,
 				4A1F0A0A29CEFB7F002A139A /* MessageCell.swift in Sources */,
 				4ABB867B2CFC79ED004EC7B1 /* ErrorBubbleView.swift in Sources */,
+				C4257EE82F0652E300B832C7 /* ProviderID.swift in Sources */,
 				7F298E1A2DF8166C00326DBB /* ProjectSummaryButton.swift in Sources */,
 				4A5F64B829C64E21000403F7 /* ChatBubbleView.swift in Sources */,
 				7F6BED6F2DF70151006B9E6E /* ProjectListView.swift in Sources */,
@@ -1051,12 +1058,13 @@
 				1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */,
 			);
 		};
-		4A399CA229BC8FF200E98796 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			files = (
-				4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */,
-			);
-		};
+			4A399CA229BC8FF200E98796 /* Sources */ = {
+				isa = PBXSourcesBuildPhase;
+				files = (
+					4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */,
+					C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */,
+				);
+			};
 		4A399CAC29BC8FF200E98796 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -1213,7 +1221,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.9.2;
+				CURRENT_PROJECT_VERSION = 0.9.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1239,7 +1247,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.2;
+				MARKETING_VERSION = 0.9.3;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1263,7 +1271,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0.9.2;
+				CURRENT_PROJECT_VERSION = 0.9.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1289,7 +1297,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.2;
+				MARKETING_VERSION = 0.9.3;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";

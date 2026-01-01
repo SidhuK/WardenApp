@@ -4,7 +4,8 @@ import os
 
 /// Manager for handling custom model selection per API service
 /// Allows users to select which models appear in the model selector dropdown
-class SelectedModelsManager: ObservableObject {
+@MainActor
+final class SelectedModelsManager: ObservableObject {
     static let shared = SelectedModelsManager()
     
     // nil = no custom selection (show all), Set = custom selection (can be empty for "show none")

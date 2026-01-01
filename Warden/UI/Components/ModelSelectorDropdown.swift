@@ -3,7 +3,8 @@ import CoreData
 import Combine
 
 // ViewModel to handle heavy lifting of sorting and filtering
-class ModelSelectorViewModel: ObservableObject {
+@MainActor
+final class ModelSelectorViewModel: ObservableObject {
     @Published var searchText = ""
     @Published var filteredSections: [ModelSection] = []
     
@@ -35,6 +36,7 @@ class ModelSelectorViewModel: ObservableObject {
     init() {
         // Observe changes that should trigger a refresh
         favoriteManager.objectWillChange
+            .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.refreshData() }
             .store(in: &cancellables)
             
@@ -103,9 +105,7 @@ class ModelSelectorViewModel: ObservableObject {
         // So we just append the provider sections to the main list
         sections.append(contentsOf: providerSections)
         
-        DispatchQueue.main.async {
-            self.filteredSections = sections
-        }
+        filteredSections = sections
     }
     
     private func getAvailableModels() -> [(provider: String, models: [String])] {

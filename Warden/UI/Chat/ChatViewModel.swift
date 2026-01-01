@@ -4,7 +4,8 @@ import Foundation
 import SwiftUI
 import os
 
-class ChatViewModel: ObservableObject {
+@MainActor
+final class ChatViewModel: ObservableObject {
     @Published var messages: NSOrderedSet
     @Published var streamingAssistantText: String = ""
     private let chat: ChatEntity
@@ -82,6 +83,7 @@ class ChatViewModel: ObservableObject {
     private func setupSearchResultsCaching() {
         // Observe changes to search results and cache them
         messageManager?.objectWillChange
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 if let sources = self?.messageManager?.lastSearchSources {
                     self?.cachedSearchSources = sources
@@ -111,11 +113,14 @@ class ChatViewModel: ObservableObject {
         }
         
         messageManager.sendMessage(message, in: chat, contextSize: contextSize) { [weak self] result in
-            switch result {
-            case .success:
-                completion(.success(()))
-            case .failure(let error):
-                completion(.failure(error))
+            Task { @MainActor in
+                switch result {
+                case .success:
+                    completion(.success(()))
+                    self?.reloadMessages()
+                case .failure(let error):
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -147,13 +152,15 @@ class ChatViewModel: ObservableObject {
         }
         
         await messageManager.sendMessageStreamWithSearch(message, in: chat, contextSize: contextSize, useWebSearch: useWebSearch) { [weak self] result in
-            switch result {
-            case .success:
-                self?.chat.objectWillChange.send()
-                completion(.success(()))
-                self?.reloadMessages()
-            case .failure(let error):
-                completion(.failure(error))
+            Task { @MainActor in
+                switch result {
+                case .success:
+                    self?.chat.objectWillChange.send()
+                    completion(.success(()))
+                    self?.reloadMessages()
+                case .failure(let error):
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -165,7 +172,20 @@ class ChatViewModel: ObservableObject {
             return
         }
         
-        await messageManager.sendMessageWithSearch(message, in: chat, contextSize: contextSize, useWebSearch: useWebSearch, completion: completion)
+        await messageManager.sendMessageWithSearch(
+            message,
+            in: chat,
+            contextSize: contextSize,
+            useWebSearch: useWebSearch,
+            completion: { result in
+                Task { @MainActor in
+                    completion(result)
+                    if case .success = result {
+                        self.reloadMessages()
+                    }
+                }
+            }
+        )
     }
     
     func isSearchCommand(_ message: String) -> Bool {
@@ -177,7 +197,7 @@ class ChatViewModel: ObservableObject {
     }
 
     func reloadMessages() {
-        messages = self.messages
+        messages = chat.messages
     }
 
     var sortedMessages: [MessageEntity] {

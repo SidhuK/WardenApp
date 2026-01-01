@@ -66,62 +66,58 @@ struct ProjectSummaryView: View {
     private func loadProjectData() async {
         isLoadingStats = true
         
-        let context = viewContext
-        let projectId = project.objectID
+        let projectURI = project.objectID.uriRepresentation()
         
-        // Move heavy Core Data work to a background thread, but return data to MainActor
-        let result = await Task.detached(priority: .userInitiated) { () -> (chats: [ChatEntity], count: Int, days: Int)? in
-            // Create a background context for thread safety if viewing complex graphs
-            // But here "project" is passed in.
-            // Safer pattern: use perform on the viewContext but return values.
-            
-            return await context.perform { () -> (chats: [ChatEntity], count: Int, days: Int) in
-                 // Re-fetch project to be safe or just use ID if passing across contexts
-                 // Since we are inside viewContext.perform, we can use the context.
-                 
-                 // Fetch recent chats (limit 5)
-                 // Fetch all chats updated recently
-                 let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-                 request.predicate = NSPredicate(format: "project == %@", context.object(with: projectId))
-                 request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
-                 // request.fetchLimit = 5 // Removed limit to fetch all chats
-                 
-                 // Fetch oldest chat date for days active
-                 let oldestRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-                 oldestRequest.predicate = NSPredicate(format: "project == %@", context.object(with: projectId))
-                 oldestRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.createdDate, ascending: true)]
-                 oldestRequest.fetchLimit = 1
-
-                 var chats: [ChatEntity] = []
-                 var count = 0
-                 var days = 0
-
-                 do {
-                     chats = try context.fetch(request)
-                     // Simple count query locally or via helper if thread-safe
-                     // We'll reproduce the count logic here to be safe within the context block
-                     let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "MessageEntity")
-                     countRequest.predicate = NSPredicate(format: "chat.project == %@", context.object(with: projectId))
-                     countRequest.resultType = .countResultType
-                     count = try context.count(for: countRequest)
-                     
-                     if let newest = chats.first?.updatedDate,
-                        let oldest = try context.fetch(oldestRequest).first?.createdDate {
-                         days = Calendar.current.dateComponents([.day], from: oldest, to: newest).day ?? 0
-                     }
-                 } catch {
-                     WardenLog.coreData.error("Error loading project summary: \(error.localizedDescription)")
-                 }
-                 
-                 return (chats, count, days)
+        // Do Core Data work on a background context and return objectIDs + primitives back to MainActor.
+        let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
+        let result = await backgroundContext.perform { () -> (chatIDs: [NSManagedObjectID], count: Int, days: Int)? in
+            guard let projectId = backgroundContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: projectURI) else {
+                return nil
             }
-        }.value
+
+            let projectObject = backgroundContext.object(with: projectId)
+
+            let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            request.predicate = NSPredicate(format: "project == %@", projectObject)
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
+
+            let oldestRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            oldestRequest.predicate = NSPredicate(format: "project == %@", projectObject)
+            oldestRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.createdDate, ascending: true)]
+            oldestRequest.fetchLimit = 1
+
+            var chatIDs: [NSManagedObjectID] = []
+            var count = 0
+            var days = 0
+
+            do {
+                let chats = try backgroundContext.fetch(request)
+                chatIDs = chats.map(\.objectID)
+
+                let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "MessageEntity")
+                countRequest.predicate = NSPredicate(format: "chat.project == %@", projectObject)
+                countRequest.resultType = .countResultType
+                count = try backgroundContext.count(for: countRequest)
+
+                if let newest = chats.first?.updatedDate,
+                    let oldest = try backgroundContext.fetch(oldestRequest).first?.createdDate
+                {
+                    days = Calendar.current.dateComponents([.day], from: oldest, to: newest).day ?? 0
+                }
+            } catch {
+                WardenLog.coreData.error("Error loading project summary: \(error.localizedDescription)")
+                return nil
+            }
+
+            return (chatIDs, count, days)
+        }
         
         if let data = result {
-             self.allChats = data.chats
-             self.recentChats = Array(data.chats.prefix(3))
-             self.messageCount = data.count
-             self.activeDays = data.days
+            let chats = data.chatIDs.compactMap { viewContext.object(with: $0) as? ChatEntity }
+            allChats = chats
+            recentChats = Array(chats.prefix(3))
+            messageCount = data.count
+            activeDays = data.days
         }
         self.isLoadingStats = false
     }
