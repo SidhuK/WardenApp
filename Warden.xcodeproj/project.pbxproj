@@ -71,7 +71,6 @@
 		4ABB867B2CFC79ED004EC7B1 /* ErrorBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABB867A2CFC79ED004EC7B1 /* ErrorBubbleView.swift */; };
 		4ABDBE6629F86B5900661B2D /* MessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABDBE6529F86B5900661B2D /* MessageParser.swift */; };
 		4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */; };
-		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
 		4ACAD6632C13AE8F0081BDAC /* CodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACAD6622C13AE8F0081BDAC /* CodeView.swift */; };
 		4ACE2FB82D61656000DEEA6D /* SwipeModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */; };
 		4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADCA45A2C9B74E8005664A6 /* APIServiceDetailViewModel.swift */; };
@@ -157,6 +156,7 @@
 		C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */; };
 		C49FCBEE2ECC2D99003B51AF /* ModelInfoTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */; };
 		C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */; };
+		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
 		C4EB88D62ECC421C00AA0829 /* ModernButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D52ECC421C00AA0829 /* ModernButton.swift */; };
 		C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */; };
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
@@ -264,7 +264,6 @@
 		4ABB867A2CFC79ED004EC7B1 /* ErrorBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBubbleView.swift; sourceTree = "<group>"; };
 		4ABDBE6529F86B5900661B2D /* MessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParser.swift; sourceTree = "<group>"; };
 		4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageParserTests.swift; sourceTree = "<group>"; };
-		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
 		4ACAD6622C13AE8F0081BDAC /* CodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeView.swift; sourceTree = "<group>"; };
 		4ACE2FB72D61656000DEEA6D /* SwipeModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeModifier.swift; sourceTree = "<group>"; };
 		4ADCA45A2C9B74E8005664A6 /* APIServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIServiceDetailViewModel.swift; sourceTree = "<group>"; };
@@ -349,6 +348,7 @@
 		C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteQuickAccessBar.swift; sourceTree = "<group>"; };
 		C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfoTooltip.swift; sourceTree = "<group>"; };
 		C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
+		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
 		C4EB88D52ECC421C00AA0829 /* ModernButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernButton.swift; sourceTree = "<group>"; };
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
@@ -705,15 +705,15 @@
 			path = Configuration;
 			sourceTree = "<group>";
 		};
-			4ABDBE6729F86E6300661B2D /* Utilities */ = {
-				isa = PBXGroup;
-				children = (
-					4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */,
-					C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */,
-				);
-				path = Utilities;
-				sourceTree = "<group>";
-			};
+		4ABDBE6729F86E6300661B2D /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */,
+				C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
 		4AFEE71F2C472F29006F99FB /* APIHandlers */ = {
 			isa = PBXGroup;
 			children = (
@@ -1058,13 +1058,13 @@
 				1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */,
 			);
 		};
-			4A399CA229BC8FF200E98796 /* Sources */ = {
-				isa = PBXSourcesBuildPhase;
-				files = (
-					4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */,
-					C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */,
-				);
-			};
+		4A399CA229BC8FF200E98796 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */,
+				C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */,
+			);
+		};
 		4A399CAC29BC8FF200E98796 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
