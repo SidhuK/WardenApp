@@ -49,6 +49,16 @@ Warden is different. It's built with 100% native code, making it:
 
 ## 📥 Installation
 
+### Homebrew (Recommended)
+
+```bash
+brew install --cask SidhuK/warden/warden
+```
+
+> **Note:** On first launch, right-click → Open (app is not notarized).
+
+### Manual Download
+
 <div align="center">
 
 | **Typical User** | **Developer** |
