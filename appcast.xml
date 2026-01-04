@@ -7,6 +7,29 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.3</title>
+            <description><![CDATA[
+                <ul>
+                <li>Added Homebrew Cask support and automation script for easier installations</li>
+                <li>Major refactor of models and UI components for improved performance and maintainability</li>
+                <li>Enhanced keyboard shortcut handling and attachment management</li>
+                <li>Improved app icon visibility with increased scale</li>
+                <li>Fixed SSEStreamParser compilation issues</li>
+                <li>Updated documentation with Homebrew installation instructions</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 04 Jan 2026 00:00:00 +0000</pubDate>
+            <sparkle:version>0.9.3</sparkle:version>
+            <sparkle:shortVersionString>0.9.3</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.3/Warden.zip"
+                       sparkle:version="0.9.3"
+                       sparkle:shortVersionString="0.9.3"
+                       type="application/zip"
+                       length="15011769"
+                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+        </item>
+        
+        <item>
             <title>Version 0.9.2</title>
             <description><![CDATA[
                 <ul>
