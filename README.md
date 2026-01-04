@@ -30,6 +30,12 @@ No Electron, no web wrappers—just a premium native experience.
 
 </div>
 
+
+```bash
+brew install --cask SidhuK/warden/warden
+```
+
+
 ## ✨ Why Warden?
 
 Most AI apps today are just websites wrapped in a window (Electron). They feel heavy, drain battery, and don't integrate well with macOS.
