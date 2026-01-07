@@ -3,6 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 import os
 
+@MainActor
 struct TabAIPersonasView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -260,6 +261,7 @@ struct TabAIPersonasView: View {
 
 
 // MARK: - Persona Detail View
+@MainActor
 struct PersonaDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.managedObjectContext) private var viewContext
@@ -294,132 +296,141 @@ struct PersonaDetailView: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 0) {
             // Header
             Text(persona == nil ? "New Assistant" : "Edit Assistant")
                 .font(.system(size: 18, weight: .semibold))
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
 
-            // Name
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Name")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                TextField("Assistant name", text: $name)
-                    .textFieldStyle(.roundedBorder)
-            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Name
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Name")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        TextField("Assistant name", text: $name)
+                            .textFieldStyle(.roundedBorder)
+                    }
 
-            // Symbol
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Icon")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 10), spacing: 6) {
-                    ForEach(symbols, id: \.self) { symbol in
-                        Button {
-                            selectedSymbol = symbol
-                        } label: {
-                            Image(systemName: symbol)
-                                .font(.system(size: 16))
-                                .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
-                                .frame(width: 32, height: 32)
+                    // Symbol
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Icon")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 10), spacing: 6) {
+                            ForEach(symbols, id: \.self) { symbol in
+                                Button {
+                                    selectedSymbol = symbol
+                                } label: {
+                                    Image(systemName: symbol)
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(selectedSymbol == symbol ? Color.accentColor : Color.primary.opacity(0.05))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    // System Message
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("System Message")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        MessageInputView(
+                            text: $systemMessage,
+                            attachedImages: .constant([]),
+                            attachedFiles: .constant([]),
+                            webSearchEnabled: .constant(false),
+                            selectedMCPAgents: .constant([]),
+                            chat: nil,
+                            imageUploadsAllowed: false,
+                            isStreaming: false,
+                            isMultiAgentMode: .constant(false),
+                            selectedMultiAgentServices: .constant([]),
+                            showServiceSelector: .constant(false),
+                            enableMultiAgentMode: false,
+                            onEnter: {},
+                            onAddImage: {},
+                            onAddFile: {},
+                            onStopStreaming: {},
+                            inputPlaceholderText: "Define how this assistant should behave...",
+                            cornerRadius: 8
+                        )
+                    }
+
+                    // Temperature
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Temperature")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(getTemperatureLabel())
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
                                 .background(
-                                    Circle()
-                                        .fill(selectedSymbol == symbol ? Color.accentColor : Color.primary.opacity(0.05))
+                                    Capsule()
+                                        .fill(Color.primary.opacity(0.05))
                                 )
                         }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
 
-            // System Message
-            VStack(alignment: .leading, spacing: 6) {
-                Text("System Message")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                
-                MessageInputView(
-                    text: $systemMessage,
-                    attachedImages: .constant([]),
-                    attachedFiles: .constant([]),
-                    webSearchEnabled: .constant(false),
-                    selectedMCPAgents: .constant([]),
-                    chat: nil,
-                    imageUploadsAllowed: false,
-                    isStreaming: false,
-                    isMultiAgentMode: .constant(false),
-                    selectedMultiAgentServices: .constant([]),
-                    showServiceSelector: .constant(false),
-                    enableMultiAgentMode: false,
-                    onEnter: {},
-                    onAddImage: {},
-                    onAddFile: {},
-                    onStopStreaming: {},
-                    inputPlaceholderText: "Define how this assistant should behave...",
-                    cornerRadius: 8
-                )
-            }
-
-            // Temperature
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Temperature")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(getTemperatureLabel())
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(Color.primary.opacity(0.05))
-                        )
-                }
-                
-                HStack {
-                    Text("0.0")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                    Slider(value: $temperature, in: 0...1, step: 0.1)
-                    Text("1.0")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
-            // Default Service
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Default AI Service")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                
-                HStack {
-                    Picker("", selection: $selectedApiService) {
-                        Text("Use global default").tag(nil as APIServiceEntity?)
-                        ForEach(apiServices, id: \.self) { service in
-                            Text("\(service.name ?? "Unknown") • \(service.model ?? "")")
-                                .tag(service as APIServiceEntity?)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    
-                    if selectedApiService != nil {
-                        Button {
-                            selectedApiService = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
+                        HStack {
+                            Text("0.0")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                            Slider(value: $temperature, in: 0...1, step: 0.1)
+                            Text("1.0")
+                                .font(.system(size: 10))
                                 .foregroundStyle(.tertiary)
                         }
-                        .buttonStyle(.plain)
+                    }
+
+                    // Default Service
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Default AI Service")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Picker("", selection: $selectedApiService) {
+                                Text("Use global default").tag(nil as APIServiceEntity?)
+                                ForEach(apiServices, id: \.self) { service in
+                                    Text("\(service.name ?? "Unknown") • \(service.model ?? "")")
+                                        .tag(service as APIServiceEntity?)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+
+                            if selectedApiService != nil {
+                                Button {
+                                    selectedApiService = nil
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
 
-            Spacer()
+            Divider()
 
             // Actions
             HStack {
@@ -447,9 +458,10 @@ struct PersonaDetailView: View {
                 .disabled(name.isEmpty || systemMessage.isEmpty)
                 .keyboardShortcut(.defaultAction)
             }
+            .padding(24)
         }
-        .padding(24)
         .frame(width: 560, height: 620)
+
         .onAppear {
             if let persona = persona {
                 name = persona.name ?? ""
