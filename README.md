@@ -68,6 +68,7 @@ brew install --cask SidhuK/warden/warden
 ```
 
 > **Note:** On first launch, right-click → Open (app is not notarized).
+> Or go to Settings - Privacy & Security - Allow Applications from Unknown Developers
 
 ### Manual Download
 
