@@ -346,7 +346,7 @@ struct QuickChatView: View {
         
         // Create User Message Entity
         let userMessage = MessageEntity(context: viewContext)
-        userMessage.id = Int64(chat.messages.count + 1)
+        userMessage.id = chat.nextMessageID()
         userMessage.body = messageBody
         userMessage.timestamp = Date()
         userMessage.own = true
@@ -362,7 +362,7 @@ struct QuickChatView: View {
         
         // Create AI Message Entity
         let aiMessage = MessageEntity(context: viewContext)
-        aiMessage.id = Int64(chat.messages.count + 1)
+        aiMessage.id = chat.nextMessageID()
         aiMessage.body = ""
         aiMessage.timestamp = Date()
         aiMessage.own = false

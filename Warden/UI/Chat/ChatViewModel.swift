@@ -6,7 +6,7 @@ import os
 
 @MainActor
 final class ChatViewModel: ObservableObject {
-    @Published var messages: NSOrderedSet
+    @Published var messages: [MessageEntity]
     @Published var streamingAssistantText: String = ""
     private let chat: ChatEntity
     private let viewContext: NSManagedObjectContext
@@ -46,7 +46,7 @@ final class ChatViewModel: ObservableObject {
 
     init(chat: ChatEntity, viewContext: NSManagedObjectContext) {
         self.chat = chat
-        self.messages = chat.messages
+        self.messages = chat.messagesArray.sorted { $0.id < $1.id }
         self.viewContext = viewContext
         
         // Subscribe to search results changes to cache them
@@ -57,6 +57,8 @@ final class ChatViewModel: ObservableObject {
         
         // Load selected MCP agents
         loadSelectedMCPAgents()
+        
+        observeMessageMutations()
     }
     
     @Published var selectedMCPAgents: Set<UUID> = [] {
@@ -197,11 +199,32 @@ final class ChatViewModel: ObservableObject {
     }
 
     func reloadMessages() {
-        messages = chat.messages
+        messages = chat.messagesArray.sorted { $0.id < $1.id }
     }
 
     var sortedMessages: [MessageEntity] {
-        return self.chat.messagesArray
+        messages
+    }
+    
+    private func observeMessageMutations() {
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange, object: viewContext)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self else { return }
+                
+                let inserted = (notification.userInfo?[NSInsertedObjectsKey] as? Set<NSManagedObject>) ?? []
+                let deleted = (notification.userInfo?[NSDeletedObjectsKey] as? Set<NSManagedObject>) ?? []
+                
+                let insertedMessageMatchesChat = inserted
+                    .compactMap { $0 as? MessageEntity }
+                    .contains { $0.chat == self.chat }
+                
+                let anyMessageDeleted = deleted.contains { $0.entity.name == "MessageEntity" }
+                
+                guard insertedMessageMatchesChat || anyMessageDeleted else { return }
+                self.reloadMessages()
+            }
+            .store(in: &cancellables)
     }
 
     private func createMessageManager() -> MessageManager? {

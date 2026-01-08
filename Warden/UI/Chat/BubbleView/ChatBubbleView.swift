@@ -262,6 +262,12 @@ struct ChatBubbleView: View, Equatable {
                     onEdit?()
                 }
             }
+            
+            if content.own && !content.systemMessage, message != nil {
+                ToolbarButton(icon: "pencil", text: "Edit") {
+                    onEdit?()
+                }
+            }
 
             if content.isLatestMessage && !content.systemMessage {
                 ToolbarButton(icon: "arrow.clockwise", text: "Retry") {

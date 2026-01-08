@@ -95,6 +95,10 @@ public class ChatEntity: NSManagedObject, Identifiable {
     public var messagesArray: [MessageEntity] {
         messages.array as? [MessageEntity] ?? []
     }
+    
+    public func nextMessageID() -> Int64 {
+        (messagesArray.map(\.id).max() ?? 0) + 1
+    }
 
     public var topP: Double {
         get { top_p }

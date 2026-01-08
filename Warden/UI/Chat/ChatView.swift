@@ -5,7 +5,7 @@ import os
 
 struct ChatView: View {
     let viewContext: NSManagedObjectContext
-    @State var chat: ChatEntity
+    @ObservedObject var chat: ChatEntity
     @State private var waitingForResponse = false
     @AppStorage("gptToken") var gptToken = ""
     @AppStorage("gptModel") var gptModel = AppConstants.chatGptDefaultModel
@@ -38,6 +38,10 @@ struct ChatView: View {
     @State private var userIsScrolling = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
     
+    @State private var messageBeingEdited: MessageEntity?
+    @State private var editMessageDraft: String = ""
+    @State private var messageListRefreshToken = UUID()
+    
     // Web search functionality
     @State private var webSearchEnabled = false
     @State private var isSearchingWeb = false
@@ -58,7 +62,7 @@ struct ChatView: View {
 
     init(viewContext: NSManagedObjectContext, chat: ChatEntity) {
         self.viewContext = viewContext
-        self._chat = State(initialValue: chat)
+        self._chat = ObservedObject(wrappedValue: chat)
 
         self._chatViewModel = StateObject(
             wrappedValue: ChatViewModel(chat: chat, viewContext: viewContext)
@@ -255,6 +259,13 @@ struct ChatView: View {
             )
             .frame(minWidth: 500, minHeight: 400)
         }
+        .sheet(item: $messageBeingEdited) { _ in
+            EditUserMessageSheet(
+                draft: $editMessageDraft,
+                onCancel: { messageBeingEdited = nil },
+                onSaveAndRegenerate: { saveEditedMessageAndRegenerate() }
+            )
+        }
 
         .onChange(of: enableMultiAgentMode) { oldValue, newValue in
             // Automatically disable multi-agent mode if the setting is turned off
@@ -277,7 +288,6 @@ struct ChatView: View {
                     ScrollViewReader { scrollView in
                         MessageListView(
                             chat: chat,
-                            sortedMessages: chatViewModel.sortedMessages,
                             isStreaming: isStreaming,
                             streamingAssistantText: chatViewModel.streamingAssistantText,
                             currentError: currentError,
@@ -289,12 +299,16 @@ struct ChatView: View {
                             userIsScrolling: $userIsScrolling,
                             onRetryMessage: {
                                 // Retry logic: Find the last user message and re-send it
-                                if let lastUserMessage = chatViewModel.sortedMessages.last(where: { $0.own }) {
+                                let messages = chat.messagesArray.sorted { $0.id < $1.id }
+                                if let lastUserMessage = messages.last(where: { $0.own }) {
                                     sendMessage(retryContent: lastUserMessage.body)
                                 }
                             },
                             onIgnoreError: {
                                 currentError = nil
+                            },
+                            onEditMessage: { message in
+                                beginEditing(message)
                             },
                             onContinueWithAgent: { response in
                                 continueWithSelectedAgent(response)
@@ -302,6 +316,7 @@ struct ChatView: View {
                             scrollView: scrollView,
                             viewWidth: min(geometry.size.width, 1000) // Match input box width exactly
                         )
+                        .id(messageListRefreshToken)
                         .frame(maxWidth: 1000) // Match input box width exactly
                         .frame(maxWidth: .infinity) // Center the constrained list
                         .padding(.horizontal, 24)
@@ -540,7 +555,7 @@ extension ChatView {
 
     private func saveNewMessageInStore(with messageBody: String) {
         let newMessageEntity = MessageEntity(context: viewContext)
-        newMessageEntity.id = Int64(chat.messages.count + 1)
+        newMessageEntity.id = chat.nextMessageID()
         newMessageEntity.body = messageBody
         newMessageEntity.timestamp = Date()
         newMessageEntity.own = true
@@ -549,6 +564,7 @@ extension ChatView {
         chat.updatedDate = Date()
         chat.addToMessages(newMessageEntity)
         chat.objectWillChange.send()
+        chatViewModel.reloadMessages()
     }
 
     private func selectAndAddImages() {
@@ -636,6 +652,41 @@ extension ChatView {
         currentError = nil
     }
     
+    private func beginEditing(_ message: MessageEntity) {
+        editMessageDraft = message.body
+        messageBeingEdited = message
+    }
+    
+    private func saveEditedMessageAndRegenerate() {
+        guard let message = messageBeingEdited else { return }
+        let editedBody = editMessageDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !editedBody.isEmpty else { return }
+        
+        resetError()
+        stopStreaming()
+
+        Task { @MainActor in
+            do {
+                try await ChatHistoryEditor(viewContext: viewContext).editUserMessageAndTruncateFuture(
+                    message,
+                    newBody: editedBody
+                )
+                chatViewModel.reloadMessages()
+                messageBeingEdited = nil
+                messageListRefreshToken = UUID()
+                
+                await Task.yield()
+                if enableMultiAgentMode && isMultiAgentMode {
+                    sendMultiAgentMessage(regenerateContent: editedBody)
+                } else {
+                    sendMessage(retryContent: editedBody)
+                }
+            } catch {
+                currentError = ErrorMessage(apiError: .unknown(error.localizedDescription), timestamp: Date())
+            }
+        }
+    }
+    
     private func convertToAPIError(_ error: Error) -> APIError {
         // If it's already an APIError, return it as-is
         if let apiError = error as? APIError {
@@ -660,7 +711,7 @@ extension ChatView {
         return .unknown(error.localizedDescription)
     }
 
-    func sendMultiAgentMessage() {
+    func sendMultiAgentMessage(regenerateContent: String? = nil) {
         guard !selectedMultiAgentServices.isEmpty else {
             currentError = ErrorMessage(
                 apiError: .noApiService("No AI services selected for multi-agent mode. Please select up to 3 services first."),
@@ -678,12 +729,19 @@ extension ChatView {
         
         resetError()
         
-        // Use centralized message preparation to handle input and potential attachments (even if multi-agent currently only uses text content)
-        let messageBody = prepareMessageBody(clearInput: true)
+        let messageBody: String
+        if let regenerateContent {
+            messageBody = regenerateContent
+        } else {
+            // Use centralized message preparation to handle input and potential attachments (even if multi-agent currently only uses text content)
+            messageBody = prepareMessageBody(clearInput: true)
+        }
         guard !messageBody.isEmpty else { return }
         
-        // Save user message (with attachments if any)
-        saveNewMessageInStore(with: messageBody)
+        if regenerateContent == nil {
+            // Save user message (with attachments if any)
+            saveNewMessageInStore(with: messageBody)
+        }
         
         // Create a group ID to link all responses from this multi-agent request
         let groupId = UUID()
@@ -701,12 +759,14 @@ extension ChatView {
             DispatchQueue.main.async {
                 switch result {
                 case .success(let responses):
+                    var nextMessageID = self.chat.nextMessageID()
                     // Save all 3 responses to chat history
                     for response in responses {
                         // Only save successful responses (skip errors)
                         if response.isComplete && response.error == nil && !response.response.isEmpty {
                             let assistantMessage = MessageEntity(context: self.viewContext)
-                            assistantMessage.id = Int64(self.chat.messages.count + 1)
+                            assistantMessage.id = nextMessageID
+                            nextMessageID += 1
                             assistantMessage.body = response.response
                             assistantMessage.timestamp = response.timestamp
                             assistantMessage.own = false

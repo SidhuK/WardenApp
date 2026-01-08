@@ -844,7 +844,7 @@ final class MessageManager: ObservableObject {
         #endif
         
         let newMessage = MessageEntity(context: self.viewContext)
-        newMessage.id = Int64(chat.messages.count + 1)
+        newMessage.id = chat.nextMessageID()
         newMessage.body = finalMessage
         newMessage.timestamp = Date()
         newMessage.own = false
@@ -879,6 +879,7 @@ final class MessageManager: ObservableObject {
 
         chat.updatedDate = Date()
         chat.addToMessages(newMessage)
+        viewContext.processPendingChanges()
         if isStreaming {
             chat.waitingForResponse = true
         }

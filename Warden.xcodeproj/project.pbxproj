@@ -119,6 +119,8 @@
 		83F5F0EE128D44ED83A4A85F /* MCPManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C86128DDF04984BD311C41 /* MCPManager.swift */; };
 		99AFD11B6B4C420C833BE674 /* BaseAPIHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */; };
 		B8812F7F78EB42119EF7E04D /* SSEStreamParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */; };
+		C41C38F22F0F88B90065421C /* EditUserMessageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41C38F12F0F88B90065421C /* EditUserMessageSheet.swift */; };
+		C41C38F42F0F88CC0065421C /* ChatHistoryEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */; };
 		C4257EE82F0652E300B832C7 /* ProviderID.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4257EE72F0652E300B832C7 /* ProviderID.swift */; };
 		C42D99FF2EF900470028D1BB /* IncrementalMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */; };
 		C42D9A032EF9078E0028D1BB /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C42D9A022EF9078E0028D1BB /* AppIcon.icon */; };
@@ -312,6 +314,8 @@
 		87C86128DDF04984BD311C41 /* MCPManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPManager.swift; sourceTree = "<group>"; };
 		8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPAgentSelector.swift; sourceTree = "<group>"; };
 		91FBD12D5E1E4511B20B678C /* BaseAPIHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseAPIHandler.swift; sourceTree = "<group>"; };
+		C41C38F12F0F88B90065421C /* EditUserMessageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditUserMessageSheet.swift; sourceTree = "<group>"; };
+		C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryEditor.swift; sourceTree = "<group>"; };
 		C4257EE72F0652E300B832C7 /* ProviderID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderID.swift; sourceTree = "<group>"; };
 		C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalMessageParser.swift; sourceTree = "<group>"; };
 		C42D9A022EF9078E0028D1BB /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
@@ -499,6 +503,7 @@
 				C43A76372ED5672E006DA5E2 /* Components */,
 				4A8E2E0A2C56FCFD00F077F2 /* ChatViewModel.swift */,
 				7F298E1B2DF81EAD00326DBB /* ProjectSummaryView.swift */,
+				C41C38F12F0F88B90065421C /* EditUserMessageSheet.swift */,
 				7F298E192DF8166C00326DBB /* ProjectSummaryButton.swift */,
 				7F8BB0652DED5DF700FF0837 /* CenteredInputView.swift */,
 				7F8D7CA42DE9DAF4003E7BCA /* MultiAgentResponseView.swift */,
@@ -598,6 +603,7 @@
 				C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
+				C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */,
 				C4257EE72F0652E300B832C7 /* ProviderID.swift */,
 				C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */,
 				C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */,
@@ -975,6 +981,7 @@
 				4AADD98C2C924FBA00242D20 /* APIServiceManager.swift in Sources */,
 				7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */,
 				4ACAD6632C13AE8F0081BDAC /* CodeView.swift in Sources */,
+				C41C38F22F0F88B90065421C /* EditUserMessageSheet.swift in Sources */,
 				C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */,
 				4A399CC429BCE67800E98796 /* PreferencesView.swift in Sources */,
 				4ABDBE6629F86B5900661B2D /* MessageParser.swift in Sources */,
@@ -982,6 +989,7 @@
 				4AEB7E1B2C8D04A70004818C /* DatabasePatcher.swift in Sources */,
 				4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */,
 				4A254A6F2CEA6A2400F66935 /* CodeViewModel.swift in Sources */,
+				C41C38F42F0F88CC0065421C /* ChatHistoryEditor.swift in Sources */,
 				4A2B9E952CE1272E00C8042F /* RequestMessagesTransformer.swift in Sources */,
 				C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */,
 				4AB4B0912D778B1D00CA41B6 /* OpenRouterHandler.swift in Sources */,

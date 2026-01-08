@@ -1,19 +1,61 @@
 import SwiftUI
 import CoreData
 
+private struct MessageRowView: View {
+    @ObservedObject var message: MessageEntity
+    let isStreaming: Bool
+    let isLatestMessage: Bool
+    let viewWidth: CGFloat
+    let topPadding: CGFloat
+    let messageToolCalls: [Int64: [WardenToolCallStatus]]
+    let onEditMessage: (MessageEntity) -> Void
+    
+    var body: some View {
+        let bubbleContent = ChatBubbleContent(
+            message: message.body,
+            own: message.own,
+            waitingForResponse: message.waitingForResponse,
+            errorMessage: nil,
+            systemMessage: false,
+            isStreaming: isStreaming && isLatestMessage,
+            isLatestMessage: isLatestMessage
+        )
+        
+        let entityToolCalls = message.toolCalls
+        let displayToolCalls = !entityToolCalls.isEmpty ? entityToolCalls : (messageToolCalls[message.id] ?? [])
+        
+        if !message.own, !displayToolCalls.isEmpty {
+            CompletedToolCallsView(toolCalls: displayToolCalls)
+                .padding(.top, topPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        
+        ChatBubbleView(
+            content: bubbleContent,
+            message: message,
+            onEdit: message.own ? { onEditMessage(message) } : nil
+        )
+        .id(message.id)
+        .padding(.top, (!displayToolCalls.isEmpty && !message.own) ? 8 : topPadding)
+        .frame(maxWidth: viewWidth, alignment: message.own ? .trailing : .leading)
+        .frame(maxWidth: .infinity, alignment: message.own ? .trailing : .leading)
+    }
+}
+
 /// Extracted message list to:
 /// - Reduce body size in ChatView
 /// - Make rendering behavior easier to tune
 /// - Keep scroll/stream logic centralized and testable
 struct MessageListView: View {
-    let chat: ChatEntity
-    let sortedMessages: [MessageEntity]
+    @ObservedObject var chat: ChatEntity
     let isStreaming: Bool
     let streamingAssistantText: String
     let currentError: ErrorMessage?
     let enableMultiAgentMode: Bool
     let isMultiAgentMode: Bool
     @ObservedObject var multiAgentManager: MultiAgentMessageManager
+    
+    @FetchRequest private var fetchedMessages: FetchedResults<MessageEntity>
     
     // Tool call status
     let activeToolCalls: [WardenToolCallStatus]
@@ -25,6 +67,7 @@ struct MessageListView: View {
     // Callbacks
     let onRetryMessage: () -> Void
     let onIgnoreError: () -> Void
+    let onEditMessage: (MessageEntity) -> Void
     let onContinueWithAgent: (MultiAgentMessageManager.AgentResponse) -> Void
 
     // We accept a ScrollViewProxy via closure-style usage in ChatView
@@ -34,8 +77,52 @@ struct MessageListView: View {
     @State private var pendingCodeBlocks: Int = 0
     @State private var codeBlocksRendered: Bool = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
+    
+    init(
+        chat: ChatEntity,
+        isStreaming: Bool,
+        streamingAssistantText: String,
+        currentError: ErrorMessage?,
+        enableMultiAgentMode: Bool,
+        isMultiAgentMode: Bool,
+        multiAgentManager: MultiAgentMessageManager,
+        activeToolCalls: [WardenToolCallStatus],
+        messageToolCalls: [Int64: [WardenToolCallStatus]],
+        userIsScrolling: Binding<Bool>,
+        onRetryMessage: @escaping () -> Void,
+        onIgnoreError: @escaping () -> Void,
+        onEditMessage: @escaping (MessageEntity) -> Void,
+        onContinueWithAgent: @escaping (MultiAgentMessageManager.AgentResponse) -> Void,
+        scrollView: ScrollViewProxy,
+        viewWidth: CGFloat
+    ) {
+        self._chat = ObservedObject(wrappedValue: chat)
+        self.isStreaming = isStreaming
+        self.streamingAssistantText = streamingAssistantText
+        self.currentError = currentError
+        self.enableMultiAgentMode = enableMultiAgentMode
+        self.isMultiAgentMode = isMultiAgentMode
+        self.multiAgentManager = multiAgentManager
+        self.activeToolCalls = activeToolCalls
+        self.messageToolCalls = messageToolCalls
+        self._userIsScrolling = userIsScrolling
+        self.onRetryMessage = onRetryMessage
+        self.onIgnoreError = onIgnoreError
+        self.onEditMessage = onEditMessage
+        self.onContinueWithAgent = onContinueWithAgent
+        self.scrollView = scrollView
+        self.viewWidth = viewWidth
+        
+        self._fetchedMessages = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \MessageEntity.id, ascending: true)],
+            predicate: NSPredicate(format: "chat == %@", chat),
+            animation: .default
+        )
+    }
 
     var body: some View {
+        let sortedMessages = Array(fetchedMessages)
+        
         // Leading-aligned stack; individual bubbles handle their own horizontal position.
         LazyVStack(alignment: .leading, spacing: 0) {
             if !chat.systemMessage.isEmpty {
@@ -62,34 +149,16 @@ struct MessageListView: View {
 
                     // Slightly increased spacing for better separation
                     let topPadding: CGFloat = sameAuthorAsPrevious ? 4 : 16
-
-                    let bubbleContent = ChatBubbleContent(
-                        message: messageEntity.body,
-                        own: messageEntity.own,
-                        waitingForResponse: messageEntity.waitingForResponse,
-                        errorMessage: nil,
-                        systemMessage: false,
-                        isStreaming: isStreaming && messageEntity.id == sortedMessages.last?.id,
-                        isLatestMessage: messageEntity.id == sortedMessages.last?.id
+                    
+                    MessageRowView(
+                        message: messageEntity,
+                        isStreaming: isStreaming,
+                        isLatestMessage: messageEntity.id == sortedMessages.last?.id,
+                        viewWidth: viewWidth,
+                        topPadding: topPadding,
+                        messageToolCalls: messageToolCalls,
+                        onEditMessage: onEditMessage
                     )
-                    
-                    // Show tool calls associated with this AI message (if any)
-                    // Prefer persisted tool calls from entity, fallback to in-memory dictionary
-                    let entityToolCalls = messageEntity.toolCalls
-                    let displayToolCalls = !entityToolCalls.isEmpty ? entityToolCalls : (messageToolCalls[messageEntity.id] ?? [])
-                    
-                    if !messageEntity.own, !displayToolCalls.isEmpty {
-                        CompletedToolCallsView(toolCalls: displayToolCalls)
-                            .padding(.top, topPadding)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    ChatBubbleView(content: bubbleContent, message: messageEntity)
-                        .id(messageEntity.id)
-                        .padding(.top, (!displayToolCalls.isEmpty && !messageEntity.own) ? 8 : topPadding)
-                        // Align with input box width
-                        .frame(maxWidth: viewWidth, alignment: messageEntity.own ? .trailing : .leading)
-                        .frame(maxWidth: .infinity, alignment: messageEntity.own ? .trailing : .leading)
                 }
             }
 
