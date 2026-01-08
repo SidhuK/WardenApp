@@ -6,6 +6,7 @@ struct EditUserMessageSheet: View {
     let onSaveAndRegenerate: () -> Void
 
     @FocusState private var isEditorFocused: Bool
+    @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     
     private var canSave: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -17,7 +18,7 @@ struct EditUserMessageSheet: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 20) {
                     regenerationWarning
 
                     GlassCard {
@@ -25,19 +26,33 @@ struct EditUserMessageSheet: View {
                             SettingsSectionHeader(title: "Message", icon: "pencil", iconColor: .blue)
 
                             TextEditor(text: $draft)
-                                .font(.system(size: 13))
+                                .font(.system(size: max(13, chatFontSize)))
                                 .scrollContentBackground(.hidden)
                                 .padding(10)
                                 .frame(minHeight: 200)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color(nsColor: .textBackgroundColor))
+                                        .fill(AppConstants.backgroundInput)
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                        .stroke(AppConstants.borderSubtle, lineWidth: 1)
                                 )
                                 .focused($isEditorFocused)
+                            
+                            HStack(spacing: 12) {
+                                Text("\(draft.count) characters")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                
+                                Spacer()
+                                
+                                if !canSave {
+                                    Label("Message required", systemImage: "exclamationmark.circle")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                         }
                     }
                 }
@@ -47,7 +62,7 @@ struct EditUserMessageSheet: View {
             Divider()
             footer
         }
-        .background(AppConstants.backgroundElevated)
+        .background(AppConstants.backgroundWindow)
         .frame(
             minWidth: 520,
             idealWidth: 620,
@@ -121,19 +136,22 @@ struct EditUserMessageSheet: View {
     private var footer: some View {
         HStack(spacing: 12) {
             Button("Cancel", action: onCancel)
-                .keyboardShortcut(.cancelAction)
+                .keyboardShortcut(.escape, modifiers: [])
 
             Spacer()
 
             Button(action: onSaveAndRegenerate) {
-                Label("Save & Regenerate", systemImage: "arrow.clockwise")
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Save & Regenerate")
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(!canSave)
             .keyboardShortcut(.defaultAction)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(20)
         .background(Color(nsColor: .controlBackgroundColor))
     }
 }
