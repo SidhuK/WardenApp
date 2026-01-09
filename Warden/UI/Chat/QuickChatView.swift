@@ -783,6 +783,7 @@ struct QuickChatProviderLogo: View {
                 } else {
                     Image(iconName)
                         .resizable()
+                        .renderingMode(.template)
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 14, height: 14)
                         .foregroundColor(.accentColor)
