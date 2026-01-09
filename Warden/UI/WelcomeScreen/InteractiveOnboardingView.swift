@@ -1,202 +1,301 @@
 import SwiftUI
 
+@MainActor
 struct InteractiveOnboardingView: View {
     @State private var currentStep = 0
+    @State private var appeared = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @Environment(\.colorScheme) private var colorScheme
     
     let openPreferencesView: () -> Void
     let newChat: () -> Void
     let onComplete: (() -> Void)?
     
-    private let onboardingSteps = [
-        OnboardingStep(
-            id: 0,
-            title: "Welcome to Warden",
-            subtitle: "Get started with just a few steps",
-            content: "Connect your AI provider and begin chatting.",
-            action: "Continue",
-            icon: "sparkles"
-        ),
-        OnboardingStep(
-            id: 1,
-            title: "Add an AI Provider",
-            subtitle: "Connect to your favorite service",
-            content: "Go to Settings to add an API key from OpenAI, Claude, Gemini, or another provider.",
-            action: "Open Settings",
-            icon: "server.rack"
-        ),
-        OnboardingStep(
-            id: 2,
-            title: "You're All Set",
-            subtitle: "Ready to start chatting",
-            content: "Your conversations are private and stored locally. You can switch between models anytime.",
-            action: "Start",
-            icon: "checkmark.circle.fill"
-        )
-    ]
-    
-    init(openPreferencesView: @escaping () -> Void, newChat: @escaping () -> Void, onComplete: (() -> Void)? = nil) {
-        self.openPreferencesView = openPreferencesView
-        self.newChat = newChat
-        self.onComplete = onComplete
-    }
-    
     var body: some View {
         ZStack {
-            AppConstants.backgroundWindow
-                .ignoresSafeArea()
+            background
             
             VStack(spacing: 0) {
-                // Progress indicator
-                HStack(spacing: 4) {
-                    ForEach(0..<onboardingSteps.count, id: \.self) { index in
-                        Capsule()
-                            .fill(index == currentStep ? Color.accentColor : Color.secondary.opacity(0.2))
-                            .frame(height: 3)
-                            .animation(.easeInOut(duration: 0.3), value: currentStep)
-                    }
-                }
-                .padding(.horizontal, 40)
-                .padding(.top, 20)
-                .padding(.bottom, 40)
-                
                 Spacer()
-                
-                // Step content
-                VStack(spacing: 20) {
-                    // Icon
-                    Image(systemName: onboardingSteps[currentStep].icon)
-                        .font(.system(size: 48, weight: .light))
-                        .foregroundColor(AppConstants.textSecondary)
-                        .opacity(0.8)
-                    
-                    VStack(spacing: 8) {
-                        Text(onboardingSteps[currentStep].title)
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(AppConstants.textPrimary)
-                        
-                        Text(onboardingSteps[currentStep].subtitle)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(AppConstants.textSecondary)
-                    }
-                    
-                    Text(onboardingSteps[currentStep].content)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(AppConstants.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: 420)
-                
+                stepContent
                 Spacer()
+                footer
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                appeared = true
+            }
+        }
+        .onKeyPress(.leftArrow) { previousStep(); return .handled }
+        .onKeyPress(.rightArrow) { nextStep(); return .handled }
+        .onKeyPress(.return) { performAction(); return .handled }
+        .onKeyPress(.escape) { finish(); return .handled }
+    }
+    
+    private var background: some View {
+        ZStack {
+            AppConstants.backgroundWindow
+            
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.accentColor.opacity(colorScheme == .dark ? 0.08 : 0.06),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 300
+                    )
+                )
+                .frame(width: 600, height: 600)
+                .offset(y: -60)
+                .blur(radius: 60)
+        }
+        .ignoresSafeArea()
+    }
+    
+    @ViewBuilder
+    private var stepContent: some View {
+        Group {
+            switch currentStep {
+            case 0: welcomeStep
+            case 1: providerStep
+            case 2: readyStep
+            default: EmptyView()
+            }
+        }
+        .frame(maxWidth: 400)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 16)
+    }
+    
+    private var welcomeStep: some View {
+        VStack(spacing: 24) {
+            Image("WelcomeIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+            
+            VStack(spacing: 8) {
+                Text("Warden")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundStyle(AppConstants.textPrimary)
                 
-                // Navigation buttons
-                HStack(spacing: 12) {
-                    if currentStep > 0 {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                currentStep -= 1
-                            }
-                        }) {
-                            Text("Back")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(AppConstants.textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.plain)
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(6)
-                    }
-                    
-                    Spacer()
-                    
-                    if currentStep < onboardingSteps.count - 1 {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                currentStep += 1
-                            }
-                        }) {
-                            Text("Next")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.plain)
-                        .background(Color.accentColor)
-                        .cornerRadius(6)
-                    }
-                    
-                    if currentStep == onboardingSteps.count - 1 {
-                        if currentStep == 1 {
-                            Button(action: openPreferencesView) {
-                                Text("Open Settings")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                            }
-                            .buttonStyle(.plain)
-                            .background(Color.accentColor)
-                            .cornerRadius(6)
-                        } else if currentStep == 2 {
-                            Button(action: {
-                                hasCompletedOnboarding = true
-                                onComplete?()
-                                newChat()
-                            }) {
-                                Text("Start")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                            }
-                            .buttonStyle(.plain)
-                            .background(Color.accentColor)
-                            .cornerRadius(6)
-                        } else {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    currentStep += 1
-                                }
-                            }) {
-                                Text(onboardingSteps[currentStep].action)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                            }
-                            .buttonStyle(.plain)
-                            .background(Color.accentColor)
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 40)
+                Text("Private AI conversations on your Mac")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppConstants.textSecondary)
             }
         }
     }
-}
-
-struct OnboardingStep {
-    let id: Int
-    let title: String
-    let subtitle: String
-    let content: String
-    let action: String
-    let icon: String
-}
-
-struct InteractiveOnboardingView_Previews: PreviewProvider {
-    static var previews: some View {
-        InteractiveOnboardingView(
-            openPreferencesView: {},
-            newChat: {},
-            onComplete: nil
-        )
-        .frame(width: 600, height: 500)
+    
+    private var providerStep: some View {
+        VStack(spacing: 28) {
+            VStack(spacing: 8) {
+                Text("Connect a provider")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(AppConstants.textPrimary)
+                
+                Text("Add your API key in Settings")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppConstants.textSecondary)
+            }
+            
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 12)], spacing: 12) {
+                ForEach(providers, id: \.name) { provider in
+                    VStack(spacing: 6) {
+                        Image(provider.logo)
+                            .resizable()
+                            .renderingMode(.template)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 24, height: 24)
+                            .foregroundStyle(AppConstants.textPrimary.opacity(0.8))
+                        
+                        Text(provider.name)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AppConstants.textSecondary)
+                    }
+                    .frame(width: 72, height: 64)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(colorScheme == .dark
+                                  ? Color.white.opacity(0.04)
+                                  : Color.black.opacity(0.03))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(AppConstants.borderSubtle, lineWidth: 0.5)
+                    )
+                }
+            }
+            .frame(maxWidth: 320)
+        }
     }
+    
+    private var readyStep: some View {
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.12))
+                    .frame(width: 64, height: 64)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(.green)
+            }
+            
+            VStack(spacing: 8) {
+                Text("You're ready")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(AppConstants.textPrimary)
+                
+                Text("Everything stays on your device")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppConstants.textSecondary)
+            }
+        }
+    }
+    
+    private var footer: some View {
+        VStack(spacing: 20) {
+            stepDots
+            actionBar
+        }
+        .padding(.bottom, 40)
+        .opacity(appeared ? 1 : 0)
+    }
+    
+    private var stepDots: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(index == currentStep
+                          ? AppConstants.textPrimary
+                          : AppConstants.textTertiary)
+                    .frame(width: 6, height: 6)
+            }
+        }
+    }
+    
+    private var actionBar: some View {
+        HStack(spacing: 12) {
+            if currentStep > 0 {
+                Button("Back") { previousStep() }
+                    .buttonStyle(OnboardingSecondaryButton())
+            }
+            
+            Spacer()
+            
+            if currentStep < 2 {
+                Button("Skip") { finish() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AppConstants.textTertiary)
+                    .font(.system(size: 13))
+            }
+            
+            Button(action: performAction) {
+                Text(actionLabel)
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .buttonStyle(OnboardingPrimaryButton())
+        }
+        .frame(width: 320)
+    }
+    
+    private var actionLabel: String {
+        switch currentStep {
+        case 0: "Continue"
+        case 1: "Open Settings"
+        case 2: "Start"
+        default: "Continue"
+        }
+    }
+    
+    private var providers: [(name: String, logo: String)] {
+        [
+            ("OpenAI", "logo_chatgpt"),
+            ("Claude", "logo_claude"),
+            ("Gemini", "logo_gemini"),
+            ("Ollama", "logo_ollama"),
+            ("Groq", "logo_groq"),
+            ("Mistral", "logo_mistral")
+        ]
+    }
+    
+    private func previousStep() {
+        guard currentStep > 0 else { return }
+        withAnimation(.easeInOut(duration: 0.25)) {
+            currentStep -= 1
+        }
+    }
+    
+    private func nextStep() {
+        guard currentStep < 2 else { return }
+        withAnimation(.easeInOut(duration: 0.25)) {
+            currentStep += 1
+        }
+    }
+    
+    private func performAction() {
+        switch currentStep {
+        case 0:
+            nextStep()
+        case 1:
+            openPreferencesView()
+            nextStep()
+        case 2:
+            finish()
+        default:
+            break
+        }
+    }
+    
+    private func finish() {
+        hasCompletedOnboarding = true
+        onComplete?()
+        newChat()
+    }
+}
+
+private struct OnboardingPrimaryButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.accentColor)
+            )
+            .opacity(configuration.isPressed ? 0.8 : 1)
+    }
+}
+
+private struct OnboardingSecondaryButton: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(AppConstants.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(colorScheme == .dark
+                          ? Color.white.opacity(0.06)
+                          : Color.black.opacity(0.04))
+            )
+            .opacity(configuration.isPressed ? 0.8 : 1)
+    }
+}
+
+#Preview("Onboarding") {
+    InteractiveOnboardingView(
+        openPreferencesView: {},
+        newChat: {},
+        onComplete: nil
+    )
+    .frame(width: 560, height: 440)
 }
