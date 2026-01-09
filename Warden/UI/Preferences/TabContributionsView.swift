@@ -3,21 +3,16 @@ import SwiftUI
 struct TabContributionsView: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Contributions")
-                        .font(.system(size: 24, weight: .bold))
-                    Text("Support development and view credits")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
+                Text("Contributions")
+                    .font(.system(size: 22, weight: .semibold))
+                    .padding(.bottom, 4)
                 
                 // Support Section
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 20) {
-                        SettingsSectionHeader(title: "Support Development", icon: "heart.fill", iconColor: .pink)
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Support")
                         
                         Text("Warden is built with care by an independent developer. Your support helps keep development active and makes new features possible.")
                             .font(.system(size: 13))
@@ -61,8 +56,8 @@ struct TabContributionsView: View {
                 
                 // Credits Section
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 20) {
-                        SettingsSectionHeader(title: "Credits", icon: "star.fill", iconColor: .yellow)
+                    VStack(alignment: .leading, spacing: 16) {
+                        SettingsSectionHeader(title: "Credits")
                         
                         VStack(alignment: .leading, spacing: 16) {
                             // Based On

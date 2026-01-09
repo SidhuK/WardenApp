@@ -21,22 +21,17 @@ struct TabAIPersonasView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("AI Assistants")
-                        .font(.system(size: 24, weight: .bold))
-                    Text("Create custom AI personas with unique behaviors")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
+                Text("AI Assistants")
+                    .font(.system(size: 22, weight: .semibold))
+                    .padding(.bottom, 4)
                 
                 // Personas List
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            SettingsSectionHeader(title: "Your Assistants", icon: "person.2.fill", iconColor: .blue)
+                            SettingsSectionHeader(title: "Your Assistants")
                             
                             Spacer()
                             

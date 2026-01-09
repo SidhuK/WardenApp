@@ -9,28 +9,19 @@ struct TabHotkeysView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Keyboard Shortcuts")
-                        .font(.system(size: 24, weight: .bold))
-                    Text("Customize keyboard shortcuts for quick actions")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
+                Text("Keyboard Shortcuts")
+                    .font(.system(size: 22, weight: .semibold))
+                    .padding(.bottom, 4)
                 
                 // Shortcuts by Category
                 ForEach(HotkeyAction.HotkeyCategory.allCases, id: \.self) { category in
                     let actionsInCategory = hotkeyManager.availableActions.filter { $0.category == category }
                     if !actionsInCategory.isEmpty {
                         GlassCard {
-                            VStack(alignment: .leading, spacing: 16) {
-                                SettingsSectionHeader(
-                                    title: category.rawValue,
-                                    icon: category.icon,
-                                    iconColor: categoryColor(for: category)
-                                )
+                            VStack(alignment: .leading, spacing: 14) {
+                                SettingsSectionHeader(title: category.rawValue)
                                 
                                 VStack(spacing: 0) {
                                     ForEach(Array(actionsInCategory.enumerated()), id: \.element.id) { index, action in

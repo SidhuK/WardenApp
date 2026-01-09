@@ -32,28 +32,28 @@ struct TopTabItem: View {
     let tab: PreferencesTabs
     let isSelected: Bool
     let action: () -> Void
-    
-    @State private var isHovering = false
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 20))
-                    .frame(height: 24)
+                    .font(.system(size: 18, weight: isSelected ? .medium : .regular))
+                    .frame(height: 20)
                 Text(tab.rawValue)
-                    .font(.system(size: 10))
+                    .font(.system(size: 10, weight: isSelected ? .medium : .regular))
                     .lineLimit(1)
             }
-            .frame(width: 80, height: 52)
-            .foregroundStyle(isSelected ? Color.accentColor : (isHovering ? .primary : .secondary))
+            .frame(width: 76, height: 48)
+            .foregroundStyle(isSelected ? .primary : .secondary)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentColor.opacity(0.15) : (isHovering ? Color.primary.opacity(0.08) : .clear))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected
+                          ? (colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+                          : Color.clear)
             )
         }
         .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
     }
 }
 

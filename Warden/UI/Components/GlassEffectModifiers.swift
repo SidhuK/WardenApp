@@ -25,13 +25,16 @@ struct GlassCard<Content: View>: View {
 // MARK: - Glass Background
 struct GlassBackground: View {
     var cornerRadius: CGFloat = 12
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Color(NSColor.controlBackgroundColor))
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(colorScheme == .dark
+                  ? Color.white.opacity(0.04)
+                  : Color.black.opacity(0.025))
             .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.primary.opacity(0.05), lineWidth: 0.5)
             )
     }
 }
@@ -39,19 +42,21 @@ struct GlassBackground: View {
 // MARK: - Settings Section Header
 struct SettingsSectionHeader: View {
     let title: String
-    let icon: String
-    var iconColor: Color = .accentColor
+    var icon: String? = nil
+    var iconColor: Color = .secondary
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(iconColor)
-                .frame(width: 20)
+        HStack(spacing: 6) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(iconColor)
+            }
             
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .tracking(0.5)
             
             Spacer()
         }
@@ -97,9 +102,9 @@ struct SettingsRow<Content: View>: View {
 struct SettingsDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.primary.opacity(0.08))
-            .frame(height: 1)
-            .padding(.vertical, 4)
+            .fill(Color.primary.opacity(0.06))
+            .frame(height: 0.5)
+            .padding(.vertical, 2)
     }
 }
 

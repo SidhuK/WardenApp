@@ -263,8 +263,8 @@ struct MCPAgentDetailView: View {
                 
                 // Configuration
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Configuration", icon: "gearshape.fill", iconColor: .gray)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Configuration")
                         
                         VStack(spacing: 12) {
                             ConfigRow(label: "Transport", value: config.transportType == .stdio ? "Stdio" : "SSE", icon: "network")
@@ -425,13 +425,9 @@ struct ToolsSection: View {
     
     var body: some View {
         GlassCard {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    SettingsSectionHeader(
-                        title: "Available Tools",
-                        icon: "wrench.and.screwdriver.fill",
-                        iconColor: .blue
-                    )
+                    SettingsSectionHeader(title: "Available Tools")
                     
                     if !tools.isEmpty {
                         Text("(\(tools.count))")

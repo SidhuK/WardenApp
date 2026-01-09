@@ -47,21 +47,16 @@ struct TabGeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("General")
-                        .font(.system(size: 24, weight: .bold))
-                    Text("Customize appearance and behavior")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
+                Text("General")
+                    .font(.system(size: 22, weight: .semibold))
+                    .padding(.bottom, 4)
                 
                 // Appearance Section
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Appearance", icon: "paintbrush.fill", iconColor: .purple)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Appearance")
                         
                         VStack(spacing: 12) {
                             SettingsRow(title: "Theme") {
@@ -112,8 +107,8 @@ struct TabGeneralSettingsView: View {
                 
                 // Features Section
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Features", icon: "sparkles", iconColor: .orange)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Features")
                         
                         VStack(spacing: 12) {
                             SettingsRow(
@@ -147,8 +142,8 @@ struct TabGeneralSettingsView: View {
                 
                 // Data & Privacy Section
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Data & Privacy", icon: "lock.shield.fill", iconColor: .green)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Data & Privacy")
                         
                         Text("Export and import your chat history. Data is stored locally in unencrypted JSON format.")
                             .font(.system(size: 12))

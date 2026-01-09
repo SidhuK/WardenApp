@@ -225,8 +225,8 @@ struct APIServiceDetailContent: View {
                 
                 // Basic Settings
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Basic Settings", icon: "slider.horizontal.3", iconColor: .blue)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Connection")
                         
                         VStack(spacing: 12) {
                             SettingsRow(title: "Service Name") {
@@ -280,8 +280,8 @@ struct APIServiceDetailContent: View {
                 // Authentication
                 if (viewModel.defaultApiConfiguration?.apiKeyRef ?? "") != "" {
                     GlassCard {
-                        VStack(alignment: .leading, spacing: 16) {
-                            SettingsSectionHeader(title: "Authentication", icon: "key.fill", iconColor: .orange)
+                        VStack(alignment: .leading, spacing: 14) {
+                            SettingsSectionHeader(title: "Authentication")
                             
                             VStack(spacing: 12) {
                                 SettingsRow(title: "API Token") {
@@ -310,8 +310,8 @@ struct APIServiceDetailContent: View {
                 
                 // Model Selection
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Model", icon: "brain", iconColor: .purple)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Model")
                         
                         VStack(spacing: 12) {
                             SettingsRow(title: "LLM Model") {
@@ -385,8 +385,8 @@ struct APIServiceDetailContent: View {
                 // Model Visibility
                 if !viewModel.fetchedModels.isEmpty {
                     GlassCard {
-                        VStack(alignment: .leading, spacing: 16) {
-                            SettingsSectionHeader(title: "Model Visibility", icon: "eye", iconColor: .cyan)
+                        VStack(alignment: .leading, spacing: 14) {
+                            SettingsSectionHeader(title: "Model Visibility")
                             
                             ModelSelectionView(
                                 serviceType: viewModel.type,
@@ -401,8 +401,8 @@ struct APIServiceDetailContent: View {
                 
                 // Context & Features
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Behavior", icon: "gearshape.2.fill", iconColor: .gray)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Behavior")
                         
                         VStack(spacing: 12) {
                             SettingsRow(
@@ -459,8 +459,8 @@ struct APIServiceDetailContent: View {
                 
                 // Default Assistant
                 GlassCard {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSectionHeader(title: "Default Assistant", icon: "person.fill", iconColor: .green)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "Default Assistant")
                         
                         Picker("", selection: $viewModel.defaultAiPersona) {
                             ForEach(personas) { persona in
