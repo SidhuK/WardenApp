@@ -264,13 +264,16 @@ struct APIServiceDetailContent: View {
                                 HStack(spacing: 8) {
                                     TextField("", text: $viewModel.url)
                                         .textFieldStyle(.roundedBorder)
-                                        .frame(width: 250)
+                                        .frame(minWidth: 180, maxWidth: 250)
                                     
-                                    Button("Reset") {
+                                    Button {
                                         viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
+                                    } label: {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .font(.system(size: 11))
                                     }
                                     .buttonStyle(.borderless)
-                                    .font(.system(size: 11))
+                                    .help("Reset to default")
                                 }
                             }
                         }
@@ -323,7 +326,7 @@ struct APIServiceDetailContent: View {
                                         Text("Custom...").tag("custom")
                                     }
                                     .pickerStyle(.menu)
-                                    .frame(width: 200)
+                                    .frame(minWidth: 160, maxWidth: 200)
                                     .labelsHidden()
                                     .disabled(viewModel.isLoadingModels)
                                     .onChange(of: viewModel.selectedModel) { _, newValue in
@@ -334,15 +337,21 @@ struct APIServiceDetailContent: View {
                                     }
                                     
                                     if AppConstants.defaultApiConfigurations[viewModel.type]?.modelsFetching ?? false {
-                                        ButtonWithStatusIndicator(
-                                            title: "Refresh",
-                                            action: { viewModel.onUpdateModelsList() },
-                                            isLoading: viewModel.isLoadingModels,
-                                            hasError: viewModel.modelFetchError != nil,
-                                            errorMessage: "Can't fetch models",
-                                            successMessage: "Click to refresh",
-                                            isSuccess: !viewModel.isLoadingModels && viewModel.modelFetchError == nil && viewModel.availableModels.count > 0
-                                        )
+                                        Button {
+                                            viewModel.onUpdateModelsList()
+                                        } label: {
+                                            if viewModel.isLoadingModels {
+                                                ProgressView()
+                                                    .scaleEffect(0.6)
+                                                    .frame(width: 14, height: 14)
+                                            } else {
+                                                Image(systemName: "arrow.clockwise")
+                                                    .font(.system(size: 11))
+                                            }
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .disabled(viewModel.isLoadingModels)
+                                        .help(viewModel.modelFetchError != nil ? "Can't fetch models" : "Refresh models")
                                     }
                                 }
                             }

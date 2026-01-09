@@ -180,17 +180,11 @@ struct TabHotkeysView: View {
     private func formatShortcutWithPlus(_ shortcut: String) -> String {
         guard !shortcut.isEmpty else { return shortcut }
         
-        var result = ""
+        var parts: [String] = []
         for char in shortcut {
-            if ["⌘", "⇧", "⌥", "⌃"].contains(String(char)) {
-                if !result.isEmpty { result += " " }
-                result += String(char)
-            } else {
-                if !result.isEmpty { result += " " }
-                result += String(char)
-            }
+            parts.append(String(char))
         }
-        return result
+        return parts.joined(separator: " + ")
     }
     
     private func handleKeyPress(

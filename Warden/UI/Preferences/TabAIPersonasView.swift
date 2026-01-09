@@ -48,7 +48,7 @@ struct TabAIPersonasView: View {
                         
                         entityListView
                             .id(refreshID)
-                            .frame(minHeight: 200)
+                            .frame(minHeight: 320)
                         
                         SettingsDivider()
                         
@@ -167,22 +167,38 @@ struct TabAIPersonasView: View {
     private func detailContent(persona: PersonaEntity?) -> some View {
         Group {
             if let persona = persona {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("System Prompt")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                        .textCase(.uppercase)
+                        .tracking(0.5)
+                    
                     ScrollView {
                         Text(persona.systemMessage ?? "")
-                            .font(.system(size: 12))
-                            .padding(12)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.primary.opacity(0.85))
+                            .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(minHeight: 120, maxHeight: 200)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color.primary.opacity(0.03))
                     )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.primary.opacity(0.04), lineWidth: 0.5)
+                    )
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Temperature: \(String(format: "%.1f", persona.temperature))")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                    HStack(spacing: 16) {
+                        HStack(spacing: 4) {
+                            Text("Temperature:")
+                                .foregroundStyle(.tertiary)
+                            Text(String(format: "%.1f", persona.temperature))
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.system(size: 11))
                         
                         if let defaultService = persona.defaultApiService {
                             HStack(spacing: 4) {
@@ -191,17 +207,12 @@ struct TabAIPersonasView: View {
                                     .renderingMode(.template)
                                     .frame(width: 10, height: 10)
                                     .foregroundStyle(.secondary)
-                                Text("\(defaultService.name ?? "") • \(defaultService.model ?? "")")
+                                Text("\(defaultService.name ?? "")")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.secondary)
                             }
-                        } else {
-                            Text("Uses global default service")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.tertiary)
                         }
                     }
-                    .padding(.horizontal, 8)
                 }
             } else {
                 VStack(spacing: 8) {
