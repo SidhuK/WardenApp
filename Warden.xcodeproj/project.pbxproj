@@ -158,6 +158,7 @@
 		C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */; };
 		C49FCBEE2ECC2D99003B51AF /* ModelInfoTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */; };
 		C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */; };
+		C4ADCE482F10D48F00325241 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4ADCE472F10D48F00325241 /* MenuBarManager.swift */; };
 		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
 		C4EB88D62ECC421C00AA0829 /* ModernButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D52ECC421C00AA0829 /* ModernButton.swift */; };
 		C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */; };
@@ -352,6 +353,7 @@
 		C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteQuickAccessBar.swift; sourceTree = "<group>"; };
 		C49FCBED2ECC2D99003B51AF /* ModelInfoTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelInfoTooltip.swift; sourceTree = "<group>"; };
 		C49FCBEF2ECC2E80003B51AF /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
+		C4ADCE472F10D48F00325241 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
 		C4EB88D52ECC421C00AA0829 /* ModernButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernButton.swift; sourceTree = "<group>"; };
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
@@ -604,6 +606,7 @@
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
 				C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */,
+				C4ADCE472F10D48F00325241 /* MenuBarManager.swift */,
 				C4257EE72F0652E300B832C7 /* ProviderID.swift */,
 				C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */,
 				C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */,
@@ -957,6 +960,7 @@
 				4ACE2FB82D61656000DEEA6D /* SwipeModifier.swift in Sources */,
 				4A0BCBBC2D5199140033AB96 /* ButtonWithStatusIndicator.swift in Sources */,
 				7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */,
+				C4ADCE482F10D48F00325241 /* MenuBarManager.swift in Sources */,
 				4A885C582CEA3F7B0018BBED /* ChatListRow.swift in Sources */,
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,

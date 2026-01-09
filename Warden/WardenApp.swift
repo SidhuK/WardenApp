@@ -63,6 +63,7 @@ class PersistenceController {
 struct WardenApp: App {
     @AppStorage("gptModel") var gptModel: String = AppConstants.chatGptDefaultModel
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
+    @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
 
     var preferredColorScheme: ColorScheme? {
@@ -134,6 +135,12 @@ struct WardenApp: App {
                     
                     // Auto-connect MCP servers after a delay
                     autoConnectMCPServers()
+                    
+                    // Initialize menu bar icon based on stored preference
+                    MenuBarManager.shared.updateVisibility(enabled: showMenuBarIcon)
+                }
+                .onChange(of: showMenuBarIcon) { _, newValue in
+                    MenuBarManager.shared.updateVisibility(enabled: newValue)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: AppConstants.toggleQuickChatNotification)) { _ in
                     FloatingPanelManager.shared.togglePanel()

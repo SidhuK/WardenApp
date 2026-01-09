@@ -7,6 +7,7 @@ struct TabGeneralSettingsView: View {
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
+    @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
@@ -135,6 +136,17 @@ struct TabGeneralSettingsView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(Color.orange.opacity(0.1))
                                 )
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Menu Bar Icon",
+                                subtitle: "Show Warden in the menu bar for quick access"
+                            ) {
+                                Toggle("", isOn: $showMenuBarIcon)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
                             }
                         }
                     }
