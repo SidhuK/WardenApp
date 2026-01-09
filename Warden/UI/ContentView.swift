@@ -247,6 +247,7 @@ struct ContentView: View {
                 // Show project summary when project is selected
                 ProjectSummaryView(project: project)
                     .frame(minWidth: 400)
+                    .id(project.id)
             } else if selectedChat != nil {
                 ChatView(viewContext: viewContext, chat: selectedChat!)
                     .frame(minWidth: 400)

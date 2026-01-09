@@ -55,8 +55,9 @@ struct ProjectSummaryView: View {
             }
         }
 
-        .task {
+        .task(id: project.id) {
             // Must launch a new task to perform async work
+            // Using task(id:) to ensure data reloads when switching between projects
             await loadProjectData()
         }
     }
@@ -65,24 +66,23 @@ struct ProjectSummaryView: View {
     @MainActor
     private func loadProjectData() async {
         isLoadingStats = true
-        
-        let projectURI = project.objectID.uriRepresentation()
-        
+
+        // Use project UUID for cross-context queries - more reliable than objectID
+        guard let projectUUID = project.id else {
+            isLoadingStats = false
+            return
+        }
+
         // Do Core Data work on a background context and return objectIDs + primitives back to MainActor.
         let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
         let result = await backgroundContext.perform { () -> (chatIDs: [NSManagedObjectID], count: Int, days: Int)? in
-            guard let projectId = backgroundContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: projectURI) else {
-                return nil
-            }
-
-            let projectObject = backgroundContext.object(with: projectId)
-
             let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-            request.predicate = NSPredicate(format: "project == %@", projectObject)
+            // Use project.id comparison instead of object comparison for cross-context safety
+            request.predicate = NSPredicate(format: "project.id == %@", projectUUID as CVarArg)
             request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
 
             let oldestRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-            oldestRequest.predicate = NSPredicate(format: "project == %@", projectObject)
+            oldestRequest.predicate = NSPredicate(format: "project.id == %@", projectUUID as CVarArg)
             oldestRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.createdDate, ascending: true)]
             oldestRequest.fetchLimit = 1
 
@@ -95,7 +95,7 @@ struct ProjectSummaryView: View {
                 chatIDs = chats.map(\.objectID)
 
                 let countRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "MessageEntity")
-                countRequest.predicate = NSPredicate(format: "chat.project == %@", projectObject)
+                countRequest.predicate = NSPredicate(format: "chat.project.id == %@", projectUUID as CVarArg)
                 countRequest.resultType = .countResultType
                 count = try backgroundContext.count(for: countRequest)
 
@@ -111,7 +111,7 @@ struct ProjectSummaryView: View {
 
             return (chatIDs, count, days)
         }
-        
+
         if let data = result {
             let chats = data.chatIDs.compactMap { viewContext.object(with: $0) as? ChatEntity }
             allChats = chats
