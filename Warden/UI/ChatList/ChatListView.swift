@@ -334,13 +334,20 @@ struct ChatListView: View {
             newChatButtonTapped.toggle()
             onNewChat()
         }) {
-            HStack(spacing: 8) {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 14, weight: .medium))
+            ZStack {
+                // Icon on the left
+                HStack {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 14, weight: .medium))
+                        .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+
+                // Text centered
                 Text("New Thread")
                     .font(.system(size: 13, weight: .medium))
             }
-            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 36)
