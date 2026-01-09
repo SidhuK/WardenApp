@@ -35,6 +35,11 @@ struct QuickChatView: View {
     
     // Focus state for the custom input
     @FocusState private var isInputFocused: Bool
+    @State private var webSearchEnabled: Bool = false
+    @State private var dynamicHeight: CGFloat = 20
+    private let maxInputHeight: CGFloat = 120
+    @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
+    @State private var currentStreamingTask: Task<Void, Never>?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -60,49 +65,129 @@ struct QuickChatView: View {
                     .padding(.top, 8)
             }
             
-            // Main Input Area
-            HStack(spacing: 12) {
-                // Paperclip Icon (Menu)
-                Button(action: {
-                    showingPlusMenu.toggle()
-                }) {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showingPlusMenu, arrowEdge: .bottom) {
-                    paperclipMenu
-                }
-                
-                // Text Input
-                TextField("", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 16))
-                    .foregroundColor(.primary) // Adaptive color
-                    .focused($isInputFocused)
-                    .onSubmit {
-                        submitQuery()
+            // Main Input Area - matching MessageInputView style
+            VStack(alignment: .leading, spacing: 10) {
+                // Text Input Area
+                ZStack(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text("Ask anything...")
+                            .font(.system(size: chatFontSize))
+                            .foregroundColor(.secondary)
+                            .allowsHitTesting(false)
+                            .padding(.top, 8)
                     }
-                    .overlay(alignment: .leading) {
-                        if text.isEmpty {
-                            Text("Start typing here to ask your question...")
-                                .font(.system(size: 16))
+                    
+                    SubmitTextEditor(
+                        text: $text,
+                        dynamicHeight: $dynamicHeight,
+                        onSubmit: {
+                            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming {
+                                submitQuery()
+                            }
+                        },
+                        font: NSFont.systemFont(ofSize: CGFloat(chatFontSize)),
+                        maxHeight: maxInputHeight
+                    )
+                    .frame(height: dynamicHeight)
+                }
+                .frame(minWidth: 200)
+                
+                // Bottom Toolbar
+                HStack(alignment: .center, spacing: 0) {
+                    HStack(spacing: 12) {
+                        // Attachments
+                        Menu {
+                            Button(action: selectAndAddImages) {
+                                Label("Add Image", systemImage: "photo")
+                            }
+                            Button(action: selectAndAddFiles) {
+                                Label("Add File", systemImage: "doc")
+                            }
+                        } label: {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.secondary)
-                                .allowsHitTesting(false)
                         }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                        .help("Add attachments")
+                        
+                        // Web Search
+                        Button(action: {
+                            webSearchEnabled.toggle()
+                        }) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Web Search")
+                        
+                        // Rephrase
+                        Button(action: rephraseText) {
+                            ZStack {
+                                if rephraseService.isRephrasing {
+                                    ProgressView()
+                                        .scaleEffect(0.5)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: "pencil.and.outline")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
+                                }
+                            }
+                            .frame(width: 24, height: 24)
+                            .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Rephrase Message")
+                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                
-                Spacer()
-                
-                // Model Selector
-                if let chat = quickChatEntity {
-                    CompactModelSelector(chat: chat)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        // Model Selector
+                        if let chat = quickChatEntity {
+                            CompactModelSelector(chat: chat)
+                        }
+                        
+                        // Send/Stop Button
+                        Button(action: {
+                            if isStreaming {
+                                stopCurrentStream()
+                            } else {
+                                submitQuery()
+                            }
+                        }) {
+                            ZStack {
+                                if isStreaming {
+                                    Image(systemName: "stop.fill")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "arrow.up")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(isStreaming ? Color.red : (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.accentColor : Color.gray.opacity(0.3)))
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming)
+                        .help(isStreaming ? "Stop" : "Send")
+                    }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color(nsColor: .windowBackgroundColor)) // Dark background
+            .padding(.top, 10)
+            .padding(.bottom, 10)
+            .background(Color(nsColor: .controlBackgroundColor))
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .cornerRadius(20) // High corner radius
@@ -229,9 +314,8 @@ struct QuickChatView: View {
     }
     
     private func updateWindowHeight(contentHeight: CGFloat) {
-        DispatchQueue.main.async {
-            // Base height (input) + content height + attachment height
-            var baseHeight: CGFloat = 60
+        DispatchQueue.main.async { [self] in
+            var baseHeight: CGFloat = dynamicHeight + 60
             if !attachedImages.isEmpty || !attachedFiles.isEmpty {
                 baseHeight += 90
             }
@@ -309,6 +393,12 @@ struct QuickChatView: View {
         }
         
         fetchServiceAndSend(message: fullPrompt)
+    }
+    
+    private func stopCurrentStream() {
+        currentStreamingTask?.cancel()
+        currentStreamingTask = nil
+        isStreaming = false
     }
     
     private func fetchServiceAndSend(message: String) {
@@ -397,40 +487,35 @@ struct QuickChatView: View {
             }
         }
         
-	        Task {
-	            do {
-	                let stream = try await handler.sendMessageStream(messages, tools: nil, temperature: 0.7)
-	                
-	                await MainActor.run {
-	                    aiMessage.waitingForResponse = false
-	                    try? viewContext.save()
-	                }
+        currentStreamingTask = Task { @MainActor in
+            do {
+                let stream = try await handler.sendMessageStream(messages, tools: nil, temperature: 0.7)
+                aiMessage.waitingForResponse = false
+                try? viewContext.save()
                 
                 var currentBody = ""
                 for try await chunk in stream {
-                    await MainActor.run {
-                        if let text = chunk.0 {
-                            currentBody += text
-                            aiMessage.body = currentBody
-                            try? viewContext.save()
-                        }
+                    try Task.checkCancellation()
+                    if let text = chunk.0 {
+                        currentBody += text
+                        aiMessage.body = currentBody
+                        try? viewContext.save()
                     }
                 }
                 
-                await MainActor.run {
-                    isStreaming = false
-                    try? viewContext.save()
-                    
-                    // Auto-rename chat
-                    generateChatNameIfNeeded(chat: chat, apiService: apiService)
-                }
+                isStreaming = false
+                currentStreamingTask = nil
+                try? viewContext.save()
+                generateChatNameIfNeeded(chat: chat, apiService: apiService)
+            } catch is CancellationError {
+                isStreaming = false
+                currentStreamingTask = nil
             } catch {
-                await MainActor.run {
-                    aiMessage.body += "\nError: \(error.localizedDescription)"
-                    aiMessage.waitingForResponse = false
-                    isStreaming = false
-                    try? viewContext.save()
-                }
+                aiMessage.body += "\nError: \(error.localizedDescription)"
+                aiMessage.waitingForResponse = false
+                isStreaming = false
+                currentStreamingTask = nil
+                try? viewContext.save()
             }
         }
     }
