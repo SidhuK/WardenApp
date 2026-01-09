@@ -235,6 +235,20 @@ struct ChatListView: View {
             .keyboardShortcut(.escape)
             .opacity(0)
         )
+        .background(
+            Button("") {
+                navigateToChat(direction: .up)
+            }
+            .keyboardShortcut(.upArrow, modifiers: [])
+            .opacity(0)
+        )
+        .background(
+            Button("") {
+                navigateToChat(direction: .down)
+            }
+            .keyboardShortcut(.downArrow, modifiers: [])
+            .opacity(0)
+        )
         .onChange(of: selectedChat) { _, _ in
             isSearchFocused = false
         }
@@ -485,7 +499,52 @@ struct ChatListView: View {
             }
         }
     }
-    
+
+    // MARK: - Arrow Key Navigation
+
+    private enum NavigationDirection {
+        case up, down
+    }
+
+    private var allNavigableChats: [ChatEntity] {
+        // Build ordered list: pinned chats first, then unpinned by date group
+        var allChats: [ChatEntity] = []
+
+        // Add pinned chats
+        allChats.append(contentsOf: pinnedChatsWithoutProject)
+
+        // Add unpinned chats in date group order
+        for dateGroup in DateGroup.allCases {
+            if let chatsInGroup = groupedChatsWithoutProject[dateGroup] {
+                allChats.append(contentsOf: chatsInGroup)
+            }
+        }
+
+        return allChats
+    }
+
+    private func navigateToChat(direction: NavigationDirection) {
+        let chats = allNavigableChats
+        guard !chats.isEmpty else { return }
+
+        // If no chat is selected, select the first or last based on direction
+        guard let currentChat = selectedChat,
+              let currentIndex = chats.firstIndex(where: { $0.id == currentChat.id }) else {
+            selectedChat = direction == .down ? chats.first : chats.last
+            return
+        }
+
+        let newIndex: Int
+        switch direction {
+        case .up:
+            newIndex = currentIndex > 0 ? currentIndex - 1 : chats.count - 1
+        case .down:
+            newIndex = currentIndex < chats.count - 1 ? currentIndex + 1 : 0
+        }
+
+        selectedChat = chats[newIndex]
+    }
+
     // MARK: - Section Views
     
     private var projectsSection: some View {

@@ -8,7 +8,6 @@ struct MessageCell: View {
     @Binding var isActive: Bool
     let viewContext: NSManagedObjectContext
     @State private var isHovered = false
-    @Environment(\.colorScheme) var colorScheme
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
 
     var searchText: String = ""
@@ -63,7 +62,7 @@ struct MessageCell: View {
                             .renderingMode(.template)
                             .interpolation(.high)
                             .frame(width: 16, height: 16)
-                            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
+                            .foregroundColor(self.isActive ? .white : .primary)
                     }
                     
                     // Branch indicator badge
@@ -106,7 +105,7 @@ struct MessageCell: View {
                             .frame(width: 8, height: 8)
                         Text(project.name ?? "Project")
                             .font(.caption2)
-                            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .secondary)
+                            .foregroundColor(self.isActive ? .white : .secondary)
                             .lineLimit(1)
                     }
                     .padding(.trailing, 4)
@@ -114,19 +113,19 @@ struct MessageCell: View {
                 
                 if chat.isPinned {
                     Image(systemName: "pin.fill")
-                        .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .secondary)
+                        .foregroundColor(self.isActive ? .white : .secondary)
                         .font(.system(size: 10, weight: .medium))
                         .rotationEffect(.degrees(45))
                         .padding(.trailing, 10)
                 }
             }
             .frame(maxWidth: .infinity)
-            .foregroundColor(self.isActive ? (colorScheme == .dark ? .white : .black) : .primary)
+            .foregroundColor(self.isActive ? .white : .primary)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         self.isActive
-                            ? Color.accentColor.opacity(0.15)
+                            ? Color.accentColor
                             : self.isHovered
                                 ? Color.primary.opacity(0.05) : Color.clear
                     )
