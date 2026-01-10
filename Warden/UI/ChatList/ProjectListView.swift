@@ -33,6 +33,15 @@ struct ProjectListView: View {
     private var archivedProjects: [ProjectEntity] {
         projects.filter { $0.isArchived }
     }
+
+    @MainActor
+    private func presentAlert(_ alert: NSAlert, handler: @escaping (NSApplication.ModalResponse) -> Void) {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -162,7 +171,7 @@ struct ProjectListView: View {
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 store.deleteProject(project)
             }
@@ -193,6 +202,15 @@ struct ProjectRow: View {
     var isArchived: Bool = false
 
     @State private var isHovered = false
+    
+    @MainActor
+    private func presentAlert(_ alert: NSAlert, handler: @escaping (NSApplication.ModalResponse) -> Void) {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
 
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -338,6 +356,15 @@ struct ProjectRowInList: View {
     var isArchived: Bool = false
 
     @State private var isHovered = false
+    
+    @MainActor
+    private func presentAlert(_ alert: NSAlert, handler: @escaping (NSApplication.ModalResponse) -> Void) {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
 
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -475,7 +502,7 @@ struct ProjectRowInList: View {
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 store.deleteProject(project)
             }

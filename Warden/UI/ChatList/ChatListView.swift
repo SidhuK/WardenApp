@@ -20,6 +20,15 @@ struct ChatListView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var searchResults: Set<UUID> = []
     @State private var isSearching = false
+    
+    @MainActor
+    private func presentAlert(_ alert: NSAlert, handler: @escaping (NSApplication.ModalResponse) -> Void) {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
 
     @FetchRequest(
         entity: ChatEntity.entity(),
@@ -118,62 +127,56 @@ struct ChatListView: View {
         
         isSearching = true
         
-        searchTask = Task.detached(priority: .userInitiated) {
+        searchTask = Task(priority: .userInitiated) {
             var matchingChatIDs: Set<UUID> = []
-            
-            // Perform search in background context
+
             let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
-            
+
             await backgroundContext.perform {
-                // Use NSPredicate for database-level filtering (much faster than in-memory iteration)
-                // This leverages SQLite indices for faster search
-                let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-                
-                // Build compound predicate for name, system message, and persona name
-                // Case-insensitive, diacritic-insensitive search with CONTAINS[cd]
                 let namePredicate = NSPredicate(format: "name CONTAINS[cd] %@", query)
                 let systemMessagePredicate = NSPredicate(format: "systemMessage CONTAINS[cd] %@", query)
                 let personaNamePredicate = NSPredicate(format: "persona.name CONTAINS[cd] %@", query)
-                
-                // Combine predicates with OR for initial fast filtering
-                fetchRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+
+                let metadataRequest = NSFetchRequest<NSDictionary>(entityName: "ChatEntity")
+                metadataRequest.resultType = .dictionaryResultType
+                metadataRequest.propertiesToFetch = ["id"]
+                metadataRequest.returnsDistinctResults = true
+                metadataRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
                     namePredicate,
                     systemMessagePredicate,
                     personaNamePredicate
                 ])
-                
+
+                let messageRequest = NSFetchRequest<NSDictionary>(entityName: "ChatEntity")
+                messageRequest.resultType = .dictionaryResultType
+                messageRequest.propertiesToFetch = ["id"]
+                messageRequest.returnsDistinctResults = true
+                messageRequest.predicate = NSPredicate(format: "ANY messages.body CONTAINS[cd] %@", query)
+
                 do {
-                    // First pass: get chats matching name/system/persona (database-level, fast)
-                    let matchedByMetadata = try backgroundContext.fetch(fetchRequest)
-                    for chat in matchedByMetadata {
+                    for dict in try backgroundContext.fetch(metadataRequest) {
                         if Task.isCancelled { return }
-                        matchingChatIDs.insert(chat.id)
+                        if let id = dict["id"] as? UUID {
+                            matchingChatIDs.insert(id)
+                        }
                     }
-                    
-                    // Second pass: search in message bodies for chats not yet matched
-                    // This requires relationship traversal so we do it separately
-                    // Only fetch chats that weren't already matched to avoid redundant work
-                    let messageSearchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
-                    messageSearchRequest.predicate = NSPredicate(format: "ANY messages.body CONTAINS[cd] %@", query)
-                    
-                    let matchedByMessages = try backgroundContext.fetch(messageSearchRequest)
-                    for chat in matchedByMessages {
+
+                    for dict in try backgroundContext.fetch(messageRequest) {
                         if Task.isCancelled { return }
-                        matchingChatIDs.insert(chat.id)
+                        if let id = dict["id"] as? UUID {
+                            matchingChatIDs.insert(id)
+                        }
                     }
-                    
                 } catch {
                     WardenLog.app.error("Search error: \(error.localizedDescription, privacy: .public)")
                 }
             }
-            
-            // Update UI on main thread
+
+            if Task.isCancelled { return }
             await MainActor.run {
-                if !Task.isCancelled {
-                    self.searchResults = matchingChatIDs
-                    self.debouncedSearchText = query
-                    self.isSearching = false
-                }
+                self.searchResults = matchingChatIDs
+                self.debouncedSearchText = query
+                self.isSearching = false
             }
         }
     }
@@ -196,7 +199,7 @@ struct ChatListView: View {
                     .padding(.bottom, 8)
             }
 
-            List {
+            List(selection: $selectedChatIDs) {
                 // Projects section
                 projectsSection
                 
@@ -206,49 +209,44 @@ struct ChatListView: View {
                 }
             }
             .listStyle(.sidebar)
+            .onDeleteCommand {
+                deleteSelectedChats()
+            }
+            .onExitCommand {
+                selectedChatIDs.removeAll()
+                lastSelectedChatID = nil
+            }
             
             // Settings button at the bottom
             bottomSettingsSection
                 .padding(.bottom, 12)
         }
-        .background(
-            Button("") {
-                isSearchFocused = true
+        .onChange(of: selectedChat) { _, newValue in
+            guard let newValue else { return }
+            guard !selectedChatIDs.contains(newValue.id) else { return }
+            selectedChatIDs = [newValue.id]
+            lastSelectedChatID = newValue.id
+        }
+        .onChange(of: selectedProject) { _, newValue in
+            guard newValue != nil else { return }
+            selectedChatIDs.removeAll()
+            lastSelectedChatID = nil
+        }
+        .onChange(of: selectedChatIDs) { oldValue, newValue in
+            let added = newValue.subtracting(oldValue)
+            if let lastAdded = added.first {
+                lastSelectedChatID = lastAdded
             }
-            .keyboardShortcut("f", modifiers: .command)
-            .opacity(0)
-        )
-        .background(
-            Button("") {
-                if !selectedChatIDs.isEmpty {
-                    deleteSelectedChats()
-                }
+
+            guard let activeID = lastSelectedChatID ?? newValue.first else {
+                selectedChat = nil
+                return
             }
-            .keyboardShortcut(.delete, modifiers: .command)
-            .opacity(0)
-        )
-        .background(
-            Button("") {
-                selectedChatIDs.removeAll()
-                lastSelectedChatID = nil
+
+            if selectedChat?.id != activeID, let chat = chats.first(where: { $0.id == activeID }) {
+                selectedChat = chat
             }
-            .keyboardShortcut(.escape)
-            .opacity(0)
-        )
-        .background(
-            Button("") {
-                navigateToChat(direction: .up)
-            }
-            .keyboardShortcut(.upArrow, modifiers: [])
-            .opacity(0)
-        )
-        .background(
-            Button("") {
-                navigateToChat(direction: .down)
-            }
-            .keyboardShortcut(.downArrow, modifiers: [])
-            .opacity(0)
-        )
+        }
         .onChange(of: selectedChat) { _, _ in
             isSearchFocused = false
         }
@@ -280,6 +278,7 @@ struct ChatListView: View {
                 .textFieldStyle(PlainTextFieldStyle())
                 .font(.system(.body))
                 .focused($isSearchFocused)
+                .accessibilityLabel("Search chats")
                 .onExitCommand {
                     searchText = ""
                     isSearchFocused = false
@@ -297,7 +296,7 @@ struct ChatListView: View {
                         searchTask = Task {
                             try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
                             if !Task.isCancelled {
-                                await performSearch(newValue)
+                                performSearch(newValue)
                             }
                         }
                     }
@@ -315,6 +314,7 @@ struct ChatListView: View {
                         .foregroundColor(.gray)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityLabel("Clear search")
             }
         }
         .padding(8)
@@ -376,6 +376,7 @@ struct ChatListView: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
+        .accessibilityLabel("New Thread")
     }
     
     private var settingsButton: some View {
@@ -428,6 +429,7 @@ struct ChatListView: View {
             }
             .buttonStyle(.borderless)
             .disabled(selectedChatIDs.isEmpty)
+            .accessibilityLabel("Delete selected chats")
             
             Button {
                 selectedChatIDs.removeAll()
@@ -437,6 +439,7 @@ struct ChatListView: View {
                     .font(.system(size: 11, weight: .medium))
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Clear selection")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -454,7 +457,7 @@ struct ChatListView: View {
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 // Clear selectedChat if it's in the list to be deleted
                 if let selectedChatID = selectedChat?.id, selectedChatIDs.contains(selectedChatID) {
@@ -469,80 +472,6 @@ struct ChatListView: View {
                 lastSelectedChatID = nil
             }
         }
-    }
-
-    private func handleKeyboardSelection(chatID: UUID, isCommandPressed: Bool, isShiftPressed: Bool) {
-        if isCommandPressed {
-            // Command+click: toggle selection
-            if selectedChatIDs.contains(chatID) {
-                selectedChatIDs.remove(chatID)
-            } else {
-                selectedChatIDs.insert(chatID)
-                lastSelectedChatID = chatID
-            }
-        } else if isShiftPressed, let lastID = lastSelectedChatID {
-            // Shift+click: select range from last selected to current
-            if let startIndex = filteredChats.firstIndex(where: { $0.id == lastID }),
-               let endIndex = filteredChats.firstIndex(where: { $0.id == chatID }) {
-                let range = min(startIndex, endIndex)...max(startIndex, endIndex)
-                for chat in filteredChats[range] {
-                    selectedChatIDs.insert(chat.id)
-                }
-            }
-        } else {
-            // Regular selection handling
-            if selectedChatIDs.contains(chatID) {
-                selectedChatIDs.remove(chatID)
-            } else {
-                selectedChatIDs.insert(chatID)
-                lastSelectedChatID = chatID
-            }
-        }
-    }
-
-    // MARK: - Arrow Key Navigation
-
-    private enum NavigationDirection {
-        case up, down
-    }
-
-    private var allNavigableChats: [ChatEntity] {
-        // Build ordered list: pinned chats first, then unpinned by date group
-        var allChats: [ChatEntity] = []
-
-        // Add pinned chats
-        allChats.append(contentsOf: pinnedChatsWithoutProject)
-
-        // Add unpinned chats in date group order
-        for dateGroup in DateGroup.allCases {
-            if let chatsInGroup = groupedChatsWithoutProject[dateGroup] {
-                allChats.append(contentsOf: chatsInGroup)
-            }
-        }
-
-        return allChats
-    }
-
-    private func navigateToChat(direction: NavigationDirection) {
-        let chats = allNavigableChats
-        guard !chats.isEmpty else { return }
-
-        // If no chat is selected, select the first or last based on direction
-        guard let currentChat = selectedChat,
-              let currentIndex = chats.firstIndex(where: { $0.id == currentChat.id }) else {
-            selectedChat = direction == .down ? chats.first : chats.last
-            return
-        }
-
-        let newIndex: Int
-        switch direction {
-        case .up:
-            newIndex = currentIndex > 0 ? currentIndex - 1 : chats.count - 1
-        case .down:
-            newIndex = currentIndex < chats.count - 1 ? currentIndex + 1 : 0
-        }
-
-        selectedChat = chats[newIndex]
     }
 
     // MARK: - Section Views
@@ -646,7 +575,7 @@ struct ChatListView: View {
                             selectedChat: $selectedChat,
                             viewContext: viewContext,
                             searchText: searchText,
-                            isSelectionMode: !selectedChatIDs.isEmpty,
+                            isSelectionMode: selectedChatIDs.count > 1,
                             isSelected: selectedChatIDs.contains(chat.id),
                             onSelectionToggle: { chatID, isSelected in
                                 if isSelected {
@@ -654,11 +583,9 @@ struct ChatListView: View {
                                 } else {
                                     selectedChatIDs.remove(chatID)
                                 }
-                            },
-                            onKeyboardSelection: { chatID, isCmd, isShift in
-                                handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
                             }
                         )
+                        .tag(chat.id)
                     }
                 } header: {
                     HStack {
@@ -684,7 +611,7 @@ struct ChatListView: View {
                                 selectedChat: $selectedChat,
                                 viewContext: viewContext,
                                 searchText: searchText,
-                                isSelectionMode: !selectedChatIDs.isEmpty,
+                                isSelectionMode: selectedChatIDs.count > 1,
                                 isSelected: selectedChatIDs.contains(chat.id),
                                 onSelectionToggle: { chatID, isSelected in
                                     if isSelected {
@@ -692,11 +619,9 @@ struct ChatListView: View {
                                     } else {
                                         selectedChatIDs.remove(chatID)
                                     }
-                                },
-                                onKeyboardSelection: { chatID, isCmd, isShift in
-                                    handleKeyboardSelection(chatID: chatID, isCommandPressed: isCmd, isShiftPressed: isShift)
                                 }
                             )
+                            .tag(chat.id)
                         }
                     } header: {
                         HStack {

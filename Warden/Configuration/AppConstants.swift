@@ -602,6 +602,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     static let copyLastUserMessageNotification = Notification.Name("copyLastUserMessageNotification")
     static let newChatHotkeyNotification = Notification.Name("newChatHotkeyNotification")
     static let toggleQuickChatNotification = Notification.Name("toggleQuickChatNotification")
+    static let showToastNotification = Notification.Name("showToast")
     
     // MARK: - Hotkey Settings
     struct HotkeyKeys {

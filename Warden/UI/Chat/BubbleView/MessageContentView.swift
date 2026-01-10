@@ -7,6 +7,45 @@ struct IdentifiableImage: Identifiable {
     let id = UUID()
     let image: NSImage
 }
+
+private actor MessageParsingActor {
+    private var incrementalParser: IncrementalMessageParser?
+    private var lastProcessedLength: Int = 0
+    private var lastColorScheme: ColorScheme?
+
+    func resetIncremental() {
+        incrementalParser = nil
+        lastProcessedLength = 0
+        lastColorScheme = nil
+    }
+
+    func parseFull(message: String, colorScheme: ColorScheme) -> [MessageElements] {
+        MessageParser(colorScheme: colorScheme).parseMessageFromString(input: message)
+    }
+
+    func parseTruncated(message: String, colorScheme: ColorScheme) -> [MessageElements] {
+        MessageParser(colorScheme: colorScheme).parseMessageFromString(input: message)
+    }
+
+    func parseIncremental(message: String, colorScheme: ColorScheme) -> [MessageElements] {
+        if incrementalParser == nil || lastColorScheme != colorScheme || message.count < lastProcessedLength {
+            incrementalParser = IncrementalMessageParser(colorScheme: colorScheme)
+            lastProcessedLength = 0
+            lastColorScheme = colorScheme
+        }
+
+        guard let incrementalParser else { return [] }
+
+        if message.count > lastProcessedLength {
+            let newContent = String(message.dropFirst(lastProcessedLength))
+            incrementalParser.appendChunk(newContent)
+            lastProcessedLength = message.count
+        }
+
+        return incrementalParser.getAllElements()
+    }
+}
+
 struct MessageContentView: View {
     let message: String
     let isStreaming: Bool
@@ -27,10 +66,7 @@ struct MessageContentView: View {
     @State private var lastTruncatedMessage: String
     @State private var fullParseTask: Task<Void, Never>?
     @State private var truncatedParseTask: Task<Void, Never>?
-    
-    // Incremental parsing state
-    @State private var incrementalParser: IncrementalMessageParser?
-    @State private var lastProcessedLength: Int = 0
+    @State private var parsingActor = MessageParsingActor()
 
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
 
@@ -67,20 +103,23 @@ struct MessageContentView: View {
             }
         }
         .animation(nil, value: message)
-        .onChange(of: message) { _ in
+        .onChange(of: message) { _, _ in
             refreshParsedElements()
         }
         .onChange(of: isStreaming) { _, newValue in
             guard !newValue else { return }
-            // Streaming ended - reset incremental parser and do final full parse
-            incrementalParser = nil
-            lastProcessedLength = 0
+            Task { await parsingActor.resetIncremental() }
             truncatedParseTask?.cancel()
             fullParseTask?.cancel()
             refreshParsedElements(force: true)
         }
-        .onChange(of: colorScheme) { _ in
+        .onChange(of: colorScheme) { _, _ in
+            Task { await parsingActor.resetIncremental() }
             refreshParsedElements(force: true)
+        }
+        .onDisappear {
+            truncatedParseTask?.cancel()
+            fullParseTask?.cancel()
         }
     }
 
@@ -100,9 +139,9 @@ struct MessageContentView: View {
                     isParsingFullMessage = true
                     // Parse the full message in background: very long messages may take long time to parse (and even cause app crash)
                     fullParseTask?.cancel()
-                    fullParseTask = Task.detached(priority: .userInitiated) {
-                        let parser = MessageParser(colorScheme: colorScheme)
-                        let elements = parser.parseMessageFromString(input: message)
+                    fullParseTask = Task(priority: .userInitiated) {
+                        let elements = await parsingActor.parseFull(message: message, colorScheme: colorScheme)
+                        guard !Task.isCancelled else { return }
                         await MainActor.run {
                             fullParsedElements = elements
                             showFullMessage = true
@@ -147,8 +186,9 @@ struct MessageContentView: View {
 
             truncatedParseTask?.cancel()
             if isStreaming {
-                truncatedParseTask = Task.detached(priority: .userInitiated) {
-                    let parser = MessageParser(colorScheme: colorScheme)
+                truncatedParseTask = Task(priority: .userInitiated) {
+                    try? await Task.sleep(nanoseconds: 80_000_000)
+                    guard !Task.isCancelled else { return }
                     #if DEBUG
                     let signpostID = OSSignpostID(log: WardenSignpost.rendering)
                     os_signpost(
@@ -161,10 +201,11 @@ struct MessageContentView: View {
                         truncated.count
                     )
                     #endif
-                    let elements = parser.parseMessageFromString(input: truncated)
+                    let elements = await parsingActor.parseTruncated(message: truncated, colorScheme: colorScheme)
                     #if DEBUG
                     os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
                     #endif
+                    guard !Task.isCancelled else { return }
                     await MainActor.run {
                         truncatedParsedElements = elements
                     }
@@ -193,31 +234,24 @@ struct MessageContentView: View {
     
     /// Incremental parsing - only process new content
     private func refreshWithIncrementalParser() {
-        // Initialize parser if needed
-        if incrementalParser == nil {
-            incrementalParser = IncrementalMessageParser(colorScheme: colorScheme)
-            lastProcessedLength = 0
+        fullParseTask?.cancel()
+        fullParseTask = Task(priority: .userInitiated) {
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            guard !Task.isCancelled else { return }
+            let elements = await parsingActor.parseIncremental(message: message, colorScheme: colorScheme)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                fullParsedElements = elements
+            }
         }
-        
-        guard let parser = incrementalParser else { return }
-        
-        // Only process new content
-        if message.count > lastProcessedLength {
-            let newContent = String(message.dropFirst(lastProcessedLength))
-            parser.appendChunk(newContent)
-            lastProcessedLength = message.count
-        }
-        
-        // Get all elements including pending
-        fullParsedElements = parser.getAllElements()
     }
     
     /// Full re-parsing (original behavior)
     private func refreshWithFullParser() {
         fullParseTask?.cancel()
-        fullParseTask = Task.detached(priority: .userInitiated) {
+        fullParseTask = Task(priority: .userInitiated) {
+            try? await Task.sleep(nanoseconds: 80_000_000)
             guard !Task.isCancelled else { return }
-            let parser = MessageParser(colorScheme: colorScheme)
             #if DEBUG
             let signpostID = OSSignpostID(log: WardenSignpost.rendering)
             os_signpost(
@@ -230,10 +264,11 @@ struct MessageContentView: View {
                 message.count
             )
             #endif
-            let elements = parser.parseMessageFromString(input: message)
+            let elements = await parsingActor.parseFull(message: message, colorScheme: colorScheme)
             #if DEBUG
             os_signpost(.end, log: WardenSignpost.rendering, name: "MessageParse", signpostID: signpostID)
             #endif
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 fullParsedElements = elements
             }

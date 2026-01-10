@@ -5,25 +5,12 @@ import os
 
 struct QuickChatView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var text: String = ""
-    @State private var responseText: String = ""
     @State private var isStreaming: Bool = false
-    @State private var isExpanded: Bool = false
-    @State private var selectedModel: String = AppConstants.chatGptDefaultModel
+    @State private var composerState = ComposerState()
     @State private var clipboardContext: String?
-    @State private var contentHeight: CGFloat = 60 // Initial compact height
     
     // We'll use a dedicated ChatEntity for quick chat
     @State private var quickChatEntity: ChatEntity?
-    @StateObject private var modelCache = ModelCacheManager.shared
-    
-    // Paperclip Menu State
-    @State private var showingPlusMenu = false
-    @State private var attachedImages: [ImageAttachment] = []
-    @State private var attachedFiles: [FileAttachment] = []
-    @StateObject private var rephraseService = RephraseService()
-    @State private var showingRephraseError = false
-    @State private var rephraseErrorMessage = ""
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -33,12 +20,6 @@ struct QuickChatView: View {
     
     @AppStorage("defaultApiService") private var defaultApiServiceID: String?
     
-    // Focus state for the custom input
-    @FocusState private var isInputFocused: Bool
-    @State private var webSearchEnabled: Bool = false
-    @State private var dynamicHeight: CGFloat = 20
-    private let maxInputHeight: CGFloat = 120
-    @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     @State private var currentStreamingTask: Task<Void, Never>?
     
     var body: some View {
@@ -58,136 +39,26 @@ struct QuickChatView: View {
                     .background(Color.primary.opacity(0.1))
             }
             
-            // Attachment Previews
-            if !attachedImages.isEmpty || !attachedFiles.isEmpty {
-                attachmentPreviewsSection
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-            }
-            
-            // Main Input Area - matching MessageInputView style
-            VStack(alignment: .leading, spacing: 10) {
-                // Text Input Area
-                ZStack(alignment: .topLeading) {
-                    if text.isEmpty {
-                        Text("Ask anything...")
-                            .font(.system(size: chatFontSize))
-                            .foregroundColor(.secondary)
-                            .allowsHitTesting(false)
-                            .padding(.top, 8)
-                    }
-                    
-                    SubmitTextEditor(
-                        text: $text,
-                        dynamicHeight: $dynamicHeight,
-                        onSubmit: {
-                            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming {
-                                submitQuery()
-                            }
-                        },
-                        font: NSFont.systemFont(ofSize: CGFloat(chatFontSize)),
-                        maxHeight: maxInputHeight
-                    )
-                    .frame(height: dynamicHeight)
-                }
-                .frame(minWidth: 200)
-                
-                // Bottom Toolbar
-                HStack(alignment: .center, spacing: 0) {
-                    HStack(spacing: 12) {
-                        // Attachments
-                        Menu {
-                            Button(action: selectAndAddImages) {
-                                Label("Add Image", systemImage: "photo")
-                            }
-                            Button(action: selectAndAddFiles) {
-                                Label("Add File", systemImage: "doc")
-                            }
-                        } label: {
-                            Image(systemName: "paperclip")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        .menuStyle(.borderlessButton)
-                        .fixedSize()
-                        .help("Add attachments")
-                        
-                        // Web Search
-                        Button(action: {
-                            webSearchEnabled.toggle()
-                        }) {
-                            Image(systemName: "globe")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Web Search")
-                        
-                        // Rephrase
-                        Button(action: rephraseText) {
-                            ZStack {
-                                if rephraseService.isRephrasing {
-                                    ProgressView()
-                                        .scaleEffect(0.5)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "pencil.and.outline")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
-                                }
-                            }
-                            .frame(width: 24, height: 24)
-                            .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Rephrase Message")
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 12) {
-                        // Model Selector
-                        if let chat = quickChatEntity {
-                            CompactModelSelector(chat: chat)
-                        }
-                        
-                        // Send/Stop Button
-                        Button(action: {
-                            if isStreaming {
-                                stopCurrentStream()
-                            } else {
-                                submitQuery()
-                            }
-                        }) {
-                            ZStack {
-                                if isStreaming {
-                                    Image(systemName: "stop.fill")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.white)
-                                } else {
-                                    Image(systemName: "arrow.up")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(width: 28, height: 28)
-                            .background(
-                                Circle()
-                                    .fill(isStreaming ? Color.red : (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.accentColor : Color.gray.opacity(0.3)))
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming)
-                        .help(isStreaming ? "Stop" : "Send")
-                    }
-                }
-            }
+            MessageInputView(
+                state: $composerState,
+                chat: quickChatEntity,
+                imageUploadsAllowed: quickChatEntity?.apiService?.imageUploadsAllowed ?? false,
+                isStreaming: isStreaming,
+                enableMultiAgentMode: false,
+                showsWebSearchToggle: false,
+                showsMCPTools: false,
+                showsPersonas: false,
+                onEnter: {
+                    submitQuery()
+                },
+                onAddImage: selectAndAddImages,
+                onAddFile: selectAndAddFiles,
+                onStopStreaming: stopCurrentStream,
+                inputPlaceholderText: "Ask anything...",
+                cornerRadius: 20.0
+            )
             .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 10)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .padding(.vertical, 12)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .cornerRadius(20) // High corner radius
@@ -200,126 +71,20 @@ struct QuickChatView: View {
         .gesture(WindowDragGesture())
         .onAppear {
             ensureQuickChatEntity()
-            isInputFocused = true
+            checkClipboard()
         }
         .onReceive(NotificationCenter.default.publisher(for: .resetQuickChat)) { _ in
             resetChat()
         }
-        .alert("Rephrase Error", isPresented: $showingRephraseError) {
-            Button("OK") { }
-        } message: {
-            Text(rephraseErrorMessage)
-        }
-    }
-    
-    private var selectedModelName: String {
-        // Simple mapping or just use the ID
-        if selectedModel.contains("gpt-4") { return "ChatGPT 4" }
-        if selectedModel.contains("gpt-3.5") { return "ChatGPT 3.5" }
-        if selectedModel.contains("claude") { return "Claude" }
-        return "AI"
-    }
-    
-    // MARK: - Subviews
-    
-    private var paperclipMenu: some View {
-        VStack(spacing: 8) {
-            // Rephrase option
-            Button(action: {
-                showingPlusMenu = false
-                rephraseText()
-            }) {
-                HStack {
-                    if rephraseService.isRephrasing {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .frame(width: 14, height: 14)
-                    } else {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                    }
-                    Text("Rephrase")
-                    Spacer()
-                }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(text.isEmpty)
-            
-            // Add Image option
-            Button(action: {
-                showingPlusMenu = false
-                selectAndAddImages()
-            }) {
-                HStack {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 14))
-                    Text("Add Image")
-                    Spacer()
-                }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Add File option
-            Button(action: {
-                showingPlusMenu = false
-                selectAndAddFiles()
-            }) {
-                HStack {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 14))
-                    Text("Add File")
-                    Spacer()
-                }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding(.vertical, 8)
-        .frame(minWidth: 160)
-    }
-    
-    private var attachmentPreviewsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(attachedImages) { attachment in
-                    ImagePreviewView(attachment: attachment) { _ in
-                        if let index = attachedImages.firstIndex(where: { $0.id == attachment.id }) {
-                            withAnimation {
-                                attachedImages.remove(at: index)
-                            }
-                        }
-                    }
-                }
-                ForEach(attachedFiles) { attachment in
-                    FilePreviewView(attachment: attachment) { _ in
-                        if let index = attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
-                            withAnimation {
-                                attachedFiles.remove(at: index)
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.bottom, 6)
-        }
-        .frame(height: 80)
     }
     
     private func updateWindowHeight(contentHeight: CGFloat) {
-        DispatchQueue.main.async { [self] in
-            var baseHeight: CGFloat = dynamicHeight + 60
-            if !attachedImages.isEmpty || !attachedFiles.isEmpty {
+        DispatchQueue.main.async {
+            var baseHeight: CGFloat = 120
+            if !composerState.attachedImages.isEmpty || !composerState.attachedFiles.isEmpty {
                 baseHeight += 90
             }
-            
+
             let newHeight = baseHeight + contentHeight
             FloatingPanelManager.shared.updateHeight(newHeight)
         }
@@ -359,7 +124,6 @@ struct QuickChatView: View {
                     if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
                         newChat.apiService = defaultService
                         newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
-                        selectedModel = newChat.gptModel
                     }
                 } catch {
                     WardenLog.coreData.error(
@@ -367,13 +131,11 @@ struct QuickChatView: View {
                     )
                     // Fall back to first available service
                     fallbackServiceSelectionFor(chat: newChat)
-                    selectedModel = newChat.gptModel.isEmpty ? AppConstants.chatGptDefaultModel : newChat.gptModel
                 }
             } else {
                 // No default set, fall back to first available service
                 fallbackServiceSelectionFor(chat: newChat)
                 newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
-                selectedModel = newChat.gptModel
             }
             
             quickChatEntity = newChat
@@ -382,13 +144,17 @@ struct QuickChatView: View {
     }
     
     private func submitQuery() {
-        guard !text.isEmpty || !attachedImages.isEmpty || !attachedFiles.isEmpty, let _ = quickChatEntity else { return }
+        let trimmedText = composerState.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty
+            || !composerState.attachedImages.isEmpty
+            || !composerState.attachedFiles.isEmpty,
+            quickChatEntity != nil
+        else { return }
         
         isStreaming = true
-        responseText = ""
         
-        var fullPrompt = text
-        if let context = clipboardContext {
+        var fullPrompt = trimmedText
+        if let context = clipboardContext, !context.isEmpty {
             fullPrompt += "\n\nContext:\n\(context)"
         }
         
@@ -422,12 +188,12 @@ struct QuickChatView: View {
             messageContents.append(MessageContent(text: message))
         }
         
-        for attachment in attachedImages {
+        for attachment in composerState.attachedImages {
             attachment.saveToEntity(context: viewContext)
             messageContents.append(MessageContent(imageAttachment: attachment))
         }
         
-        for attachment in attachedFiles {
+        for attachment in composerState.attachedFiles {
             attachment.saveToEntity(context: viewContext)
             messageContents.append(MessageContent(fileAttachment: attachment))
         }
@@ -446,9 +212,9 @@ struct QuickChatView: View {
         try? viewContext.save()
         
         // Clear input
-        text = ""
-        attachedImages = []
-        attachedFiles = []
+        composerState.text = ""
+        composerState.attachedImages = []
+        composerState.attachedFiles = []
         
         // Create AI Message Entity
         let aiMessage = MessageEntity(context: viewContext)
@@ -594,7 +360,6 @@ struct QuickChatView: View {
                 if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
                     newChat.apiService = defaultService
                     newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
-                    selectedModel = newChat.gptModel
                 }
             } catch {
                 WardenLog.coreData.error(
@@ -602,22 +367,19 @@ struct QuickChatView: View {
                 )
                 fallbackServiceSelectionFor(chat: newChat)
                 newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
-                selectedModel = newChat.gptModel
             }
         } else {
             fallbackServiceSelectionFor(chat: newChat)
             newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
-            selectedModel = newChat.gptModel
         }
         
         quickChatEntity = newChat
         try? viewContext.save()
         
-        text = ""
         isStreaming = false
-        responseText = ""
-        attachedImages = []
-        attachedFiles = []
+        composerState.text = ""
+        composerState.attachedImages = []
+        composerState.attachedFiles = []
         
         DispatchQueue.main.async {
             FloatingPanelManager.shared.updateHeight(60)
@@ -636,30 +398,6 @@ struct QuickChatView: View {
         }
     }
     
-    // MARK: - Actions
-    
-    private func rephraseText() {
-        guard let apiService = quickChatEntity?.apiService else {
-            rephraseErrorMessage = "No AI service selected."
-            showingRephraseError = true
-            return
-        }
-        
-        rephraseService.rephraseText(text, using: apiService) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let rephrased):
-                    withAnimation {
-                        self.text = rephrased
-                    }
-                case .failure(let error):
-                    self.rephraseErrorMessage = error.localizedDescription
-                    self.showingRephraseError = true
-                }
-            }
-        }
-    }
-    
     private func selectAndAddImages() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
@@ -671,7 +409,9 @@ struct QuickChatView: View {
             if response == .OK {
                 for url in panel.urls {
                     let attachment = ImageAttachment(url: url, context: viewContext)
-                    attachedImages.append(attachment)
+                    DispatchQueue.main.async {
+                        composerState.attachedImages.append(attachment)
+                    }
                 }
             }
         }
@@ -688,7 +428,9 @@ struct QuickChatView: View {
             if response == .OK {
                 for url in panel.urls {
                     let attachment = FileAttachment(url: url, context: viewContext)
-                    attachedFiles.append(attachment)
+                    DispatchQueue.main.async {
+                        composerState.attachedFiles.append(attachment)
+                    }
                 }
             }
         }

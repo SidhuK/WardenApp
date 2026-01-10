@@ -30,9 +30,7 @@ struct ContentView: View {
     @AppStorage("defaultApiService") private var defaultApiServiceID: String?
     @StateObject private var previewStateManager = PreviewStateManager()
 
-    @State private var windowRef: NSWindow?
     @State private var openedChatId: String? = nil
-    @State private var columnVisibility = NavigationSplitViewVisibility.all
     
     // New state variables for inline project views
     @State private var showingCreateProject = false
@@ -151,57 +149,7 @@ struct ContentView: View {
 
 
     func newChat() {
-        let uuid = UUID()
-        let newChat = ChatEntity(context: viewContext)
-
-        newChat.id = uuid
-        newChat.newChat = true
-        newChat.temperature = 0.8
-        newChat.top_p = 1.0
-        newChat.behavior = "default"
-        newChat.newMessage = ""
-        newChat.createdDate = Date()
-        newChat.updatedDate = Date()
-        newChat.systemMessage = AppConstants.chatGptSystemMessage
-        newChat.gptModel = gptModel
-        newChat.name = "New Chat"
-
-        if let defaultServiceIDString = defaultApiServiceID,
-            let url = URL(string: defaultServiceIDString),
-            let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url)
-        {
-
-            do {
-                let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity
-                newChat.apiService = defaultService
-                newChat.gptModel = defaultService?.model ?? AppConstants.chatGptDefaultModel
-                
-                // If the default API service has a default persona, use it
-                if let defaultPersona = defaultService?.defaultPersona {
-                    newChat.persona = defaultPersona
-                    
-                    // If the persona has its own preferred API service, use that instead
-                    if let personaPreferredService = defaultPersona.defaultApiService {
-                        newChat.apiService = personaPreferredService
-                        newChat.gptModel = personaPreferredService.model ?? AppConstants.chatGptDefaultModel
-                    }
-                }
-            }
-            catch {
-                WardenLog.coreData.error("Default API service not found: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-
-        do {
-            try viewContext.save()
-            
-            // Select the new chat
-            selectedChat = newChat
-        }
-        catch {
-            WardenLog.coreData.error("Error saving new chat: \(error.localizedDescription, privacy: .public)")
-            viewContext.rollback()
-        }
+        selectedChat = store.createNewChat(preferredModel: gptModel)
     }
 
     func openSettings() {
@@ -221,45 +169,45 @@ struct ContentView: View {
     }
     
     private var detailView: some View {
+        ContentDetailView(
+            chatsCount: chats.count,
+            apiServicesCount: apiServices.count,
+            apiUrl: apiUrl,
+            viewContext: viewContext,
+            openedChatId: openedChatId,
+            selectedChat: $selectedChat,
+            selectedProject: $selectedProject,
+            showingCreateProject: $showingCreateProject,
+            showingEditProject: $showingEditProject,
+            projectToEdit: $projectToEdit,
+            previewStateManager: previewStateManager,
+            onOpenSettings: openSettings,
+            onNewChat: newChat
+        )
+    }
+}
+
+private struct ContentDetailView: View {
+    let chatsCount: Int
+    let apiServicesCount: Int
+    let apiUrl: String
+    let viewContext: NSManagedObjectContext
+    let openedChatId: String?
+
+    @Binding var selectedChat: ChatEntity?
+    @Binding var selectedProject: ProjectEntity?
+    @Binding var showingCreateProject: Bool
+    @Binding var showingEditProject: Bool
+    @Binding var projectToEdit: ProjectEntity?
+
+    @ObservedObject var previewStateManager: PreviewStateManager
+
+    let onOpenSettings: () -> Void
+    let onNewChat: () -> Void
+
+    var body: some View {
         HSplitView {
-            if showingCreateProject {
-                // Show create project view inline
-                CreateProjectView(
-                    onProjectCreated: { project in
-                        selectedProject = project
-                        showingCreateProject = false
-                    },
-                    onCancel: {
-                        showingCreateProject = false
-                    }
-                )
-                .frame(minWidth: 400)
-            } else if showingEditProject, let project = projectToEdit {
-                // Show edit project view inline
-                ProjectSettingsView(project: project, onComplete: {
-                    showingEditProject = false
-                    projectToEdit = nil
-                })
-                .frame(minWidth: 400)
-            } else if let project = selectedProject {
-                // Show project summary when project is selected
-                ProjectSummaryView(project: project)
-                    .frame(minWidth: 400)
-                    .id(project.id)
-            } else if selectedChat != nil {
-                ChatView(viewContext: viewContext, chat: selectedChat!)
-                    .frame(minWidth: 400)
-                    .id(openedChatId)
-            }
-            else {
-                WelcomeScreen(
-                    chatsCount: chats.count,
-                    apiServiceIsPresent: apiServices.count > 0,
-                    customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
-                    openPreferencesView: openSettings,
-                    newChat: newChat
-                )
-            }
+            primaryDetail
 
             if previewStateManager.isPreviewVisible && selectedProject == nil {
                 PreviewPane(stateManager: previewStateManager)
@@ -276,6 +224,44 @@ struct ContentView: View {
                 .frame(width: 1),
             alignment: .leading
         )
+    }
+
+    @ViewBuilder
+    private var primaryDetail: some View {
+        if showingCreateProject {
+            CreateProjectView(
+                onProjectCreated: { project in
+                    selectedProject = project
+                    showingCreateProject = false
+                },
+                onCancel: {
+                    showingCreateProject = false
+                }
+            )
+            .frame(minWidth: 400)
+        } else if showingEditProject, let project = projectToEdit {
+            ProjectSettingsView(project: project, onComplete: {
+                showingEditProject = false
+                projectToEdit = nil
+            })
+            .frame(minWidth: 400)
+        } else if let project = selectedProject {
+            ProjectSummaryView(project: project)
+                .frame(minWidth: 400)
+                .id(project.id)
+        } else if let chat = selectedChat {
+            ChatView(viewContext: viewContext, chat: chat)
+                .frame(minWidth: 400)
+                .id(openedChatId)
+        } else {
+            WelcomeScreen(
+                chatsCount: chatsCount,
+                apiServiceIsPresent: apiServicesCount > 0,
+                customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
+                openPreferencesView: onOpenSettings,
+                newChat: onNewChat
+            )
+        }
     }
 }
 

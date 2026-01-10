@@ -12,7 +12,7 @@ enum MessageElements {
     case file(UUID)
 }
 
-struct ChatBubbleContent: Equatable {
+struct ChatBubbleContent {
     let message: String
     let own: Bool
     let waitingForResponse: Bool?
@@ -20,15 +20,9 @@ struct ChatBubbleContent: Equatable {
     let systemMessage: Bool
     let isStreaming: Bool
     let isLatestMessage: Bool
-
-    static func == (lhs: ChatBubbleContent, rhs: ChatBubbleContent) -> Bool {
-        return lhs.message == rhs.message && lhs.own == rhs.own && lhs.waitingForResponse == rhs.waitingForResponse
-            && lhs.systemMessage == rhs.systemMessage && lhs.isStreaming == rhs.isStreaming
-            && lhs.isLatestMessage == rhs.isLatestMessage
-    }
 }
 
-struct ChatBubbleView: View, Equatable {
+struct ChatBubbleView: View {
     let content: ChatBubbleContent
     var message: MessageEntity?
     var color: String?
@@ -49,10 +43,6 @@ struct ChatBubbleView: View, Equatable {
 
     private var effectiveFontSize: Double {
         chatFontSize
-    }
-
-    static func == (lhs: ChatBubbleView, rhs: ChatBubbleView) -> Bool {
-        lhs.content == rhs.content
     }
     
     // Timestamp formatting
@@ -680,7 +670,7 @@ struct BranchToolbarButton: View {
                     origin: origin,
                     onBranchCreated: { _ in
                         NotificationCenter.default.post(
-                            name: .showToast,
+                            name: AppConstants.showToastNotification,
                             object: nil,
                             userInfo: ["message": "Branch created", "icon": "arrow.triangle.branch"]
                         )

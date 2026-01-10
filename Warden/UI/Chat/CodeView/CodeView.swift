@@ -127,11 +127,11 @@ struct CodeView: View {
             updateHighlightedCode(colorScheme: colorScheme)
         }
         .onChange(of: chatFontSize) { _ in
-            HighlighterManager.shared.invalidateCache()
+            Task { await HighlighterManager.shared.invalidateCache() }
             updateHighlightedCode(colorScheme: colorScheme)
         }
         .onChange(of: codeFont) { _ in
-            HighlighterManager.shared.invalidateCache()
+            Task { await HighlighterManager.shared.invalidateCache() }
             updateHighlightedCode(colorScheme: colorScheme)
         }
     }

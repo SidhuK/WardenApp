@@ -3,21 +3,29 @@ import SwiftUI
 import UniformTypeIdentifiers
 import CoreData
 
+struct ComposerState {
+    var text: String = ""
+    var attachedImages: [ImageAttachment] = []
+    var attachedFiles: [FileAttachment] = []
+    var webSearchEnabled: Bool = false
+    var selectedMCPAgents: Set<UUID> = []
+    var isMultiAgentMode: Bool = false
+    var selectedMultiAgentServices: [APIServiceEntity] = []
+    var showServiceSelector: Bool = false
+}
+
 struct MessageInputView: View {
-    @Binding var text: String
-    @Binding var attachedImages: [ImageAttachment]
-    @Binding var attachedFiles: [FileAttachment]
-    @Binding var webSearchEnabled: Bool
-    @Binding var selectedMCPAgents: Set<UUID>
+    @Binding var state: ComposerState
     var chat: ChatEntity?
     var imageUploadsAllowed: Bool
     var isStreaming: Bool = false
     
-    // Multi-agent mode parameters
-    @Binding var isMultiAgentMode: Bool
-    @Binding var selectedMultiAgentServices: [APIServiceEntity]
-    @Binding var showServiceSelector: Bool
+    // Multi-agent mode parameters (controlled by `state`)
     var enableMultiAgentMode: Bool
+    var showsWebSearchToggle: Bool = true
+    var showsRephraseButton: Bool = true
+    var showsMCPTools: Bool = true
+    var showsPersonas: Bool = true
     
     var onEnter: () -> Void
     var onAddImage: () -> Void
@@ -30,6 +38,7 @@ struct MessageInputView: View {
     @StateObject private var mcpManager = MCPManager.shared
 
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.wardenTheme) private var theme
     @State var frontReturnKeyType = OmenTextField.ReturnKeyType.next
     @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
@@ -57,11 +66,13 @@ struct MessageInputView: View {
     }
     
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming
+        let hasText = !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
+        return (hasText || hasAttachments) && !isStreaming
     }
     
     private var canRephrase: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+        !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         chat?.apiService != nil && 
         !rephraseService.isRephrasing
     }
@@ -85,57 +96,66 @@ struct MessageInputView: View {
                         attachmentMenu
                         
                         // Web Search
-                        Button(action: {
-                            webSearchEnabled.toggle()
-                        }) {
-                            Image(systemName: "globe")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(webSearchEnabled ? .accentColor : .secondary)
+                        if showsWebSearchToggle {
+                            Button(action: {
+                                state.webSearchEnabled.toggle()
+                            }) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(state.webSearchEnabled ? .accentColor : .secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .help("Web Search")
+                            .accessibilityLabel("Web Search")
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Web Search")
                         
                         // Rephrase (Text tool icon)
-                        Button(action: rephraseText) {
-                            ZStack {
-                                if rephraseService.isRephrasing {
-                                    ProgressView()
-                                        .scaleEffect(0.5)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "pencil.and.outline")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
+                        if showsRephraseButton {
+                            Button(action: rephraseText) {
+                                ZStack {
+                                    if rephraseService.isRephrasing {
+                                        ProgressView()
+                                            .scaleEffect(0.5)
+                                            .frame(width: 14, height: 14)
+                                    } else {
+                                        Image(systemName: "pencil.and.outline")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
+                                    }
                                 }
+                                .frame(width: 24, height: 24)
+                                .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
+                                .cornerRadius(6)
                             }
-                            .frame(width: 24, height: 24)
-                            .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
-                            .cornerRadius(6)
+                            .buttonStyle(PlainButtonStyle())
+                            .help("Rephrase Message")
+                            .accessibilityLabel("Rephrase Message")
+                            .disabled(!canRephrase)
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Rephrase Message")
                         
                         // MCP Agents (Tool icon)
-                        mcpMenuButton
+                        if showsMCPTools {
+                            mcpMenuButton
+                        }
                         
                         // Multi-Agent Mode
                         if enableMultiAgentMode {
                             HStack(spacing: 8) {
                                 Button(action: {
-                                    isMultiAgentMode.toggle()
+                                    state.isMultiAgentMode.toggle()
                                 }) {
-                                    Image(systemName: isMultiAgentMode ? "person.3.fill" : "person.3")
+                                    Image(systemName: state.isMultiAgentMode ? "person.3.fill" : "person.3")
                                         .font(.system(size: 13))
-                                        .foregroundColor(isMultiAgentMode ? .accentColor : .secondary)
+                                        .foregroundColor(state.isMultiAgentMode ? .accentColor : .secondary)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .help("Multi-Agent Mode")
                                 
-                                if isMultiAgentMode {
+                                if state.isMultiAgentMode {
                                     Button(action: {
-                                        showServiceSelector = true
+                                        state.showServiceSelector = true
                                     }) {
-                                        Text("\(selectedMultiAgentServices.count)/3")
+                                        Text("\(state.selectedMultiAgentServices.count)/3")
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(.secondary)
                                             .padding(.horizontal, 4)
@@ -148,24 +168,27 @@ struct MessageInputView: View {
                         }
                         
                         // Personas (Persona icon)
-                        Button(action: {
-                            showingPersonaPopover.toggle()
-                        }) {
-                            Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.circle")
-                                .font(.system(size: 14))
-                                .foregroundColor(chat?.persona != nil ? .accentColor : .secondary)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Assistant Personas")
-                        .popover(isPresented: $showingPersonaPopover, arrowEdge: .top) {
-                            if let chat = chat {
-                                PersonaSelectorView(chat: chat)
-                                    .environment(\.managedObjectContext, viewContext)
-                                    .frame(width: 400, height: 80)
-                                    .background(Color(nsColor: .windowBackgroundColor))
-                            } else {
-                                Text("Persona selection only available in active chats")
-                                    .padding()
+                        if showsPersonas {
+                            Button(action: {
+                                showingPersonaPopover.toggle()
+                            }) {
+                                Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.circle")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(chat?.persona != nil ? .accentColor : .secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .help("Assistant Personas")
+                            .accessibilityLabel("Assistant Personas")
+                            .popover(isPresented: $showingPersonaPopover, arrowEdge: .top) {
+                                if let chat = chat {
+                                    PersonaSelectorView(chat: chat)
+                                        .environment(\.managedObjectContext, viewContext)
+                                        .frame(width: 400, height: 80)
+                                        .background(Color(nsColor: .windowBackgroundColor))
+                                } else {
+                                    Text("Persona selection only available in active chats")
+                                        .padding()
+                                }
                             }
                         }
                     }
@@ -185,11 +208,11 @@ struct MessageInputView: View {
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(theme.surfaceBackground)
             .cornerRadius(cornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    .stroke(theme.surfaceBorder, lineWidth: 1)
             )
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
@@ -225,6 +248,7 @@ struct MessageInputView: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help("Add attachments")
+        .accessibilityLabel("Add attachments")
     }
 
     private var mcpMenuButton: some View {
@@ -234,19 +258,20 @@ struct MessageInputView: View {
             ZStack {
                 Image(systemName: "wrench.and.screwdriver.fill")
                     .font(.system(size: 11))
-                    .foregroundColor(!selectedMCPAgents.isEmpty ? .white : .secondary)
+                    .foregroundColor(!state.selectedMCPAgents.isEmpty ? .white : .secondary)
             }
             .frame(width: 24, height: 24)
-            .background(!selectedMCPAgents.isEmpty ? Color.accentColor : Color.clear)
+            .background(!state.selectedMCPAgents.isEmpty ? Color.accentColor : Color.clear)
             .cornerRadius(6)
         }
         .buttonStyle(PlainButtonStyle())
         .help("MCP Tools")
+        .accessibilityLabel("MCP Tools")
         .popover(isPresented: $showingMCPMenu, arrowEdge: .bottom) {
             if !mcpManager.configs.isEmpty {
                 MCPAgentMenuSection(
                     configs: mcpManager.configs,
-                    selectedAgents: $selectedMCPAgents,
+                    selectedAgents: $state.selectedMCPAgents,
                     statuses: mcpManager.serverStatuses
                 )
                 .padding(.vertical, 8)
@@ -267,27 +292,27 @@ struct MessageInputView: View {
     }
 
     private var attachmentPreviewsSection: some View {
-        let hasAttachments = !attachedImages.isEmpty || !attachedFiles.isEmpty
+        let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
         
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 // Image previews
-                ForEach(attachedImages) { attachment in
+                ForEach(state.attachedImages) { attachment in
                     ImagePreviewView(attachment: attachment) { index in
-                        if let index = attachedImages.firstIndex(where: { $0.id == attachment.id }) {
+                        if let index = state.attachedImages.firstIndex(where: { $0.id == attachment.id }) {
                             withAnimation {
-                                attachedImages.remove(at: index)
+                                state.attachedImages.remove(at: index)
                             }
                         }
                     }
                 }
                 
                 // File previews
-                ForEach(attachedFiles) { attachment in
+                ForEach(state.attachedFiles) { attachment in
                     FilePreviewView(attachment: attachment) { index in
-                        if let index = attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
+                        if let index = state.attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
                             withAnimation {
-                                attachedFiles.remove(at: index)
+                                state.attachedFiles.remove(at: index)
                             }
                         }
                     }
@@ -318,6 +343,7 @@ struct MessageInputView: View {
             }
             .buttonStyle(PlainButtonStyle())
             .help("Stop generating")
+            .accessibilityLabel("Stop generating")
             .transition(.scale.combined(with: .opacity))
         } else {
             // Send button
@@ -339,6 +365,7 @@ struct MessageInputView: View {
             .buttonStyle(PlainButtonStyle())
             .disabled(!canSend)
             .help("Send message")
+            .accessibilityLabel("Send message")
             .transition(.scale.combined(with: .opacity))
         }
     }
@@ -351,16 +378,16 @@ struct MessageInputView: View {
         
         // Store original text if this is the first rephrase
         if originalText.isEmpty {
-            originalText = text
+            originalText = state.text
         }
         
-        rephraseService.rephraseText(text, using: apiService) { [self] result in
+        rephraseService.rephraseText(state.text, using: apiService) { [self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let rephrasedText):
                     // Animate the text change
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        text = rephrasedText
+                        state.text = rephrasedText
                     }
                     
                 case .failure(let error):
@@ -407,13 +434,13 @@ struct MessageInputView: View {
                             if imageUploadsAllowed && isValidImageFile(url: url) {
                                 let attachment = ImageAttachment(url: url)
                                 withAnimation {
-                                    attachedImages.append(attachment)
+                                    state.attachedImages.append(attachment)
                                 }
                             } else if !isValidImageFile(url: url) {
                                 // Treat as file attachment
                                 let attachment = FileAttachment(url: url)
                                 withAnimation {
-                                    attachedFiles.append(attachment)
+                                    state.attachedFiles.append(attachment)
                                 }
                             }
                         }
@@ -430,13 +457,13 @@ struct MessageInputView: View {
                             if imageUploadsAllowed && isValidImageFile(url: url) {
                                 let attachment = ImageAttachment(url: url)
                                 withAnimation {
-                                    attachedImages.append(attachment)
+                                    state.attachedImages.append(attachment)
                                 }
                             } else {
                                 // Treat as file attachment
                                 let attachment = FileAttachment(url: url)
                                 withAnimation {
-                                    attachedFiles.append(attachment)
+                                    state.attachedFiles.append(attachment)
                                 }
                             }
                         }
@@ -461,7 +488,7 @@ struct MessageInputView: View {
 
     private var textInputArea: some View {
         ZStack(alignment: .topLeading) {
-            if text.isEmpty {
+            if state.text.isEmpty {
                 Text(inputPlaceholderText)
                     .font(.system(size: effectiveFontSize))
                     .foregroundColor(.secondary)
@@ -470,7 +497,7 @@ struct MessageInputView: View {
             }
             
             SubmitTextEditor(
-                text: $text,
+                text: $state.text,
                 dynamicHeight: $dynamicHeight,
                 onSubmit: {
                     if canSend {

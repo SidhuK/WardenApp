@@ -219,6 +219,46 @@ final class ChatStore: ObservableObject {
         deleteEntities(ChatEntity.self, predicate: NSPredicate(format: "id IN %@", chatIDs))
     }
 
+    func createNewChat(preferredModel: String) -> ChatEntity? {
+        let chat = ChatEntity(context: viewContext)
+        chat.id = UUID()
+        chat.newChat = true
+        chat.temperature = 0.8
+        chat.top_p = 1.0
+        chat.behavior = "default"
+        chat.newMessage = ""
+        chat.createdDate = Date()
+        chat.updatedDate = Date()
+        chat.systemMessage = AppConstants.chatGptSystemMessage
+        chat.gptModel = preferredModel
+        chat.name = "New Chat"
+
+        if let defaultService = getDefaultAPIService() {
+            chat.apiService = defaultService
+            chat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
+
+            if let defaultPersona = defaultService.defaultPersona {
+                chat.persona = defaultPersona
+
+                if let personaPreferredService = defaultPersona.defaultApiService {
+                    chat.apiService = personaPreferredService
+                    chat.gptModel = personaPreferredService.model ?? AppConstants.chatGptDefaultModel
+                }
+            }
+        }
+
+        do {
+            try viewContext.save()
+            return chat
+        } catch {
+            WardenLog.coreData.error(
+                "Error saving new chat: \(error.localizedDescription, privacy: .public)"
+            )
+            viewContext.rollback()
+            return nil
+        }
+    }
+
     func deleteAllPersonas() {
         deleteEntities(PersonaEntity.self)
     }

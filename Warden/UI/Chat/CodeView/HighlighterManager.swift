@@ -2,11 +2,18 @@
 import Highlightr
 import SwiftUI
 
-class HighlighterManager {
+struct HighlightedCode: @unchecked Sendable {
+    let value: NSAttributedString
+}
+
+actor HighlighterManager {
     static let shared = HighlighterManager()
     private let highlightr = Highlightr()
     private let cache = NSCache<NSString, NSAttributedString>()
-    @AppStorage("codeFont") private var codeFont: String = AppConstants.firaCode
+    
+    private var codeFont: String {
+        UserDefaults.standard.string(forKey: "codeFont") ?? AppConstants.firaCode
+    }
     
     // Streaming optimization: track last highlighted content to avoid redundant work
     private var lastStreamingCodeLength: Int = 0
@@ -17,13 +24,19 @@ class HighlighterManager {
     // Minimum character change to trigger re-highlight during streaming
     private let streamingRehighlightThreshold = 50
 
-    func highlight(code: String, language: String, theme: String, fontSize: Double = 14, isStreaming: Bool = false) -> NSAttributedString? {
+    func highlight(
+        code: String,
+        language: String,
+        theme: String,
+        fontSize: Double = 14,
+        isStreaming: Bool = false
+    ) -> HighlightedCode? {
         var cacheKey: NSString = ""
         if !isStreaming {
             cacheKey = "\(code):\(language):\(theme):\(codeFont)" as NSString
 
             if let cached = cache.object(forKey: cacheKey) {
-                return cached
+                return HighlightedCode(value: cached)
             }
         } else {
             // Streaming optimization: skip re-highlighting if content hasn't grown enough
@@ -32,7 +45,7 @@ class HighlighterManager {
                language == lastStreamingLanguage,
                theme == lastStreamingTheme,
                currentLength - lastStreamingCodeLength < streamingRehighlightThreshold {
-                return lastResult
+                return HighlightedCode(value: lastResult)
             }
         }
 
@@ -54,7 +67,7 @@ class HighlighterManager {
                 lastStreamingLanguage = language
                 lastStreamingTheme = theme
             }
-            return attributedString
+            return HighlightedCode(value: attributedString)
         }
         return nil
     }
@@ -75,4 +88,3 @@ class HighlighterManager {
     }
     
 }
-

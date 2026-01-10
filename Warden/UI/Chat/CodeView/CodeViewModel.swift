@@ -11,6 +11,7 @@ final class CodeViewModel: ObservableObject {
     private let language: String
     private let isStreaming: Bool
     private var copiedResetTask: Task<Void, Never>?
+    private var highlightTask: Task<Void, Never>?
     
     init(code: String, language: String, isStreaming: Bool) {
         self.code = code
@@ -25,18 +26,22 @@ final class CodeViewModel: ObservableObject {
         let currentFontSize = chatFontSize
         let currentStreaming = isStreaming
         
-        Task(priority: .userInitiated) { [currentCode, currentLanguage, theme, currentFontSize, currentStreaming] in
-            let highlighted = await Task.detached(priority: .userInitiated) {
-                HighlighterManager.shared.highlight(
-                    code: currentCode,
-                    language: currentLanguage,
-                    theme: theme,
-                    fontSize: currentFontSize,
-                    isStreaming: currentStreaming
-                )
-            }.value
-
-            self.highlightedCode = highlighted
+        highlightTask?.cancel()
+        highlightTask = Task(priority: .userInitiated) { [currentCode, currentLanguage, theme, currentFontSize, currentStreaming] in
+            if currentStreaming {
+                try? await Task.sleep(nanoseconds: 120_000_000)
+            }
+            guard !Task.isCancelled else { return }
+            
+            let highlighted = await HighlighterManager.shared.highlight(
+                code: currentCode,
+                language: currentLanguage,
+                theme: theme,
+                fontSize: currentFontSize,
+                isStreaming: currentStreaming
+            )
+            guard !Task.isCancelled else { return }
+            highlightedCode = highlighted?.value
         }
     }
     

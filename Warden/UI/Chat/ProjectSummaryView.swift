@@ -419,6 +419,15 @@ struct ProjectSummaryView: View {
     }
     
     // MARK: - Context Menu Actions
+
+    @MainActor
+    private func presentAlert(_ alert: NSAlert, handler: @escaping (NSApplication.ModalResponse) -> Void) {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            alert.beginSheetModal(for: window, completionHandler: handler)
+        } else {
+            handler(alert.runModal())
+        }
+    }
     
     private func togglePinChat(_ chat: ChatEntity) {
         chat.isPinned.toggle()
@@ -440,7 +449,7 @@ struct ProjectSummaryView: View {
         textField.stringValue = chat.name
         alert.accessoryView = textField
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 let newName = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !newName.isEmpty {
@@ -467,7 +476,7 @@ struct ProjectSummaryView: View {
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 chat.clearMessages()
                 do {
@@ -488,7 +497,7 @@ struct ProjectSummaryView: View {
         alert.addButton(withTitle: "Delete")
         alert.addButton(withTitle: "Cancel")
         
-        alert.beginSheetModal(for: NSApp.keyWindow!) { response in
+        presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
                 viewContext.delete(chat)
                 do {

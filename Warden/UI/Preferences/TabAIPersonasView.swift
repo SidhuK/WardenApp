@@ -353,17 +353,19 @@ struct PersonaDetailView: View {
                             .foregroundStyle(.secondary)
 
                         MessageInputView(
-                            text: $systemMessage,
-                            attachedImages: .constant([]),
-                            attachedFiles: .constant([]),
-                            webSearchEnabled: .constant(false),
-                            selectedMCPAgents: .constant([]),
+                            state: Binding(
+                                get: {
+                                    var state = ComposerState()
+                                    state.text = systemMessage
+                                    return state
+                                },
+                                set: { newState in
+                                    systemMessage = newState.text
+                                }
+                            ),
                             chat: nil,
                             imageUploadsAllowed: false,
                             isStreaming: false,
-                            isMultiAgentMode: .constant(false),
-                            selectedMultiAgentServices: .constant([]),
-                            showServiceSelector: .constant(false),
                             enableMultiAgentMode: false,
                             onEnter: {},
                             onAddImage: {},

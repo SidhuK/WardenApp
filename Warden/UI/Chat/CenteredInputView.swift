@@ -2,19 +2,11 @@ import SwiftUI
 import CoreData
 
 struct CenteredInputView: View {
-    @Binding var newMessage: String
-    @Binding var attachedImages: [ImageAttachment]
-    @Binding var attachedFiles: [FileAttachment]
-    @Binding var webSearchEnabled: Bool
-    @Binding var selectedMCPAgents: Set<UUID>
+    @Binding var composerState: ComposerState
     let chat: ChatEntity
     let imageUploadsAllowed: Bool
     let isStreaming: Bool
     
-    // Multi-agent mode parameters
-    @Binding var isMultiAgentMode: Bool
-    @Binding var selectedMultiAgentServices: [APIServiceEntity]
-    @Binding var showServiceSelector: Bool
     let enableMultiAgentMode: Bool
     
     let onSendMessage: () -> Void
@@ -32,7 +24,7 @@ struct CenteredInputView: View {
     }
     
     private var canSend: Bool {
-        !newMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !composerState.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     var body: some View {
@@ -64,17 +56,10 @@ struct CenteredInputView: View {
                             HStack {
                                 Spacer()
                                 MessageInputView(
-                                    text: $newMessage,
-                                    attachedImages: $attachedImages,
-                                    attachedFiles: $attachedFiles,
-                                    webSearchEnabled: $webSearchEnabled,
-                                    selectedMCPAgents: $selectedMCPAgents,
+                                    state: $composerState,
                                     chat: chat,
                                     imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
                                     isStreaming: isStreaming,
-                                    isMultiAgentMode: $isMultiAgentMode,
-                                    selectedMultiAgentServices: $selectedMultiAgentServices,
-                                    showServiceSelector: $showServiceSelector,
                                     enableMultiAgentMode: enableMultiAgentMode,
                                     onEnter: onSendMessage,
                                     onAddImage: onAddImage,
@@ -102,14 +87,16 @@ struct CenteredInputView: View {
                             }
                             
                             // Suggestion Cards
-                            if attachedImages.isEmpty && attachedFiles.isEmpty && newMessage.isEmpty {
+                            if composerState.attachedImages.isEmpty,
+                               composerState.attachedFiles.isEmpty,
+                               composerState.text.isEmpty {
                                 HStack(spacing: 12) {
                                     SuggestionCard(
                                         icon: "lightbulb.max",
                                         title: "Brainstorm",
                                         subtitle: "Creative ideas",
                                         color: .yellow,
-                                        action: { newMessage = "Give me some creative ideas for " }
+                                        action: { composerState.text = "Give me some creative ideas for " }
                                     )
                                     .frame(maxWidth: .infinity)
                                     
@@ -118,7 +105,7 @@ struct CenteredInputView: View {
                                         title: "Summarize",
                                         subtitle: "Long documents",
                                         color: .blue,
-                                        action: { newMessage = "Summarize this text: " }
+                                        action: { composerState.text = "Summarize this text: " }
                                     )
                                     .frame(maxWidth: .infinity)
                                     
@@ -127,7 +114,7 @@ struct CenteredInputView: View {
                                         title: "Code",
                                         subtitle: "Write & debug",
                                         color: .purple,
-                                        action: { newMessage = "Write a function that " }
+                                        action: { composerState.text = "Write a function that " }
                                     )
                                     .frame(maxWidth: .infinity)
                                     
@@ -136,7 +123,7 @@ struct CenteredInputView: View {
                                         title: "Design",
                                         subtitle: "UI/UX concepts",
                                         color: .pink,
-                                        action: { newMessage = "Design a user interface for " }
+                                        action: { composerState.text = "Design a user interface for " }
                                     )
                                     .frame(maxWidth: .infinity)
                                 }
@@ -152,9 +139,9 @@ struct CenteredInputView: View {
                 .padding(.horizontal, 32)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: newMessage.isEmpty)
-        .animation(.easeInOut(duration: 0.25), value: attachedImages.isEmpty)
-        .animation(.easeInOut(duration: 0.25), value: attachedFiles.isEmpty)
+        .animation(.easeInOut(duration: 0.25), value: composerState.text.isEmpty)
+        .animation(.easeInOut(duration: 0.25), value: composerState.attachedImages.isEmpty)
+        .animation(.easeInOut(duration: 0.25), value: composerState.attachedFiles.isEmpty)
     }
 }
 
@@ -222,17 +209,10 @@ struct SuggestionCard: View {
     }()
     
     CenteredInputView(
-        newMessage: .constant(""),
-        attachedImages: .constant([]),
-        attachedFiles: .constant([]),
-        webSearchEnabled: .constant(false),
-        selectedMCPAgents: .constant([]),
+        composerState: .constant(ComposerState()),
         chat: mockChat,
         imageUploadsAllowed: true,
         isStreaming: false,
-        isMultiAgentMode: .constant(false),
-        selectedMultiAgentServices: .constant([]),
-        showServiceSelector: .constant(false),
         enableMultiAgentMode: false,
         onSendMessage: {},
         onAddImage: {},

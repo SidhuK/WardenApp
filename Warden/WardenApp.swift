@@ -5,6 +5,27 @@ import Sparkle
 import Darwin
 import os
 
+struct WardenTheme {
+    var surfaceBackground: Color = Color(nsColor: .controlBackgroundColor)
+    var surfaceBorder: Color = Color.primary.opacity(0.1)
+    var surfaceHover: Color = Color.primary.opacity(0.05)
+    var cornerRadiusL: CGFloat = 18
+    var cornerRadiusM: CGFloat = 12
+    var spacingS: CGFloat = 8
+    var spacingM: CGFloat = 12
+}
+
+private struct WardenThemeKey: EnvironmentKey {
+    static let defaultValue = WardenTheme()
+}
+
+extension EnvironmentValues {
+    var wardenTheme: WardenTheme {
+        get { self[WardenThemeKey.self] }
+        set { self[WardenThemeKey.self] = newValue }
+    }
+}
+
 class PersistenceController {
     static let shared = PersistenceController()
 
@@ -98,6 +119,7 @@ struct WardenApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .preferredColorScheme(preferredColorScheme)
+                .environment(\.wardenTheme, WardenTheme())
                 .environmentObject(store)
                 .onAppear {
                     SettingsWindowManager.shared.configure(chatStore: store)
