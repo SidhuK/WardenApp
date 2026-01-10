@@ -1,6 +1,6 @@
 import Foundation
 
-class BaseAPIHandler: APIService {
+class BaseAPIHandler: APIService, @unchecked Sendable {
     let name: String
     let baseURL: URL
     internal let apiKey: String
@@ -31,7 +31,8 @@ class BaseAPIHandler: APIService {
         temperature: Float,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
-        Task {
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
             do {
                 let result = try await sendMessage(requestMessages, tools: tools, temperature: temperature)
                 completion(.success(result))
@@ -65,7 +66,11 @@ class BaseAPIHandler: APIService {
                 return
             }
             
-            Task {
+            Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self else {
+                    continuation.finish()
+                    return
+                }
                 var isStreamingReasoning = false
                 do {
                     let (stream, response) = try await streamingSession.bytes(for: request)

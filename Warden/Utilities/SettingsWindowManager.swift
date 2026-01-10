@@ -9,6 +9,7 @@ final class SettingsWindowManager: ObservableObject {
     
     private var settingsWindow: NSWindow?
     private var windowDelegate: SettingsWindowDelegate?
+    private var chatStore: ChatStore?
     
     private init() {
         // Observe UserDefaults changes for color scheme
@@ -50,6 +51,8 @@ final class SettingsWindowManager: ObservableObject {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
+
+        let store = chatStore ?? ChatStore(persistenceController: PersistenceController.shared)
         
         // Get the current color scheme preference
         let preferredColorSchemeRaw = UserDefaults.standard.integer(forKey: "preferredColorScheme")
@@ -63,7 +66,7 @@ final class SettingsWindowManager: ObservableObject {
         
         // Create the settings view with required environment objects and color scheme
         let settingsView = SettingsView()
-            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
+            .environmentObject(store)
             .environment(\.managedObjectContext, PersistenceController.shared.container.viewContext)
             .preferredColorScheme(colorScheme)
         
@@ -112,6 +115,10 @@ final class SettingsWindowManager: ObservableObject {
         settingsWindow?.close()
         settingsWindow = nil
         windowDelegate = nil
+    }
+
+    func configure(chatStore: ChatStore) {
+        self.chatStore = chatStore
     }
 }
 

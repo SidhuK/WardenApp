@@ -100,6 +100,8 @@ struct WardenApp: App {
                 .preferredColorScheme(preferredColorScheme)
                 .environmentObject(store)
                 .onAppear {
+                    SettingsWindowManager.shared.configure(chatStore: store)
+
                     // Configure main window with proper sizing
                     if let window = NSApp.windows.first {
                         // Set frame autosave name for persistence
@@ -293,9 +295,7 @@ struct WardenApp: App {
             
             // Initialize model cache with all configured services
             // This will fetch models in the background for better performance
-            DispatchQueue.global(qos: .userInitiated).async {
-                ModelCacheManager.shared.fetchAllModels(from: apiServices)
-            }
+            ModelCacheManager.shared.fetchAllModels(from: apiServices)
             
             // Initialize metadata cache for all configured services
             // This fetches pricing and capability information in the background
