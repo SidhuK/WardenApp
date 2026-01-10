@@ -7,6 +7,42 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.4</title>
+            <description><![CDATA[
+                <h3>New Features</h3>
+                <ul>
+                <li>Chat Editing — Edit your previously sent messages with character count and adjustable font size</li>
+                <li>Menu Bar Quick Access (Beta) — New menu bar icon for instant AI access from anywhere</li>
+                <li>Arrow Key Navigation — Use arrow keys to navigate between chats in the sidebar</li>
+                </ul>
+                <h3>UI Improvements</h3>
+                <ul>
+                <li>Settings Redesign — Cleaner, more native and minimal settings UI</li>
+                <li>Sidebar Enhancements — Improved hover effects, swipe actions, and visual polish</li>
+                <li>Projects View — Enhanced data loading and improved visual hierarchy</li>
+                <li>Provider Logos — Inverted icon rendering for better readability in dark mode</li>
+                <li>Quick Chat — Expanded functionality with web search and dynamic height adjustment</li>
+                <li>Better Onboarding — Step-based navigation with visual indicators and keyboard shortcuts</li>
+                </ul>
+                <h3>Bug Fixes & Improvements</h3>
+                <ul>
+                <li>Fixed scrolling issues for AI assistant responses</li>
+                <li>Improved selection handling and alert presentation in chat list</li>
+                <li>Code readability improvements and UI refactoring</li>
+                </ul>
+            ]]></description>
+            <pubDate>Fri, 10 Jan 2026 00:00:00 +0000</pubDate>
+            <sparkle:version>0.9.4</sparkle:version>
+            <sparkle:shortVersionString>0.9.4</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.4/Warden.zip"
+                       sparkle:version="0.9.4"
+                       sparkle:shortVersionString="0.9.4"
+                       type="application/zip"
+                       length="15100000"
+                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+        </item>
+
+        <item>
             <title>Version 0.9.3</title>
             <description><![CDATA[
                 <ul>
