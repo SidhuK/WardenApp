@@ -11,8 +11,7 @@ struct ChatListView: View {
     @State private var previousOffset: CGFloat = 0
     @State private var newChatButtonTapped = false
     @State private var settingsButtonTapped = false
-    @State private var selectedChatIDs: Set<UUID> = []
-    @State private var lastSelectedChatID: UUID?
+    @State private var selectedChatID: UUID?
     @FocusState private var isSearchFocused: Bool
     
     // Search performance optimization
@@ -192,14 +191,7 @@ struct ChatListView: View {
             searchBarSection
                 .padding(.bottom, 8)
 
-            // Selection toolbar (only shown when chats are selected)
-            if !selectedChatIDs.isEmpty {
-                selectionToolbar
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-            }
-
-            List(selection: $selectedChatIDs) {
+            List(selection: $selectedChatID) {
                 // Projects section
                 projectsSection
                 
@@ -210,11 +202,10 @@ struct ChatListView: View {
             }
             .listStyle(.sidebar)
             .onDeleteCommand {
-                deleteSelectedChats()
+                deleteSelectedChat()
             }
             .onExitCommand {
-                selectedChatIDs.removeAll()
-                lastSelectedChatID = nil
+                selectedChatID = nil
             }
             
             // Settings button at the bottom
@@ -222,28 +213,19 @@ struct ChatListView: View {
                 .padding(.bottom, 12)
         }
         .onChange(of: selectedChat) { _, newValue in
-            guard let newValue else { return }
-            guard !selectedChatIDs.contains(newValue.id) else { return }
-            selectedChatIDs = [newValue.id]
-            lastSelectedChatID = newValue.id
+            selectedChatID = newValue?.id
         }
         .onChange(of: selectedProject) { _, newValue in
             guard newValue != nil else { return }
-            selectedChatIDs.removeAll()
-            lastSelectedChatID = nil
+            selectedChatID = nil
         }
-        .onChange(of: selectedChatIDs) { oldValue, newValue in
-            let added = newValue.subtracting(oldValue)
-            if let lastAdded = added.first {
-                lastSelectedChatID = lastAdded
-            }
-
-            guard let activeID = lastSelectedChatID ?? newValue.first else {
+        .onChange(of: selectedChatID) { _, newValue in
+            guard let newValue else {
                 selectedChat = nil
                 return
             }
-
-            if selectedChat?.id != activeID, let chat = chats.first(where: { $0.id == activeID }) {
+            guard selectedChat?.id != newValue else { return }
+            if let chat = chats.first(where: { $0.id == newValue }) {
                 selectedChat = chat
             }
         }
@@ -399,77 +381,24 @@ struct ChatListView: View {
         .buttonStyle(PlainButtonStyle())
     }
 
-    private var selectionToolbar: some View {
-        HStack(spacing: 8) {
-            Text("\(selectedChatIDs.count) selected")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-            
-            Spacer()
-            
-            Button {
-                if selectedChatIDs.count == filteredChats.count {
-                    selectedChatIDs.removeAll()
-                    lastSelectedChatID = nil
-                } else {
-                    selectedChatIDs = Set(filteredChats.map { $0.id })
-                    lastSelectedChatID = filteredChats.last?.id
-                }
-            } label: {
-                Text(selectedChatIDs.count == filteredChats.count ? "Deselect All" : "Select All")
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .buttonStyle(.borderless)
-            
-            Button(role: .destructive) {
-                deleteSelectedChats()
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 12))
-            }
-            .buttonStyle(.borderless)
-            .disabled(selectedChatIDs.isEmpty)
-            .accessibilityLabel("Delete selected chats")
-            
-            Button {
-                selectedChatIDs.removeAll()
-                lastSelectedChatID = nil
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Clear selection")
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
+    private func deleteSelectedChat() {
+        guard let selectedChatID else { return }
+        guard let chat = chats.first(where: { $0.id == selectedChatID }) else { return }
 
-    private func deleteSelectedChats() {
-        guard !selectedChatIDs.isEmpty else { return }
-        
         let alert = NSAlert()
-        alert.messageText = "Delete \(selectedChatIDs.count) chat\(selectedChatIDs.count == 1 ? "" : "s")?"
-        alert.informativeText = "Are you sure you want to delete the selected chats? This action cannot be undone."
+        alert.messageText = "Delete chat \(chat.name)?"
+        alert.informativeText = "Are you sure you want to delete this chat? This action cannot be undone."
         alert.addButton(withTitle: "Delete")
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
         presentAlert(alert) { response in
             if response == .alertFirstButtonReturn {
-                // Clear selectedChat if it's in the list to be deleted
-                if let selectedChatID = selectedChat?.id, selectedChatIDs.contains(selectedChatID) {
+                if selectedChat?.id == selectedChatID {
                     selectedChat = nil
                 }
-                
-                // Perform bulk delete
-                store.deleteSelectedChats(selectedChatIDs)
-                
-                // Clear selection
-                selectedChatIDs.removeAll()
-                lastSelectedChatID = nil
+                self.selectedChatID = nil
+                store.deleteSelectedChats([selectedChatID])
             }
         }
     }
@@ -574,16 +503,7 @@ struct ChatListView: View {
                             chat: chat,
                             selectedChat: $selectedChat,
                             viewContext: viewContext,
-                            searchText: searchText,
-                            isSelectionMode: selectedChatIDs.count > 1,
-                            isSelected: selectedChatIDs.contains(chat.id),
-                            onSelectionToggle: { chatID, isSelected in
-                                if isSelected {
-                                    selectedChatIDs.insert(chatID)
-                                } else {
-                                    selectedChatIDs.remove(chatID)
-                                }
-                            }
+                            searchText: searchText
                         )
                         .tag(chat.id)
                     }
@@ -610,16 +530,7 @@ struct ChatListView: View {
                                 chat: chat,
                                 selectedChat: $selectedChat,
                                 viewContext: viewContext,
-                                searchText: searchText,
-                                isSelectionMode: selectedChatIDs.count > 1,
-                                isSelected: selectedChatIDs.contains(chat.id),
-                                onSelectionToggle: { chatID, isSelected in
-                                    if isSelected {
-                                        selectedChatIDs.insert(chatID)
-                                    } else {
-                                        selectedChatIDs.remove(chatID)
-                                    }
-                                }
+                                searchText: searchText
                             )
                             .tag(chat.id)
                         }
