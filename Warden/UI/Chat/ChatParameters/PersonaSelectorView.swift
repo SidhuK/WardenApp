@@ -83,11 +83,11 @@ struct PersonaSelectorView: View {
             chat.gptModel = defaultApiService.model ?? AppConstants.chatGptDefaultModel
             
             // Notify that the message manager needs to be recreated
-            NotificationCenter.default.post(
-                name: NSNotification.Name("RecreateMessageManager"),
-                object: nil,
-                userInfo: ["chatId": chat.id]
-            )
+                NotificationCenter.default.post(
+                    name: .recreateMessageManager,
+                    object: nil,
+                    userInfo: ["chatId": chat.id]
+                )
         }
         
         chat.objectWillChange.send()

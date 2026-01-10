@@ -41,22 +41,32 @@ final class ModelMetadataCache: ObservableObject {
         }
         
         isFetching[provider] = true
-        
-        defer {
-            isFetching[provider] = false
-            lastRefreshAttempt[provider] = Date()
-        }
-        
-        do {
-            let fetcher = ModelMetadataFetcherFactory.createFetcher(for: provider)
-            let newMetadata = try await fetcher.fetchAllMetadata(apiKey: apiKey)
-            
-            cachedMetadata[provider] = newMetadata
-            saveToStorage()
-        } catch {
-            WardenLog.app.error(
-                "Failed to fetch metadata for \(provider, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
+
+        Task.detached(priority: .utility) { [provider, apiKey] in
+            defer {
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.isFetching[provider] = false
+                    self.lastRefreshAttempt[provider] = Date()
+                }
+            }
+
+            do {
+                let fetcher = ModelMetadataFetcherFactory.createFetcher(for: provider)
+                let newMetadata = try await fetcher.fetchAllMetadata(apiKey: apiKey)
+
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    self.cachedMetadata[provider] = newMetadata
+                    self.saveToStorage()
+                }
+            } catch {
+                await MainActor.run {
+                    WardenLog.app.error(
+                        "Failed to fetch metadata for \(provider, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
+                }
+            }
         }
     }
     

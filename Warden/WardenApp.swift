@@ -193,7 +193,7 @@ struct WardenApp: App {
             CommandMenu("Chat") {
                 Button("Retry Last Message") {
                     NotificationCenter.default.post(
-                        name: NSNotification.Name("RetryMessage"),
+                        name: .retryMessage,
                         object: nil
                     )
                 }

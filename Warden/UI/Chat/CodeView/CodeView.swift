@@ -118,7 +118,7 @@ struct CodeView: View {
             if !isRendered {
                 isRendered = true
                 NotificationCenter.default.post(
-                    name: NSNotification.Name("CodeBlockRendered"),
+                    name: .codeBlockRendered,
                     object: nil
                 )
             }

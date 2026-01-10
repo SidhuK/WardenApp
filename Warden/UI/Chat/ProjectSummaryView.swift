@@ -245,7 +245,7 @@ struct ProjectSummaryView: View {
                     ForEach(recentChats, id: \.objectID) { chat in
                         ChatCard(chat: chat, projectColor: projectColor, showDate: false) {
                             NotificationCenter.default.post(
-                                name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                name: .selectChatFromProjectSummary,
                                 object: chat
                             )
                         }
@@ -276,7 +276,7 @@ struct ProjectSummaryView: View {
                      ForEach(allChats, id: \.objectID) { chat in
                          Button(action: {
                              NotificationCenter.default.post(
-                                 name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                 name: .selectChatFromProjectSummary,
                                  object: chat
                              )
                          }) {
@@ -370,7 +370,7 @@ struct ProjectSummaryView: View {
         
         // Post notification to select the new chat
         NotificationCenter.default.post(
-            name: NSNotification.Name("SelectChatFromProjectSummary"),
+            name: .selectChatFromProjectSummary,
             object: newChat
         )
     }

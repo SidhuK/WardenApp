@@ -116,7 +116,7 @@ final class ModelSelectorViewModel: ObservableObject {
             let serviceModels = modelCache.getModels(for: serviceType)
             
             let visibleModels = serviceModels.filter { model in
-                if !selectedModelsManager.getSelectedModelIds(for: serviceType).isEmpty {
+                if selectedModelsManager.hasCustomSelection(for: serviceType) {
                     return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
                 }
                 return true
@@ -432,7 +432,7 @@ struct StandaloneModelSelector: View {
         try? viewContext.save()
         
         NotificationCenter.default.post(
-            name: NSNotification.Name("RecreateMessageManager"),
+            name: .recreateMessageManager,
             object: nil,
             userInfo: ["chatId": chat.id]
         )

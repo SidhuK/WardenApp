@@ -264,8 +264,12 @@ final class APIServiceDetailViewModel: ObservableObject {
         return AppConstants.defaultApiConfigurations[type]?.imageUploadsSupported ?? false
     }
     
-    func updateSelectedModels(_ selectedIds: Set<String>) {
-        selectedModelsManager.setSelectedModels(for: type, modelIds: selectedIds)
+    func updateSelectedModels(_ selectedIds: Set<String>?) {
+        if let selectedIds {
+            selectedModelsManager.setSelectedModels(for: type, modelIds: selectedIds)
+        } else {
+            selectedModelsManager.clearCustomSelection(for: type)
+        }
     }
     
     // MARK: - Error Handling

@@ -197,7 +197,7 @@ struct ChatView: View {
                                 onGoToSettings: {
                                     // Open preferences to Web Search tab
                                     NotificationCenter.default.post(
-                                        name: NSNotification.Name("OpenPreferences"),
+                                        name: .openPreferences,
                                         object: nil,
                                         userInfo: ["tab": "webSearch"]
                                     )
@@ -238,7 +238,7 @@ struct ChatView: View {
         .onAppear(perform: {
             self.lastOpenedChatId = chat.id.uuidString
         })
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RecreateMessageManager"))) {
+        .onReceive(NotificationCenter.default.publisher(for: .recreateMessageManager)) {
             notification in
             if let chatId = notification.userInfo?["chatId"] as? UUID,
                 chatId == chat.id
@@ -382,7 +382,7 @@ struct ChatView: View {
                                 }
                             }
                         }
-                        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) {
+                        .onReceive(NotificationCenter.default.publisher(for: .codeBlockRendered)) {
                             _ in
                             if pendingCodeBlocks > 0 {
                                 pendingCodeBlocks -= 1

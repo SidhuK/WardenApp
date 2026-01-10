@@ -70,6 +70,7 @@ fastlane/test_output
 # Local build products
 build/
 DerivedData/
+.derivedData/
 *.xcarchive
 
 # User-specific project state
@@ -92,4 +93,8 @@ docs/html/
 *.xcresult
 coverage/
 .keys/
+build.log
 Swift Best Practices Skill.md
+skills/
+utlitlies_plan.md
+UI_plan.md

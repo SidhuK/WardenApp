@@ -50,7 +50,7 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         panel.makeKey()
         
         // Reset chat state
-        NotificationCenter.default.post(name: Notification.Name("ResetQuickChat"), object: nil)
+        NotificationCenter.default.post(name: .resetQuickChat, object: nil)
     }
     
     func closePanel() {

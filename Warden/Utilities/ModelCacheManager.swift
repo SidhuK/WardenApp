@@ -19,22 +19,20 @@ final class ModelCacheManager: ObservableObject {
     private init() {}
     
     /// Get all models across all providers, sorted by favorites first, then provider/model
-    /// Only shows selected models and favorites, not all available models
+    /// By default (no custom selection), all models are shown.
     var allModels: [(provider: String, model: AIModel)] {
         let selectedModelsManager = SelectedModelsManager.shared
         var result: [(provider: String, model: AIModel)] = []
         
         for (providerType, models) in cachedModels {
-            // Get custom selected models
-            let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
-            
-            // Filter to only show selected models + favorites
-            let filteredModels = models.filter { model in
-                let isFavorite = favoriteManager.isFavorite(provider: providerType, model: model.id)
-                let isSelected = selectedModelIds.contains(model.id)
-                
-                // Show if it's a favorite OR if it's in the selected list
-                return isFavorite || isSelected
+            let filteredModels: [AIModel]
+            if selectedModelsManager.hasCustomSelection(for: providerType) {
+                let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
+                filteredModels = models.filter { model in
+                    favoriteManager.isFavorite(provider: providerType, model: model.id) || selectedModelIds.contains(model.id)
+                }
+            } else {
+                filteredModels = models
             }
             
             for model in filteredModels {
@@ -86,21 +84,19 @@ final class ModelCacheManager: ObservableObject {
     }
     
     /// Get models for a specific provider, sorted with favorites first
-    /// Only shows selected models and favorites, not all available models
+    /// By default (no custom selection), all models are shown.
     func getModelsSorted(for providerType: String) -> [AIModel] {
         let allModels = getModels(for: providerType)
         let selectedModelsManager = SelectedModelsManager.shared
         
-        // Get custom selected models
-        let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
-        
-        // Filter to only show selected models + favorites
-        let filteredModels = allModels.filter { model in
-            let isFavorite = favoriteManager.isFavorite(provider: providerType, model: model.id)
-            let isSelected = selectedModelIds.contains(model.id)
-            
-            // Show if it's a favorite OR if it's in the selected list
-            return isFavorite || isSelected
+        let filteredModels: [AIModel]
+        if selectedModelsManager.hasCustomSelection(for: providerType) {
+            let selectedModelIds = selectedModelsManager.getSelectedModelIds(for: providerType)
+            filteredModels = allModels.filter { model in
+                favoriteManager.isFavorite(provider: providerType, model: model.id) || selectedModelIds.contains(model.id)
+            }
+        } else {
+            filteredModels = allModels
         }
         
         return filteredModels.sorted { first, second in
@@ -170,33 +166,37 @@ final class ModelCacheManager: ObservableObject {
             return 
         }
         
-        let apiConfig = APIServiceConfig(
-            name: providerType,
-            apiUrl: serviceUrl,
-            apiKey: currentAPIKey,
-            model: ""
-        )
-        
-        let apiService = APIServiceFactory.createAPIService(config: apiConfig)
-        
-        Task {
+        let fallbackStaticModels = AppConstants.defaultApiConfigurations[providerType]?.models.map { AIModel(id: $0) } ?? []
+        Task.detached(priority: .userInitiated) { [providerType, currentAPIKey, serviceUrl] in
             do {
+                let apiConfig = APIServiceConfig(
+                    name: providerType,
+                    apiUrl: serviceUrl,
+                    apiKey: currentAPIKey,
+                    model: ""
+                )
+                let apiService = APIServiceFactory.createAPIService(config: apiConfig)
                 let models = try await apiService.fetchModels()
-                cachedModels[providerType] = models
-                lastFetchedAPIKeys[providerType] = currentAPIKey
-                loadingStates[providerType] = false
-                fetchErrors[providerType] = nil
-                
-                // Trigger metadata fetching for this provider now that we have models
-                await triggerMetadataFetch(for: providerType, apiKey: currentAPIKey)
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    self.cachedModels[providerType] = models
+                    self.lastFetchedAPIKeys[providerType] = currentAPIKey
+                    self.loadingStates[providerType] = false
+                    self.fetchErrors[providerType] = nil
+                }
+
+                await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: currentAPIKey)
             } catch {
-                loadingStates[providerType] = false
-                fetchErrors[providerType] = error.localizedDescription
-                
-                // Fall back to static models if fetching fails
-                if let staticModels = AppConstants.defaultApiConfigurations[providerType]?.models {
-                    cachedModels[providerType] = staticModels.map { AIModel(id: $0) }
-                    lastFetchedAPIKeys[providerType] = currentAPIKey
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    self.loadingStates[providerType] = false
+                    self.fetchErrors[providerType] = error.localizedDescription
+
+                    // Fall back to static models if fetching fails.
+                    if !fallbackStaticModels.isEmpty {
+                        self.cachedModels[providerType] = fallbackStaticModels
+                        self.lastFetchedAPIKeys[providerType] = currentAPIKey
+                    }
                 }
             }
         }
@@ -233,11 +233,5 @@ final class ModelCacheManager: ObservableObject {
         } catch {
             return false
         }
-    }
-    
-    /// Trigger metadata fetching for a provider
-    /// This is called after models are successfully fetched to ensure metadata is available
-    private func triggerMetadataFetch(for providerType: String, apiKey: String) async {
-        await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
     }
 } 

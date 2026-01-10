@@ -9,7 +9,6 @@ final class SettingsWindowManager: ObservableObject {
     
     private var settingsWindow: NSWindow?
     private var windowDelegate: SettingsWindowDelegate?
-    private var appearanceObserver: NSKeyValueObservation?
     
     private init() {
         // Observe UserDefaults changes for color scheme

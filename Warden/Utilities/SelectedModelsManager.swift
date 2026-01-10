@@ -14,10 +14,9 @@ final class SelectedModelsManager: ObservableObject {
     private init() {}
     
     /// Get the selected model IDs for a service
-    /// Returns nil if no custom selection exists (meaning all models are selected)
+    /// When no custom selection exists, this returns an empty set.
+    /// Use `hasCustomSelection(for:)` to distinguish "show all models" from "show none".
     func getSelectedModelIds(for serviceType: String) -> Set<String> {
-        // customSelections[serviceType] returns Optional<Set<String>?>
-        // We need to flatten this: if key exists and has a value, return the Set; otherwise return empty Set
         if let selection = customSelections[serviceType] {
             return selection ?? Set()
         }

@@ -478,7 +478,7 @@ struct MessageContentView: View {
             .padding(.bottom, 8)
             .padding(.leading, CGFloat(indent) * 4)
             .onAppear {
-                NotificationCenter.default.post(name: NSNotification.Name("CodeBlockRendered"), object: nil)
+                NotificationCenter.default.post(name: .codeBlockRendered, object: nil)
             }
     }
 

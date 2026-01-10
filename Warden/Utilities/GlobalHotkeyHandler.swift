@@ -6,7 +6,11 @@ import os
 final class GlobalHotkeyHandler: ObservableObject {
     static let shared = GlobalHotkeyHandler()
     
+    private static let hotKeySignature: OSType = OSType(0x57415244) // "WARD"
+    private static let hotKeyID: UInt32 = 1
+
     private var hotKeyRef: EventHotKeyRef?
+    private var eventHandlerRef: EventHandlerRef?
     private var onTrigger: (() -> Void)?
     
     private init() {}
@@ -31,7 +35,7 @@ final class GlobalHotkeyHandler: ObservableObject {
             return
         }
         
-        let hotKeyID = EventHotKeyID(signature: OSType(0x57415244), id: 1) // "WARD", 1
+        let hotKeyID = EventHotKeyID(signature: Self.hotKeySignature, id: Self.hotKeyID)
         var hotKeyRef: EventHotKeyRef?
         
         let status = RegisterEventHotKey(
@@ -45,7 +49,7 @@ final class GlobalHotkeyHandler: ObservableObject {
         
         if status == noErr {
             self.hotKeyRef = hotKeyRef
-            installEventHandler()
+            installEventHandlerIfNeeded()
         } else {
             WardenLog.app.error(
                 "GlobalHotkeyHandler: Failed to register hotkey (status: \(status, privacy: .public))"
@@ -58,27 +62,60 @@ final class GlobalHotkeyHandler: ObservableObject {
             UnregisterEventHotKey(hotKeyRef)
             self.hotKeyRef = nil
         }
+
+        if let eventHandlerRef = eventHandlerRef {
+            RemoveEventHandler(eventHandlerRef)
+            self.eventHandlerRef = nil
+        }
     }
     
-    private func installEventHandler() {
+    private func installEventHandlerIfNeeded() {
+        guard eventHandlerRef == nil else { return }
+
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
             eventKind: UInt32(kEventHotKeyPressed)
         )
         
-        InstallEventHandler(
+        var handlerRef: EventHandlerRef?
+        let status = InstallEventHandler(
             GetApplicationEventTarget(),
-            { (_, _, _) -> OSStatus in
-                DispatchQueue.main.async {
-                    GlobalHotkeyHandler.shared.onTrigger?()
+            { _, event, _ -> OSStatus in
+                guard let event else { return noErr }
+
+                var hotKeyID = EventHotKeyID()
+                let parameterStatus = GetEventParameter(
+                    event,
+                    EventParamName(kEventParamDirectObject),
+                    EventParamType(typeEventHotKeyID),
+                    nil,
+                    MemoryLayout<EventHotKeyID>.size,
+                    nil,
+                    &hotKeyID
+                )
+
+                if parameterStatus == noErr,
+                   hotKeyID.signature == GlobalHotkeyHandler.hotKeySignature,
+                   hotKeyID.id == GlobalHotkeyHandler.hotKeyID {
+                    Task { @MainActor in
+                        GlobalHotkeyHandler.shared.onTrigger?()
+                    }
                 }
                 return noErr
             },
             1,
             &eventType,
             nil,
-            nil
+            &handlerRef
         )
+
+        if status == noErr {
+            eventHandlerRef = handlerRef
+        } else {
+            WardenLog.app.error(
+                "GlobalHotkeyHandler: Failed to install event handler (status: \(status, privacy: .public))"
+            )
+        }
     }
     
     private func keyCode(for key: String) -> UInt16? {

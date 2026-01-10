@@ -202,7 +202,7 @@ struct QuickChatView: View {
             ensureQuickChatEntity()
             isInputFocused = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ResetQuickChat"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .resetQuickChat)) { _ in
             resetChat()
         }
         .alert("Rephrase Error", isPresented: $showingRephraseError) {
@@ -772,7 +772,7 @@ struct QuickChatContentView: View {
                                             NSApp.activate(ignoringOtherApps: true)
                                             // Post notification to open chat
                                             NotificationCenter.default.post(
-                                                name: NSNotification.Name("SelectChatFromProjectSummary"),
+                                                name: .selectChatFromProjectSummary,
                                                 object: chat
                                             )
                                         }) {

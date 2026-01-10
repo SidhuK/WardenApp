@@ -12,7 +12,7 @@ final class MessageManager: ObservableObject {
     private let streamUpdateInterval = AppConstants.streamedResponseUpdateUIInterval
     
     // Debounce saving to Core Data
-    private var saveDebounceWorkItem: DispatchWorkItem?
+    private var saveDebounceTask: Task<Void, Never>?
     
     // Published property for search status updates
     @Published var searchStatus: SearchStatus?
@@ -53,20 +53,22 @@ final class MessageManager: ObservableObject {
         streamingAssistantText = ""
         
         // Force save if pending
-        if let workItem = saveDebounceWorkItem {
-            workItem.perform()
-            saveDebounceWorkItem?.cancel()
-            saveDebounceWorkItem = nil
-        }
+        flushPendingSave()
     }
     
     private func debounceSave() {
-        saveDebounceWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.viewContext.performSaveWithRetry(attempts: 1)
+        saveDebounceTask?.cancel()
+        saveDebounceTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard let self else { return }
+            self.viewContext.performSaveWithRetry(attempts: 1)
         }
-        saveDebounceWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
+    }
+
+    private func flushPendingSave() {
+        saveDebounceTask?.cancel()
+        saveDebounceTask = nil
+        viewContext.performSaveWithRetry(attempts: 1)
     }
     
     // MARK: - Tavily Search Support
@@ -679,10 +681,10 @@ final class MessageManager: ObservableObject {
         ) { [weak self] result in
             guard let self = self else { return }
             
-            // Ensure all UI updates happen on main thread
-            DispatchQueue.main.async {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
                 switch result {
-                case .success(let (fullMessage, toolCalls)):
+                case .success(let (fullMessage, _)):
                     if let messageText = fullMessage {
                         // Store the tool calls with this message for persistence
                         let toolCallsToStore = self.activeToolCalls
@@ -691,12 +693,12 @@ final class MessageManager: ObservableObject {
                     }
                     self.debounceSave()
                     self.generateChatNameIfNeeded(chat: chat)
-                    
+
                     // Clear active tool calls for next message (they're now stored with the message)
                     self.activeToolCalls.removeAll()
-                    
+
                     completion(.success(()))
-                    
+
                 case .failure(let error):
                     // Keep tool calls visible on error for debugging
                     completion(.failure(error))

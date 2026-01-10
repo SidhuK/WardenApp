@@ -16,11 +16,11 @@ struct MCPAgentSelector: View {
                     .foregroundColor(.secondary)
                     .font(.caption)
                 Button("Configure Agents...") {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("OpenPreferences"),
-                        object: nil,
-                        userInfo: ["tab": "mcp"]
-                    )
+                        NotificationCenter.default.post(
+                            name: .openPreferences,
+                            object: nil,
+                            userInfo: ["tab": "mcp"]
+                        )
                 }
                 .buttonStyle(.link)
                 .font(.caption)

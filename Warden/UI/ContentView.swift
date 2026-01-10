@@ -67,21 +67,19 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: AppConstants.createNewProjectNotification)) { _ in
             showingCreateProject = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SelectChatFromProjectSummary"))) { notification in
+        .onReceive(NotificationCenter.default.publisher(for: .selectChatFromProjectSummary)) { notification in
             if let chat = notification.object as? ChatEntity {
                 selectedChat = chat
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenChatByID"))) { notification in
+        .onReceive(NotificationCenter.default.publisher(for: .openChatByID)) { notification in
             if let objectID = notification.userInfo?["chatObjectID"] as? NSManagedObjectID {
                 if let chat = viewContext.object(with: objectID) as? ChatEntity {
-                    DispatchQueue.main.async {
-                        selectedChat = chat
-                    }
+                    selectedChat = chat
                 }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenInlineSettings"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .openInlineSettings)) { _ in
             SettingsWindowManager.shared.openSettingsWindow()
         }
         .onChange(of: selectedChat) { oldValue, newValue in

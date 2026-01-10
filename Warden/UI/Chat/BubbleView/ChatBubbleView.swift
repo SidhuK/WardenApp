@@ -271,7 +271,7 @@ struct ChatBubbleView: View, Equatable {
 
             if content.isLatestMessage && !content.systemMessage {
                 ToolbarButton(icon: "arrow.clockwise", text: "Retry") {
-                    NotificationCenter.default.post(name: NSNotification.Name("RetryMessage"), object: nil)
+                    NotificationCenter.default.post(name: .retryMessage, object: nil)
                 }
             }
 
@@ -393,13 +393,13 @@ struct ChatBubbleView: View, Equatable {
                 error: error,
                 onRetry: {
                     NotificationCenter.default.post(
-                        name: NSNotification.Name("RetryMessage"),
+                        name: .retryMessage,
                         object: nil
                     )
                 },
                 onIgnore: {
                     NotificationCenter.default.post(
-                        name: NSNotification.Name("IgnoreError"),
+                        name: .ignoreError,
                         object: nil
                     )
                 },

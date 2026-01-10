@@ -3,7 +3,7 @@
 **Warden** is a native macOS AI chat client (SwiftUI, Core Data) supporting 10+ AI providers.
 
 ## Build & Test
-- **Build**: `xcodebuild -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS' build`
+- **Build**: `xcodebuild -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS,arch=arm64' build`
 - **Test All**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS'`
 - **Single Test**: `xcodebuild test -project Warden.xcodeproj -scheme Warden -destination 'platform=macOS' -only-testing:WardenTests/TestClassName/testMethodName`
 - **Format**: Uses `.swift-format` (120 char lines, 4-space indent). Config at `Warden/.swift-format`.

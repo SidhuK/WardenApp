@@ -249,7 +249,7 @@ struct MessageListView: View {
                 codeBlocksRendered = true
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CodeBlockRendered"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .codeBlockRendered)) { _ in
             guard pendingCodeBlocks > 0 else { return }
             pendingCodeBlocks -= 1
             if pendingCodeBlocks == 0 {
@@ -259,10 +259,10 @@ struct MessageListView: View {
                 }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RetryMessage"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .retryMessage)) { _ in
             onRetryMessage()
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("IgnoreError"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .ignoreError)) { _ in
             onIgnoreError()
         }
         .onChange(of: sortedMessages.last?.body) { _, _ in

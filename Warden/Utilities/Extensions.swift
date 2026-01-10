@@ -32,34 +32,51 @@ extension Data {
 }
 
 extension Date {
+    @MainActor
     func formattedTimestamp() -> String {
-        let formatter = DateFormatter()
         let now = Date()
         let calendar = Calendar.current
         
         // Check if it's today
         if calendar.isDate(self, inSameDayAs: now) {
-            formatter.dateFormat = "HH:mm"
-            return formatter.string(from: self)
+            return TimestampFormatters.todayTime.string(from: self)
         }
         
         // Check if it's yesterday
         if calendar.isDate(self, inSameDayAs: calendar.date(byAdding: .day, value: -1, to: now) ?? now) {
-            formatter.dateFormat = "HH:mm"
-            return "Yesterday \(formatter.string(from: self))"
+            return "Yesterday \(TimestampFormatters.todayTime.string(from: self))"
         }
         
         // Check if it's within the current week
         let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: now) ?? now
         if self > weekAgo {
-            formatter.dateFormat = "E HH:mm"
-            return formatter.string(from: self)
+            return TimestampFormatters.weekdayTime.string(from: self)
         }
         
         // For older messages, show date and time
-        formatter.dateFormat = "MMM d, HH:mm"
-        return formatter.string(from: self)
+        return TimestampFormatters.monthDayTime.string(from: self)
     }
+}
+
+@MainActor
+private enum TimestampFormatters {
+    static let todayTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    static let weekdayTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E HH:mm"
+        return formatter
+    }()
+
+    static let monthDayTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, HH:mm"
+        return formatter
+    }()
 }
 
 extension String {
