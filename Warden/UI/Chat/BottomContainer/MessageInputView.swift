@@ -43,7 +43,6 @@ struct MessageInputView: View {
     @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
-    @State private var showingMCPMenu = false
     @State private var showingPersonaPopover = false
     @StateObject private var rephraseService = RephraseService()
 
@@ -131,11 +130,6 @@ struct MessageInputView: View {
                             .help("Rephrase Message")
                             .accessibilityLabel("Rephrase Message")
                             .disabled(!canRephrase)
-                        }
-                        
-                        // MCP Agents (Tool icon)
-                        if showsMCPTools {
-                            mcpMenuButton
                         }
                         
                         // Multi-Agent Mode
@@ -240,54 +234,73 @@ struct MessageInputView: View {
             Button(action: onAddFile) {
                 Label("Add File", systemImage: "doc")
             }
+            
+            if showsMCPTools {
+                Divider()
+                
+                if mcpManager.configs.isEmpty {
+                    Text("No MCP Agents configured")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(mcpManager.configs) { config in
+                        mcpAgentButton(for: config)
+                    }
+                }
+            }
         } label: {
-            Image(systemName: "paperclip")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.secondary)
+            HStack(spacing: 4) {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(state.selectedMCPAgents.isEmpty ? .secondary : .accentColor)
+                
+                if !state.selectedMCPAgents.isEmpty {
+                    Text("\(state.selectedMCPAgents.count)")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color.accentColor))
+                }
+            }
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Add attachments")
-        .accessibilityLabel("Add attachments")
+        .help("Add attachments & tools")
+        .accessibilityLabel("Add attachments and tools")
     }
-
-    private var mcpMenuButton: some View {
+    
+    @ViewBuilder
+    private func mcpAgentButton(for config: MCPServerConfig) -> some View {
+        let isSelected = state.selectedMCPAgents.contains(config.id)
+        let status = mcpManager.serverStatuses[config.id] ?? .disconnected
+        
         Button(action: {
-            showingMCPMenu.toggle()
-        }) {
-            ZStack {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.system(size: 11))
-                    .foregroundColor(!state.selectedMCPAgents.isEmpty ? .white : .secondary)
-            }
-            .frame(width: 24, height: 24)
-            .background(!state.selectedMCPAgents.isEmpty ? Color.accentColor : Color.clear)
-            .cornerRadius(6)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .help("MCP Tools")
-        .accessibilityLabel("MCP Tools")
-        .popover(isPresented: $showingMCPMenu, arrowEdge: .bottom) {
-            if !mcpManager.configs.isEmpty {
-                MCPAgentMenuSection(
-                    configs: mcpManager.configs,
-                    selectedAgents: $state.selectedMCPAgents,
-                    statuses: mcpManager.serverStatuses
-                )
-                .padding(.vertical, 8)
-                .frame(minWidth: 200)
+            if isSelected {
+                state.selectedMCPAgents.remove(config.id)
             } else {
-                VStack(spacing: 12) {
-                    Text("No MCP Agents configured")
-                        .font(.headline)
-                    Text("Configure MCP servers in Settings to use them here.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding()
-                .frame(width: 220)
+                state.selectedMCPAgents.insert(config.id)
             }
+        }) {
+            HStack {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                
+                Circle()
+                    .fill(statusColor(for: status))
+                    .frame(width: 6, height: 6)
+                
+                Text(config.name)
+            }
+        }
+        .disabled(!config.enabled)
+    }
+    
+    private func statusColor(for status: MCPManager.ServerStatus) -> Color {
+        switch status {
+        case .connected: return .green
+        case .disconnected: return .gray
+        case .error: return .red
+        case .connecting: return .orange
         }
     }
 
