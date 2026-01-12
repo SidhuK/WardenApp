@@ -67,16 +67,10 @@ struct MessageCell: View {
                     
                     // Branch indicator badge
                     if chat.isBranch {
-                        ZStack {
-                            Circle()
-                                .fill(Color.accentColor.opacity(0.15))
-                                .frame(width: 16, height: 16)
-                            
-                            Image(systemName: "arrow.triangle.branch")
-                                .font(.system(size: 8, weight: .semibold))
-                                .foregroundColor(.accentColor)
-                        }
-                        .help(branchHelpText)
+                        Image(systemName: "arrow.triangle.branch")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(self.isActive ? .white : .secondary)
+                            .help(branchHelpText)
                     }
                 }
                 .padding(.leading, isSelectionMode ? 4 : 8)
@@ -121,15 +115,6 @@ struct MessageCell: View {
             }
             .frame(maxWidth: .infinity)
             .foregroundColor(self.isActive ? .white : .primary)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        self.isActive
-                            ? Color.accentColor
-                            : self.isHovered
-                                ? Color.primary.opacity(0.05) : Color.clear
-                    )
-            )
             .animation(.easeInOut(duration: 0.15), value: isHovered)
             .animation(.easeInOut(duration: 0.15), value: isActive)
             .onHover { hovering in
