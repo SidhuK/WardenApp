@@ -117,7 +117,7 @@ struct MessageInputView: View {
                                             .scaleEffect(0.5)
                                             .frame(width: 14, height: 14)
                                     } else {
-                                        Image(systemName: "pencil.and.outline")
+                                        Image(systemName: "wand.and.stars")
                                             .font(.system(size: 12))
                                             .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
                                     }
@@ -249,7 +249,7 @@ struct MessageInputView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "paperclip")
+                Image(systemName: "plus")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(state.selectedMCPAgents.isEmpty ? .secondary : .accentColor)
                 
