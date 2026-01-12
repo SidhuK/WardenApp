@@ -64,7 +64,7 @@ struct TabAPIServicesView: View {
                         LazyVStack(spacing: 4) {
                             ForEach(apiServices, id: \.objectID) { service in
                                 GlassListRow(
-                                    iconImage: "logo_\(service.type ?? "openai")",
+                                    iconImage: service.type == "openai_custom" ? "logo_chatgpt" : "logo_\(service.type ?? "openai")",
                                     title: service.name ?? "Untitled",
                                     subtitle: service.model ?? "No model",
                                     isSelected: selectedServiceID == service.objectID,
@@ -110,16 +110,19 @@ struct TabAPIServicesView: View {
     }
 
     private func addNewService() {
+        let defaultType = AppConstants.defaultApiType
+        let defaultConfig = AppConstants.defaultApiConfigurations[defaultType]
+
         let newService = APIServiceEntity(context: viewContext)
         newService.id = UUID()
         newService.name = "New API Service"
-        newService.type = "openai"
-        newService.url = URL(string: AppConstants.defaultApiConfigurations["openai"]?.url ?? "")
-        newService.model = "gpt-4o"
+        newService.type = defaultType
+        newService.url = defaultConfig.flatMap { URL(string: $0.url) }
+        newService.model = defaultConfig?.defaultModel ?? ""
         newService.contextSize = 20
         newService.generateChatNames = true
         newService.useStreamResponse = true
-        newService.imageUploadsAllowed = false
+        newService.imageUploadsAllowed = defaultConfig?.imageUploadsSupported ?? false
         newService.addedDate = Date()
         
         do {
@@ -199,7 +202,7 @@ struct APIServiceDetailContent: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
                 HStack(spacing: 16) {
-                    Image("logo_\(service.type ?? "openai")")
+                    Image(service.type == "openai_custom" ? "logo_chatgpt" : "logo_\(service.type ?? "openai")")
                         .resizable()
                         .renderingMode(.template)
                         .frame(width: 32, height: 32)
@@ -239,7 +242,7 @@ struct APIServiceDetailContent: View {
                             
                             SettingsRow(title: "API Type") {
                                 HStack(spacing: 8) {
-                                    Image("logo_\(viewModel.type)")
+                                    Image(viewModel.type == "openai_custom" ? "logo_chatgpt" : "logo_\(viewModel.type)")
                                         .resizable()
                                         .renderingMode(.template)
                                         .frame(width: 14, height: 14)
@@ -262,18 +265,23 @@ struct APIServiceDetailContent: View {
                             
                             SettingsRow(title: "API URL") {
                                 HStack(spacing: 8) {
-                                    TextField("", text: $viewModel.url)
-                                        .textFieldStyle(.roundedBorder)
-                                        .frame(minWidth: 180, maxWidth: 250)
-                                    
-                                    Button {
-                                        viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
-                                    } label: {
-                                        Image(systemName: "arrow.counterclockwise")
-                                            .font(.system(size: 11))
+                                    TextField(
+                                        viewModel.type == "openai_custom" ? "https://api.example.com/v1/chat/completions" : "",
+                                        text: $viewModel.url
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(minWidth: 180, maxWidth: 250)
+
+                                    if viewModel.type != "openai_custom" {
+                                        Button {
+                                            viewModel.url = viewModel.defaultApiConfiguration?.url ?? ""
+                                        } label: {
+                                            Image(systemName: "arrow.counterclockwise")
+                                                .font(.system(size: 11))
+                                        }
+                                        .buttonStyle(.borderless)
+                                        .help("Reset to default")
                                     }
-                                    .buttonStyle(.borderless)
-                                    .help("Reset to default")
                                 }
                             }
                         }
@@ -281,11 +289,11 @@ struct APIServiceDetailContent: View {
                 }
                 
                 // Authentication
-                if (viewModel.defaultApiConfiguration?.apiKeyRef ?? "") != "" {
+                if (viewModel.defaultApiConfiguration?.apiKeyRef ?? "") != "" || viewModel.type == "openai_custom" {
                     GlassCard {
                         VStack(alignment: .leading, spacing: 14) {
                             SettingsSectionHeader(title: "Authentication")
-                            
+
                             VStack(spacing: 12) {
                                 SettingsRow(title: "API Token") {
                                     TextField("", text: $viewModel.apiKey)
@@ -297,8 +305,10 @@ struct APIServiceDetailContent: View {
                                             viewModel.onChangeApiKey(newValue)
                                         }
                                 }
-                                
-                                if let apiKeyRef = viewModel.defaultApiConfiguration?.apiKeyRef,
+
+                                if viewModel.type != "openai_custom",
+                                   let apiKeyRef = viewModel.defaultApiConfiguration?.apiKeyRef,
+                                   !apiKeyRef.isEmpty,
                                    let url = URL(string: apiKeyRef) {
                                     HStack {
                                         Spacer()

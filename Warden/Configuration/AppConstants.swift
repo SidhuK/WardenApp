@@ -586,10 +586,11 @@ Remember that true productivity serves your overall life satisfaction and well-b
         "groq": defaultApiConfiguration(name: "Groq", url: "https://api.groq.com/openai/v1/chat/completions", apiKeyRef: "https://console.groq.com/keys", apiModelRef: "https://console.groq.com/docs/models", defaultModel: "llama-3.3-70b-versatile", models: ["meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct", "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "deepseek-r1-distill-llama-70b", "qwen-qwq-32b", "mistral-saba-24b", "gemma2-9b-it", "mixtral-8x7b-32768", "llama-guard-3-8b", "meta-llama/Llama-Guard-4-12B"], inherits: "chatgpt"),
         "mistral": defaultApiConfiguration(name: "Mistral", url: "https://api.mistral.ai/v1/chat/completions", apiKeyRef: "https://console.mistral.ai/api-keys/", apiModelRef: "https://docs.mistral.ai/models/", defaultModel: "mistral-large-latest", models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "mistral-tiny-latest", "open-mixtral-8x22b", "open-mixtral-8x7b", "open-mistral-7b"], inherits: "chatgpt"),
         "lmstudio": defaultApiConfiguration(name: "LM Studio", url: "http://localhost:1234/v1/chat/completions", apiKeyRef: "https://lmstudio.ai/docs/api/openai-api", apiModelRef: "https://lmstudio.ai/docs/local-server", defaultModel: "local-model", models: ["local-model"], inherits: "chatgpt"),
+        "openai_custom": defaultApiConfiguration(name: "OpenAI Compatible", url: "", apiKeyRef: "", apiModelRef: "", defaultModel: "", models: [], inherits: "chatgpt", modelsFetching: true, imageUploadsSupported: true),
     ]
 
     /// A list of available API types.
-    static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral", "lmstudio"]
+    static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral", "lmstudio", "openai_custom"]
     
     // MARK: - Notifications
     static let newChatNotification = Notification.Name("newChatNotification")
