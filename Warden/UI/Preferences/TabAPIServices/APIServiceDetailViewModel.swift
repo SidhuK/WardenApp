@@ -67,8 +67,8 @@ final class APIServiceDetailViewModel: ObservableObject {
             imageUploadsAllowed = service.imageUploadsAllowed
             defaultAiPersona = service.defaultPersona
             defaultApiConfiguration = AppConstants.defaultApiConfigurations[type]
-            selectedModel = model
             isCustomModel = !(defaultApiConfiguration?.models.contains(model) ?? false)
+            selectedModel = isCustomModel ? "custom" : model
 
             if let serviceIDString = service.id?.uuidString {
                 do {
@@ -98,19 +98,32 @@ final class APIServiceDetailViewModel: ObservableObject {
     }
 
     private func fetchModelsForService() {
-        guard type.lowercased() == "ollama" || !apiKey.isEmpty else {
+        // Skip model fetch for openai_custom type with empty URL - show guidance instead
+        guard !url.isEmpty else {
+            isLoadingModels = false
             fetchedModels = []
-            // Notify user if API key is missing for non-Ollama services
-            if type.lowercased() != "ollama" {
+            if type == "openai_custom" {
                 userNotification = UserNotification(
-                    type: .warning,
-                    message: "API key required to fetch models. Using default model list."
+                    type: .info,
+                    message: "Enter your API URL (and key if required) to fetch available models"
                 )
             }
             return
         }
-        
+
+        let requiresApiKey = !(defaultApiConfiguration?.apiKeyRef.isEmpty ?? true)
+        guard !requiresApiKey || !apiKey.isEmpty else {
+            isLoadingModels = false
+            fetchedModels = []
+            userNotification = UserNotification(
+                type: .warning,
+                message: "API key required to fetch models. Using default model list."
+            )
+            return
+        }
+
         guard let apiUrl = URL(string: url) else {
+            isLoadingModels = false
             fetchedModels = []
             userNotification = UserNotification(
                 type: .error,
@@ -247,6 +260,12 @@ final class APIServiceDetailViewModel: ObservableObject {
         self.selectedModel = self.model
         
         self.imageUploadsAllowed = self.defaultApiConfiguration?.imageUploadsSupported ?? false
+        
+        if type == "openai_custom" {
+            self.model = ""
+            self.selectedModel = "custom"
+            self.isCustomModel = true
+        }
 
         fetchModelsForService()
     }
