@@ -45,6 +45,7 @@ struct TopTabItem: View {
                     .lineLimit(1)
             }
             .frame(width: 76, height: 48)
+            .contentShape(Rectangle())
             .foregroundStyle(isSelected ? .primary : .secondary)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
