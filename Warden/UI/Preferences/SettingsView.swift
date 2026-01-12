@@ -39,12 +39,10 @@ struct SettingsView: View {
                 case .aiPersonas:
                     TabAIPersonasView()
                         .environment(\.managedObjectContext, viewContext)
-                case .webSearch:
-                    TabTavilySearchView()
+                case .tools:
+                    TabToolsView()
                 case .keyboardShortcuts:
                     TabHotkeysView()
-                case .mcp:
-                    MCPSettingsView()
                 case .contributions:
                     TabContributionsView()
                 }

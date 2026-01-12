@@ -7,9 +7,8 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
     case general = "General"
     case apiServices = "API Services"
     case aiPersonas = "AI Assistants"
-    case webSearch = "Web Search"
+    case tools = "Tools"
     case keyboardShortcuts = "Keyboard Shortcuts"
-    case mcp = "MCP Agents"
     case contributions = "Contributions"
     
     var id: String { rawValue }
@@ -19,9 +18,8 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
         case .general: return "gearshape.fill"
         case .apiServices: return "network"
         case .aiPersonas: return "person.2.fill"
-        case .webSearch: return "globe"
+        case .tools: return "wrench.and.screwdriver.fill"
         case .keyboardShortcuts: return "keyboard.fill"
-        case .mcp: return "server.rack"
         case .contributions: return "heart.fill"
         }
     }
@@ -95,12 +93,10 @@ struct PreferencesView: View {
                 case .aiPersonas:
                     TabAIPersonasView()
                         .environment(\.managedObjectContext, viewContext)
-                case .webSearch:
-                    TabTavilySearchView()
+                case .tools:
+                    TabToolsView()
                 case .keyboardShortcuts:
                     TabHotkeysView()
-                case .mcp:
-                    MCPSettingsView()
                 case .contributions:
                     TabContributionsView()
                 }
