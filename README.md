@@ -3,11 +3,14 @@
 <img src="./assets/Logo.png" width="128" />
 
 # Warden
+
 ### The Native AI Chat Experience for macOS
 
 ![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%2FWardenApp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 <a href="https://findly.tools/wardenapp?utm_source=wardenapp" target="_blank">
   <img 
@@ -36,17 +39,16 @@ No Electron, no web wrappers—just a premium native experience.
 
 </div>
 
-
 ```bash
 brew install --cask SidhuK/warden/warden
 ```
-
 
 ## ✨ Why Warden?
 
 Most AI apps today are just websites wrapped in a window (Electron). They feel heavy, drain battery, and don't integrate well with macOS.
 
 Warden is different. It's built with 100% native code, making it:
+
 - **Blazing Fast**: Launches instantly, uses minimal RAM (<150MB).
 - **Battery Friendly**: Optimized for Apple Silicon efficiency.
 - **Truly Private**: Your data never leaves your device (except to your chosen AI provider).
@@ -74,8 +76,8 @@ brew install --cask SidhuK/warden/warden
 
 <div align="center">
 
-| **Typical User** | **Developer** |
-| :---: | :---: |
+|                                           **Typical User**                                            |                             **Developer**                             |
+| :---------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------: |
 | [**Download Installer**](https://github.com/SidhuK/WardenApp/releases)<br>Simply drag to Applications | [**Build from Source**](#build-from-source)<br>Clone and run in Xcode |
 
 </div>
@@ -90,7 +92,8 @@ cd WardenApp
 open Warden.xcodeproj
 # Press Cmd+R to run
 ```
-### Automatic Updates: 
+
+### Automatic Updates:
 
 Users who have downloaded the app version 0.9 or lower, please download the latest version from the [releases page](https://github.com/SidhuK/WardenApp/releases) to get automatic updates. Earlier versions will not receive updates.
 
