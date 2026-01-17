@@ -55,13 +55,21 @@ Warden is different. It's built with 100% native code, making it:
 
 ## 🚀 Features
 
-- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity,Oenrouter and more using your own API key.
+- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity, OpenRouter and more using your own API key.
 - **Local AI**: Full support for Ollama and LM Studio.
+- **Projects & Workspaces**: Organize chats into projects with colors, descriptions, and project-specific instructions.
+- **AI Assistants (Personas)**: Create custom assistants with different roles, tones, and default settings.
+- **File & PDF Chat**: Drag & drop files (PDF, CSV, text, and more) and ask questions about what’s inside.
+- **Multi-Model Compare (Beta)**: Ask up to 3 models at once, compare responses, then continue with your favorite.
 - **Search Capabilities**: Real-time web search integration with citation support.
 - **Developer Tools**: Native code execution and syntax highlighting.
+- **Tools & Agents**: Toggle tools per message (like web search) and connect optional MCP agents for advanced integrations.
+- **Menu Bar Access**: Keep Warden in your menu bar for quick access.
 - **Fluid Design**: Animations and interactions that feel right at home on your Mac, including liquid glass support for MacOS 26.
 
 ## 📥 Installation
+
+![Warden Dark Mode](./assets/Welcome%20Page.png)
 
 ### Homebrew (Recommended)
 
