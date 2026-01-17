@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="./assets/Logo.png" width="128" />
-
 # Warden
 
 ### The Native AI Chat Experience for macOS
