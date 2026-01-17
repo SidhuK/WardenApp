@@ -7,6 +7,38 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.5</title>
+            <description><![CDATA[
+                <h3>New Features</h3>
+                <ul>
+                <li>Custom OpenAI-compatible API endpoints</li>
+                <li>New Tools tab in Preferences</li>
+                </ul>
+                <h3>Improvements</h3>
+                <ul>
+                <li>MCP Tools integration improvements in the message input</li>
+                <li>Chat list selection and delete handling refinements</li>
+                <li>UI polish across message input, branch indicator, and entity list layout</li>
+                </ul>
+                <h3>Docs</h3>
+                <ul>
+                <li>Updated README and screenshots</li>
+                <li>Added setup guide for OpenRouter API key integration</li>
+                <li>Expanded architecture documentation</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 17 Jan 2026 03:47:48 +0000</pubDate>
+            <sparkle:version>0.9.5</sparkle:version>
+            <sparkle:shortVersionString>0.9.5</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.5/Warden.zip"
+                       sparkle:version="0.9.5"
+                       sparkle:shortVersionString="0.9.5"
+                       type="application/zip"
+                       length="15089809"
+                       sparkle:edSignature="+LfMbonixzuuAwN15NBiOrradwBLWLyI11ZltfQyO6iGrDTabuzcoGcQse7PI/cTws6TFDStyqmeg3+4V+ByAQ==" />
+        </item>
+
+        <item>
             <title>Version 0.9.4</title>
             <description><![CDATA[
                 <h3>New Features</h3>
