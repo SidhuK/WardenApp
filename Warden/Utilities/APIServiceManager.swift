@@ -123,7 +123,11 @@ class APIServiceManager {
         
         // Use async/await with continuation to bridge callback-based API
         return try await withCheckedThrowingContinuation { continuation in
-	            apiServiceInstance.sendMessage(requestMessages, tools: nil, temperature: temperature) { result in
+	            apiServiceInstance.sendMessage(
+	                requestMessages,
+	                tools: nil,
+	                settings: GenerationSettings(temperature: temperature)
+	            ) { result in
 	                switch result {
 	                case .success(let (messageContent, _)):
 	                    guard let messageContent = messageContent else {
@@ -204,10 +208,10 @@ class APIServiceManager {
         apiService: APIService,
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        temperature: Float,
+        settings: GenerationSettings,
         onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
-        let stream = try await apiService.sendMessageStream(messages, tools: tools, temperature: temperature)
+        let stream = try await apiService.sendMessageStream(messages, tools: tools, settings: settings)
         var pendingChunkParts: [String] = []
         var pendingChunkCharacterCount = 0
         let updateInterval = AppConstants.streamedResponseUpdateUIInterval

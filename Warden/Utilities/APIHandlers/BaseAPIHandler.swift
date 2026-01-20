@@ -28,18 +28,20 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
     func sendMessage(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        temperature: Float,
+        settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
-        Task.detached(priority: .userInitiated) { [weak self] in
+        let completionController = CompletionController(completion)
+
+        Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             do {
-                let result = try await sendMessage(requestMessages, tools: tools, temperature: temperature)
-                completion(.success(result))
+                let result = try await sendMessage(requestMessages, tools: tools, settings: settings)
+                await completionController.call(.success(result))
             } catch let error as APIError {
-                completion(.failure(error))
+                await completionController.call(.failure(error))
             } catch {
-                completion(.failure(.requestFailed(error)))
+                await completionController.call(.failure(.requestFailed(error)))
             }
         }
     }
@@ -47,107 +49,128 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
     func sendMessageStream(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        temperature: Float
+        settings: GenerationSettings
     ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
         // Canonical streaming implementation for all handlers.
         // Handlers should override only `prepareRequest` and `parseDeltaJSONResponse` as needed.
         return AsyncThrowingStream { continuation in
-            let request: URLRequest
-            do {
-                request = try self.prepareRequest(
-                    requestMessages: requestMessages,
-                    tools: tools,
-                    model: model,
-                    temperature: temperature,
-                    stream: true
-                )
-            } catch {
-                continuation.finish(throwing: error)
-                return
-            }
-            
-            Task.detached(priority: .userInitiated) { [weak self] in
+            let controller = StreamContinuationController(continuation)
+
+            let streamingTask = Task(priority: .userInitiated) { [weak self] in
                 guard let self else {
-                    continuation.finish()
+                    await controller.finish()
                     return
                 }
-                var isStreamingReasoning = false
                 do {
-                    let (stream, response) = try await streamingSession.bytes(for: request)
-                    let result = self.handleAPIResponse(response, data: nil, error: nil)
-                    
-                    switch result {
-                    case .failure(let error):
-                        let data = try await self.collectResponseBody(from: stream)
-                        let remapped = self.handleAPIResponse(response, data: data, error: nil)
-                        if case .failure(let detailedError) = remapped {
-                            continuation.finish(throwing: detailedError)
-                        }
-                        else {
-                            continuation.finish(throwing: error)
-                        }
-                        return
-                    case .success:
-                        break
-                    }
-                    
-                    try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
-                        guard let self = self else { return }
-                        
-                        // Check if task was cancelled before yielding
-                        try Task.checkCancellation()
-                        
-                        if let data = dataString.data(using: .utf8) {
-                            let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: data)
-                            
-                            if let error = error {
-                                throw error
-                            }
-                            
-                            var pendingToolCalls = toolCalls
+                    var attemptSettings = settings
+                    var didRetryWithoutReasoning = false
 
-                            if let messageData, !messageData.isEmpty {
-                                if role == "reasoning" {
-                                    if !isStreamingReasoning {
-                                        isStreamingReasoning = true
-                                        continuation.yield(("<think>\n", nil))
+                    while true {
+                        let request = try self.prepareRequest(
+                            requestMessages: requestMessages,
+                            tools: tools,
+                            model: model,
+                            settings: attemptSettings,
+                            stream: true
+                        )
+
+                        let (stream, response) = try await streamingSession.bytes(for: request)
+                        let result = self.handleAPIResponse(response, data: nil, error: nil)
+
+                        switch result {
+                        case .failure(let error):
+                            let data = try await self.collectResponseBody(from: stream)
+                            let remapped = self.handleAPIResponse(response, data: data, error: nil)
+
+                            let detailedError: APIError
+                            if case .failure(let failure) = remapped {
+                                detailedError = failure
+                            } else {
+                                detailedError = error
+                            }
+
+                            if !didRetryWithoutReasoning,
+                               ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: detailedError) {
+                                didRetryWithoutReasoning = true
+                                attemptSettings = GenerationSettings(temperature: attemptSettings.temperature, reasoningEffort: .off)
+                                WardenLog.app.notice(
+                                    "Retrying stream without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                                )
+                                continue
+                            }
+
+                            await controller.finish(throwing: detailedError)
+                            return
+                        case .success:
+                            break
+                        }
+
+                        var isStreamingReasoning = false
+
+                        try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
+                            guard let self = self else { return }
+
+                            // Check if task was cancelled before yielding
+                            try Task.checkCancellation()
+
+                            if let data = dataString.data(using: .utf8) {
+                                let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: data)
+
+                                if let error = error {
+                                    throw error
+                                }
+
+                                var pendingToolCalls = toolCalls
+
+                                if let messageData, !messageData.isEmpty {
+                                    if role == "reasoning" {
+                                        if !isStreamingReasoning {
+                                            isStreamingReasoning = true
+                                            await controller.yield(("<think>\n", nil))
+                                        }
+                                        await controller.yield((messageData, nil))
+                                    } else {
+                                        if isStreamingReasoning {
+                                            isStreamingReasoning = false
+                                            await controller.yield(("\n</think>\n\n", nil))
+                                        }
+                                        await controller.yield((messageData, pendingToolCalls))
+                                        pendingToolCalls = nil
                                     }
-                                    continuation.yield((messageData, nil))
-                                } else {
-                                    if isStreamingReasoning {
-                                        isStreamingReasoning = false
-                                        continuation.yield(("\n</think>\n\n", nil))
-                                    }
-                                    continuation.yield((messageData, pendingToolCalls))
+                                } else if let toolCallsOnly = pendingToolCalls {
+                                    await controller.yield((nil, toolCallsOnly))
                                     pendingToolCalls = nil
                                 }
-                            } else if let toolCallsOnly = pendingToolCalls {
-                                continuation.yield((nil, toolCallsOnly))
-                                pendingToolCalls = nil
-                            }
-                            
-                            if finished {
-                                if isStreamingReasoning {
-                                    isStreamingReasoning = false
-                                    continuation.yield(("\n</think>\n\n", nil))
+
+                                if finished {
+                                    if isStreamingReasoning {
+                                        isStreamingReasoning = false
+                                        await controller.yield(("\n</think>\n\n", nil))
+                                    }
+                                    await controller.finish()
+                                    return
                                 }
-                                continuation.finish()
-                                return
                             }
                         }
-                    }
 
-                    if isStreamingReasoning {
-                        isStreamingReasoning = false
-                        continuation.yield(("\n</think>\n\n", nil))
+                        if isStreamingReasoning {
+                            isStreamingReasoning = false
+                            await controller.yield(("\n</think>\n\n", nil))
+                        }
+
+                        await controller.finish()
+                        return
                     }
-                    continuation.finish()
                 } catch is CancellationError {
                     // Silently finish on cancellation - don't throw
-                    continuation.finish()
+                    await controller.finish()
                 } catch {
-                    continuation.finish(throwing: error)
+                    await controller.finish(throwing: error)
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                streamingTask.cancel()
             }
         }
     }
@@ -158,7 +181,7 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         throw APIError.noApiService("Request building not implemented for \(name)")
@@ -178,6 +201,44 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
 }
 
 private extension BaseAPIHandler {
+    actor StreamContinuationController {
+        typealias Element = (String?, [ToolCall]?)
+
+        private var continuation: AsyncThrowingStream<Element, Error>.Continuation?
+
+        init(_ continuation: AsyncThrowingStream<Element, Error>.Continuation) {
+            self.continuation = continuation
+        }
+
+        func yield(_ value: Element) {
+            continuation?.yield(value)
+        }
+
+        func finish() {
+            continuation?.finish()
+            continuation = nil
+        }
+
+        func finish(throwing error: Error) {
+            continuation?.finish(throwing: error)
+            continuation = nil
+        }
+    }
+
+    actor CompletionController {
+        private let completion: (Result<(String?, [ToolCall]?), APIError>) -> Void
+
+        init(_ completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void) {
+            self.completion = completion
+        }
+
+        func call(_ result: Result<(String?, [ToolCall]?), APIError>) async {
+            await MainActor.run {
+                completion(result)
+            }
+        }
+    }
+
     func collectResponseBody(from stream: URLSession.AsyncBytes, maxBytes: Int = 1_048_576) async throws -> Data {
         var data = Data()
         data.reserveCapacity(min(16_384, maxBytes))

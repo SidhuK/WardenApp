@@ -46,7 +46,7 @@ class MistralHandler: BaseAPIHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
@@ -74,7 +74,7 @@ class MistralHandler: BaseAPIHandler {
         var parameters: [String: Any] = [
             "model": model,
             "messages": processedMessages,
-            "temperature": temperature,
+            "temperature": settings.temperature,
             "stream": stream
         ]
         

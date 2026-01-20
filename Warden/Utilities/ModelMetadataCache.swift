@@ -16,7 +16,7 @@ final class ModelMetadataCache: ObservableObject {
     private init() {
         loadFromStorage()
     }
-    
+
     /// Get metadata for a model, fetching if needed
     func getMetadata(provider: String, modelId: String) -> ModelMetadata? {
         return cachedMetadata[provider]?[modelId]
@@ -110,6 +110,23 @@ final class ModelMetadataCache: ObservableObject {
         } catch {
             WardenLog.app.error("Failed to load metadata cache: \(error.localizedDescription, privacy: .public)")
             cachedMetadata = [:]
+        }
+    }
+}
+
+enum ModelMetadataStorage {
+    static let userDefaultsKey = "modelMetadataCache"
+
+    static func getMetadata(provider: String, modelId: String) -> ModelMetadata? {
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey), !data.isEmpty else {
+            return nil
+        }
+
+        do {
+            let decoded = try JSONDecoder().decode([String: [String: ModelMetadata]].self, from: data)
+            return decoded[provider]?[modelId]
+        } catch {
+            return nil
         }
     }
 }

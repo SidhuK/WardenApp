@@ -70,6 +70,7 @@ final class MultiAgentMessageManager: ObservableObject {
 
         let requestMessages = chat.constructRequestMessages(forUserMessage: message, contextSize: contextSize)
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
+        let settings = GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
 
         groupTask = Task { [weak self] in
             guard let self else { return }
@@ -81,7 +82,7 @@ final class MultiAgentMessageManager: ObservableObject {
                         await Self.sendRequest(
                             service: service,
                             requestMessages: requestMessages,
-                            temperature: temperature,
+                            settings: settings,
                             updateAgent: { update in
                                 await MainActor.run { [weak self] in
                                     guard let self, agentIndex < self.activeAgents.count else { return }
@@ -105,7 +106,7 @@ private extension MultiAgentMessageManager {
     static func sendRequest(
         service: APIServiceEntity,
         requestMessages: [[String: String]],
-        temperature: Float,
+        settings: GenerationSettings,
         updateAgent: @Sendable @escaping (@Sendable (inout AgentResponse) -> Void) async -> Void
     ) async {
         guard let config = APIServiceManager.createAPIConfiguration(for: service) else {
@@ -160,7 +161,7 @@ private extension MultiAgentMessageManager {
                 _ = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
-                    temperature: temperature
+                    settings: settings
                 ) { chunk in
                     pendingParts.append(chunk)
                     pendingCharacterCount += chunk.count
@@ -172,7 +173,7 @@ private extension MultiAgentMessageManager {
                 let responseText = try await sendMessage(
                     apiService: apiService,
                     requestMessages: requestMessages,
-                    temperature: temperature
+                    settings: settings
                 )
 
                 await updateAgent { agent in
@@ -205,13 +206,13 @@ private extension MultiAgentMessageManager {
     static func sendMessage(
         apiService: APIService,
         requestMessages: [[String: String]],
-        temperature: Float
+        settings: GenerationSettings
     ) async throws -> String? {
         try await withCheckedThrowingContinuation { continuation in
             ChatService.shared.sendMessage(
                 apiService: apiService,
                 messages: requestMessages,
-                temperature: temperature
+                settings: settings
             ) { result in
                 switch result {
                 case .success(let (responseText, _)):

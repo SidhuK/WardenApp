@@ -139,6 +139,7 @@ final class ChatStore: ObservableObject {
                             chatEntity.top_p = oldChat.top_p ?? 0.0
                             chatEntity.behavior = oldChat.behavior
                             chatEntity.newMessage = oldChat.newMessage ?? ""
+                            chatEntity.reasoningEffortRaw = oldChat.reasoningEffortRaw
                             chatEntity.createdDate = Date()
                             chatEntity.updatedDate = Date()
                             chatEntity.requestMessages = oldChat.requestMessages
@@ -227,6 +228,7 @@ final class ChatStore: ObservableObject {
         chat.top_p = 1.0
         chat.behavior = "default"
         chat.newMessage = ""
+        chat.reasoningEffort = .off
         chat.createdDate = Date()
         chat.updatedDate = Date()
         chat.systemMessage = AppConstants.chatGptSystemMessage
@@ -658,6 +660,7 @@ final class ChatStore: ObservableObject {
         newChat.updatedDate = Date()
         newChat.newMessage = ""
         newChat.name = "New Chat"
+        newChat.reasoningEffort = .off
         
         // Set default values logic
         newChat.temperature = Double(AppConstants.defaultTemperatureForChat)

@@ -96,7 +96,7 @@ class DeepseekHandler: ChatGPTHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
@@ -111,7 +111,7 @@ class DeepseekHandler: ChatGPTHandler {
             requestMessages: filteredMessages,
             tools: tools,
             model: model,
-            temperature: temperature,
+            settings: settings,
             stream: stream
         )
     }

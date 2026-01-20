@@ -44,10 +44,35 @@ struct ModelMetadata: Codable {
     let pricing: PricingInfo?
     let maxContextTokens: Int?
     let capabilities: [String]       // ["vision", "reasoning", "function-calling"]
+    let supportedParameters: [String]? // Raw provider params when available (e.g. OpenRouter `supported_parameters`)
     let latency: LatencyLevel?
     let costLevel: CostLevel?
     let lastUpdated: Date
     let source: MetadataSource
+
+    init(
+        modelId: String,
+        provider: String,
+        pricing: PricingInfo?,
+        maxContextTokens: Int?,
+        capabilities: [String],
+        supportedParameters: [String]? = nil,
+        latency: LatencyLevel?,
+        costLevel: CostLevel?,
+        lastUpdated: Date,
+        source: MetadataSource
+    ) {
+        self.modelId = modelId
+        self.provider = provider
+        self.pricing = pricing
+        self.maxContextTokens = maxContextTokens
+        self.capabilities = capabilities
+        self.supportedParameters = supportedParameters
+        self.latency = latency
+        self.costLevel = costLevel
+        self.lastUpdated = lastUpdated
+        self.source = source
+    }
     
     /// Check if metadata is stale (>30 days old)
     var isStale: Bool {

@@ -12,14 +12,14 @@ class ChatService {
         apiService: APIService,
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        temperature: Float,
+        settings: GenerationSettings,
         onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
         return try await APIServiceManager.handleStream(
             apiService: apiService,
             messages: messages,
             tools: tools,
-            temperature: temperature,
+            settings: settings,
             onChunk: onChunk
         )
     }
@@ -29,10 +29,10 @@ class ChatService {
         apiService: APIService,
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        temperature: Float,
+        settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), Error>) -> Void
     ) {
-        apiService.sendMessage(messages, tools: tools, temperature: temperature) { result in
+        apiService.sendMessage(messages, tools: tools, settings: settings) { result in
             completion(result.mapError { $0 as Error })
         }
     }

@@ -58,7 +58,7 @@ class ChatGPTHandler: BaseAPIHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
@@ -68,7 +68,7 @@ class ChatGPTHandler: BaseAPIHandler {
         }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        var temperatureOverride = temperature
+        var temperatureOverride = settings.temperature
 
         if AppConstants.openAiReasoningModels.contains(self.model) {
             temperatureOverride = 1
@@ -186,6 +186,14 @@ class ChatGPTHandler: BaseAPIHandler {
             "messages": processedMessages,
             "temperature": temperatureOverride,
         ]
+
+        if settings.reasoningEffort != .off {
+            let provider = ProviderID(normalizing: name)
+            let shouldSendReasoningEffort = AppConstants.openAiReasoningModels.contains(self.model) || provider == .xai
+            if shouldSendReasoningEffort {
+                jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
+            }
+        }
         
         if let tools = tools, !tools.isEmpty {
             jsonDict["tools"] = tools

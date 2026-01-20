@@ -7,7 +7,7 @@ class PerplexityHandler: BaseAPIHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
@@ -19,7 +19,7 @@ class PerplexityHandler: BaseAPIHandler {
             "model": self.model,
             "stream": stream,
             "messages": requestMessages,
-            "temperature": temperature,
+            "temperature": settings.temperature,
         ]
         
         // Add tools if provided

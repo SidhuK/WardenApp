@@ -284,7 +284,7 @@ final class MessageManager: ObservableObject {
                 apiService: apiService,
                 messages: requestMessages,
                 tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                temperature: temperature
+                settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
             ) { [weak self] result in
                 guard let self = self else { return }
 
@@ -440,7 +440,7 @@ final class MessageManager: ObservableObject {
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                    temperature: temperature
+                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
                 ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }
@@ -677,7 +677,7 @@ final class MessageManager: ObservableObject {
             apiService: apiService,
             messages: requestMessages,
             tools: nil, // Don't provide tools again to avoid loops
-            temperature: temperature
+            settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
         ) { [weak self] result in
             guard let self = self else { return }
             
@@ -735,7 +735,7 @@ final class MessageManager: ObservableObject {
 	        apiService.sendMessage(
 	            requestMessages,
 	            tools: nil,
-	            temperature: AppConstants.defaultTemperatureForChatNameGeneration
+	            settings: GenerationSettings(temperature: AppConstants.defaultTemperatureForChatNameGeneration)
 	        ) {
 	            [weak self] result in
 	            guard let self = self else { return }
@@ -813,7 +813,11 @@ final class MessageManager: ObservableObject {
             RequestMessage(role: .user, content: "This is a test message.").dictionary
         )
 
-	        apiService.sendMessage(requestMessages, tools: nil, temperature: temperature) { result in
+	        apiService.sendMessage(
+	            requestMessages,
+	            tools: nil,
+	            settings: GenerationSettings(temperature: temperature)
+	        ) { result in
 	            switch result {
 	            case .success(_):
 	                completion(.success(()))

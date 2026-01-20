@@ -126,6 +126,7 @@ class OpenRouterMetadataFetcher: ModelMetadataFetcher {
                 pricing: pricing,
                 maxContextTokens: model.context_length,
                 capabilities: capabilities,
+                supportedParameters: model.supported_parameters,
                 latency: estimateLatency(from: model),
                 costLevel: getCostLevel(for: pricing),
                 lastUpdated: Date(),

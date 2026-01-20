@@ -255,7 +255,11 @@ struct QuickChatView: View {
         
         currentStreamingTask = Task { @MainActor in
             do {
-                let stream = try await handler.sendMessageStream(messages, tools: nil, temperature: 0.7)
+                let stream = try await handler.sendMessageStream(
+                    messages,
+                    tools: nil,
+                    settings: GenerationSettings(temperature: 0.7)
+                )
                 aiMessage.waitingForResponse = false
                 try? viewContext.save()
                 
@@ -302,7 +306,7 @@ struct QuickChatView: View {
 	        handler.sendMessage(
 	            requestMessages,
 	            tools: nil,
-	            temperature: AppConstants.defaultTemperatureForChatNameGeneration
+	            settings: GenerationSettings(temperature: AppConstants.defaultTemperatureForChatNameGeneration)
 	        ) { result in
 	            DispatchQueue.main.async {
 	                switch result {

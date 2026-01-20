@@ -54,7 +54,7 @@ class ClaudeHandler: BaseAPIHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
@@ -81,9 +81,17 @@ class ClaudeHandler: BaseAPIHandler {
             "messages": updatedRequestMessages,
             "system": systemMessage,
             "stream": stream,
-            "temperature": temperature,
+            "temperature": settings.temperature,
             "max_tokens": maxTokens,
         ]
+
+        if let desiredBudget = settings.reasoningEffort.anthropicThinkingBudgetTokens {
+            let budget = min(max(desiredBudget, 1024), maxTokens)
+            jsonDict["thinking"] = [
+                "type": "enabled",
+                "budget_tokens": budget
+            ]
+        }
         
         // Add tools if provided
         if let tools = tools {
@@ -108,6 +116,15 @@ class ClaudeHandler: BaseAPIHandler {
                 let contentArray = json["content"] as? [[String: Any]]
             {
 
+                let thinkingContent = contentArray.compactMap { item -> String? in
+                    if let type = item["type"] as? String,
+                       type == "thinking",
+                       let thinking = (item["thinking"] as? String) ?? (item["text"] as? String) {
+                        return thinking
+                    }
+                    return nil
+                }.joined(separator: "\n")
+
                 let textContent = contentArray.compactMap { item -> String? in
                     if let type = item["type"] as? String, type == "text",
                         let text = item["text"] as? String
@@ -117,8 +134,18 @@ class ClaudeHandler: BaseAPIHandler {
                     return nil
                 }.joined(separator: "\n")
 
-                if !textContent.isEmpty {
-                    return (textContent, role, nil)
+                if !thinkingContent.isEmpty || !textContent.isEmpty {
+                    let finalContent: String
+                    if !thinkingContent.isEmpty {
+                        if textContent.isEmpty {
+                            finalContent = "<think>\n\(thinkingContent)\n</think>"
+                        } else {
+                            finalContent = "<think>\n\(thinkingContent)\n</think>\n\n\(textContent)"
+                        }
+                    } else {
+                        finalContent = textContent
+                    }
+                    return (finalContent, role, nil)
                 }
             }
         }
@@ -136,6 +163,7 @@ class ClaudeHandler: BaseAPIHandler {
         var isFinished = false
         var textContent = ""
         var parseError: Error?
+        var role: String?
         
         guard let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
             parseError = NSError(
@@ -149,16 +177,22 @@ class ClaudeHandler: BaseAPIHandler {
         if let eventType = json["type"] as? String {
             switch eventType {
             case "content_block_start":
-                if let contentBlock = json["content_block"] as? [String: Any],
-                    let text = contentBlock["text"] as? String
-                {
-                    textContent = text
+                if let contentBlock = json["content_block"] as? [String: Any] {
+                    if let blockType = contentBlock["type"] as? String, blockType == "thinking" {
+                        role = "reasoning"
+                        textContent = (contentBlock["thinking"] as? String) ?? (contentBlock["text"] as? String) ?? ""
+                    } else {
+                        textContent = contentBlock["text"] as? String ?? ""
+                    }
                 }
             case "content_block_delta":
-                if let delta = json["delta"] as? [String: Any],
-                    let text = delta["text"] as? String
-                {
-                    textContent += text
+                if let delta = json["delta"] as? [String: Any] {
+                    if let deltaType = delta["type"] as? String, deltaType == "thinking_delta" {
+                        role = "reasoning"
+                        textContent = delta["thinking"] as? String ?? ""
+                    } else {
+                        textContent = delta["text"] as? String ?? ""
+                    }
                 }
             case "message_delta":
                 if let delta = json["delta"] as? [String: Any],
@@ -176,6 +210,6 @@ class ClaudeHandler: BaseAPIHandler {
                 break
             }
         }
-        return (isFinished, parseError, textContent.isEmpty ? nil : textContent, nil, nil)
+        return (isFinished, parseError, textContent.isEmpty ? nil : textContent, role, nil)
     }
 }

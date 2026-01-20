@@ -107,7 +107,7 @@ class OpenRouterHandler: ChatGPTHandler {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
@@ -122,9 +122,31 @@ class OpenRouterHandler: ChatGPTHandler {
             requestMessages: filteredMessages,
             tools: tools,
             model: model,
-            temperature: temperature,
+            settings: settings,
             stream: stream
         )
+
+        if settings.reasoningEffort != .off, let body = request.httpBody {
+            let supportedParameters = ModelMetadataStorage
+                .getMetadata(provider: "openrouter", modelId: self.model)?
+                .supportedParameters
+
+            let shouldSendReasoningEffort = supportedParameters?.contains("reasoning_effort") ?? true
+            let shouldSendIncludeReasoning = supportedParameters?.contains("include_reasoning") ?? true
+
+            if shouldSendReasoningEffort || shouldSendIncludeReasoning {
+                if var json = try? JSONSerialization.jsonObject(with: body, options: []) as? [String: Any] {
+                    if shouldSendReasoningEffort {
+                        json["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
+                    }
+                    if shouldSendIncludeReasoning {
+                        json["include_reasoning"] = true
+                    }
+
+                    request.httpBody = try JSONSerialization.data(withJSONObject: json, options: [])
+                }
+            }
+        }
         
         // Add OpenRouter specific headers
         request.setValue("https://github.com/SidhuK/WardenApp", forHTTPHeaderField: "HTTP-Referer")

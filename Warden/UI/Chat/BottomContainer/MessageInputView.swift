@@ -193,6 +193,7 @@ struct MessageInputView: View {
                         // Model Selector
                         if let chat = chat {
                             BetterCompactModelSelector(chat: chat)
+                            ReasoningEffortMenu(chat: chat)
                         }
                         
                         sendStopButton

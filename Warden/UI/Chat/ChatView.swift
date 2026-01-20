@@ -829,7 +829,11 @@ extension ChatView {
                 ["role": "user", "content": titlePrompt]
             ]
             
-	            apiService.sendMessage(titleMessages, tools: nil, temperature: 0.3) { result in
+	            apiService.sendMessage(
+	                titleMessages,
+	                tools: nil,
+	                settings: GenerationSettings(temperature: 0.3)
+	            ) { result in
 	                DispatchQueue.main.async {
 	                    switch result {
 	                    case .success(let (titleText, _)):

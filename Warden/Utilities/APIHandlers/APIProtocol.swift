@@ -32,14 +32,14 @@ protocol APIService {
     func sendMessage(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]?,
-        temperature: Float,
+        settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     )
     
     func sendMessageStream(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]?,
-        temperature: Float
+        settings: GenerationSettings
     ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error>
     
     func fetchModels() async throws -> [AIModel]
@@ -48,7 +48,7 @@ protocol APIService {
         requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         model: String,
-        temperature: Float,
+        settings: GenerationSettings,
         stream: Bool
     ) throws -> URLRequest
     
@@ -120,37 +120,86 @@ extension APIService {
     /// Default implementation of non-streaming message sending
     /// Consolidates shared request/response handling across all handlers
     /// Handlers only need to override parseJSONResponse for their specific format
-    func sendMessage(_ requestMessages: [[String: String]], tools: [[String: Any]]? = nil, temperature: Float) async throws -> (String?, [ToolCall]?) {
-        let request = try prepareRequest(
-            requestMessages: requestMessages,
-            tools: tools,
-            model: model,
-            temperature: temperature,
-            stream: false
-        )
+    func sendMessage(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
+        settings: GenerationSettings
+    ) async throws -> (String?, [ToolCall]?) {
+        func execute(settings: GenerationSettings) async throws -> (String?, [ToolCall]?) {
+            let request = try prepareRequest(
+                requestMessages: requestMessages,
+                tools: tools,
+                model: model,
+                settings: settings,
+                stream: false
+            )
 
-        let (data, response) = try await session.data(for: request)
-        let result = self.handleAPIResponse(response, data: data, error: nil)
+            let (data, response) = try await session.data(for: request)
+            let result = self.handleAPIResponse(response, data: data, error: nil)
 
-        switch result {
-        case .success(let responseData):
-            if let responseData = responseData {
-                guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
-                    #if DEBUG
-                    WardenLog.app.debug(
-                        "Default parsing failed. Handler: \(self.name, privacy: .public). Response bytes: \(responseData.count, privacy: .public)"
-                    )
-                    #endif
-                    throw APIError.decodingFailed("Failed to parse response")
+            switch result {
+            case .success(let responseData):
+                if let responseData = responseData {
+                    guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
+                        #if DEBUG
+                        WardenLog.app.debug(
+                            "Default parsing failed. Handler: \(self.name, privacy: .public). Response bytes: \(responseData.count, privacy: .public)"
+                        )
+                        #endif
+                        throw APIError.decodingFailed("Failed to parse response")
+                    }
+                    return (messageContent, toolCalls)
+                } else {
+                    throw APIError.invalidResponse
                 }
-                return (messageContent, toolCalls)
-            } else {
-                throw APIError.invalidResponse
+
+            case .failure(let error):
+                throw error
+            }
+        }
+
+        do {
+            return try await execute(settings: settings)
+        } catch let error as APIError {
+            guard settings.reasoningEffort != .off,
+                  ReasoningCompatibility.shouldRetryWithoutReasoning(settings: settings, error: error)
+            else {
+                throw error
             }
 
-        case .failure(let error):
-            throw error
+            WardenLog.app.notice(
+                "Retrying request without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
+            )
+
+            let retrySettings = GenerationSettings(temperature: settings.temperature, reasoningEffort: .off)
+            return try await execute(settings: retrySettings)
         }
     }
 
+}
+
+enum ReasoningCompatibility {
+    static func shouldRetryWithoutReasoning(settings: GenerationSettings, error: APIError) -> Bool {
+        guard settings.reasoningEffort != .off else { return false }
+
+        let errorText: String
+        switch error {
+        case .serverError(let message):
+            errorText = message
+        case .unknown(let message):
+            errorText = message
+        default:
+            return false
+        }
+
+        let lower = errorText.lowercased()
+        guard lower.contains("reasoning_effort") || lower.contains("include_reasoning") else { return false }
+
+        return lower.contains("unknown")
+            || lower.contains("unrecognized")
+            || lower.contains("unsupported")
+            || lower.contains("invalid")
+            || lower.contains("not allowed")
+            || lower.contains("additional properties")
+    }
 }
