@@ -70,7 +70,8 @@ class ChatGPTHandler: BaseAPIHandler {
 
         var temperatureOverride = settings.temperature
 
-        if AppConstants.openAiReasoningModels.contains(self.model) {
+        let isReasoningModel = Self.isReasoningModel(self.model, provider: name)
+        if isReasoningModel {
             temperatureOverride = 1
         }
 
@@ -187,12 +188,12 @@ class ChatGPTHandler: BaseAPIHandler {
             "temperature": temperatureOverride,
         ]
 
-        if settings.reasoningEffort != .off {
-            let provider = ProviderID(normalizing: name)
-            let shouldSendReasoningEffort = AppConstants.openAiReasoningModels.contains(self.model) || provider == .xai
-            if shouldSendReasoningEffort {
-                jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
-            }
+        let provider = ProviderID(normalizing: name)
+        let isOpenAIReasoningModel = Self.isReasoningModel(self.model, provider: name)
+        let shouldSendReasoningEffort = isOpenAIReasoningModel || provider == .xai
+        
+        if shouldSendReasoningEffort {
+            jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
         }
         
         if let tools = tools, !tools.isEmpty {
@@ -403,5 +404,26 @@ private extension ChatGPTHandler {
             return nil
         }
         return sections.joined(separator: "\n\n")
+    }
+}
+
+extension ChatGPTHandler {
+    static func isReasoningModel(_ modelId: String, provider: String) -> Bool {
+        if let metadata = ModelMetadataStorage.getMetadata(provider: provider, modelId: modelId),
+           metadata.hasReasoning {
+            return true
+        }
+        
+        if AppConstants.openAiReasoningModels.contains(modelId) {
+            return true
+        }
+        
+        let lower = modelId.lowercased()
+        let modelSuffix = lower.split(separator: "/").last.map(String.init) ?? lower
+        
+        return modelSuffix.hasPrefix("o1")
+            || modelSuffix.hasPrefix("o3")
+            || modelSuffix.hasPrefix("o4")
+            || modelSuffix.contains("gpt-5")
     }
 }

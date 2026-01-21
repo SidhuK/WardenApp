@@ -193,7 +193,12 @@ enum ReasoningCompatibility {
         }
 
         let lower = errorText.lowercased()
-        guard lower.contains("reasoning_effort") || lower.contains("include_reasoning") else { return false }
+        let hasReasoningParam = lower.contains("reasoning_effort")
+            || lower.contains("include_reasoning")
+            || lower.contains("\"reasoning\"")
+            || lower.contains("thinking")
+        
+        guard hasReasoningParam else { return false }
 
         return lower.contains("unknown")
             || lower.contains("unrecognized")
@@ -201,5 +206,6 @@ enum ReasoningCompatibility {
             || lower.contains("invalid")
             || lower.contains("not allowed")
             || lower.contains("additional properties")
+            || lower.contains("not supported")
     }
 }

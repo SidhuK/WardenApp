@@ -27,6 +27,16 @@ enum ReasoningEffort: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    var openRouterReasoningEffortValue: String {
+        switch self {
+        case .off: "none"
+        case .low: "low"
+        case .medium: "medium"
+        case .high: "high"
+        case .extraHigh: "xhigh"
+        }
+    }
+
     var anthropicThinkingBudgetTokens: Int? {
         switch self {
         case .off:
@@ -38,7 +48,22 @@ enum ReasoningEffort: String, Codable, CaseIterable, Sendable {
         case .high:
             return 16384
         case .extraHigh:
+            return 32768
+        }
+    }
+
+    var openRouterMaxTokens: Int? {
+        switch self {
+        case .off:
+            return nil
+        case .low:
+            return 2048
+        case .medium:
+            return 8192
+        case .high:
             return 16384
+        case .extraHigh:
+            return 32768
         }
     }
 }

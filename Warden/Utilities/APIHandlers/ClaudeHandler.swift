@@ -74,7 +74,37 @@ class ClaudeHandler: BaseAPIHandler {
         }
 
         let defaultMaxTokens = AppConstants.defaultApiConfigurations["claude"]?.maxTokens ?? 8192
-        let maxTokens = (model == "claude-3-5-sonnet-latest") ? 8192 : defaultMaxTokens
+        var maxTokens = (model == "claude-3-5-sonnet-latest") ? 8192 : defaultMaxTokens
+
+        if let desiredBudget = settings.reasoningEffort.anthropicThinkingBudgetTokens {
+            let budget = min(max(desiredBudget, 1024), 128000)
+            maxTokens = max(maxTokens, budget + 4096)
+            
+            var jsonDict: [String: Any] = [
+                "model": model,
+                "messages": updatedRequestMessages,
+                "system": systemMessage,
+                "stream": stream,
+                "max_tokens": maxTokens,
+            ]
+            
+            jsonDict["thinking"] = [
+                "type": "enabled",
+                "budget_tokens": budget
+            ]
+            
+            if let tools = tools {
+                jsonDict["tools"] = tools
+            }
+
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: jsonDict, options: [])
+            } catch {
+                throw APIError.decodingFailed(error.localizedDescription)
+            }
+
+            return request
+        }
 
         var jsonDict: [String: Any] = [
             "model": model,
@@ -84,14 +114,6 @@ class ClaudeHandler: BaseAPIHandler {
             "temperature": settings.temperature,
             "max_tokens": maxTokens,
         ]
-
-        if let desiredBudget = settings.reasoningEffort.anthropicThinkingBudgetTokens {
-            let budget = min(max(desiredBudget, 1024), maxTokens)
-            jsonDict["thinking"] = [
-                "type": "enabled",
-                "budget_tokens": budget
-            ]
-        }
         
         // Add tools if provided
         if let tools = tools {

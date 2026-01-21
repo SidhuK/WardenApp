@@ -15,26 +15,37 @@ struct ReasoningEffortMenu: View {
         ProviderID(normalizing: providerType)
     }
 
-    private var openRouterSupportedParameters: [String]? {
-        metadataCache.getMetadata(provider: "openrouter", modelId: chat.gptModel)?.supportedParameters
+    private var modelMetadata: ModelMetadata? {
+        metadataCache.getMetadata(provider: providerType.lowercased(), modelId: chat.gptModel)
+    }
+
+    private var hasReasoningCapability: Bool {
+        if let metadata = modelMetadata, metadata.hasReasoning {
+            return true
+        }
+        
+        if let params = modelMetadata?.supportedParameters,
+           params.contains("reasoning") || params.contains("reasoning_effort") {
+            return true
+        }
+        
+        return ChatGPTHandler.isReasoningModel(chat.gptModel, provider: providerType)
     }
 
     private var supportsReasoningEffortControl: Bool {
-        if providerType.lowercased() == "openai_custom" {
-            return AppConstants.openAiReasoningModels.contains(chat.gptModel)
-        }
-
         switch providerID {
         case .claude:
             return true
         case .chatgpt:
-            return AppConstants.openAiReasoningModels.contains(chat.gptModel)
+            return hasReasoningCapability
         case .xai:
             return true
         case .openrouter:
-            guard let params = openRouterSupportedParameters else { return false }
-            return params.contains("reasoning_effort") || params.contains("include_reasoning") || params.contains("reasoning")
+            return hasReasoningCapability
         default:
+            if providerType.lowercased() == "openai_custom" {
+                return hasReasoningCapability
+            }
             return false
         }
     }
@@ -46,9 +57,9 @@ struct ReasoningEffortMenu: View {
         case .xai:
             return true
         case .openrouter:
-            return openRouterSupportedParameters?.contains("reasoning_effort") == true
+            return hasReasoningCapability
         case .chatgpt:
-            return AppConstants.openAiReasoningModels.contains(chat.gptModel)
+            return hasReasoningCapability
         default:
             return false
         }
@@ -105,10 +116,8 @@ struct ReasoningEffortMenu: View {
             .buttonStyle(.plain)
             .help("Reasoning Effort")
             .onAppear {
-                if providerID == .openrouter {
-                    Task {
-                        await metadataCache.fetchMetadataIfNeeded(provider: "openrouter", apiKey: "")
-                    }
+                Task {
+                    await metadataCache.fetchMetadataIfNeeded(provider: providerType.lowercased(), apiKey: "")
                 }
             }
         }
