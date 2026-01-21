@@ -4,20 +4,6 @@
 
 ### The Native AI Chat Experience for macOS
 
-![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
-![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
-
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%2FWardenApp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
-
-<a href="https://findly.tools/wardenapp?utm_source=wardenapp" target="_blank">
-  <img 
-    src="https://findly.tools/badges/findly-tools-badge-light.svg" 
-    alt="Featured on findly.tools" 
-    width="150" 
-  />
-</a>
-
 <br/>
 
 Warden is a fast, beautiful, and privacy-focused AI client built purely in SwiftUI.
@@ -116,5 +102,19 @@ Warden is open source and free. If you enjoy using it, you can support developme
 
 Created by [Karat Sidhu](https://x.com/karat_sidhu)
 Licensed under Apache 2.0
+
+![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
+![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%2FWardenApp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
+<a href="https://findly.tools/wardenapp?utm_source=wardenapp" target="_blank">
+  <img 
+    src="https://findly.tools/badges/findly-tools-badge-light.svg" 
+    alt="Featured on findly.tools" 
+    width="150" 
+  />
+</a>
 
 </div>
