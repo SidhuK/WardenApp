@@ -4,20 +4,10 @@
 
 ### The Native AI Chat Experience for macOS
 
-<br/>
-
 Warden is a fast, beautiful, and privacy-focused AI client built purely in SwiftUI.
 No Electron, no web wrappers—just a premium native experience.
 
 [Download for macOS](https://github.com/SidhuK/WardenApp/releases) • [View Website](https://karatsidhu.gumroad.com/l/warden)
-
-<a href="https://wisprflow.ai/r?KARAT1">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png" alt="Wispr Flow" width="40" />
-</a>
-
-**[Get 1 month of Wispr Flow free](https://wisprflow.ai/r?KARAT1)** — Voice-to-text, 4x faster than typing
-
-<br/>
 
 ![Warden Dark Mode](./assets/Dark%20Mode.png)
 
@@ -99,6 +89,12 @@ Warden is open source and free. If you enjoy using it, you can support developme
 ---
 
 <div align="center">
+
+<a href="https://wisprflow.ai/r?KARAT1">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png" alt="Wispr Flow" width="40" />
+</a>
+
+**[Get 1 month of Wispr Flow free](https://wisprflow.ai/r?KARAT1)** — Voice-to-text, 4x faster than typing
 
 Created by [Karat Sidhu](https://x.com/karat_sidhu)
 Licensed under Apache 2.0
