@@ -11,7 +11,6 @@ struct ProjectSummaryView: View {
     // State for sheet presentations
     @State private var showingMoveToProject = false
     @State private var selectedChatForMove: ChatEntity?
-    @State private var newChatButtonTapped = false
     
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
@@ -127,23 +126,12 @@ struct ProjectSummaryView: View {
              // Hero Icon on the left
              ZStack {
                  RoundedRectangle(cornerRadius: 16)
-                     .fill(
-                         LinearGradient(
-                             colors: [projectColor.opacity(0.15), projectColor.opacity(0.05)],
-                             startPoint: .topLeading,
-                             endPoint: .bottomTrailing
-                         )
-                     )
+                     .fill(projectColor.opacity(0.1))
                      .frame(width: 80, height: 80)
-                     .overlay(
-                         RoundedRectangle(cornerRadius: 16)
-                             .strokeBorder(projectColor.opacity(0.2), lineWidth: 1)
-                     )
                  
                  Image(systemName: "folder.fill")
                      .font(.system(size: 40))
-                     .foregroundStyle(projectColor.gradient)
-                     .shadow(color: projectColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                     .foregroundStyle(projectColor)
              }
             
             // Project Identity
@@ -219,11 +207,6 @@ struct ProjectSummaryView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(Color(NSColor.separatorColor).opacity(0.5), lineWidth: 0.5)
         )
     }
     
@@ -335,24 +318,23 @@ struct ProjectSummaryView: View {
     
     private var newChatButton: some View {
         Button(action: {
-            newChatButtonTapped.toggle()
             createNewChatInProject()
         }) {
             HStack(spacing: 8) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
+                Image(systemName: "plus.bubble")
+                    .font(.system(size: 14, weight: .medium))
                 Text("New Chat")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .semibold))
             }
+            .foregroundColor(.white)
             .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(projectColor)
-            .foregroundStyle(.white)
-            .clipShape(Capsule())
-            .shadow(color: projectColor.opacity(0.3), radius: 4, x: 0, y: 2)
+            .padding(.vertical, 9)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor)
+            )
         }
         .buttonStyle(.plain)
-        .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
     }
     
     // MARK: - Helper Methods
@@ -562,8 +544,6 @@ struct ChatCard: View {
     var showDate: Bool = true
     let action: () -> Void
     
-    @State private var isHovered = false
-    
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 12) {
@@ -621,17 +601,9 @@ struct ChatCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(NSColor.controlBackgroundColor))
-                    .shadow(color: Color.black.opacity(isHovered ? 0.08 : 0.04), radius: isHovered ? 12 : 6, x: 0, y: isHovered ? 4 : 2)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(isHovered ? projectColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isHovered ? 1 : 0.5)
-            )
-            .scaleEffect(isHovered ? 1.01 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
         }
         .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
     }
 }
 
