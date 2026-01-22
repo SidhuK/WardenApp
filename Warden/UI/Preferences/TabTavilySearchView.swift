@@ -13,11 +13,6 @@ struct TabTavilySearchView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
-                Text("Web Search")
-                    .font(.system(size: 22, weight: .semibold))
-                    .padding(.bottom, 4)
-                
                 // API Configuration
                 GlassCard {
                     VStack(alignment: .leading, spacing: 14) {

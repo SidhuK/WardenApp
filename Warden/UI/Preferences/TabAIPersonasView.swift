@@ -22,11 +22,6 @@ struct TabAIPersonasView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
-                Text("AI Assistants")
-                    .font(.system(size: 22, weight: .semibold))
-                    .padding(.bottom, 4)
-                
                 // Personas List
                 GlassCard {
                     VStack(alignment: .leading, spacing: 14) {

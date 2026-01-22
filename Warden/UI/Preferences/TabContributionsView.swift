@@ -4,11 +4,6 @@ struct TabContributionsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
-                Text("Contributions")
-                    .font(.system(size: 22, weight: .semibold))
-                    .padding(.bottom, 4)
-                
                 // Support Section
                 GlassCard {
                     VStack(alignment: .leading, spacing: 16) {
@@ -22,7 +17,7 @@ struct TabContributionsView: View {
                         VStack(spacing: 0) {
                             SupportRow(
                                 icon: "cup.and.saucer.fill",
-                                iconColor: .orange,
+                                iconColor: .secondary,
                                 title: "Buy Me a Coffee",
                                 subtitle: "Support ongoing development",
                                 buttonTitle: "Contribute",
@@ -33,7 +28,7 @@ struct TabContributionsView: View {
                             
                             SupportRow(
                                 icon: "bubble.left.and.bubble.right.fill",
-                                iconColor: .blue,
+                                iconColor: .secondary,
                                 title: "Share Feedback",
                                 subtitle: "Report bugs or request features",
                                 buttonTitle: "Open Issue",
@@ -44,7 +39,7 @@ struct TabContributionsView: View {
                             
                             SupportRow(
                                 icon: "chevron.left.forwardslash.chevron.right",
-                                iconColor: .purple,
+                                iconColor: .secondary,
                                 title: "Source Code",
                                 subtitle: "View and contribute on GitHub",
                                 buttonTitle: "View Code",

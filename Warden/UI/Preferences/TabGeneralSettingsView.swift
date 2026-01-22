@@ -49,11 +49,6 @@ struct TabGeneralSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
-                Text("General")
-                    .font(.system(size: 22, weight: .semibold))
-                    .padding(.bottom, 4)
-                
                 // Appearance Section
                 GlassCard {
                     VStack(alignment: .leading, spacing: 14) {

@@ -10,11 +10,6 @@ struct TabHotkeysView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
-                Text("Keyboard Shortcuts")
-                    .font(.system(size: 22, weight: .semibold))
-                    .padding(.bottom, 4)
-                
                 // Shortcuts by Category
                 ForEach(HotkeyAction.HotkeyCategory.allCases, id: \.self) { category in
                     let actionsInCategory = hotkeyManager.availableActions.filter { $0.category == category }
