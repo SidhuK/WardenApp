@@ -709,7 +709,7 @@ struct CompactModelSelector: View {
     @ObservedObject var chat: ChatEntity
     @Environment(\.managedObjectContext) private var viewContext
     
-    @StateObject private var modelCache = ModelCacheManager.shared
+    @ObservedObject private var modelCache = ModelCacheManager.shared
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
@@ -730,13 +730,9 @@ struct CompactModelSelector: View {
     }
     
     var body: some View {
-        Button(action: {
+        Button {
             isExpanded = true
-            let services = Array(apiServices)
-            if !services.isEmpty {
-                modelCache.fetchAllModels(from: services)
-            }
-        }) {
+        } label: {
             HStack(spacing: 5) {
                 Image("logo_\(currentProviderType)")
                     .resizable()
@@ -761,17 +757,20 @@ struct CompactModelSelector: View {
             )
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.1)) {
-                isHovered = hovering
-            }
-        }
+        .onHover { isHovered = $0 }
         .popover(isPresented: $isExpanded, arrowEdge: .top) {
-            StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
-                isExpanded = false
-            })
+            LightweightModelPicker(
+                chat: chat,
+                apiServices: Array(apiServices),
+                onDismiss: { isExpanded = false }
+            )
             .environment(\.managedObjectContext, viewContext)
-            .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
+        }
+        .task {
+            let services = Array(apiServices)
+            if !services.isEmpty {
+                modelCache.fetchAllModels(from: services)
+            }
         }
         .help(currentModelLabel)
     }

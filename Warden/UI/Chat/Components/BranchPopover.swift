@@ -10,14 +10,6 @@ struct BranchPopover: View {
     let onDismiss: () -> Void
     
     @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.colorScheme) private var colorScheme
-    @StateObject private var viewModel = ModelSelectorViewModel()
-    @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    @StateObject private var metadataCache = ModelMetadataCache.shared
-    
-    @State private var hoveredItem: String? = nil
-    @State private var isCreating = false
-    @State private var errorMessage: String?
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -25,72 +17,36 @@ struct BranchPopover: View {
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
+    @State private var isCreating = false
+    @State private var errorMessage: String?
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             header
             
-            Divider()
-                .opacity(0.5)
+            Divider().opacity(0.5)
             
             if isCreating {
                 creatingView
             } else if let error = errorMessage {
                 errorView(error)
             } else {
-                // Search bar
-                searchBar
-                    .padding(.horizontal, 14)
-                    .padding(.top, 12)
-                    .padding(.bottom, 10)
-                
-                Divider()
-                    .opacity(0.5)
-                
-                // Model list
-                ScrollView(.vertical, showsIndicators: true) {
-                    LazyVStack(spacing: 4, pinnedViews: [.sectionHeaders]) {
-                        ForEach(viewModel.filteredSections) { section in
-                            if section.id == "favorites" {
-                                Section {
-                                    ForEach(section.items) { item in
-                                        modelRow(item: item)
-                                    }
-                                } header: {
-                                    sectionHeader(section.title, icon: "star.fill")
-                                }
-                            } else if section.id != "search" {
-                                Section {
-                                    ForEach(section.items) { item in
-                                        modelRow(item: item)
-                                    }
-                                } header: {
-                                    providerSectionHeader(title: section.title, provider: section.id)
-                                }
-                            }
-                        }
-                        
-                        // Bottom padding
-                        Spacer()
-                            .frame(height: 8)
+                BranchModelPicker(
+                    apiServices: Array(apiServices),
+                    onSelect: { provider, model in
+                        createBranch(providerType: provider, model: model)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 6)
-                }
+                )
             }
         }
         .frame(width: 360, height: 420)
         .background(Color(NSColor.controlBackgroundColor))
-        .onAppear {
-            viewModel.updateServices(Array(apiServices))
-        }
     }
     
     // MARK: - Header
     
     private var header: some View {
         HStack(spacing: 12) {
-            // Branch icon
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.accentColor.opacity(0.12))
@@ -113,7 +69,6 @@ struct BranchPopover: View {
             
             Spacer()
             
-            // Close button
             Button(action: onDismiss) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
@@ -124,176 +79,6 @@ struct BranchPopover: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-    }
-    
-    // MARK: - Search Bar
-    
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.tertiary)
-            
-            TextField("Search models...", text: $viewModel.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 12))
-            
-            if !viewModel.searchText.isEmpty {
-                Button(action: { viewModel.searchText = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.textBackgroundColor))
-        )
-    }
-    
-    // MARK: - Section Headers
-    
-    private func sectionHeader(_ title: String, icon: String? = nil) -> some View {
-        HStack(spacing: 6) {
-            if let icon = icon {
-                Image(systemName: icon)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(.accentColor.opacity(0.8))
-            }
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.controlBackgroundColor))
-    }
-    
-    private func providerSectionHeader(title: String, provider: String) -> some View {
-        HStack(spacing: 6) {
-            Image("logo_\(provider)")
-                .resizable()
-                .renderingMode(.template)
-                .interpolation(.high)
-                .frame(width: 12, height: 12)
-                .foregroundStyle(.secondary)
-            
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(.secondary)
-            
-            Spacer()
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.controlBackgroundColor))
-    }
-    
-    // MARK: - Model Row
-    
-    private func modelRow(item: ModelSelectorViewModel.ModelItem) -> some View {
-        let metadata = metadataCache.getMetadata(provider: item.provider, modelId: item.modelId)
-        let isReasoning = metadata?.hasReasoning ?? false
-        let isVision = metadata?.hasVision ?? false
-        let formattedModel = ModelMetadata.formatModelComponents(modelId: item.modelId, provider: item.provider)
-        let isHovered = hoveredItem == item.id
-        
-        return Button(action: {
-            createBranch(providerType: item.provider, model: item.modelId)
-        }) {
-            HStack(spacing: 10) {
-                // Model info
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 5) {
-                        Text(formattedModel.displayName)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        
-                        if let provider = formattedModel.provider {
-                            Text(provider)
-                                .font(.system(size: 10, weight: .regular))
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.primary.opacity(0.06))
-                                )
-                        }
-                    }
-                    
-                    // Capabilities badges
-                    if isReasoning || isVision || (metadata?.hasPricing == true) {
-                        HStack(spacing: 8) {
-                            if isReasoning {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "brain")
-                                        .font(.system(size: 8))
-                                    Text("Reasoning")
-                                        .font(.system(size: 9))
-                                }
-                                .foregroundStyle(.secondary)
-                            }
-                            if isVision {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "eye")
-                                        .font(.system(size: 8))
-                                    Text("Vision")
-                                        .font(.system(size: 9))
-                                }
-                                .foregroundStyle(.secondary)
-                            }
-                            if let pricing = metadata?.pricing, let inputPrice = pricing.inputPer1M {
-                                Text(pricing.outputPer1M != nil
-                                    ? "$\(String(format: "%.2f", inputPrice))/$\(String(format: "%.2f", pricing.outputPer1M!))/M"
-                                    : "$\(String(format: "%.2f", inputPrice))/M")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                // Actions
-                HStack(spacing: 10) {
-                    // Favorite button
-                    Button(action: {
-                        favoriteManager.toggleFavorite(provider: item.provider, model: item.modelId)
-                    }) {
-                        Image(systemName: item.isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 11))
-                            .foregroundStyle(item.isFavorite ? Color.accentColor : Color.secondary.opacity(0.5))
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // Branch action indicator
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(isHovered ? .accentColor : .secondary.opacity(0.5))
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.1)) {
-                hoveredItem = hovering ? item.id : nil
-            }
-        }
     }
     
     // MARK: - Creating State
@@ -378,6 +163,243 @@ struct BranchPopover: View {
                     errorMessage = error.localizedDescription
                 }
             }
+        }
+    }
+}
+
+// MARK: - Branch Model Picker
+
+private struct BranchModelPicker: View {
+    let apiServices: [APIServiceEntity]
+    let onSelect: (String, String) -> Void
+    
+    @ObservedObject private var modelCache = ModelCacheManager.shared
+    @ObservedObject private var favoriteManager = FavoriteModelsManager.shared
+    @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
+    @ObservedObject private var metadataCache = ModelMetadataCache.shared
+    
+    @State private var searchText = ""
+    @State private var hoveredItem: String?
+    
+    private static let providerNames: [String: String] = [
+        "chatgpt": "OpenAI", "claude": "Anthropic", "gemini": "Google",
+        "xai": "xAI", "perplexity": "Perplexity", "deepseek": "DeepSeek",
+        "groq": "Groq", "openrouter": "OpenRouter", "ollama": "Ollama", "mistral": "Mistral"
+    ]
+    
+    private var availableModels: [(provider: String, models: [String])] {
+        var result: [(provider: String, models: [String])] = []
+        for service in apiServices {
+            guard let serviceType = service.type else { continue }
+            let serviceModels = modelCache.getModels(for: serviceType)
+            
+            let visibleModels = serviceModels.filter { model in
+                if selectedModelsManager.hasCustomSelection(for: serviceType) {
+                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
+                }
+                return true
+            }
+            
+            if !visibleModels.isEmpty {
+                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
+            }
+        }
+        return result
+    }
+    
+    private var filteredModels: [(provider: String, models: [String])] {
+        guard !searchText.isEmpty else { return availableModels }
+        let query = searchText.lowercased()
+        return availableModels.compactMap { provider, models in
+            let filtered = models.filter {
+                $0.lowercased().contains(query) || provider.lowercased().contains(query)
+            }
+            return filtered.isEmpty ? nil : (provider, filtered)
+        }
+    }
+    
+    private var favoriteModels: [(provider: String, modelId: String)] {
+        guard searchText.isEmpty else { return [] }
+        return availableModels.flatMap { provider, models in
+            models.compactMap { model in
+                favoriteManager.isFavorite(provider: provider, model: model) ? (provider, model) : nil
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            searchBar
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+            
+            Divider().opacity(0.5)
+            
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    if !favoriteModels.isEmpty {
+                        sectionHeader("Favorites", icon: "star.fill")
+                        ForEach(favoriteModels, id: \.modelId) { item in
+                            modelRow(provider: item.provider, modelId: item.modelId)
+                        }
+                    }
+                    
+                    ForEach(filteredModels, id: \.provider) { providerModels in
+                        providerSectionHeader(providerModels.provider)
+                        ForEach(providerModels.models, id: \.self) { modelId in
+                            modelRow(provider: providerModels.provider, modelId: modelId)
+                        }
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+            }
+        }
+        .task {
+            if !apiServices.isEmpty {
+                modelCache.fetchAllModels(from: apiServices)
+            }
+        }
+    }
+    
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12))
+                .foregroundStyle(.tertiary)
+            
+            TextField("Search models...", text: $searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+            
+            if !searchText.isEmpty {
+                Button { searchText = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.textBackgroundColor)))
+    }
+    
+    private func sectionHeader(_ title: String, icon: String? = nil) -> some View {
+        HStack(spacing: 6) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(.accentColor.opacity(0.8))
+            }
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+    }
+    
+    private func providerSectionHeader(_ provider: String) -> some View {
+        HStack(spacing: 6) {
+            Image("logo_\(provider)")
+                .resizable()
+                .renderingMode(.template)
+                .interpolation(.high)
+                .frame(width: 12, height: 12)
+                .foregroundStyle(.secondary)
+            
+            Text((Self.providerNames[provider] ?? provider.capitalized).uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+    }
+    
+    @ViewBuilder
+    private func modelRow(provider: String, modelId: String) -> some View {
+        let metadata = metadataCache.getMetadata(provider: provider, modelId: modelId)
+        let formattedModel = ModelMetadata.formatModelComponents(modelId: modelId, provider: provider)
+        let isHovered = hoveredItem == "\(provider)_\(modelId)"
+        let isFavorite = favoriteManager.isFavorite(provider: provider, model: modelId)
+        
+        Button {
+            onSelect(provider, modelId)
+        } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 5) {
+                        Text(formattedModel.displayName)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        
+                        if let providerLabel = formattedModel.provider {
+                            Text(providerLabel)
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(Color.primary.opacity(0.06)))
+                        }
+                    }
+                    
+                    if metadata?.hasReasoning == true || metadata?.hasVision == true || metadata?.hasPricing == true {
+                        HStack(spacing: 8) {
+                            if metadata?.hasReasoning == true {
+                                Label("Reasoning", systemImage: "brain")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.secondary)
+                            }
+                            if metadata?.hasVision == true {
+                                Label("Vision", systemImage: "eye")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let pricing = metadata?.pricing, let input = pricing.inputPer1M {
+                                Text("$\(String(format: "%.2f", input))/M")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                HStack(spacing: 10) {
+                    Button {
+                        favoriteManager.toggleFavorite(provider: provider, model: modelId)
+                    } label: {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 11))
+                            .foregroundStyle(isFavorite ? Color.accentColor : Color.secondary.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(isHovered ? .accentColor : .secondary.opacity(0.5))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            hoveredItem = hovering ? "\(provider)_\(modelId)" : nil
         }
     }
 }

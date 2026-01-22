@@ -586,9 +586,7 @@ struct BetterCompactModelSelector: View {
     @ObservedObject var chat: ChatEntity
     @Environment(\.managedObjectContext) private var viewContext
     
-    @StateObject private var modelCache = ModelCacheManager.shared
-    @StateObject private var favoriteManager = FavoriteModelsManager.shared
-    @StateObject private var selectedModelsManager = SelectedModelsManager.shared
+    @ObservedObject private var modelCache = ModelCacheManager.shared
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
@@ -596,102 +594,22 @@ struct BetterCompactModelSelector: View {
     private var apiServices: FetchedResults<APIServiceEntity>
     
     @State private var isHovered = false
+    @State private var isExpanded = false
     
     private var currentProviderType: String {
         chat.apiService?.type ?? AppConstants.defaultApiType
     }
     
-    private var currentModelLabel: String {
+    private var shortModelLabel: String {
         let modelId = chat.gptModel
         if modelId.isEmpty { return "Select Model" }
-        return ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
-    }
-
-    private var shortModelLabel: String {
-        let label = currentModelLabel
+        let label = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
         return label.components(separatedBy: "/").first ?? label
     }
     
-    private func selectModel(provider: String, modelId: String) {
-        if let service = apiServices.first(where: { $0.type == provider }) {
-            chat.apiService = service
-        }
-        chat.gptModel = modelId
-    }
-    
-    private var availableModels: [(provider: String, models: [String])] {
-        var result: [(provider: String, models: [String])] = []
-        for service in apiServices {
-            guard let serviceType = service.type else { continue }
-            let serviceModels = modelCache.getModels(for: serviceType)
-            
-            let visibleModels = serviceModels.filter { model in
-                if selectedModelsManager.hasCustomSelection(for: serviceType) {
-                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
-                }
-                return true
-            }
-            
-            if !visibleModels.isEmpty {
-                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
-            }
-        }
-        return result
-    }
-    
-    private var favoriteModels: [(provider: String, modelId: String)] {
-        var favorites: [(provider: String, modelId: String)] = []
-        for (provider, models) in availableModels {
-            for model in models {
-                if favoriteManager.isFavorite(provider: provider, model: model) {
-                    favorites.append((provider: provider, modelId: model))
-                }
-            }
-        }
-        return favorites
-    }
-    
-    private func providerDisplayName(_ provider: String) -> String {
-        switch provider {
-        case "chatgpt": return "OpenAI"
-        case "claude": return "Anthropic"
-        case "gemini": return "Google"
-        case "xai": return "xAI"
-        case "perplexity": return "Perplexity"
-        case "deepseek": return "DeepSeek"
-        case "groq": return "Groq"
-        case "openrouter": return "OpenRouter"
-        case "ollama": return "Ollama"
-        case "mistral": return "Mistral"
-        default: return provider.capitalized
-        }
-    }
-    
     var body: some View {
-        Menu {
-            if !favoriteModels.isEmpty {
-                Section("Favorites") {
-                    ForEach(favoriteModels, id: \.modelId) { item in
-                        Button {
-                            selectModel(provider: item.provider, modelId: item.modelId)
-                        } label: {
-                            Text(ModelMetadata.formatModelDisplayName(modelId: item.modelId, provider: item.provider))
-                        }
-                    }
-                }
-            }
-            
-            ForEach(availableModels, id: \.provider) { providerModels in
-                Section(providerDisplayName(providerModels.provider)) {
-                    ForEach(providerModels.models, id: \.self) { modelId in
-                        Button {
-                            selectModel(provider: providerModels.provider, modelId: modelId)
-                        } label: {
-                            Text(ModelMetadata.formatModelDisplayName(modelId: modelId, provider: providerModels.provider))
-                        }
-                    }
-                }
-            }
+        Button {
+            isExpanded = true
         } label: {
             HStack(spacing: 4) {
                 Image("logo_\(currentProviderType)")
@@ -717,20 +635,23 @@ struct BetterCompactModelSelector: View {
                     .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.03))
             )
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.1)) {
-                isHovered = hovering
-            }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .popover(isPresented: $isExpanded, arrowEdge: .top) {
+            LightweightModelPicker(
+                chat: chat,
+                apiServices: Array(apiServices),
+                onDismiss: { isExpanded = false }
+            )
+            .environment(\.managedObjectContext, viewContext)
         }
-        .onAppear {
+        .task {
             let services = Array(apiServices)
             if !services.isEmpty {
                 modelCache.fetchAllModels(from: services)
             }
         }
-        .help(currentModelLabel)
+        .help(shortModelLabel)
     }
 }
 
