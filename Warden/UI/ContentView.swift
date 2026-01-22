@@ -100,6 +100,17 @@ struct ContentView: View {
         .overlay(alignment: .top) {
             ToastManager()
         }
+        .sheet(isPresented: $showingCreateProject) {
+            CreateProjectView(
+                onProjectCreated: { project in
+                    selectedProject = project
+                    showingCreateProject = false
+                },
+                onCancel: {
+                    showingCreateProject = false
+                }
+            )
+        }
     }
 
     private var sidebarContent: some View {
@@ -187,7 +198,6 @@ struct ContentView: View {
             openedChatId: openedChatId,
             selectedChat: $selectedChat,
             selectedProject: $selectedProject,
-            showingCreateProject: $showingCreateProject,
             showingEditProject: $showingEditProject,
             projectToEdit: $projectToEdit,
             previewStateManager: previewStateManager,
@@ -206,7 +216,6 @@ private struct ContentDetailView: View {
 
     @Binding var selectedChat: ChatEntity?
     @Binding var selectedProject: ProjectEntity?
-    @Binding var showingCreateProject: Bool
     @Binding var showingEditProject: Bool
     @Binding var projectToEdit: ProjectEntity?
 
@@ -238,18 +247,7 @@ private struct ContentDetailView: View {
 
     @ViewBuilder
     private var primaryDetail: some View {
-        if showingCreateProject {
-            CreateProjectView(
-                onProjectCreated: { project in
-                    selectedProject = project
-                    showingCreateProject = false
-                },
-                onCancel: {
-                    showingCreateProject = false
-                }
-            )
-            .frame(minWidth: 400)
-        } else if showingEditProject, let project = projectToEdit {
+        if showingEditProject, let project = projectToEdit {
             ProjectSettingsView(project: project, onComplete: {
                 showingEditProject = false
                 projectToEdit = nil
