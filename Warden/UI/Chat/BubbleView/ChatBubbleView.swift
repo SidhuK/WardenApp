@@ -314,6 +314,11 @@ struct ChatBubbleView: View {
             if case .user = self { return true }
             return false
         }
+        
+        var isAssistant: Bool {
+            if case .assistant = self { return true }
+            return false
+        }
     }
     
     @ViewBuilder
@@ -321,12 +326,12 @@ struct ChatBubbleView: View {
         VStack(alignment: .leading, spacing: 4) {
             bubbleContent(for: role)
         }
-        .padding(.horizontal, 14) // Slightly increased padding
-        .padding(.vertical, 10)
+        .padding(.horizontal, role.isAssistant ? 4 : 14)
+        .padding(.vertical, role.isAssistant ? 6 : 10)
         .background(bubbleBackground(for: role))
-        .clipShape(BubbleShape(myMessage: role.isUser)) // Custom shape
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        .contentShape(Rectangle()) // Stable content shape
+        .clipShape(role.isAssistant ? AnyShape(RoundedRectangle(cornerRadius: 8)) : AnyShape(BubbleShape(myMessage: role.isUser)))
+        .shadow(color: role.isAssistant ? Color.clear : Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .contentShape(Rectangle())
     }
     
     @ViewBuilder
@@ -335,10 +340,7 @@ struct ChatBubbleView: View {
         case .user:
             Color.accentColor
         case .assistant:
-            // Slightly lighter/darker than background for subtle contrast
-            Color(nsColor: .controlBackgroundColor)
-                .opacity(0.7)
-                .background(Material.regular) // Glassy effect
+            Color.clear
         case .system:
             Color.secondary.opacity(0.1)
         case .error:
