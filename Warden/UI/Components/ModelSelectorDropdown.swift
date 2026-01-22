@@ -384,10 +384,6 @@ struct ModelSelectorDropdown: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isHovered ? Color.primary.opacity(0.04) : Color.clear)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-            )
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
