@@ -47,6 +47,16 @@ struct ContentView: View {
             } detail: {
                 detailView
             }
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button(action: newChat) {
+                        Image(systemName: "square.and.pencil")
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .help("New Thread")
+                    .accessibilityLabel("New Thread")
+                }
+            }
         }
         .onAppear(perform: setupInitialState)
         .background(WindowAccessor(window: $window))

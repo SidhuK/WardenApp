@@ -9,8 +9,6 @@ struct ChatListView: View {
     @State private var showSearch = false
     @State private var scrollOffset: CGFloat = 0
     @State private var previousOffset: CGFloat = 0
-    @State private var newChatButtonTapped = false
-    @State private var settingsButtonTapped = false
     @State private var selectedChatID: UUID?
     @FocusState private var isSearchFocused: Bool
     
@@ -182,13 +180,9 @@ struct ChatListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // New Chat button at the top
-            newChatButtonSection
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-            
-            // Search bar
+            // Search bar at the top
             searchBarSection
+                .padding(.top, 12)
                 .padding(.bottom, 8)
 
             List(selection: $selectedChatID) {
@@ -237,13 +231,6 @@ struct ChatListView: View {
         }
     }
 
-    private var newChatButtonSection: some View {
-        VStack(spacing: 0) {
-            newChatButton
-        }
-        .padding(.horizontal)
-    }
-
     private var searchBarSection: some View {
         HStack {
             // Show loading indicator or magnifying glass
@@ -256,7 +243,7 @@ struct ChatListView: View {
                     .foregroundColor(.gray)
             }
 
-            TextField("Search chats...", text: $searchText)
+            TextField("Search chats", text: $searchText)
                 .textFieldStyle(PlainTextFieldStyle())
                 .font(.system(.body))
                 .focused($isSearchFocused)
@@ -325,46 +312,8 @@ struct ChatListView: View {
         .padding(.horizontal)
     }
 
-    private var newChatButton: some View {
-        Button(action: {
-            newChatButtonTapped.toggle()
-            onNewChat()
-        }) {
-            ZStack {
-                // Icon on the left
-                HStack {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 14, weight: .medium))
-                        .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: newChatButtonTapped)
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-
-                // Text centered
-                Text("New Thread")
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 36)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.accentColor)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-            )
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 16)
-        .accessibilityLabel("New Thread")
-    }
-    
     private var settingsButton: some View {
-        // Simplified settings button at bottom with text and icon, smaller size
         Button(action: {
-            settingsButtonTapped.toggle()
             onOpenPreferences()
         }) {
             HStack(spacing: 6) {
@@ -373,7 +322,6 @@ struct ChatListView: View {
                 Text("Settings")
                     .font(.system(size: 12, weight: .medium))
             }
-            .symbolEffect(.bounce.down.wholeSymbol, options: .nonRepeating, value: settingsButtonTapped)
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity)
             .frame(height: 28)
