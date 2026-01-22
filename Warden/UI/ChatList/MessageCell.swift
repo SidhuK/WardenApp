@@ -85,7 +85,7 @@ struct MessageCell: View {
                     
                     // Snippet removed
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
                 .padding(.trailing, 8)
                 .padding(.leading, showSidebarAIIcons ? 0 : (isSelectionMode ? 4 : 8))
                 

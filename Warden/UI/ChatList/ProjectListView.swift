@@ -100,7 +100,7 @@ struct ProjectListView: View {
             .help("Create New Project")
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
     }
     
     @State private var showingArchivedProjects = false
@@ -242,7 +242,7 @@ struct ProjectRow: View {
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8)
@@ -396,7 +396,7 @@ struct ProjectRowInList: View {
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8)
