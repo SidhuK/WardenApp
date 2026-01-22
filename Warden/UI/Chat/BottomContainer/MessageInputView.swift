@@ -645,6 +645,7 @@ struct BetterCompactModelSelector: View {
         }
     }
     
+    @MainActor
     private func selectModel(provider: String, modelId: String) {
         if let service = apiServices.first(where: { $0.type == provider }) {
             chat.apiService = service

@@ -710,14 +710,23 @@ struct CompactModelSelector: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     @ObservedObject private var modelCache = ModelCacheManager.shared
+    @ObservedObject private var favoriteManager = FavoriteModelsManager.shared
+    @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
+    @ObservedObject private var metadataCache = ModelMetadataCache.shared
+    
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
-    @State private var isExpanded = false
     @State private var isHovered = false
+    
+    private static let providerNames: [String: String] = [
+        "chatgpt": "OpenAI", "claude": "Anthropic", "gemini": "Google",
+        "xai": "xAI", "perplexity": "Perplexity", "deepseek": "DeepSeek",
+        "groq": "Groq", "openrouter": "OpenRouter", "ollama": "Ollama", "mistral": "Mistral"
+    ]
     
     private var currentProviderType: String {
         chat.apiService?.type ?? AppConstants.defaultApiType
@@ -729,9 +738,67 @@ struct CompactModelSelector: View {
         return ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
     }
     
+    private var availableModels: [(provider: String, models: [String])] {
+        var result: [(provider: String, models: [String])] = []
+        for service in apiServices {
+            guard let serviceType = service.type else { continue }
+            let serviceModels = modelCache.getModels(for: serviceType)
+            
+            let visibleModels = serviceModels.filter { model in
+                if selectedModelsManager.hasCustomSelection(for: serviceType) {
+                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
+                }
+                return true
+            }
+            
+            if !visibleModels.isEmpty {
+                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
+            }
+        }
+        return result
+    }
+    
+    private var favoriteModels: [(provider: String, modelId: String)] {
+        availableModels.flatMap { provider, models in
+            models.compactMap { model in
+                favoriteManager.isFavorite(provider: provider, model: model) ? (provider, model) : nil
+            }
+        }
+    }
+    
+    @MainActor
+    private func selectModel(provider: String, modelId: String) {
+        if let service = apiServices.first(where: { $0.type == provider }) {
+            chat.apiService = service
+        }
+        chat.gptModel = modelId
+        chat.updatedDate = Date()
+        chat.objectWillChange.send()
+        
+        NotificationCenter.default.post(
+            name: .recreateMessageManager,
+            object: nil,
+            userInfo: ["chatId": chat.id]
+        )
+    }
+    
     var body: some View {
-        Button {
-            isExpanded = true
+        Menu {
+            if !favoriteModels.isEmpty {
+                Section("Favorites") {
+                    ForEach(favoriteModels, id: \.modelId) { item in
+                        modelMenuItem(provider: item.provider, modelId: item.modelId)
+                    }
+                }
+            }
+            
+            ForEach(availableModels, id: \.provider) { providerModels in
+                Section(Self.providerNames[providerModels.provider] ?? providerModels.provider.capitalized) {
+                    ForEach(providerModels.models, id: \.self) { modelId in
+                        modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                    }
+                }
+            }
         } label: {
             HStack(spacing: 5) {
                 Image("logo_\(currentProviderType)")
@@ -756,16 +823,10 @@ struct CompactModelSelector: View {
                     .stroke(isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.06), lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
         .onHover { isHovered = $0 }
-        .popover(isPresented: $isExpanded, arrowEdge: .top) {
-            LightweightModelPicker(
-                chat: chat,
-                apiServices: Array(apiServices),
-                onDismiss: { isExpanded = false }
-            )
-            .environment(\.managedObjectContext, viewContext)
-        }
         .task {
             let services = Array(apiServices)
             if !services.isEmpty {
@@ -773,5 +834,70 @@ struct CompactModelSelector: View {
             }
         }
         .help(currentModelLabel)
+    }
+    
+    @ViewBuilder
+    private func modelMenuItem(provider: String, modelId: String) -> some View {
+        let isSelected = chat.apiService?.type == provider && chat.gptModel == modelId
+        let displayName = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: provider)
+        let isFavorite = favoriteManager.isFavorite(provider: provider, model: modelId)
+        let metadata = metadataCache.getMetadata(provider: provider, modelId: modelId)
+        
+        Menu {
+            if let meta = metadata {
+                if meta.hasReasoning {
+                    Label("Reasoning", systemImage: "brain")
+                }
+                if meta.hasVision {
+                    Label("Vision", systemImage: "eye")
+                }
+                if meta.hasFunctionCalling {
+                    Label("Function Calling", systemImage: "wrench")
+                }
+                if let context = meta.maxContextTokens {
+                    Label("\(context.formatted()) tokens", systemImage: "text.alignleft")
+                }
+                if let pricing = meta.pricing, let input = pricing.inputPer1M {
+                    if let output = pricing.outputPer1M {
+                        Label("$\(String(format: "%.2f", input)) / $\(String(format: "%.2f", output)) per 1M", systemImage: "dollarsign.circle")
+                    } else {
+                        Label("$\(String(format: "%.2f", input)) per 1M", systemImage: "dollarsign.circle")
+                    }
+                }
+                if let latency = meta.latency {
+                    Label(latency.rawValue.capitalized, systemImage: "speedometer")
+                }
+                
+                Divider()
+            }
+            
+            Button {
+                favoriteManager.toggleFavorite(provider: provider, model: modelId)
+            } label: {
+                Label(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.slash" : "star")
+            }
+        } label: {
+            HStack {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                }
+                Text(displayName)
+                
+                Spacer()
+                
+                if metadata?.hasReasoning == true {
+                    Image(systemName: "brain")
+                }
+                if metadata?.hasVision == true {
+                    Image(systemName: "eye")
+                }
+                if isFavorite {
+                    Image(systemName: "star.fill")
+                        .foregroundStyle(.yellow)
+                }
+            }
+        } primaryAction: {
+            selectModel(provider: provider, modelId: modelId)
+        }
     }
 }
