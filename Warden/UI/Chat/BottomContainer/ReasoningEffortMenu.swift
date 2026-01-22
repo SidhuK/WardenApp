@@ -87,15 +87,17 @@ struct ReasoningEffortMenu: View {
     var body: some View {
         if supportsReasoningEffortControl {
             Menu {
-                Picker("Reasoning Effort", selection: selection) {
-                    ForEach(availableOptions, id: \.rawValue) { option in
-                        Text(option.displayName).tag(option)
+                ForEach(availableOptions, id: \.rawValue) { option in
+                    Button {
+                        selection.wrappedValue = option
+                    } label: {
+                        Text(option.displayName)
                     }
                 }
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Image(systemName: "brain.head.profile")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
 
                     Text(chat.reasoningEffort.displayName)
@@ -113,7 +115,8 @@ struct ReasoningEffortMenu: View {
                         .fill(Color.primary.opacity(0.03))
                 )
             }
-            .buttonStyle(.plain)
+            .menuStyle(.borderlessButton)
+            .fixedSize()
             .help("Reasoning Effort")
             .onAppear {
                 Task {

@@ -587,13 +587,14 @@ struct BetterCompactModelSelector: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     @StateObject private var modelCache = ModelCacheManager.shared
+    @StateObject private var favoriteManager = FavoriteModelsManager.shared
+    @StateObject private var selectedModelsManager = SelectedModelsManager.shared
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
         animation: .default
     )
     private var apiServices: FetchedResults<APIServiceEntity>
     
-    @State private var isExpanded = false
     @State private var isHovered = false
     
     private var currentProviderType: String {
@@ -608,24 +609,96 @@ struct BetterCompactModelSelector: View {
 
     private var shortModelLabel: String {
         let label = currentModelLabel
-        // If label is "Gemini-3-Flash/Google", we want "Gemini-3-Flash"
         return label.components(separatedBy: "/").first ?? label
     }
     
-    var body: some View {
-        Button(action: {
-            isExpanded = true
-            let services = Array(apiServices)
-            if !services.isEmpty {
-                modelCache.fetchAllModels(from: services)
+    private func selectModel(provider: String, modelId: String) {
+        if let service = apiServices.first(where: { $0.type == provider }) {
+            chat.apiService = service
+        }
+        chat.gptModel = modelId
+    }
+    
+    private var availableModels: [(provider: String, models: [String])] {
+        var result: [(provider: String, models: [String])] = []
+        for service in apiServices {
+            guard let serviceType = service.type else { continue }
+            let serviceModels = modelCache.getModels(for: serviceType)
+            
+            let visibleModels = serviceModels.filter { model in
+                if selectedModelsManager.hasCustomSelection(for: serviceType) {
+                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
+                }
+                return true
             }
-        }) {
-            HStack(spacing: 6) {
+            
+            if !visibleModels.isEmpty {
+                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
+            }
+        }
+        return result
+    }
+    
+    private var favoriteModels: [(provider: String, modelId: String)] {
+        var favorites: [(provider: String, modelId: String)] = []
+        for (provider, models) in availableModels {
+            for model in models {
+                if favoriteManager.isFavorite(provider: provider, model: model) {
+                    favorites.append((provider: provider, modelId: model))
+                }
+            }
+        }
+        return favorites
+    }
+    
+    private func providerDisplayName(_ provider: String) -> String {
+        switch provider {
+        case "chatgpt": return "OpenAI"
+        case "claude": return "Anthropic"
+        case "gemini": return "Google"
+        case "xai": return "xAI"
+        case "perplexity": return "Perplexity"
+        case "deepseek": return "DeepSeek"
+        case "groq": return "Groq"
+        case "openrouter": return "OpenRouter"
+        case "ollama": return "Ollama"
+        case "mistral": return "Mistral"
+        default: return provider.capitalized
+        }
+    }
+    
+    var body: some View {
+        Menu {
+            if !favoriteModels.isEmpty {
+                Section("Favorites") {
+                    ForEach(favoriteModels, id: \.modelId) { item in
+                        Button {
+                            selectModel(provider: item.provider, modelId: item.modelId)
+                        } label: {
+                            Text(ModelMetadata.formatModelDisplayName(modelId: item.modelId, provider: item.provider))
+                        }
+                    }
+                }
+            }
+            
+            ForEach(availableModels, id: \.provider) { providerModels in
+                Section(providerDisplayName(providerModels.provider)) {
+                    ForEach(providerModels.models, id: \.self) { modelId in
+                        Button {
+                            selectModel(provider: providerModels.provider, modelId: modelId)
+                        } label: {
+                            Text(ModelMetadata.formatModelDisplayName(modelId: modelId, provider: providerModels.provider))
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
                 Image("logo_\(currentProviderType)")
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 11, height: 11)
                     .foregroundStyle(isHovered ? Color.accentColor : .secondary)
                 
                 Text(shortModelLabel)
@@ -633,7 +706,7 @@ struct BetterCompactModelSelector: View {
                     .foregroundStyle(isHovered ? Color.accentColor : .secondary)
                     .lineLimit(1)
                 
-                Image(systemName: "chevron.up.chevron.down")
+                Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(.tertiary)
             }
@@ -644,18 +717,18 @@ struct BetterCompactModelSelector: View {
                     .fill(isHovered ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.03))
             )
         }
-        .buttonStyle(.plain)
+        .menuStyle(.borderlessButton)
+        .fixedSize()
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.1)) {
                 isHovered = hovering
             }
         }
-        .popover(isPresented: $isExpanded, arrowEdge: .top) {
-            StandaloneModelSelector(chat: chat, isExpanded: true, onDismiss: {
-                isExpanded = false
-            })
-            .environment(\.managedObjectContext, viewContext)
-            .frame(minWidth: 320, idealWidth: 360, maxWidth: 420, minHeight: 260, maxHeight: 320)
+        .onAppear {
+            let services = Array(apiServices)
+            if !services.isEmpty {
+                modelCache.fetchAllModels(from: services)
+            }
         }
         .help(currentModelLabel)
     }
