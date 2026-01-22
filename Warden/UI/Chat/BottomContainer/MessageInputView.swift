@@ -264,6 +264,7 @@ struct MessageInputView: View {
                 }
             }
         }
+        .menuIndicator(.hidden)
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help("Add attachments & tools")

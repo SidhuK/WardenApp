@@ -96,7 +96,7 @@ struct ReasoningEffortMenu: View {
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "brain.head.profile")
+                    Image(systemName: "brain")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
 
