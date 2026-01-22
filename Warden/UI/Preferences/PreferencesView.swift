@@ -1,7 +1,6 @@
+import CoreData
 import Foundation
 import SwiftUI
-import AttributedText
-import CoreData
 
 enum PreferencesTabs: String, CaseIterable, Identifiable {
     case general = "General"
@@ -10,9 +9,9 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
     case tools = "Tools"
     case keyboardShortcuts = "Keyboard Shortcuts"
     case contributions = "Contributions"
-    
+
     var id: String { rawValue }
-    
+
     var icon: String {
         switch self {
         case .general: return "gearshape.fill"
@@ -25,34 +24,66 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Top Tab Item View
-struct TopTabItem: View {
+// MARK: - Sidebar Tab Row
+struct SidebarTabRow: View {
     let tab: PreferencesTabs
     let isSelected: Bool
-    let action: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
-    
+
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: 18, weight: isSelected ? .medium : .regular))
-                    .frame(height: 20)
-                Text(tab.rawValue)
-                    .font(.system(size: 10, weight: isSelected ? .medium : .regular))
-                    .lineLimit(1)
-            }
-            .frame(width: 76, height: 48)
-            .contentShape(Rectangle())
-            .foregroundStyle(isSelected ? .primary : .secondary)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected
-                          ? (colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
-                          : Color.clear)
-            )
+        Label {
+            Text(tab.rawValue)
+                .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+        } icon: {
+            Image(systemName: tab.icon)
+                .font(.system(size: 14))
+                .foregroundStyle(isSelected ? .primary : .secondary)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Sidebar View
+struct SettingsSidebar: View {
+    @Binding var selectedTab: PreferencesTabs
+
+    var body: some View {
+        List(PreferencesTabs.allCases, selection: $selectedTab) { tab in
+            SidebarTabRow(tab: tab, isSelected: selectedTab == tab)
+                .tag(tab)
+        }
+        .listStyle(.sidebar)
+        .frame(minWidth: 180, idealWidth: 200, maxWidth: 250)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear.frame(height: 0)
+        }
+    }
+}
+
+// MARK: - Detail View
+struct SettingsDetailView: View {
+    let selectedTab: PreferencesTabs
+    let viewContext: NSManagedObjectContext
+
+    var body: some View {
+        Group {
+            switch selectedTab {
+            case .general:
+                TabGeneralSettingsView()
+            case .apiServices:
+                TabAPIServicesView()
+            case .aiPersonas:
+                TabAIPersonasView()
+                    .environment(\.managedObjectContext, viewContext)
+            case .tools:
+                TabToolsView()
+            case .keyboardShortcuts:
+                TabHotkeysView()
+            case .contributions:
+                TabContributionsView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 }
 
@@ -61,64 +92,28 @@ struct PreferencesView: View {
     @EnvironmentObject private var store: ChatStore
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedTab: PreferencesTabs = .general
-    
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Top Tab Bar
-            HStack(spacing: 8) {
-                ForEach(PreferencesTabs.allCases) { tab in
-                    TopTabItem(tab: tab, isSelected: selectedTab == tab) {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            selectedTab = tab
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(NSColor.windowBackgroundColor))
-            
-            // Divider
-            Rectangle()
-                .fill(Color(NSColor.separatorColor))
-                .frame(height: 1)
-            
-            // Content
-            Group {
-                switch selectedTab {
-                case .general:
-                    TabGeneralSettingsView()
-                case .apiServices:
-                    TabAPIServicesView()
-                case .aiPersonas:
-                    TabAIPersonasView()
-                        .environment(\.managedObjectContext, viewContext)
-                case .tools:
-                    TabToolsView()
-                case .keyboardShortcuts:
-                    TabHotkeysView()
-                case .contributions:
-                    TabContributionsView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(NSColor.windowBackgroundColor))
+        NavigationSplitView {
+            SettingsSidebar(selectedTab: $selectedTab)
+        } detail: {
+            SettingsDetailView(selectedTab: selectedTab, viewContext: viewContext)
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: 800, minHeight: 550)
         .onAppear {
             store.saveInCoreData()
         }
     }
 }
 
-
 #if DEBUG
-struct PreferencesView_Previews: PreviewProvider {
-    static var previews: some View {
-        PreferencesView()
-            .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
-            .frame(width: 800, height: 600)
-            .previewDisplayName("Preferences Window")
+    struct PreferencesView_Previews: PreviewProvider {
+        static var previews: some View {
+            PreferencesView()
+                .environmentObject(ChatStore(persistenceController: PersistenceController.shared))
+                .frame(width: 900, height: 650)
+                .previewDisplayName("Preferences Window")
+        }
     }
-}
 #endif

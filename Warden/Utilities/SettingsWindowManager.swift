@@ -70,10 +70,10 @@ final class SettingsWindowManager: ObservableObject {
             .environment(\.managedObjectContext, PersistenceController.shared.container.viewContext)
             .preferredColorScheme(colorScheme)
         
-        // Create and configure the window with no title bar
+        // Create and configure the window with transparent titlebar
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 800),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -82,8 +82,11 @@ final class SettingsWindowManager: ObservableObject {
         window.center()
         window.setFrameAutosaveName("SettingsWindow")
         window.isReleasedWhenClosed = false
-        // Set empty title to work with hiddenTitleBar appearance
         window.title = ""
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isOpaque = false
+        window.backgroundColor = .clear
         
         // Apply initial appearance
         switch preferredColorSchemeRaw {
