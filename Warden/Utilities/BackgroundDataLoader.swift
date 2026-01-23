@@ -85,16 +85,20 @@ class BackgroundDataLoader {
         }
         guard let meta = await chatStore.fileMetadata(for: uuid) else { return nil }
 
-        let url = AttachmentBlobStore.fileURL(blobID: meta.blobID, fileName: meta.fileName)
-        do {
-            let data = try Data(contentsOf: url, options: [.mappedIfSafe])
-            return (fileName: meta.fileName, data: data)
-        } catch {
-            WardenLog.coreData.error(
-                "Error loading attachment bytes from disk: \(error.localizedDescription, privacy: .public)"
-            )
-            return nil
-        }
+        let fileName = meta.fileName
+        let url = AttachmentBlobStore.fileURL(blobID: meta.blobID, fileName: fileName)
+
+        return await Task.detached(priority: .userInitiated) { [fileName, url] in
+            do {
+                let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+                return (fileName: fileName, data: data)
+            } catch {
+                WardenLog.coreData.error(
+                    "Error loading attachment bytes from disk: \(error.localizedDescription, privacy: .public)"
+                )
+                return nil
+            }
+        }.value
     }
 
     func loadFileAttachment(uuid: UUID) -> FileAttachment? {
