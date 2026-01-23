@@ -144,6 +144,11 @@
 		C4642A572EC200C000326693 /* SkeletonLoaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A542EC200C000326693 /* SkeletonLoaderView.swift */; };
 		C4642A582EC200C000326693 /* TypingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A552EC200C000326693 /* TypingIndicatorView.swift */; };
 		C4642A5A2EC200E700326693 /* AnimationShowcase.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642A592EC200E700326693 /* AnimationShowcase.swift */; };
+		C466CA122F23469E0056E35B /* AttachmentMessageExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = C466CA112F23469E0056E35B /* AttachmentMessageExpander.swift */; };
+		C466CA142F2348290056E35B /* AttachmentBlobStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C466CA132F2348290056E35B /* AttachmentBlobStore.swift */; };
+		C466CA162F2349C60056E35B /* AttachmentTagTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C466CA152F2349C60056E35B /* AttachmentTagTokenizer.swift */; };
+		C466CA182F234EF90056E35B /* AttachmentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C466CA172F234EF90056E35B /* AttachmentStore.swift */; };
+		C466CA1A2F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C466CA192F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift */; };
 		C46B73DF2EB1D5BB00D07415 /* TavilyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */; };
 		C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */; };
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
@@ -345,6 +350,11 @@
 		C4642A542EC200C000326693 /* SkeletonLoaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoaderView.swift; sourceTree = "<group>"; };
 		C4642A552EC200C000326693 /* TypingIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingIndicatorView.swift; sourceTree = "<group>"; };
 		C4642A592EC200E700326693 /* AnimationShowcase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationShowcase.swift; sourceTree = "<group>"; };
+		C466CA112F23469E0056E35B /* AttachmentMessageExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentMessageExpander.swift; sourceTree = "<group>"; };
+		C466CA132F2348290056E35B /* AttachmentBlobStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentBlobStore.swift; sourceTree = "<group>"; };
+		C466CA152F2349C60056E35B /* AttachmentTagTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentTagTokenizer.swift; sourceTree = "<group>"; };
+		C466CA172F234EF90056E35B /* AttachmentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentStore.swift; sourceTree = "<group>"; };
+		C466CA192F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentMimeTypeSniffer.swift; sourceTree = "<group>"; };
 		C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyModels.swift; sourceTree = "<group>"; };
 		C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilySearchService.swift; sourceTree = "<group>"; };
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
@@ -616,11 +626,14 @@
 			children = (
 				56FAB27EFCF945CEBE7541CE /* SSEStreamParser.swift */,
 				C42D99FE2EF900470028D1BB /* IncrementalMessageParser.swift */,
+				C466CA112F23469E0056E35B /* AttachmentMessageExpander.swift */,
 				09C5F31F2F664B9BBD13C0CC /* ChatService.swift */,
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
 				C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */,
 				C4ADCE472F10D48F00325241 /* MenuBarManager.swift */,
 				C4A399152F12044B00E6AA5B /* NotificationNames.swift */,
+				C466CA172F234EF90056E35B /* AttachmentStore.swift */,
+				C466CA192F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift */,
 				C4257EE72F0652E300B832C7 /* ProviderID.swift */,
 				C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */,
 				C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */,
@@ -643,7 +656,9 @@
 				7F60244D2DEA0771007AB8FC /* RephraseService.swift */,
 				7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */,
 				7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */,
+				C466CA132F2348290056E35B /* AttachmentBlobStore.swift */,
 				4AEB7E1A2C8D04A30004818C /* DatabasePatcher.swift */,
+				C466CA152F2349C60056E35B /* AttachmentTagTokenizer.swift */,
 				4A28424A2C87018800E5C920 /* TokenManager.swift */,
 				4AFEE71F2C472F29006F99FB /* APIHandlers */,
 				4ABDBE6529F86B5900661B2D /* MessageParser.swift */,
@@ -976,6 +991,7 @@
 				4A0BCBBC2D5199140033AB96 /* ButtonWithStatusIndicator.swift in Sources */,
 				7FFCDEA32E02C643003E764A /* LMStudioHandler.swift in Sources */,
 				C4ADCE482F10D48F00325241 /* MenuBarManager.swift in Sources */,
+				C466CA162F2349C60056E35B /* AttachmentTagTokenizer.swift in Sources */,
 				4A885C582CEA3F7B0018BBED /* ChatListRow.swift in Sources */,
 				4A1F0A0C29CF02CA002A139A /* WelcomeScreen.swift in Sources */,
 				4ADCA45B2C9B74E8005664A6 /* APIServiceDetailViewModel.swift in Sources */,
@@ -986,6 +1002,7 @@
 				C49FCBEE2ECC2D99003B51AF /* ModelInfoTooltip.swift in Sources */,
 				7F5A91CA2DF937E500A18860 /* ModelSelectionView.swift in Sources */,
 				7FE379022DE9A1DA0093DACE /* InteractiveOnboardingView.swift in Sources */,
+				C466CA142F2348290056E35B /* AttachmentBlobStore.swift in Sources */,
 				4A1614152D46C86800A1EF8D /* PersonaSelectorView.swift in Sources */,
 				C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */,
 				C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */,
@@ -1005,6 +1022,7 @@
 				C49FCBF02ECC2E80003B51AF /* ModelMetadataFetcher.swift in Sources */,
 				4A399CC429BCE67800E98796 /* PreferencesView.swift in Sources */,
 				4ABDBE6629F86B5900661B2D /* MessageParser.swift in Sources */,
+				C466CA1A2F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift in Sources */,
 				7F8D7CA92DE9DB13003E7BCA /* MultiAgentMessageManager.swift in Sources */,
 				4AEB7E1B2C8D04A70004818C /* DatabasePatcher.swift in Sources */,
 				4A79A0762CEA9FB900CB41D8 /* wardenDataModel.xcdatamodeld in Sources */,
@@ -1034,6 +1052,7 @@
 				7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */,
 				4AFDEB7E2AFF90FB00BA8642 /* TabDangerZoneView.swift in Sources */,
 				C46B73DF2EB1D5BB00D07415 /* TavilyModels.swift in Sources */,
+				C466CA122F23469E0056E35B /* AttachmentMessageExpander.swift in Sources */,
 				4A27FF8F2DA1C41B0075D730 /* ZoomableImageView.swift in Sources */,
 				4A194C062C9633BC003C8782 /* EntityListView.swift in Sources */,
 				7F6BED712DF7019D006B9E6E /* CreateProjectView.swift in Sources */,
@@ -1066,6 +1085,7 @@
 				4A254A6D2CEA69EB00F66935 /* HighlighterManager.swift in Sources */,
 				7F4955AC2E06FB1200516E2D /* FilePreviewView.swift in Sources */,
 				C45059902ED6BEB500AF3449 /* ChatBranchingManager.swift in Sources */,
+				C466CA182F234EF90056E35B /* AttachmentStore.swift in Sources */,
 				4A272A7429F5DAA800F93D0D /* Models.swift in Sources */,
 				7F8D7CA62DE9DAF4003E7BCA /* MultiAgentServiceSelector.swift in Sources */,
 				7F8D7CA72DE9DAF4003E7BCA /* MultiAgentResponseView.swift in Sources */,
@@ -1253,7 +1273,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1279,7 +1299,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.6;
+				MARKETING_VERSION = 0.9.9;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1303,7 +1323,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1329,7 +1349,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.6;
+				MARKETING_VERSION = 0.9.9;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";

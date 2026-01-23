@@ -11,6 +11,7 @@ private struct MistralModel: Codable {
 }
 
 class MistralHandler: BaseAPIHandler {
+    internal let dataLoader = BackgroundDataLoader()
     
     override func fetchModels() async throws -> [AIModel] {
         let modelsURL = baseURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("models")
@@ -47,8 +48,9 @@ class MistralHandler: BaseAPIHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -65,7 +67,20 @@ class MistralHandler: BaseAPIHandler {
             }
 
             if let content = message["content"] {
-                processedMessage["content"] = content
+                if AttachmentMessageExpander.containsAttachmentTags(content) {
+                    let expanded = AttachmentMessageExpander.expand(
+                        content: content,
+                        for: .stringInlining,
+                        dataLoader: dataLoader
+                    )
+                    if case .string(let text) = expanded {
+                        processedMessage["content"] = text
+                    } else {
+                        processedMessage["content"] = content
+                    }
+                } else {
+                    processedMessage["content"] = content
+                }
             }
 
             processedMessages.append(processedMessage)

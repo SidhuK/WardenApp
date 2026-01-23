@@ -98,6 +98,20 @@ struct FilePreviewView: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
+
+                switch attachment.blobCopyStatus {
+                case .copying:
+                    Text("Preparing…")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                case .failed:
+                    Text("Not ready")
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                        .help(attachment.blobCopyErrorDescription ?? "Failed to prepare file for sending.")
+                case .idle, .ready:
+                    EmptyView()
+                }
             }
             .frame(width: 80)
         }
@@ -113,24 +127,26 @@ struct FilePreviewView: View {
         
         switch attachment.fileType {
         case .text:
-            tooltip += "\nText file"
+            tooltip += "\nText file - Sent as a file when supported"
         case .csv:
-            tooltip += "\nCSV file - Click to view data"
+            tooltip += "\nCSV file - Sent as a file when supported"
         case .pdf:
-            tooltip += "\nPDF document - Text will be extracted"
+            tooltip += "\nPDF document - Sent as a file when supported"
         case .json:
-            tooltip += "\nJSON file - Structure will be analyzed"
+            tooltip += "\nJSON file - Sent as a file when supported"
         case .xml:
-            tooltip += "\nXML file - Structure will be analyzed"
+            tooltip += "\nXML file - Sent as a file when supported"
         case .markdown:
-            tooltip += "\nMarkdown file"
+            tooltip += "\nMarkdown file - Sent as a file when supported"
         case .rtf:
-            tooltip += "\nRich text file"
+            tooltip += "\nRich text file - Sent as a file when supported"
         case .image:
             tooltip += "\nImage file"
         case .other(let ext):
-            tooltip += "\n\(ext.uppercased()) file"
+            tooltip += "\n\(ext.uppercased()) file - Sent as a file when supported"
         }
+
+        tooltip += "\n\nIf the provider rejects native attachments, Warden retries once by inlining extracted text."
         
         if !attachment.textContent.isEmpty {
             let contentPreview = String(attachment.textContent.prefix(100))

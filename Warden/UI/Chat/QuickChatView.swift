@@ -158,7 +158,9 @@ struct QuickChatView: View {
             fullPrompt += "\n\nContext:\n\(context)"
         }
         
-        fetchServiceAndSend(message: fullPrompt)
+        Task { @MainActor in
+            await fetchServiceAndSend(message: fullPrompt)
+        }
     }
     
     private func stopCurrentStream() {
@@ -167,7 +169,8 @@ struct QuickChatView: View {
         isStreaming = false
     }
     
-    private func fetchServiceAndSend(message: String) {
+    @MainActor
+    private func fetchServiceAndSend(message: String) async {
         // Ensure chat exists
         guard let chat = quickChatEntity else { return }
         
@@ -181,7 +184,22 @@ struct QuickChatView: View {
         }
         
         guard let apiService = chat.apiService else { return }
-        
+
+        let providerID = ProviderID(normalizing: apiService.type ?? apiService.name ?? "")
+        let capabilities = providerID.map { ProviderAttachmentCapabilities.forProvider($0) }
+
+        for attachment in composerState.attachedImages {
+            await attachment.waitForLoad()
+        }
+
+        for attachment in composerState.attachedFiles {
+            if capabilities?.supportsNativeFileInputs == true {
+                await attachment.waitForBlobCopy()
+            } else {
+                await attachment.waitForLoad()
+            }
+        }
+
         // Prepare message content (text + attachments)
         var messageContents: [MessageContent] = []
         if !message.isEmpty {
@@ -431,13 +449,23 @@ struct QuickChatView: View {
         panel.begin { response in
             if response == .OK {
                 for url in panel.urls {
-                    let attachment = FileAttachment(url: url, context: viewContext)
                     DispatchQueue.main.async {
-                        composerState.attachedFiles.append(attachment)
+                        if quickChatEntity?.apiService?.imageUploadsAllowed == true, isValidImageFile(url: url) {
+                            let attachment = ImageAttachment(url: url, context: viewContext)
+                            composerState.attachedImages.append(attachment)
+                        } else {
+                            let attachment = FileAttachment(url: url, context: viewContext)
+                            composerState.attachedFiles.append(attachment)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func isValidImageFile(url: URL) -> Bool {
+        let validExtensions = ["jpg", "jpeg", "png", "webp", "heic", "heif"]
+        return validExtensions.contains(url.pathExtension.lowercased())
     }
 }
 

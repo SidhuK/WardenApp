@@ -64,13 +64,16 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                 do {
                     var attemptSettings = settings
                     var didRetryWithoutReasoning = false
+                    var attachmentPolicy: AttachmentPolicy = .preferProviderAttachments
+                    var didRetryWithoutAttachments = false
 
                     while true {
-                        let request = try self.prepareRequest(
+                        let request = try await self.prepareRequest(
                             requestMessages: requestMessages,
                             tools: tools,
                             model: model,
                             settings: attemptSettings,
+                            attachmentPolicy: attachmentPolicy,
                             stream: true
                         )
 
@@ -87,6 +90,20 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                                 detailedError = failure
                             } else {
                                 detailedError = error
+                            }
+
+                            if !didRetryWithoutAttachments,
+                               AttachmentCompatibility.shouldRetryWithoutFileAttachments(
+                                   attachmentPolicy: attachmentPolicy,
+                                   error: detailedError
+                               )
+                            {
+                                didRetryWithoutAttachments = true
+                                attachmentPolicy = .inlineTextOnly
+                                WardenLog.app.notice(
+                                    "Retrying stream without file attachments due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                                )
+                                continue
                             }
 
                             if !didRetryWithoutReasoning,
@@ -182,8 +199,9 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         throw APIError.noApiService("Request building not implemented for \(name)")
     }
     

@@ -11,6 +11,7 @@ private struct ClaudeModel: Codable {
 }
 
 class ClaudeHandler: BaseAPIHandler {
+    internal let dataLoader = BackgroundDataLoader()
     
     override init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
         super.init(config: config, session: session, streamingSession: streamingSession)
@@ -55,8 +56,9 @@ class ClaudeHandler: BaseAPIHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
@@ -73,6 +75,97 @@ class ClaudeHandler: BaseAPIHandler {
             updatedRequestMessages.removeFirst()
         }
 
+        func expandedContent(_ content: String) async -> Any {
+            guard AttachmentMessageExpander.containsAttachmentTags(content) else {
+                return content
+            }
+
+            let tokens = AttachmentTagTokenizer.tokenize(content)
+            var blocks: [[String: Any]] = []
+            blocks.reserveCapacity(tokens.count)
+
+            for token in tokens {
+                switch token {
+                case .text(let text):
+                    guard !text.isEmpty else { continue }
+                    blocks.append(["type": "text", "text": text])
+
+                case .image(let uuid):
+                    guard let imageData = await AttachmentStore.shared.imageData(uuid: uuid) else {
+                        blocks.append(["type": "text", "text": "[Missing image attachment]"])
+                        continue
+                    }
+
+                    let (mime, base64) = await Task.detached(priority: .userInitiated) {
+                        let mime = AttachmentMimeTypeSniffer.sniff(data: imageData) ?? "image/jpeg"
+                        return (mime, imageData.base64EncodedString())
+                    }.value
+
+                    blocks.append([
+                        "type": "image",
+                        "source": [
+                            "type": "base64",
+                            "media_type": mime,
+                            "data": base64,
+                        ],
+                    ])
+
+                case .file(let uuid):
+                    if let file = await AttachmentStore.shared.fileData(uuid: uuid) {
+                        let (mime, base64) = await Task.detached(priority: .userInitiated) {
+                            let mime = AttachmentMimeTypeSniffer.sniff(data: file.data, fileName: file.fileName)
+                            return (mime, file.data.base64EncodedString())
+                        }.value
+
+                        if let mime, mime.hasPrefix("image/") {
+                            blocks.append([
+                                "type": "image",
+                                "source": [
+                                    "type": "base64",
+                                    "media_type": mime,
+                                    "data": base64,
+                                ],
+                            ])
+                        } else if attachmentPolicy == .preferProviderAttachments, let mime {
+                            blocks.append([
+                                "type": "document",
+                                "source": [
+                                    "type": "base64",
+                                    "media_type": mime,
+                                    "data": base64,
+                                ],
+                                "title": file.fileName,
+                            ])
+                        } else if let fileText = dataLoader.loadFileContent(uuid: uuid) {
+                            blocks.append(["type": "text", "text": fileText])
+                        } else {
+                            blocks.append(["type": "text", "text": "[Unsupported file attachment]"])
+                        }
+                    } else if let fileText = dataLoader.loadFileContent(uuid: uuid) {
+                        blocks.append(["type": "text", "text": fileText])
+                    } else {
+                        blocks.append(["type": "text", "text": "[Missing file attachment]"])
+                    }
+                }
+            }
+
+            return blocks.isEmpty ? content : blocks
+        }
+
+        var processedMessages: [[String: Any]] = []
+        processedMessages.reserveCapacity(updatedRequestMessages.count)
+
+        for message in updatedRequestMessages {
+            var processed: [String: Any] = [:]
+            if let role = message["role"] {
+                processed["role"] = role
+            }
+            if let content = message["content"] {
+                processed["content"] = await expandedContent(content)
+            }
+            processedMessages.append(processed)
+        }
+
         let defaultMaxTokens = AppConstants.defaultApiConfigurations["claude"]?.maxTokens ?? 8192
         var maxTokens = (model == "claude-3-5-sonnet-latest") ? 8192 : defaultMaxTokens
 
@@ -82,7 +175,7 @@ class ClaudeHandler: BaseAPIHandler {
             
             var jsonDict: [String: Any] = [
                 "model": model,
-                "messages": updatedRequestMessages,
+                "messages": processedMessages,
                 "system": systemMessage,
                 "stream": stream,
                 "max_tokens": maxTokens,
@@ -108,7 +201,7 @@ class ClaudeHandler: BaseAPIHandler {
 
         var jsonDict: [String: Any] = [
             "model": model,
-            "messages": updatedRequestMessages,
+            "messages": processedMessages,
             "system": systemMessage,
             "stream": stream,
             "temperature": settings.temperature,

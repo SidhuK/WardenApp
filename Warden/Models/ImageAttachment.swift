@@ -179,6 +179,10 @@ final class ImageAttachment: Identifiable, ObservableObject {
         }
     }
 
+    func waitForLoad() async {
+        await loadTask?.value
+    }
+
     func saveToEntity(image: NSImage? = nil, context: NSManagedObjectContext? = nil) {
         guard let imageToSave = image ?? self.image else { return }
         guard let contextToUse = context ?? managedObjectContext else { return }
@@ -199,7 +203,8 @@ final class ImageAttachment: Identifiable, ObservableObject {
         let imageData = Self.convertImageToData(imageToSave, format: originalFileType)
         let thumbnailData = thumbnail.flatMap { Self.convertImageToData($0, format: .jpeg, compression: 0.7) }
 
-        contextToUse.perform { [weak self] in
+        var newObjectID: NSManagedObjectID?
+        contextToUse.performAndWait {
             let entity: ImageEntity
             if let imageEntityID, let existing = try? contextToUse.existingObject(with: imageEntityID) as? ImageEntity {
                 entity = existing
@@ -207,11 +212,7 @@ final class ImageAttachment: Identifiable, ObservableObject {
                 let newEntity = ImageEntity(context: contextToUse)
                 newEntity.id = id
                 entity = newEntity
-
-                let objectID = newEntity.objectID
-                Task { @MainActor [weak self] in
-                    self?.imageEntityID = objectID
-                }
+                newObjectID = newEntity.objectID
             }
 
             entity.imageFormat = formatString
@@ -223,6 +224,10 @@ final class ImageAttachment: Identifiable, ObservableObject {
             } catch {
                 WardenLog.coreData.error("Error saving image to Core Data: \(error.localizedDescription, privacy: .public)")
             }
+        }
+
+        if let newObjectID {
+            self.imageEntityID = newObjectID
         }
     }
 

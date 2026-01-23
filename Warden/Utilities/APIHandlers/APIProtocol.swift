@@ -23,6 +23,13 @@ struct ToolCall: Codable {
     }
 }
 
+/// Controls whether a handler should attempt provider-native file/document attachments,
+/// or force all non-image attachments to be inlined as extracted text.
+enum AttachmentPolicy: String, Sendable {
+    case preferProviderAttachments
+    case inlineTextOnly
+}
+
 protocol APIService {
     var name: String { get }
     var baseURL: URL { get }
@@ -49,8 +56,9 @@ protocol APIService {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest
+    ) async throws -> URLRequest
     
     func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)?
     
@@ -125,12 +133,13 @@ extension APIService {
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings
     ) async throws -> (String?, [ToolCall]?) {
-        func execute(settings: GenerationSettings) async throws -> (String?, [ToolCall]?) {
-            let request = try prepareRequest(
+        func execute(settings: GenerationSettings, attachmentPolicy: AttachmentPolicy) async throws -> (String?, [ToolCall]?) {
+            let request = try await prepareRequest(
                 requestMessages: requestMessages,
                 tools: tools,
                 model: model,
                 settings: settings,
+                attachmentPolicy: attachmentPolicy,
                 stream: false
             )
 
@@ -159,8 +168,15 @@ extension APIService {
         }
 
         do {
-            return try await execute(settings: settings)
+            return try await execute(settings: settings, attachmentPolicy: .preferProviderAttachments)
         } catch let error as APIError {
+            if AttachmentCompatibility.shouldRetryWithoutFileAttachments(attachmentPolicy: .preferProviderAttachments, error: error) {
+                WardenLog.app.notice(
+                    "Retrying request without file attachments due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                )
+                return try await execute(settings: settings, attachmentPolicy: .inlineTextOnly)
+            }
+
             guard settings.reasoningEffort != .off,
                   ReasoningCompatibility.shouldRetryWithoutReasoning(settings: settings, error: error)
             else {
@@ -172,7 +188,7 @@ extension APIService {
             )
 
             let retrySettings = GenerationSettings(temperature: settings.temperature, reasoningEffort: .off)
-            return try await execute(settings: retrySettings)
+            return try await execute(settings: retrySettings, attachmentPolicy: .preferProviderAttachments)
         }
     }
 
@@ -199,6 +215,41 @@ enum ReasoningCompatibility {
             || lower.contains("thinking")
         
         guard hasReasoningParam else { return false }
+
+        return lower.contains("unknown")
+            || lower.contains("unrecognized")
+            || lower.contains("unsupported")
+            || lower.contains("invalid")
+            || lower.contains("not allowed")
+            || lower.contains("additional properties")
+            || lower.contains("not supported")
+    }
+}
+
+enum AttachmentCompatibility {
+    static func shouldRetryWithoutFileAttachments(attachmentPolicy: AttachmentPolicy, error: APIError) -> Bool {
+        guard attachmentPolicy != .inlineTextOnly else { return false }
+
+        let errorText: String
+        switch error {
+        case .serverError(let message):
+            errorText = message
+        case .unknown(let message):
+            errorText = message
+        default:
+            return false
+        }
+
+        let lower = errorText.lowercased()
+        let mentionsAttachmentFields = lower.contains("document")
+            || lower.contains("file")
+            || lower.contains("attachment")
+            || lower.contains("media_type")
+            || lower.contains("input_file")
+            || lower.contains("file_data")
+            || lower.contains("filename")
+
+        guard mentionsAttachmentFields else { return false }
 
         return lower.contains("unknown")
             || lower.contains("unrecognized")
