@@ -308,35 +308,52 @@ struct MessageInputView: View {
 
     private var attachmentPreviewsSection: some View {
         let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
-        
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // Image previews
-                ForEach(state.attachedImages) { attachment in
-                    ImagePreviewView(attachment: attachment) { index in
-                        if let index = state.attachedImages.firstIndex(where: { $0.id == attachment.id }) {
-                            withAnimation {
-                                state.attachedImages.remove(at: index)
-                            }
-                        }
-                    }
-                }
-                
-                // File previews
-                ForEach(state.attachedFiles) { attachment in
-                    FilePreviewView(attachment: attachment) { index in
-                        if let index = state.attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
-                            withAnimation {
-                                state.attachedFiles.remove(at: index)
-                            }
-                        }
-                    }
-                }
+        let providerSummary: String? = {
+            guard let serviceName = chat?.apiService?.name,
+                  let providerID = ProviderID(normalizing: serviceName)
+            else {
+                return nil
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            return ProviderAttachmentCapabilities.forProvider(providerID).composerSummary
+        }()
+        
+        return VStack(alignment: .leading, spacing: 4) {
+            if hasAttachments, let providerSummary {
+                Text(providerSummary)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Image previews
+                    ForEach(state.attachedImages) { attachment in
+                        ImagePreviewView(attachment: attachment) { index in
+                            if let index = state.attachedImages.firstIndex(where: { $0.id == attachment.id }) {
+                                withAnimation {
+                                    state.attachedImages.remove(at: index)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // File previews
+                    ForEach(state.attachedFiles) { attachment in
+                        FilePreviewView(attachment: attachment) { index in
+                            if let index = state.attachedFiles.firstIndex(where: { $0.id == attachment.id }) {
+                                withAnimation {
+                                    state.attachedFiles.remove(at: index)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
         }
-        .frame(height: hasAttachments ? 80 : 0)
+        .frame(height: hasAttachments ? (providerSummary == nil ? 80 : 100) : 0)
     }
     
     @ViewBuilder

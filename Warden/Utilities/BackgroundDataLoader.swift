@@ -75,6 +75,44 @@ class BackgroundDataLoader {
         return result
     }
 
+    func loadFileData(uuid: UUID) -> (fileName: String, data: Data)? {
+        let backgroundContext = persistenceController.container.newBackgroundContext()
+        var result: (String, String)? = nil
+
+        backgroundContext.performAndWait {
+            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+            fetchRequest.fetchLimit = 1
+
+            do {
+                let results = try backgroundContext.fetch(fetchRequest)
+                if let fileEntity = results.first,
+                   let fileName = fileEntity.fileName,
+                   let blobID = fileEntity.blobID
+                {
+                    result = (fileName, blobID)
+                }
+            } catch {
+                WardenLog.coreData.error(
+                    "Error fetching file metadata from Core Data: \(error.localizedDescription, privacy: .public)"
+                )
+            }
+        }
+
+        guard let (fileName, blobID) = result else { return nil }
+
+        let url = AttachmentBlobStore.fileURL(blobID: blobID, fileName: fileName)
+        do {
+            let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+            return (fileName: fileName, data: data)
+        } catch {
+            WardenLog.coreData.error(
+                "Error loading attachment bytes from disk: \(error.localizedDescription, privacy: .public)"
+            )
+            return nil
+        }
+    }
+
     func loadFileAttachment(uuid: UUID) -> FileAttachment? {
         let backgroundContext = persistenceController.container.newBackgroundContext()
         var result: FileAttachment? = nil

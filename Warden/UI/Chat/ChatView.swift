@@ -430,6 +430,13 @@ private struct ChatSearchOverlaysView: View {
 
 extension ChatView {
     func sendMessage(ignoreMessageInput: Bool = false, retryContent: String? = nil) {
+        Task { @MainActor in
+            await sendMessageInternal(ignoreMessageInput: ignoreMessageInput, retryContent: retryContent)
+        }
+    }
+
+    @MainActor
+    private func sendMessageInternal(ignoreMessageInput: Bool, retryContent: String?) async {
         guard chatViewModel.canSendMessage else {
             currentError = ErrorMessage(
                 apiError: .noApiService("No API service selected. Select the API service to send your first message"),
@@ -440,38 +447,38 @@ extension ChatView {
 
         resetError()
 
-        let messageBody: String
         let isFirstMessage = chat.messages.count == 0
+        let messageBody: String
 
         if let retryText = retryContent {
             // Retry mode: Use provided text, do not save new user message
             messageBody = retryText
         } else if ignoreMessageInput {
-             // Legacy retry/send logic (mostly unused now with explicit retryContent)
+            // Legacy retry/send logic (mostly unused now with explicit retryContent)
             messageBody = prepareMessageBody(clearInput: false)
         } else {
-            // Normal send
-            messageBody = prepareMessageBody(clearInput: true)
+            // Normal send: ensure attachment bytes are persisted before saving message + sending
+            messageBody = await prepareMessageBodyAsync(clearInput: true)
             saveNewMessageInStore(with: messageBody)
-            
+
             if isFirstMessage {
                 withAnimation {
                     isBottomContainerExpanded = false
                 }
             }
         }
-        
+
         guard !messageBody.isEmpty else { return }
 
         userIsScrolling = false
-        
+
         #if DEBUG
         WardenLog.app.debug("Sending message. webSearchEnabled: \(composerState.webSearchEnabled, privacy: .public)")
         WardenLog.app.debug("useStreamResponse: \(chat.apiService?.useStreamResponse ?? false, privacy: .public)")
         #endif
-        
+
         let useStream = chat.apiService?.useStreamResponse ?? false
-        
+
         // Unified sending logic
         if useStream {
             #if DEBUG
@@ -479,15 +486,13 @@ extension ChatView {
             #endif
             self.isStreaming = true
             if composerState.webSearchEnabled { self.isSearchingWeb = true }
-            
-            Task { @MainActor in
-                await chatViewModel.sendMessageStreamWithSearch(
-                    messageBody,
-                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
-                    useWebSearch: composerState.webSearchEnabled
-                ) { result in
-                    handleSendResult(result)
-                }
+
+            await chatViewModel.sendMessageStreamWithSearch(
+                messageBody,
+                contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
+                useWebSearch: composerState.webSearchEnabled
+            ) { result in
+                handleSendResult(result)
             }
         } else {
             #if DEBUG
@@ -495,15 +500,13 @@ extension ChatView {
             #endif
             self.waitingForResponse = true
             if composerState.webSearchEnabled { self.isSearchingWeb = true }
-            
-            Task { @MainActor in
-                await chatViewModel.sendMessageWithSearch(
-                    messageBody,
-                    contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
-                    useWebSearch: composerState.webSearchEnabled
-                ) { result in
-                    handleSendResult(result)
-                }
+
+            await chatViewModel.sendMessageWithSearch(
+                messageBody,
+                contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize)),
+                useWebSearch: composerState.webSearchEnabled
+            ) { result in
+                handleSendResult(result)
             }
         }
     }
@@ -560,6 +563,26 @@ extension ChatView {
         }
         
         return messageBody
+    }
+
+    @MainActor
+    private func prepareMessageBodyAsync(clearInput: Bool) async -> String {
+        let providerID = chat.apiService?.name.flatMap(ProviderID.init(normalizing:))
+            ?? chat.apiService?.type.flatMap(ProviderID.init(normalizing:))
+        let capabilities = providerID.map { ProviderAttachmentCapabilities.forProvider($0) }
+
+        for attachment in composerState.attachedImages {
+            await attachment.waitForLoad()
+        }
+
+        for attachment in composerState.attachedFiles {
+            if capabilities?.supportsNativeFileInputs == true {
+                await attachment.waitForBlobCopy()
+            } else {
+                await attachment.waitForLoad()
+            }
+        }
+        return prepareMessageBody(clearInput: clearInput)
     }
 
     private func saveNewMessageInStore(with messageBody: String) {

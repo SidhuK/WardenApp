@@ -20,6 +20,15 @@ enum FileAttachmentType {
 
 @MainActor
 final class FileAttachment: Identifiable, ObservableObject {
+    private static let maxExtractedTextCharacters: Int = 200_000
+
+    enum BlobCopyStatus: String, Sendable {
+        case idle
+        case copying
+        case ready
+        case failed
+    }
+
     var id: UUID = UUID()
     var url: URL?
     @Published var fileName: String = ""
@@ -29,13 +38,17 @@ final class FileAttachment: Identifiable, ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: Error?
     @Published var thumbnail: NSImage?
+    @Published private(set) var blobCopyStatus: BlobCopyStatus = .idle
+    @Published private(set) var blobCopyErrorDescription: String?
     
     @Published var image: NSImage?
     
     private var managedObjectContext: NSManagedObjectContext?
     private var fileEntityID: NSManagedObjectID?
     private var loadTask: Task<Void, Never>?
+    private var blobCopyTask: Task<Void, Error>?
     private(set) var originalUTType: UTType
+    private(set) var blobID: String?
     
     init(url: URL, context: NSManagedObjectContext? = nil) {
         self.url = url
@@ -43,15 +56,32 @@ final class FileAttachment: Identifiable, ObservableObject {
         self.originalUTType = url.getUTType() ?? .data
         self.managedObjectContext = context
         self.fileType = self.determineFileType(from: url.pathExtension)
+        startBlobCopy(from: url, fileName: self.fileName)
         startLoadingFromURL()
     }
     
     init(fileEntity: FileEntity) {
+        let initialFileName = fileEntity.fileName ?? "Unknown"
+        let initialBlobID = fileEntity.blobID
+        var initialBlobCopyStatus: BlobCopyStatus = .idle
+        var initialBlobCopyErrorDescription: String? = nil
+
+        if let initialBlobID {
+            let url = AttachmentBlobStore.fileURL(blobID: initialBlobID, fileName: initialFileName)
+            if FileManager.default.fileExists(atPath: url.path) {
+                initialBlobCopyStatus = .ready
+            } else {
+                initialBlobCopyStatus = .failed
+                initialBlobCopyErrorDescription = "Missing file copy on disk."
+            }
+        }
+
         self.fileEntityID = fileEntity.objectID
         self.id = fileEntity.id ?? UUID()
-        self.fileName = fileEntity.fileName ?? "Unknown"
+        self.fileName = initialFileName
         self.fileSize = fileEntity.fileSize
         self.textContent = fileEntity.textContent ?? ""
+        self.blobID = initialBlobID
         self.managedObjectContext = fileEntity.managedObjectContext
         
         if let typeString = fileEntity.fileType {
@@ -61,6 +91,9 @@ final class FileAttachment: Identifiable, ObservableObject {
             self.originalUTType = .data
             self.fileType = .other("")
         }
+
+        self.blobCopyStatus = initialBlobCopyStatus
+        self.blobCopyErrorDescription = initialBlobCopyErrorDescription
         
         startLoadingFromEntity()
     }
@@ -94,6 +127,47 @@ final class FileAttachment: Identifiable, ObservableObject {
     
     deinit {
         loadTask?.cancel()
+        blobCopyTask?.cancel()
+    }
+
+    func waitForBlobCopy() async {
+        _ = try? await blobCopyTask?.value
+    }
+
+    func waitForLoad() async {
+        await loadTask?.value
+    }
+
+    private func startBlobCopy(from url: URL, fileName: String) {
+        let blobID = id.uuidString
+        self.blobID = blobID
+
+        blobCopyTask?.cancel()
+        blobCopyStatus = .copying
+        blobCopyErrorDescription = nil
+
+        blobCopyTask = Task(priority: .utility) {
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            do {
+                try await AttachmentBlobStore.shared.storeFileCopy(
+                    sourceURL: url,
+                    blobID: blobID,
+                    fileName: fileName
+                )
+                blobCopyStatus = .ready
+            } catch {
+                if Task.isCancelled { return }
+                blobCopyStatus = .failed
+                blobCopyErrorDescription = error.localizedDescription
+                throw error
+            }
+        }
     }
 
     private func determineFileType(from `extension`: String) -> FileAttachmentType {
@@ -133,12 +207,19 @@ final class FileAttachment: Identifiable, ObservableObject {
                 }
 
                 let size = try await Task.detached(priority: .userInitiated) {
+                    let didAccess = url.startAccessingSecurityScopedResource()
+                    defer {
+                        if didAccess {
+                            url.stopAccessingSecurityScopedResource()
+                        }
+                    }
                     let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
                     return attributes[.size] as? Int64 ?? 0
                 }.value
 
                 try Task.checkCancellation()
                 self.fileSize = size
+                await waitForBlobCopy()
 
                 switch fileType {
                 case .image:
@@ -162,6 +243,12 @@ final class FileAttachment: Identifiable, ObservableObject {
     
     private func loadImageFile(from url: URL) async throws {
         let image = try await Task.detached(priority: .userInitiated) {
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
             guard let image = NSImage(contentsOf: url) else {
                 throw NSError(
                     domain: "FileAttachment",
@@ -180,18 +267,30 @@ final class FileAttachment: Identifiable, ObservableObject {
     }
     
     private func loadTextFile(from url: URL) async throws {
-        let content = try await Task.detached(priority: .userInitiated) {
-            try String(contentsOf: url, encoding: .utf8)
+        let content: String = try await Task.detached(priority: .userInitiated) { () throws -> String in
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            return try String(contentsOf: url, encoding: .utf8)
         }.value
 
         try Task.checkCancellation()
-        self.textContent = content
+        self.textContent = Self.truncatedExtractedTextIfNeeded(content)
         self.isLoading = false
         saveToEntity()
     }
     
     private func loadPDFFile(from url: URL) async throws {
         let result = try await Task.detached(priority: .userInitiated) {
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
             guard let pdfDocument = PDFDocument(url: url) else {
                 throw NSError(
                     domain: "FileAttachment",
@@ -209,6 +308,10 @@ final class FileAttachment: Identifiable, ObservableObject {
                     fullText += page.string ?? ""
                     fullText += "\n\n"
                 }
+
+                if fullText.count >= Self.maxExtractedTextCharacters {
+                    break
+                }
             }
 
             let firstPage = pdfDocument.page(at: 0)
@@ -221,13 +324,19 @@ final class FileAttachment: Identifiable, ObservableObject {
             createPDFThumbnail(from: firstPage)
         }
 
-        self.textContent = result.0
+        self.textContent = Self.truncatedExtractedTextIfNeeded(result.0)
         self.isLoading = false
         saveToEntity()
     }
     
     private func loadRTFFile(from url: URL) async throws {
-        let content = try await Task.detached(priority: .userInitiated) {
+        let content: String = try await Task.detached(priority: .userInitiated) { () throws -> String in
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
             let rtfData = try Data(contentsOf: url)
             guard let attributedString = NSAttributedString(rtf: rtfData, documentAttributes: nil) else {
                 throw NSError(
@@ -240,19 +349,36 @@ final class FileAttachment: Identifiable, ObservableObject {
         }.value
 
         try Task.checkCancellation()
-        self.textContent = content
+        self.textContent = Self.truncatedExtractedTextIfNeeded(content)
         self.isLoading = false
         saveToEntity()
     }
     
     private func loadGenericFile(from url: URL, fileName: String) async {
-        let content = await Task.detached(priority: .userInitiated) {
-            (try? String(contentsOf: url, encoding: .utf8)) ?? "[Binary file: \(fileName)]"
+        let content: String = await Task.detached(priority: .userInitiated) { () -> String in
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            return (try? String(contentsOf: url, encoding: .utf8)) ?? "[Binary file: \(fileName)]"
         }.value
 
-        self.textContent = content
+        self.textContent = Self.truncatedExtractedTextIfNeeded(content)
         self.isLoading = false
         saveToEntity()
+    }
+
+    private static func truncatedExtractedTextIfNeeded(_ text: String) -> String {
+        guard text.count > maxExtractedTextCharacters else { return text }
+
+        let prefix = String(text.prefix(maxExtractedTextCharacters))
+        return """
+        \(prefix)
+
+        [Truncated extracted text to \(maxExtractedTextCharacters) characters]
+        """
     }
     
     private func createThumbnail(from image: NSImage) {
@@ -365,8 +491,10 @@ final class FileAttachment: Identifiable, ObservableObject {
         let imageData = image.flatMap { Self.convertImageToData($0, compression: 0.9) }
         let thumbnailData = thumbnail.flatMap { Self.convertImageToData($0, compression: 0.7) }
         let fileEntityID = fileEntityID
+        let blobID = blobID
 
-        contextToUse.perform { [weak self] in
+        var newObjectID: NSManagedObjectID?
+        contextToUse.performAndWait {
             let entity: FileEntity
             if let fileEntityID, let existing = try? contextToUse.existingObject(with: fileEntityID) as? FileEntity {
                 entity = existing
@@ -374,11 +502,7 @@ final class FileAttachment: Identifiable, ObservableObject {
                 let newEntity = FileEntity(context: contextToUse)
                 newEntity.id = id
                 entity = newEntity
-
-                let objectID = newEntity.objectID
-                Task { @MainActor [weak self] in
-                    self?.fileEntityID = objectID
-                }
+                newObjectID = newEntity.objectID
             }
 
             entity.fileName = fileName
@@ -387,12 +511,17 @@ final class FileAttachment: Identifiable, ObservableObject {
             entity.fileType = fileTypeString
             entity.imageData = imageData
             entity.thumbnailData = thumbnailData
+            entity.blobID = blobID
 
             do {
                 try contextToUse.save()
             } catch {
                 WardenLog.coreData.error("Error saving file to Core Data: \(error.localizedDescription, privacy: .public)")
             }
+        }
+
+        if let newObjectID {
+            self.fileEntityID = newObjectID
         }
     }
     

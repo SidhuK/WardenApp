@@ -59,8 +59,36 @@ class ChatGPTHandler: BaseAPIHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
+        let provider = ProviderID(normalizing: name)
+
+        let hasFileTags = requestMessages.contains { message in
+            guard let content = message["content"] else { return false }
+            return content.contains(MessageContent.fileTagStart)
+        }
+
+        let hasTools = (tools?.isEmpty == false)
+        let hasToolRoleMessages = requestMessages.contains { $0["role"] == "tool" }
+        let hasSerializedToolCalls = requestMessages.contains { message in
+            message["tool_calls"] != nil || message["tool_calls_json"] != nil || message["tool_call_id"] != nil
+        }
+        let shouldUseResponsesAPI = provider == .chatgpt
+            && attachmentPolicy == .preferProviderAttachments
+            && hasFileTags
+            && !hasTools
+            && !hasToolRoleMessages
+            && !hasSerializedToolCalls
+
+        if shouldUseResponsesAPI {
+            return try await prepareResponsesRequest(
+                requestMessages: requestMessages,
+                settings: settings,
+                stream: stream
+            )
+        }
+
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         if !apiKey.isEmpty {
@@ -95,72 +123,22 @@ class ChatGPTHandler: BaseAPIHandler {
             }
 
             if let content = message["content"] {
-                let imagePattern = "<image-uuid>(.*?)</image-uuid>"
-                let filePattern = "<file-uuid>(.*?)</file-uuid>"
-                
-                let hasImages = content.range(of: imagePattern, options: .regularExpression) != nil
-                let hasFiles = content.range(of: filePattern, options: .regularExpression) != nil
+                if AttachmentMessageExpander.containsAttachmentTags(content) {
+                    let format: AttachmentMessageExpander.Format =
+                        content.contains(MessageContent.imageTagStart) ? .openAIContentArray : .stringInlining
+                    let expanded = AttachmentMessageExpander.expand(
+                        content: content,
+                        for: format,
+                        dataLoader: dataLoader
+                    )
 
-                if hasImages || hasFiles {
-                    var textContent = content
-                    
-                    // Remove all UUID patterns from text content
-                    textContent = textContent.replacingOccurrences(of: imagePattern, with: "", options: .regularExpression)
-                    textContent = textContent.replacingOccurrences(of: filePattern, with: "", options: .regularExpression)
-                    textContent = textContent.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    var contentArray: [[String: Any]] = []
-
-                    // Process file attachments first (as text content)
-                    if hasFiles {
-                        let fileRegex = try? NSRegularExpression(pattern: filePattern, options: [])
-                        let nsString = content as NSString
-                        let fileMatches = fileRegex?.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
-
-                        for match in fileMatches {
-                            if match.numberOfRanges > 1 {
-                                let uuidRange = match.range(at: 1)
-                                let uuidString = nsString.substring(with: uuidRange)
-
-                                if let uuid = UUID(uuidString: uuidString),
-                                   let fileContent = self.dataLoader.loadFileContent(uuid: uuid) {
-                                    contentArray.append(["type": "text", "text": fileContent])
-                                }
-                            }
-                        }
+                    switch expanded {
+                    case .openAIContentArray(let contentArray):
+                        processedMessage["content"] = contentArray
+                    case .string(let text):
+                        processedMessage["content"] = text
                     }
-                    
-                    // Add remaining text content if any
-                    if !textContent.isEmpty {
-                        contentArray.append(["type": "text", "text": textContent])
-                    }
-
-                    // Process image attachments
-                    if hasImages {
-                        let imageRegex = try? NSRegularExpression(pattern: imagePattern, options: [])
-                        let nsString = content as NSString
-                        let imageMatches = imageRegex?.matches(in: content, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
-
-                        for match in imageMatches {
-                            if match.numberOfRanges > 1 {
-                                let uuidRange = match.range(at: 1)
-                                let uuidString = nsString.substring(with: uuidRange)
-
-                                if let uuid = UUID(uuidString: uuidString),
-                                    let imageData = self.dataLoader.loadImageData(uuid: uuid)
-                                {
-                                    contentArray.append([
-                                        "type": "image_url",
-                                        "image_url": ["url": "data:image/jpeg;base64,\(imageData.base64EncodedString())"],
-                                    ])
-                                }
-                            }
-                        }
-                    }
-
-                    processedMessage["content"] = contentArray
-                }
-                else {
+                } else {
                     processedMessage["content"] = content
                 }
             }
@@ -188,7 +166,6 @@ class ChatGPTHandler: BaseAPIHandler {
             "temperature": temperatureOverride,
         ]
 
-        let provider = ProviderID(normalizing: name)
         let isOpenAIReasoningModel = Self.isReasoningModel(self.model, provider: name)
         let shouldSendReasoningEffort = isOpenAIReasoningModel || provider == .xai
         
@@ -219,31 +196,40 @@ class ChatGPTHandler: BaseAPIHandler {
             #endif
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
-                if let dict = json as? [String: Any],
-                   let choices = dict["choices"] as? [[String: Any]],
-                   let lastIndex = choices.indices.last,
-                   let message = choices[lastIndex]["message"] as? [String: Any]
-                {
-                    let messageRole = message["role"] as? String
-                    let contentText = extractTextContent(from: message["content"])
-                    let reasoningText = extractTextContent(from: message["reasoning_content"] ?? message["reasoning"])
-                    
-                    var toolCalls: [ToolCall]? = nil
-                    if let toolCallsData = message["tool_calls"] as? [[String: Any]] {
-                        toolCalls = toolCallsData.compactMap { dict -> ToolCall? in
-                            guard let id = dict["id"] as? String,
-                                  let type = dict["type"] as? String,
-                                  let function = dict["function"] as? [String: Any],
-                                  let name = function["name"] as? String,
-                                  let arguments = function["arguments"] as? String else {
-                                return nil
-                            }
-                            return ToolCall(id: id, type: type, function: ToolCall.FunctionCall(name: name, arguments: arguments))
-                        }
+                if let dict = json as? [String: Any] {
+                    if let parsed = parseResponsesJSON(dict: dict) {
+                        return parsed
                     }
-                    
-                    let finalContent = composeResponse(reasoningText: reasoningText, contentText: contentText)
-                    return (finalContent, messageRole, toolCalls)
+
+                    if let choices = dict["choices"] as? [[String: Any]],
+                       let lastIndex = choices.indices.last,
+                       let message = choices[lastIndex]["message"] as? [String: Any]
+                    {
+                        let messageRole = message["role"] as? String
+                        let contentText = extractTextContent(from: message["content"])
+                        let reasoningText = extractTextContent(from: message["reasoning_content"] ?? message["reasoning"])
+
+                        var toolCalls: [ToolCall]? = nil
+                        if let toolCallsData = message["tool_calls"] as? [[String: Any]] {
+                            toolCalls = toolCallsData.compactMap { dict -> ToolCall? in
+                                guard let id = dict["id"] as? String,
+                                      let type = dict["type"] as? String,
+                                      let function = dict["function"] as? [String: Any],
+                                      let name = function["name"] as? String,
+                                      let arguments = function["arguments"] as? String else {
+                                    return nil
+                                }
+                                return ToolCall(
+                                    id: id,
+                                    type: type,
+                                    function: ToolCall.FunctionCall(name: name, arguments: arguments)
+                                )
+                            }
+                        }
+
+                        let finalContent = composeResponse(reasoningText: reasoningText, contentText: contentText)
+                        return (finalContent, messageRole, toolCalls)
+                    }
                 }
             }
             catch {
@@ -269,6 +255,10 @@ class ChatGPTHandler: BaseAPIHandler {
             let jsonResponse = try JSONSerialization.jsonObject(with: data, options: [])
 
             if let dict = jsonResponse as? [String: Any] {
+                if let type = dict["type"] as? String {
+                    return parseResponsesStreamEvent(type: type, dict: dict)
+                }
+
                 if let choices = dict["choices"] as? [[String: Any]],
                     let firstChoice = choices.first,
                     let delta = firstChoice["delta"] as? [String: Any]
@@ -366,6 +356,133 @@ class ChatGPTHandler: BaseAPIHandler {
 }
 
 private extension ChatGPTHandler {
+    func prepareResponsesRequest(
+        requestMessages: [[String: String]],
+        settings: GenerationSettings,
+        stream: Bool
+    ) async throws -> URLRequest {
+        let responsesURL: URL = {
+            if baseURL.path.contains("/responses") {
+                return baseURL
+            }
+            return baseURL
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("responses")
+        }()
+
+        var request = URLRequest(url: responsesURL)
+        request.httpMethod = "POST"
+        if !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let inputMessages = try await buildResponsesInputMessages(requestMessages: requestMessages)
+
+        var jsonDict: [String: Any] = [
+            "model": self.model,
+            "stream": stream,
+            "input": inputMessages,
+            "temperature": settings.temperature,
+        ]
+
+        if let body = try? JSONSerialization.data(withJSONObject: jsonDict, options: []) {
+            request.httpBody = body
+        } else {
+            throw APIError.decodingFailed("Failed to encode responses request JSON")
+        }
+
+        return request
+    }
+
+    func buildResponsesInputMessages(requestMessages: [[String: String]]) async throws -> [[String: Any]] {
+        var inputMessages: [[String: Any]] = []
+        inputMessages.reserveCapacity(requestMessages.count)
+
+        for message in requestMessages {
+            guard let role = message["role"], let content = message["content"] else { continue }
+
+            var contentParts: [[String: Any]] = []
+            contentParts.reserveCapacity(8)
+
+            let tokens = AttachmentTagTokenizer.tokenize(content)
+            for token in tokens {
+                switch token {
+                case .text(let text):
+                    guard containsNonWhitespaceAndNewlines(text) else { continue }
+                    contentParts.append(["type": "input_text", "text": text])
+
+                case .image(let uuid):
+                    guard let imageData = await AttachmentStore.shared.imageData(uuid: uuid) else {
+                        contentParts.append(["type": "input_text", "text": "[Missing image attachment]"])
+                        continue
+                    }
+
+                    let (mime, base64) = await Task.detached(priority: .userInitiated) {
+                        let mime = AttachmentMimeTypeSniffer.sniff(data: imageData) ?? "image/jpeg"
+                        return (mime, imageData.base64EncodedString())
+                    }.value
+
+                    contentParts.append([
+                        "type": "input_image",
+                        "image_url": "data:\(mime);base64,\(base64)",
+                    ])
+
+                case .file(let uuid):
+                    if let file = await AttachmentStore.shared.fileData(uuid: uuid) {
+                        let maxBytes = 50 * 1024 * 1024
+                        if file.data.count > maxBytes {
+                            if let fileText = dataLoader.loadFileContent(uuid: uuid) {
+                                contentParts.append(["type": "input_text", "text": fileText])
+                            } else {
+                                contentParts.append([
+                                    "type": "input_text",
+                                    "text": "[File too large to attach (\(file.fileName))]",
+                                ])
+                            }
+                            continue
+                        }
+
+                        let (mime, base64) = await Task.detached(priority: .userInitiated) {
+                            let mime = AttachmentMimeTypeSniffer.sniff(data: file.data, fileName: file.fileName)
+                            return (mime, file.data.base64EncodedString())
+                        }.value
+
+                        if let mime, mime.hasPrefix("image/") {
+                            contentParts.append([
+                                "type": "input_image",
+                                "image_url": "data:\(mime);base64,\(base64)",
+                            ])
+                        } else {
+                            contentParts.append([
+                                "type": "input_file",
+                                "filename": file.fileName,
+                                "file_data": base64,
+                            ])
+                        }
+                    } else if let fileText = dataLoader.loadFileContent(uuid: uuid) {
+                        contentParts.append(["type": "input_text", "text": fileText])
+                    } else {
+                        contentParts.append(["type": "input_text", "text": "[Missing file attachment]"])
+                    }
+                }
+            }
+
+            if contentParts.isEmpty {
+                contentParts.append(["type": "input_text", "text": content])
+            }
+
+            inputMessages.append([
+                "type": "message",
+                "role": role,
+                "content": contentParts,
+            ])
+        }
+
+        return inputMessages
+    }
+
     func extractTextContent(from value: Any?) -> String? {
         guard let value = value, !(value is NSNull) else { return nil }
         if let text = value as? String {
@@ -404,6 +521,58 @@ private extension ChatGPTHandler {
             return nil
         }
         return sections.joined(separator: "\n\n")
+    }
+
+    func parseResponsesJSON(dict: [String: Any]) -> (String?, String?, [ToolCall]?)? {
+        guard let output = dict["output"] as? [[String: Any]] else { return nil }
+
+        var textParts: [String] = []
+        textParts.reserveCapacity(8)
+
+        for item in output {
+            guard let type = item["type"] as? String, type == "message" else { continue }
+            guard let content = item["content"] as? [[String: Any]] else { continue }
+
+            for part in content {
+                guard let partType = part["type"] as? String else { continue }
+                if partType == "output_text", let text = part["text"] as? String {
+                    textParts.append(text)
+                }
+            }
+        }
+
+        if textParts.isEmpty {
+            return nil
+        }
+
+        return (textParts.joined(), "assistant", nil)
+    }
+
+    func parseResponsesStreamEvent(
+        type: String,
+        dict: [String: Any]
+    ) -> (Bool, Error?, String?, String?, [ToolCall]?) {
+        switch type {
+        case "response.output_text.delta":
+            let delta = dict["delta"] as? String
+            return (false, nil, delta, "assistant", nil)
+
+        case "response.completed":
+            return (true, nil, nil, nil, nil)
+
+        case "response.failed", "response.incomplete":
+            let message = (dict["error"] as? [String: Any])?["message"] as? String
+                ?? "Response stream failed"
+            let error = APIError.decodingFailed(message)
+            return (true, error, nil, nil, nil)
+
+        default:
+            return (false, nil, nil, nil, nil)
+        }
+    }
+
+    func containsNonWhitespaceAndNewlines(_ text: String) -> Bool {
+        text.unicodeScalars.contains { !CharacterSet.whitespacesAndNewlines.contains($0) }
     }
 }
 

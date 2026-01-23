@@ -11,6 +11,7 @@ private struct OllamaModel: Codable {
 }
 
 class OllamaHandler: BaseAPIHandler {
+    private let dataLoader = BackgroundDataLoader()
     
     override func fetchModels() async throws -> [AIModel] {
         let tagsURL = baseURL.deletingLastPathComponent().appendingPathComponent("tags")
@@ -45,16 +46,32 @@ class OllamaHandler: BaseAPIHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
+        let expandedMessages = requestMessages.map { message -> [String: String] in
+            var updated = message
+            if let content = message["content"], AttachmentMessageExpander.containsAttachmentTags(content) {
+                let expanded = AttachmentMessageExpander.expand(
+                    content: content,
+                    for: .stringInlining,
+                    dataLoader: dataLoader
+                )
+                if case .string(let text) = expanded {
+                    updated["content"] = text
+                }
+            }
+            return updated
+        }
+
         var jsonDict: [String: Any] = [
             "model": self.model,
             "stream": stream,
-            "messages": requestMessages,
+            "messages": expandedMessages,
             "temperature": settings.temperature,
         ]
         

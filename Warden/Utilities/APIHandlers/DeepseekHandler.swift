@@ -97,8 +97,9 @@ class DeepseekHandler: ChatGPTHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
             var newMessage = message
             if let content = message["content"] {
@@ -107,11 +108,12 @@ class DeepseekHandler: ChatGPTHandler {
             return newMessage
         }
         
-        return try super.prepareRequest(
+        return try await super.prepareRequest(
             requestMessages: filteredMessages,
             tools: tools,
             model: model,
             settings: settings,
+            attachmentPolicy: attachmentPolicy,
             stream: stream
         )
     }

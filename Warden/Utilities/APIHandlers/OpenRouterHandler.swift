@@ -110,8 +110,9 @@ class OpenRouterHandler: ChatGPTHandler {
         tools: [[String: Any]]?,
         model: String,
         settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
         stream: Bool
-    ) throws -> URLRequest {
+    ) async throws -> URLRequest {
         let filteredMessages = requestMessages.map { message -> [String: String] in
             var newMessage = message
             if let content = message["content"] {
@@ -120,11 +121,12 @@ class OpenRouterHandler: ChatGPTHandler {
             return newMessage
         }
         
-        var request = try super.prepareRequest(
+        var request = try await super.prepareRequest(
             requestMessages: filteredMessages,
             tools: tools,
             model: model,
             settings: settings,
+            attachmentPolicy: attachmentPolicy,
             stream: stream
         )
 

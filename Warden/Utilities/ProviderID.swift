@@ -46,3 +46,59 @@ extension ProviderID {
     }
 }
 
+struct ProviderAttachmentCapabilities: Sendable {
+    let providerID: ProviderID
+    let supportsImageInputs: Bool
+    let supportsNativeFileInputs: Bool
+
+    static func forProvider(_ providerID: ProviderID) -> ProviderAttachmentCapabilities {
+        switch providerID {
+        case .chatgpt:
+            return ProviderAttachmentCapabilities(
+                providerID: providerID,
+                supportsImageInputs: true,
+                supportsNativeFileInputs: true
+            )
+        case .claude:
+            return ProviderAttachmentCapabilities(
+                providerID: providerID,
+                supportsImageInputs: true,
+                supportsNativeFileInputs: true
+            )
+
+        case .deepseek, .gemini, .lmstudio, .openrouter, .xai:
+            return ProviderAttachmentCapabilities(
+                providerID: providerID,
+                supportsImageInputs: true,
+                supportsNativeFileInputs: false
+            )
+
+        case .mistral, .ollama, .perplexity, .groq:
+            return ProviderAttachmentCapabilities(
+                providerID: providerID,
+                supportsImageInputs: false,
+                supportsNativeFileInputs: false
+            )
+        }
+    }
+
+    var composerSummary: String {
+        var parts: [String] = []
+        parts.reserveCapacity(2)
+
+        if supportsNativeFileInputs {
+            parts.append("Files: sent as native attachments when supported")
+        } else {
+            parts.append("Files: sent as extracted text")
+        }
+
+        if supportsImageInputs {
+            parts.append("Images: supported")
+        } else {
+            parts.append("Images: not supported")
+        }
+
+        return parts.joined(separator: " • ")
+    }
+}
+
