@@ -7,6 +7,37 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.6</title>
+            <description><![CDATA[
+                <h3>New Features</h3>
+                <ul>
+                <li>Added Reasoning Effort support - Low, Medium, High (and xHigh for OpenAI models)</li>
+                </ul>
+                <h3>Improvements</h3>
+                <ul>
+                <li>Faster loading for model selector popover</li>
+                <li>UI: Cleaner sidebar with new thread button moved to top</li>
+                <li>UI: More compact sidebar layout</li>
+                <li>Preferences: Better grouping of settings</li>
+                <li>Update dialog: Removed extra confirmation dialog, now shows only the native update dialog</li>
+                </ul>
+                <h3>Bug Fixes</h3>
+                <ul>
+                <li>Fixed crash that could occur when changing model providers</li>
+                </ul>
+            ]]></description>
+            <pubDate>Thu, 23 Jan 2026 05:06:00 +0000</pubDate>
+            <sparkle:version>0.9.6</sparkle:version>
+            <sparkle:shortVersionString>0.9.6</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.6/Warden.zip"
+                       sparkle:version="0.9.6"
+                       sparkle:shortVersionString="0.9.6"
+                       type="application/zip"
+                       length="15002479"
+                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+        </item>
+
+        <item>
             <title>Version 0.9.5</title>
             <description><![CDATA[
                 <h3>New Features</h3>
