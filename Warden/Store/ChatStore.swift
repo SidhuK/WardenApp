@@ -702,17 +702,59 @@ final class ChatStore: ObservableObject {
     
     func regenerateChatName(chat: ChatEntity) {
         guard let apiService = chat.apiService else { return }
-        
+
         guard let apiConfig = APIServiceManager.createAPIConfiguration(for: apiService, modelOverride: chat.gptModel.isEmpty ? nil : chat.gptModel) else {
             return
         }
-        
+
         let messageManager = MessageManager(
             apiService: APIServiceFactory.createAPIService(config: apiConfig),
             viewContext: viewContext
         )
-        
+
         messageManager.generateChatNameIfNeeded(chat: chat, force: true)
+    }
+
+    // MARK: - Attachment Data Accessors
+
+    /// Fetches image data for a given image attachment UUID.
+    func imageData(for id: UUID) async -> Data? {
+        let context = persistenceController.container.newBackgroundContext()
+        return await context.performAsync {
+            let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            fetchRequest.fetchLimit = 1
+            return (try? context.fetch(fetchRequest).first)?.image
+        }
+    }
+
+    /// Fetches file metadata (fileName and blobID) for a given file attachment UUID.
+    func fileMetadata(for id: UUID) async -> (fileName: String, blobID: String)? {
+        let context = persistenceController.container.newBackgroundContext()
+        return await context.performAsync {
+            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            fetchRequest.fetchLimit = 1
+
+            guard let entity = try? context.fetch(fetchRequest).first,
+                  let fileName = entity.fileName,
+                  let blobID = entity.blobID
+            else {
+                return nil
+            }
+            return (fileName: fileName, blobID: blobID)
+        }
+    }
+
+    /// Fetches fallback text content for a given file attachment UUID.
+    func fileFallbackText(for id: UUID) async -> String? {
+        let context = persistenceController.container.newBackgroundContext()
+        return await context.performAsync {
+            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            fetchRequest.fetchLimit = 1
+            return (try? context.fetch(fetchRequest).first)?.textContent
+        }
     }
 }
 

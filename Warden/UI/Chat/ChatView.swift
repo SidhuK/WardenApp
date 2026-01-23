@@ -429,14 +429,14 @@ private struct ChatSearchOverlaysView: View {
 
 
 extension ChatView {
-    func sendMessage(ignoreMessageInput: Bool = false, retryContent: String? = nil) {
+    func sendMessage(retryContent: String? = nil) {
         Task { @MainActor in
-            await sendMessageInternal(ignoreMessageInput: ignoreMessageInput, retryContent: retryContent)
+            await sendMessageInternal(retryContent: retryContent)
         }
     }
 
     @MainActor
-    private func sendMessageInternal(ignoreMessageInput: Bool, retryContent: String?) async {
+    private func sendMessageInternal(retryContent: String?) async {
         guard chatViewModel.canSendMessage else {
             currentError = ErrorMessage(
                 apiError: .noApiService("No API service selected. Select the API service to send your first message"),
@@ -453,9 +453,6 @@ extension ChatView {
         if let retryText = retryContent {
             // Retry mode: Use provided text, do not save new user message
             messageBody = retryText
-        } else if ignoreMessageInput {
-            // Legacy retry/send logic (mostly unused now with explicit retryContent)
-            messageBody = prepareMessageBody(clearInput: false)
         } else {
             // Normal send: ensure attachment bytes are persisted before saving message + sending
             messageBody = await prepareMessageBodyAsync(clearInput: true)

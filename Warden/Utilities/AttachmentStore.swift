@@ -11,32 +11,17 @@ actor AttachmentStore {
     }
 
     func imageData(uuid: UUID) async -> Data? {
-        let context = persistenceController.container.newBackgroundContext()
-        let data: Data? = await context.performAsync {
-            let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            fetchRequest.fetchLimit = 1
-
-            return (try? context.fetch(fetchRequest).first)?.image
+        let chatStore = await MainActor.run {
+            ChatStore(persistenceController: persistenceController)
         }
-        return data
+        return await chatStore.imageData(for: uuid)
     }
 
     func fileMetadata(uuid: UUID) async -> (fileName: String, blobID: String)? {
-        let context = persistenceController.container.newBackgroundContext()
-        return await context.performAsync {
-            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            fetchRequest.fetchLimit = 1
-
-            guard let entity = try? context.fetch(fetchRequest).first,
-                  let fileName = entity.fileName,
-                  let blobID = entity.blobID
-            else {
-                return nil
-            }
-            return (fileName: fileName, blobID: blobID)
+        let chatStore = await MainActor.run {
+            ChatStore(persistenceController: persistenceController)
         }
+        return await chatStore.fileMetadata(for: uuid)
     }
 
     func fileData(uuid: UUID) async -> (fileName: String, data: Data)? {
@@ -54,14 +39,9 @@ actor AttachmentStore {
     }
 
     func fileFallbackText(uuid: UUID) async -> String? {
-        let context = persistenceController.container.newBackgroundContext()
-        return await context.performAsync {
-            let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
-            fetchRequest.fetchLimit = 1
-
-            return (try? context.fetch(fetchRequest).first)?.textContent
+        let chatStore = await MainActor.run {
+            ChatStore(persistenceController: persistenceController)
         }
+        return await chatStore.fileFallbackText(for: uuid)
     }
 }
-

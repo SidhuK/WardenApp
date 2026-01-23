@@ -147,22 +147,35 @@ final class FileAttachment: Identifiable, ObservableObject {
         blobCopyErrorDescription = nil
 
         blobCopyTask = Task(priority: .utility) {
-            let didAccess = url.startAccessingSecurityScopedResource()
-            defer {
-                if didAccess {
-                    url.stopAccessingSecurityScopedResource()
+            // Perform file copy work off the main actor
+            let copyResult: Result<Void, Error> = await Task.detached(priority: .utility) {
+                let didAccess = url.startAccessingSecurityScopedResource()
+                defer {
+                    if didAccess {
+                        url.stopAccessingSecurityScopedResource()
+                    }
                 }
-            }
 
-            do {
-                try await AttachmentBlobStore.shared.storeFileCopy(
-                    sourceURL: url,
-                    blobID: blobID,
-                    fileName: fileName
-                )
+                do {
+                    try await AttachmentBlobStore.shared.storeFileCopy(
+                        sourceURL: url,
+                        blobID: blobID,
+                        fileName: fileName
+                    )
+                    return .success(())
+                } catch {
+                    return .failure(error)
+                }
+            }.value
+
+            // Check cancellation before updating state on main actor
+            if Task.isCancelled { return }
+
+            // Update state back on the main actor
+            switch copyResult {
+            case .success:
                 blobCopyStatus = .ready
-            } catch {
-                if Task.isCancelled { return }
+            case .failure(let error):
                 blobCopyStatus = .failed
                 blobCopyErrorDescription = error.localizedDescription
                 throw error

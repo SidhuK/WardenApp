@@ -22,19 +22,56 @@ actor AttachmentBlobStore {
             .appendingPathComponent("Attachments", isDirectory: true)
     }
 
+    /// Sanitizes a file name to prevent path traversal attacks.
+    /// Returns the last path component and validates it contains no path separators.
+    private nonisolated static func sanitizeFileName(_ fileName: String) -> String? {
+        let sanitized = (fileName as NSString).lastPathComponent
+        guard !sanitized.isEmpty,
+              !sanitized.contains("/"),
+              !sanitized.contains("\\"),
+              sanitized != ".",
+              sanitized != ".."
+        else {
+            return nil
+        }
+        return sanitized
+    }
+
     nonisolated static func fileURL(blobID: String, fileName: String, fileManager: FileManager = .default) -> URL {
-        rootDirectoryURL(fileManager: fileManager)
+        let sanitizedName = sanitizeFileName(fileName) ?? "attachment"
+        return rootDirectoryURL(fileManager: fileManager)
             .appendingPathComponent(blobID, isDirectory: true)
-            .appendingPathComponent(fileName, isDirectory: false)
+            .appendingPathComponent(sanitizedName, isDirectory: false)
     }
 
     func storeFileCopy(sourceURL: URL, blobID: String, fileName: String) throws {
+        guard let sanitizedName = Self.sanitizeFileName(fileName) else {
+            throw NSError(
+                domain: "AttachmentBlobStore",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid file name"]
+            )
+        }
+
         try ensureRootDirectoryExists()
 
         let blobDirectory = rootDirectory.appendingPathComponent(blobID, isDirectory: true)
         try fileManager.createDirectory(at: blobDirectory, withIntermediateDirectories: true)
 
-        let destinationURL = blobDirectory.appendingPathComponent(fileName, isDirectory: false)
+        let destinationURL = blobDirectory.appendingPathComponent(sanitizedName, isDirectory: false)
+
+        // Verify the destination is inside the blob directory to prevent path traversal
+        let standardizedDestination = destinationURL.standardizedFileURL.path
+        let standardizedBlobDir = blobDirectory.standardizedFileURL.path
+        guard standardizedDestination.hasPrefix(standardizedBlobDir + "/") ||
+              standardizedDestination == standardizedBlobDir
+        else {
+            throw NSError(
+                domain: "AttachmentBlobStore",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Path traversal detected"]
+            )
+        }
 
         if fileManager.fileExists(atPath: destinationURL.path) {
             return
