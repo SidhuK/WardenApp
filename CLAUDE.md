@@ -49,8 +49,8 @@ Uses `swift-format` with config at `Warden/.swift-format`: 120 char lines, 4-spa
 - `Warden/Utilities/` - Services, managers, and API handlers
 
 **AI Provider System**:
-- `Utilities/APIHandlers/` contains provider implementations (ChatGPT, Claude, Gemini, Deepseek, Mistral, Perplexity, Ollama, LMStudio, OpenRouter, Groq, xAI)
-- All handlers implement `APIProtocol` and extend `BaseAPIHandler`
+- `Utilities/APIHandlers/` contains provider implementations (ChatGPT, Claude, Gemini, Deepseek, Mistral, Perplexity, Ollama, LMStudio, OpenRouter)
+- All handlers implement `APIService` protocol and extend `BaseAPIHandler`
 - `APIServiceFactory` creates the appropriate handler (Groq/xAI use OpenAI-compatible ChatGPTHandler)
 - `APIServiceManager` and `SelectedModelsManager` manage active AI configurations
 - `FavoriteModelsManager` manages user-favorited models
@@ -79,6 +79,6 @@ Uses `swift-format` with config at `Warden/.swift-format`: 120 char lines, 4-spa
 - **Naming**: `*View`, `*ViewModel`, `*Handler`, `*Manager`, `*Service`
 - **State management**: `@StateObject` (owner), `@ObservedObject` (passed in), `@EnvironmentObject` (global)
 - **Concurrency**: `async`/`await`, heavy work on background queues, `StreamingTaskController` for cancellable streams
-- **Logging**: Use `WardenLog` (e.g., `WardenLog.info("message", category: .ui)`) instead of `print`
+- **Logging**: Use `WardenLog` static loggers (e.g., `WardenLog.app.debug("message")`, `WardenLog.coreData.error("message")`) instead of `print`. Available loggers: `.app`, `.streaming`, `.rendering`, `.coreData`
 - **Security**: Never log API keys, use Keychain for secrets
 - **Previews**: Use `PreviewStateManager` for SwiftUI Preview mock data
