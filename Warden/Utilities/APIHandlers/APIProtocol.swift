@@ -167,28 +167,37 @@ extension APIService {
             }
         }
 
-        do {
-            return try await execute(settings: settings, attachmentPolicy: .preferProviderAttachments)
-        } catch let error as APIError {
-            if AttachmentCompatibility.shouldRetryWithoutFileAttachments(attachmentPolicy: .preferProviderAttachments, error: error) {
-                WardenLog.app.notice(
-                    "Retrying request without file attachments due to unsupported parameter (provider: \(self.name, privacy: .public))"
-                )
-                return try await execute(settings: settings, attachmentPolicy: .inlineTextOnly)
-            }
+        var attemptSettings = settings
+        var didRetryWithoutReasoning = false
+        var attachmentPolicy: AttachmentPolicy = .preferProviderAttachments
+        var didRetryWithoutAttachments = false
 
-            guard settings.reasoningEffort != .off,
-                  ReasoningCompatibility.shouldRetryWithoutReasoning(settings: settings, error: error)
-            else {
+        while true {
+            do {
+                return try await execute(settings: attemptSettings, attachmentPolicy: attachmentPolicy)
+            } catch let error as APIError {
+                if !didRetryWithoutAttachments,
+                   AttachmentCompatibility.shouldRetryWithoutFileAttachments(attachmentPolicy: attachmentPolicy, error: error) {
+                    didRetryWithoutAttachments = true
+                    attachmentPolicy = .inlineTextOnly
+                    WardenLog.app.notice(
+                        "Retrying request without file attachments due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                    )
+                    continue
+                }
+
+                if !didRetryWithoutReasoning,
+                   ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: error) {
+                    didRetryWithoutReasoning = true
+                    attemptSettings = GenerationSettings(temperature: attemptSettings.temperature, reasoningEffort: .off)
+                    WardenLog.app.notice(
+                        "Retrying request without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                    )
+                    continue
+                }
+
                 throw error
             }
-
-            WardenLog.app.notice(
-                "Retrying request without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
-            )
-
-            let retrySettings = GenerationSettings(temperature: settings.temperature, reasoningEffort: .off)
-            return try await execute(settings: retrySettings, attachmentPolicy: .preferProviderAttachments)
         }
     }
 
