@@ -1,9 +1,11 @@
 name: Build and Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
 
 permissions:
   contents: write
@@ -40,12 +42,13 @@ jobs:
           hdiutil create -volname "Warden" \
             -srcfolder "$RUNNER_TEMP/dmg-contents" \
             -ov -format UDZO \
-            "$RUNNER_TEMP/Warden-${{ github.ref_name }}.dmg"
+            "$RUNNER_TEMP/Warden-${{ inputs.version }}.dmg"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ runner.temp }}/Warden-${{ github.ref_name }}.dmg
+          tag_name: ${{ inputs.version }}
+          files: ${{ runner.temp }}/Warden-${{ inputs.version }}.dmg
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
