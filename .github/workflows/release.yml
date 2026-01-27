@@ -29,18 +29,10 @@ jobs:
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO
 
-      - name: Export App
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/Warden.xcarchive \
-            -exportPath $RUNNER_TEMP/export \
-            -exportOptionsPlist ExportOptions.plist || \
-          cp -R "$RUNNER_TEMP/Warden.xcarchive/Products/Applications/Warden.app" "$RUNNER_TEMP/export/"
-
       - name: Create DMG
         run: |
           mkdir -p $RUNNER_TEMP/dmg-contents
-          cp -R "$RUNNER_TEMP/export/Warden.app" "$RUNNER_TEMP/dmg-contents/"
+          cp -R "$RUNNER_TEMP/Warden.xcarchive/Products/Applications/Warden.app" "$RUNNER_TEMP/dmg-contents/"
           ln -s /Applications "$RUNNER_TEMP/dmg-contents/Applications"
           hdiutil create -volname "Warden" \
             -srcfolder "$RUNNER_TEMP/dmg-contents" \
