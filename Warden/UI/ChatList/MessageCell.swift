@@ -3,7 +3,6 @@ import SwiftUI
 struct MessageCell: View {
     
     @ObservedObject var chat: ChatEntity
-    @State var timestamp: Date
     var message: String
     @Binding var isActive: Bool
     let viewContext: NSManagedObjectContext
@@ -129,7 +128,6 @@ struct MessageCell_Previews: PreviewProvider {
         Group {
             MessageCell(
                 chat: createPreviewChat(name: "Regular Chat"),
-                timestamp: Date(),
                 message: "Hello, how are you?",
                 isActive: .constant(false),
                 viewContext: PersistenceController.preview.container.viewContext,
@@ -140,7 +138,6 @@ struct MessageCell_Previews: PreviewProvider {
 
             MessageCell(
                 chat: createPreviewChat(name: "Selected Chat"),
-                timestamp: Date(),
                 message: "This is a selected chat preview",
                 isActive: .constant(true),
                 viewContext: PersistenceController.preview.container.viewContext,
@@ -151,7 +148,6 @@ struct MessageCell_Previews: PreviewProvider {
 
             MessageCell(
                 chat: createPreviewChat(name: "Long Message"),
-                timestamp: Date(),
                 message:
                     "This is a very long message that should be truncated when displayed in the preview cell of our chat application",
                 isActive: .constant(false),
@@ -163,7 +159,6 @@ struct MessageCell_Previews: PreviewProvider {
             
             MessageCell(
                 chat: createPreviewChat(name: "Selection Mode"),
-                timestamp: Date(),
                 message: "This shows selection mode with checkbox",
                 isActive: .constant(false),
                 viewContext: PersistenceController.preview.container.viewContext,

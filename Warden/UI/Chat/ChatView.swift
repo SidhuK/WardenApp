@@ -11,10 +11,9 @@ struct ChatView: View {
     @AppStorage("gptModel") var gptModel = AppConstants.chatGptDefaultModel
     @AppStorage("chatContext") var chatContext = AppConstants.chatGptContextSize
     @AppStorage("lastOpenedChatId") var lastOpenedChatId = ""
-    @State var messageCount: Int = 0
+    @State private var messageCount: Int = 0
     @State private var editSystemMessage: Bool = false
     @State private var isStreaming: Bool = false
-    @State private var isHovered = false
     @State private var currentStreamingMessage: String = ""
     @State private var composerState = ComposerState()
     @EnvironmentObject private var store: ChatStore
@@ -23,10 +22,6 @@ struct ChatView: View {
     @AppStorage("apiUrl") var apiUrl: String = AppConstants.apiUrlChatCompletions
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @StateObject private var chatViewModel: ChatViewModel
-    @State private var renderTime: Double = 0
-    @State private var selectedPersona: PersonaEntity?
-    @State private var selectedApiService: APIServiceEntity?
-    var backgroundColor = AppConstants.backgroundWindow
     @State private var currentError: ErrorMessage?
     @Environment(\.colorScheme) private var colorScheme
     @State private var isBottomContainerExpanded = false

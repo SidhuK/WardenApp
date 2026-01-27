@@ -53,7 +53,6 @@ struct ChatListRow: View {
     var body: some View {
         MessageCell(
             chat: chat,
-            timestamp: chat.lastMessage?.timestamp ?? Date(),
             message: chat.lastMessage?.body ?? "",
             isActive: Binding(get: { computedIsActive }, set: { _ in }),
             viewContext: viewContext,
