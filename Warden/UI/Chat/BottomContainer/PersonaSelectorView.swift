@@ -16,14 +16,14 @@ struct PersonaChipView: View {
     }
 
     var body: some View {
-	        HStack(spacing: 6) {
-	            Image(systemName: personaSymbol)
-	                .font(.system(size: 14))
-	                .foregroundStyle(Color.accentColor)
-	            
-	            Text(persona.name ?? "")
-	                .foregroundStyle(.primary)
-	        }
+        HStack(spacing: 6) {
+            Image(systemName: personaSymbol)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.accentColor)
+            
+            Text(persona.name ?? "")
+                .foregroundStyle(.primary)
+        }
         .frame(height: 32)
         .padding(.horizontal, 12)
         .background(
