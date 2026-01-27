@@ -1,0 +1,53 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project Warden.xcodeproj \
+            -scheme Warden \
+            -destination 'generic/platform=macOS' \
+            -archivePath $RUNNER_TEMP/Warden.xcarchive \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Export App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/Warden.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist ExportOptions.plist || \
+          cp -R "$RUNNER_TEMP/Warden.xcarchive/Products/Applications/Warden.app" "$RUNNER_TEMP/export/"
+
+      - name: Create DMG
+        run: |
+          mkdir -p $RUNNER_TEMP/dmg-contents
+          cp -R "$RUNNER_TEMP/export/Warden.app" "$RUNNER_TEMP/dmg-contents/"
+          ln -s /Applications "$RUNNER_TEMP/dmg-contents/Applications"
+          hdiutil create -volname "Warden" \
+            -srcfolder "$RUNNER_TEMP/dmg-contents" \
+            -ov -format UDZO \
+            "$RUNNER_TEMP/Warden-${{ github.ref_name }}.dmg"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/Warden-${{ github.ref_name }}.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
