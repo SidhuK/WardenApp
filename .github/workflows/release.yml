@@ -44,11 +44,27 @@ jobs:
             -ov -format UDZO \
             "$RUNNER_TEMP/Warden-${{ inputs.version }}.dmg"
 
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            # No previous tag, get all commits
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Get commits since last tag
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          # Save to file (multiline safe)
+          echo "$CHANGELOG" > $RUNNER_TEMP/changelog.md
+          echo "Generated changelog from ${PREV_TAG:-beginning} to HEAD"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
           files: ${{ runner.temp }}/Warden-${{ inputs.version }}.dmg
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/changelog.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
