@@ -190,6 +190,38 @@ extension ModelMetadata {
     static func formatModelDisplayName(modelId: String, provider: String? = nil) -> String {
         return formatModelComponents(modelId: modelId, provider: provider).fullName
     }
+
+    static func modelNamespaceID(from modelId: String) -> String? {
+        let parts = modelId.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2 else { return nil }
+        return String(parts[0])
+    }
+
+    static func providerDisplayName(for providerId: String) -> String {
+        mapProviderName(providerId)
+    }
+
+    static func modelNamespaceDisplayName(from modelId: String) -> String? {
+        guard let namespace = modelNamespaceID(from: modelId) else { return nil }
+        return providerDisplayName(for: namespace)
+    }
+
+    static func groupModelIDsByNamespace(modelIds: [String]) -> [(namespaceDisplayName: String, modelIds: [String])] {
+        var buckets: [String: [String]] = [:]
+
+        for modelId in modelIds {
+            let namespace = modelNamespaceDisplayName(from: modelId) ?? "OTHER"
+            buckets[namespace, default: []].append(modelId)
+        }
+
+        return buckets
+            .map { (namespaceDisplayName: $0.key, modelIds: $0.value.sorted()) }
+            .sorted { lhs, rhs in
+                if lhs.namespaceDisplayName == "OTHER" { return false }
+                if rhs.namespaceDisplayName == "OTHER" { return true }
+                return lhs.namespaceDisplayName < rhs.namespaceDisplayName
+            }
+    }
     
     private static func formatModelName(_ modelName: String) -> String {
         var name = modelName

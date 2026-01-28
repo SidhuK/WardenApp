@@ -23,6 +23,29 @@ struct APIServiceDetailView: View {
     @State private var previousModel = ""
     @AppStorage("defaultApiService") private var defaultApiServiceID: String?
     @State private var loadingIconIndex = 0
+    @State private var openRouterProviderFilter = ""
+
+    private var openRouterProviderOptions: [(id: String, displayName: String)] {
+        guard viewModel.type == "openrouter" else { return [] }
+        let providerIds = Set(viewModel.availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0) })
+        return providerIds
+            .map { (id: $0, displayName: ModelMetadata.providerDisplayName(for: $0)) }
+            .sorted { $0.displayName < $1.displayName }
+    }
+
+    private var filteredModelOptions: [String] {
+        var models = viewModel.availableModels
+
+        if viewModel.type == "openrouter", !openRouterProviderFilter.isEmpty {
+            models = models.filter { ModelMetadata.modelNamespaceID(from: $0) == openRouterProviderFilter }
+        }
+
+        if viewModel.selectedModel != "custom", !models.contains(viewModel.selectedModel) {
+            models.append(viewModel.selectedModel)
+        }
+
+        return models.sorted()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -53,6 +76,7 @@ struct APIServiceDetailView: View {
                                     Text(AppConstants.defaultApiConfigurations[$0]?.name ?? $0)
                                 }
                             }.onChange(of: viewModel.type) { newValue in
+                                openRouterProviderFilter = ""
                                 viewModel.onChangeApiType(newValue)
                             }
                         }
@@ -105,8 +129,19 @@ struct APIServiceDetailView: View {
                         Text("LLM Model:")
                             .frame(width: 94, alignment: .leading)
 
+                        if openRouterProviderOptions.count > 1 {
+                            Picker("Provider", selection: $openRouterProviderFilter) {
+                                Text("All Providers").tag("")
+                                ForEach(openRouterProviderOptions, id: \.id) { option in
+                                    Text(option.displayName).tag(option.id)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 150)
+                        }
+
                         Picker("", selection: $viewModel.selectedModel) {
-                            ForEach(viewModel.availableModels.sorted(), id: \.self) { modelName in
+                            ForEach(filteredModelOptions, id: \.self) { modelName in
                                 Text(modelName).tag(modelName)
                             }
                             Text("Enter custom model").tag("custom")
@@ -121,6 +156,13 @@ struct APIServiceDetailView: View {
                             }
                         }
                         .disabled(viewModel.isLoadingModels)
+                        .onChange(of: viewModel.availableModels) { _ in
+                            guard viewModel.type == "openrouter" else { return }
+                            let validIds = Set(viewModel.availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0) })
+                            if !openRouterProviderFilter.isEmpty, !validIds.contains(openRouterProviderFilter) {
+                                openRouterProviderFilter = ""
+                            }
+                        }
 
                         if AppConstants.defaultApiConfigurations[viewModel.type]?.modelsFetching ?? false {
                             ButtonWithStatusIndicator(

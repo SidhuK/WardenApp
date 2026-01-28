@@ -14,6 +14,7 @@ struct ModelSelectionView: View {
     @State private var searchText = ""
     @State private var showAllModels = false
     @State private var showFavoritesOnly = false
+    @State private var openRouterProviderFilter = ""
     
     private var selectedModelIds: Set<String> {
         selectedModelsManager.getSelectedModelIds(for: serviceType)
@@ -36,15 +37,32 @@ struct ModelSelectionView: View {
             let favoriteModelIds = Set(favoriteManager.getFavorites(for: serviceType))
             models = models.filter { favoriteModelIds.contains($0.id) }
         }
+
+        // Filter by OpenRouter upstream provider (e.g. openai/google/meta)
+        if serviceType == "openrouter", !openRouterProviderFilter.isEmpty {
+            models = models.filter { ModelMetadata.modelNamespaceID(from: $0.id) == openRouterProviderFilter }
+        }
         
         // Filter by search text
         if !searchText.isEmpty {
             models = models.filter { model in
-                model.id.localizedCaseInsensitiveContains(searchText)
+                model.id.localizedStandardContains(searchText)
             }
         }
         
         return models.sorted { $0.id < $1.id }
+    }
+
+    private var openRouterProviderIDSet: Set<String> {
+        guard serviceType == "openrouter" else { return [] }
+        return Set(availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0.id) })
+    }
+
+    private var openRouterProviderOptions: [(id: String, displayName: String)] {
+        guard serviceType == "openrouter" else { return [] }
+        return openRouterProviderIDSet
+            .map { (id: $0, displayName: ModelMetadata.providerDisplayName(for: $0)) }
+            .sorted { $0.displayName < $1.displayName }
     }
     
     private var defaultAndFavoriteModels: [AIModel] {
@@ -76,6 +94,15 @@ struct ModelSelectionView: View {
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         .cornerRadius(8)
+        .onChange(of: serviceType) { _, _ in
+            openRouterProviderFilter = ""
+        }
+        .onChange(of: openRouterProviderIDSet) { _, newValue in
+            guard serviceType == "openrouter" else { return }
+            if !openRouterProviderFilter.isEmpty, !newValue.contains(openRouterProviderFilter) {
+                openRouterProviderFilter = ""
+            }
+        }
     }
     
     private var header: some View {
@@ -140,6 +167,18 @@ struct ModelSelectionView: View {
             .cornerRadius(6)
             
             HStack(spacing: 12) {
+                if openRouterProviderOptions.count > 1 {
+                    Picker("Provider", selection: $openRouterProviderFilter) {
+                        Text("All Providers").tag("")
+                        ForEach(openRouterProviderOptions, id: \.id) { option in
+                            Text(option.displayName).tag(option.id)
+                        }
+                    }
+                    .labelsHidden()
+                    .font(.caption)
+                    .frame(width: 150)
+                }
+
                 Toggle("Show all models", isOn: $showAllModels)
                     .font(.caption)
                 

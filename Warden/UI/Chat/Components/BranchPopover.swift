@@ -249,9 +249,24 @@ private struct BranchModelPicker: View {
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 14)
-                        
-                        ForEach(providerModels.models, id: \.self) { modelId in
-                            modelMenuItem(provider: providerModels.provider, modelId: modelId)
+
+                        if providerModels.provider == "openrouter" {
+                            let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: providerModels.models)
+                            ForEach(groupedModels, id: \.namespaceDisplayName) { group in
+                                Text(group.namespaceDisplayName)
+                                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 14)
+                                    .padding(.top, 4)
+
+                                ForEach(group.modelIds, id: \.self) { modelId in
+                                    modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                                }
+                            }
+                        } else {
+                            ForEach(providerModels.models, id: \.self) { modelId in
+                                modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                            }
                         }
                     }
                 }
