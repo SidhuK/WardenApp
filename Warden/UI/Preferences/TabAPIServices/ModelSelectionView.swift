@@ -53,10 +53,14 @@ struct ModelSelectionView: View {
         return models.sorted { $0.id < $1.id }
     }
 
+    private var openRouterProviderIDSet: Set<String> {
+        guard serviceType == "openrouter" else { return [] }
+        return Set(availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0.id) })
+    }
+
     private var openRouterProviderOptions: [(id: String, displayName: String)] {
         guard serviceType == "openrouter" else { return [] }
-        let providerIds = Set(availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0.id) })
-        return providerIds
+        return openRouterProviderIDSet
             .map { (id: $0, displayName: ModelMetadata.providerDisplayName(for: $0)) }
             .sorted { $0.displayName < $1.displayName }
     }
@@ -90,6 +94,15 @@ struct ModelSelectionView: View {
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
         .cornerRadius(8)
+        .onChange(of: serviceType) { _, _ in
+            openRouterProviderFilter = ""
+        }
+        .onChange(of: openRouterProviderIDSet) { _, newValue in
+            guard serviceType == "openrouter" else { return }
+            if !openRouterProviderFilter.isEmpty, !newValue.contains(openRouterProviderFilter) {
+                openRouterProviderFilter = ""
+            }
+        }
     }
     
     private var header: some View {
