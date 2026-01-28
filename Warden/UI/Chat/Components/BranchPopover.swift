@@ -31,15 +31,19 @@ struct BranchPopover: View {
             } else if let error = errorMessage {
                 errorView(error)
             } else {
-                BranchModelPicker(
+                ModelSelectorList(
                     apiServices: Array(apiServices),
+                    selectedProviderType: nil,
+                    selectedModelId: nil,
+                    dismissOnSelect: false,
+                    onDismiss: nil,
                     onSelect: { provider, model in
                         createBranch(providerType: provider, model: model)
                     }
                 )
             }
         }
-        .frame(width: 360, height: 420)
+        .frame(width: 420, height: 520)
         .background(Color(NSColor.controlBackgroundColor))
     }
     
@@ -132,6 +136,7 @@ struct BranchPopover: View {
     
     // MARK: - Branch Creation
     
+    @MainActor
     private func createBranch(providerType: String, model: String) {
         guard let service = apiServices.first(where: { $0.type == providerType }) else {
             errorMessage = "Service not found"
@@ -164,198 +169,5 @@ struct BranchPopover: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Branch Model Picker
-
-private struct BranchModelPicker: View {
-    let apiServices: [APIServiceEntity]
-    let onSelect: (String, String) -> Void
-    
-    @ObservedObject private var modelCache = ModelCacheManager.shared
-    @ObservedObject private var favoriteManager = FavoriteModelsManager.shared
-    @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
-    @ObservedObject private var metadataCache = ModelMetadataCache.shared
-    
-    private static let providerNames: [String: String] = [
-        "chatgpt": "OpenAI", "claude": "Anthropic", "gemini": "Google",
-        "xai": "xAI", "perplexity": "Perplexity", "deepseek": "DeepSeek",
-        "groq": "Groq", "openrouter": "OpenRouter", "ollama": "Ollama", "mistral": "Mistral"
-    ]
-    
-    private var availableModels: [(provider: String, models: [String])] {
-        var result: [(provider: String, models: [String])] = []
-        for service in apiServices {
-            guard let serviceType = service.type else { continue }
-            let serviceModels = modelCache.getModels(for: serviceType)
-            
-            let visibleModels = serviceModels.filter { model in
-                if selectedModelsManager.hasCustomSelection(for: serviceType) {
-                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
-                }
-                return true
-            }
-            
-            if !visibleModels.isEmpty {
-                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
-            }
-        }
-        return result
-    }
-    
-    private var favoriteModels: [(provider: String, modelId: String)] {
-        availableModels.flatMap { provider, models in
-            models.compactMap { model in
-                favoriteManager.isFavorite(provider: provider, model: model) ? (provider, model) : nil
-            }
-        }
-    }
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Select a model to branch with")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 12)
-                
-                if !favoriteModels.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("FAVORITES")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14)
-                        
-                        ForEach(favoriteModels, id: \.modelId) { item in
-                            modelMenuItem(provider: item.provider, modelId: item.modelId)
-                        }
-                    }
-                }
-                
-                ForEach(availableModels, id: \.provider) { providerModels in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Image("logo_\(providerModels.provider)")
-                                .resizable()
-                                .renderingMode(.template)
-                                .interpolation(.high)
-                                .frame(width: 12, height: 12)
-                                .foregroundStyle(.secondary)
-                            
-                            Text((Self.providerNames[providerModels.provider] ?? providerModels.provider.capitalized).uppercased())
-                                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 14)
-
-                        if providerModels.provider == "openrouter" {
-                            let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: providerModels.models)
-                            ForEach(groupedModels, id: \.namespaceDisplayName) { group in
-                                Text(group.namespaceDisplayName)
-                                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 14)
-                                    .padding(.top, 4)
-
-                                ForEach(group.modelIds, id: \.self) { modelId in
-                                    modelMenuItem(provider: providerModels.provider, modelId: modelId)
-                                }
-                            }
-                        } else {
-                            ForEach(providerModels.models, id: \.self) { modelId in
-                                modelMenuItem(provider: providerModels.provider, modelId: modelId)
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.bottom, 12)
-        }
-        .task {
-            if !apiServices.isEmpty {
-                modelCache.fetchAllModels(from: apiServices)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func modelMenuItem(provider: String, modelId: String) -> some View {
-        let displayName = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: provider)
-        let isFavorite = favoriteManager.isFavorite(provider: provider, model: modelId)
-        let metadata = metadataCache.getMetadata(provider: provider, modelId: modelId)
-        
-        Menu {
-            if let meta = metadata {
-                if meta.hasReasoning {
-                    Label("Reasoning", systemImage: "brain")
-                }
-                if meta.hasVision {
-                    Label("Vision", systemImage: "eye")
-                }
-                if meta.hasFunctionCalling {
-                    Label("Function Calling", systemImage: "wrench")
-                }
-                if let context = meta.maxContextTokens {
-                    Label("\(context.formatted()) tokens", systemImage: "text.alignleft")
-                }
-                if let pricing = meta.pricing, let input = pricing.inputPer1M {
-                    if let output = pricing.outputPer1M {
-                        Label("$\(String(format: "%.2f", input)) / $\(String(format: "%.2f", output)) per 1M", systemImage: "dollarsign.circle")
-                    } else {
-                        Label("$\(String(format: "%.2f", input)) per 1M", systemImage: "dollarsign.circle")
-                    }
-                }
-                if let latency = meta.latency {
-                    Label(latency.rawValue.capitalized, systemImage: "speedometer")
-                }
-                
-                Divider()
-            }
-            
-            Button {
-                favoriteManager.toggleFavorite(provider: provider, model: modelId)
-            } label: {
-                Label(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.slash" : "star")
-            }
-        } label: {
-            HStack(spacing: 10) {
-                Text(displayName)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                
-                Spacer()
-                
-                if metadata?.hasReasoning == true {
-                    Image(systemName: "brain")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                if metadata?.hasVision == true {
-                    Image(systemName: "eye")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                if isFavorite {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.yellow)
-                }
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary.opacity(0.5))
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.primary.opacity(0.001))
-            .contentShape(Rectangle())
-        } primaryAction: {
-            onSelect(provider, modelId)
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
     }
 }
