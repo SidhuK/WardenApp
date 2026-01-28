@@ -422,9 +422,9 @@ struct ModelSelectorList: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(
+                                .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.primary.opacity(0.06))
+                                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
                                 )
                         }
 
@@ -432,10 +432,7 @@ struct ModelSelectorList: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 7)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(isSelected ? Color.accentColor.opacity(0.10) : Color.primary.opacity(0.04))
-                    )
+                    .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
 
