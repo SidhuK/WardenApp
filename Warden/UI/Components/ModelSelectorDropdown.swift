@@ -105,8 +105,19 @@ struct ModelSelectorDropdown: View {
             
             ForEach(availableModels, id: \.provider) { providerModels in
                 Section(Self.providerNames[providerModels.provider] ?? providerModels.provider.capitalized) {
-                    ForEach(providerModels.models, id: \.self) { modelId in
-                        modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                    if providerModels.provider == "openrouter" {
+                        let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: providerModels.models)
+                        ForEach(groupedModels, id: \.namespaceDisplayName) { group in
+                            Menu(group.namespaceDisplayName) {
+                                ForEach(group.modelIds, id: \.self) { modelId in
+                                    modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                                }
+                            }
+                        }
+                    } else {
+                        ForEach(providerModels.models, id: \.self) { modelId in
+                            modelMenuItem(provider: providerModels.provider, modelId: modelId)
+                        }
                     }
                 }
             }

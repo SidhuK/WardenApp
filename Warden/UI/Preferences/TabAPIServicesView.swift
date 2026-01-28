@@ -187,6 +187,29 @@ struct APIServiceDetailContent: View {
     private var personas: FetchedResults<PersonaEntity>
     
     private let types = AppConstants.apiTypes
+    @State private var openRouterProviderFilter = ""
+
+    private var openRouterProviderOptions: [(id: String, displayName: String)] {
+        guard viewModel.type == "openrouter" else { return [] }
+        let providerIds = Set(viewModel.availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0) })
+        return providerIds
+            .map { (id: $0, displayName: ModelMetadata.providerDisplayName(for: $0)) }
+            .sorted { $0.displayName < $1.displayName }
+    }
+
+    private var filteredModelOptions: [String] {
+        var models = viewModel.availableModels
+
+        if viewModel.type == "openrouter", !openRouterProviderFilter.isEmpty {
+            models = models.filter { ModelMetadata.modelNamespaceID(from: $0) == openRouterProviderFilter }
+        }
+
+        if viewModel.selectedModel != "custom", !models.contains(viewModel.selectedModel) {
+            models.append(viewModel.selectedModel)
+        }
+
+        return models.sorted()
+    }
 
     init(service: APIServiceEntity, viewContext: NSManagedObjectContext, onDelete: @escaping () -> Void, onSetDefault: @escaping () -> Void, isDefault: Bool) {
         self.service = service
@@ -256,6 +279,7 @@ struct APIServiceDetailContent: View {
                                     .frame(width: 150)
                                     .labelsHidden()
                                     .onChange(of: viewModel.type) { _, newValue in
+                                        openRouterProviderFilter = ""
                                         viewModel.onChangeApiType(newValue)
                                     }
                                 }
@@ -324,13 +348,25 @@ struct APIServiceDetailContent: View {
                 // Model Selection
                 GlassCard {
                     VStack(alignment: .leading, spacing: 14) {
-                        SettingsSectionHeader(title: "Model")
+                            SettingsSectionHeader(title: "Model")
                         
                         VStack(spacing: 12) {
                             SettingsRow(title: "LLM Model") {
                                 HStack(spacing: 8) {
+                                    if openRouterProviderOptions.count > 1 {
+                                        Picker("Provider", selection: $openRouterProviderFilter) {
+                                            Text("All Providers").tag("")
+                                            ForEach(openRouterProviderOptions, id: \.id) { option in
+                                                Text(option.displayName).tag(option.id)
+                                            }
+                                        }
+                                        .pickerStyle(.menu)
+                                        .frame(minWidth: 140, maxWidth: 160)
+                                        .labelsHidden()
+                                    }
+
                                     Picker("", selection: $viewModel.selectedModel) {
-                                        ForEach(viewModel.availableModels.sorted(), id: \.self) { model in
+                                        ForEach(filteredModelOptions, id: \.self) { model in
                                             Text(model).tag(model)
                                         }
                                         Text("Custom...").tag("custom")
@@ -343,6 +379,13 @@ struct APIServiceDetailContent: View {
                                         viewModel.isCustomModel = newValue == "custom"
                                         if newValue != "custom" {
                                             viewModel.model = newValue
+                                        }
+                                    }
+                                    .onChange(of: viewModel.availableModels) { _, _ in
+                                        guard viewModel.type == "openrouter" else { return }
+                                        let validIds = Set(viewModel.availableModels.compactMap { ModelMetadata.modelNamespaceID(from: $0) })
+                                        if !openRouterProviderFilter.isEmpty, !validIds.contains(openRouterProviderFilter) {
+                                            openRouterProviderFilter = ""
                                         }
                                     }
                                     

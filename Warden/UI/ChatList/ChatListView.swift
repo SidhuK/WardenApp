@@ -510,17 +510,6 @@ struct ChatListView: View {
                         )
                         .tag(chat.id)
                     }
-                } header: {
-                    HStack {
-                        Text("Chats")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
                 }
             }
         }
