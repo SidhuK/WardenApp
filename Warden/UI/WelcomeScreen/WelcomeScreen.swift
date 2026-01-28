@@ -37,11 +37,11 @@ struct WelcomeScreen: View {
                             VStack(spacing: 12) {
                                 Text("Welcome to Warden")
                                     .font(.system(size: 28, weight: .semibold))
-                                    .foregroundColor(AppConstants.textPrimary)
+                                    .foregroundStyle(AppConstants.textPrimary)
                                 
                                 Text("A focused workspace for your AI conversations.")
                                     .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(AppConstants.textSecondary)
+                                    .foregroundStyle(AppConstants.textSecondary)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: 420)
                             }
@@ -60,7 +60,7 @@ struct WelcomeScreen: View {
                                                 Text("Start interactive setup")
                                                     .font(.system(size: 14, weight: .semibold))
                                             }
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(.white)
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 10)
                                             .background(
@@ -78,7 +78,7 @@ struct WelcomeScreen: View {
                                             Text("Open Settings")
                                                 .font(.system(size: 13, weight: .medium))
                                         }
-                                        .foregroundColor(AppConstants.textPrimary)
+                                        .foregroundStyle(AppConstants.textPrimary)
                                         .padding(.horizontal, 18)
                                         .padding(.vertical, 8)
                                         .background(
@@ -93,7 +93,7 @@ struct WelcomeScreen: View {
                                     VStack(spacing: 14) {
                                         Text("You are connected. Start your first conversation.")
                                             .font(.system(size: 14))
-                                            .foregroundColor(AppConstants.textSecondary)
+                                            .foregroundStyle(AppConstants.textSecondary)
 
                                         Button(action: newChat) {
                                             HStack(spacing: 8) {
@@ -102,7 +102,7 @@ struct WelcomeScreen: View {
                                                 Text("New Chat")
                                                     .font(.system(size: 14, weight: .semibold))
                                             }
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(.white)
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 9)
                                             .background(
@@ -116,7 +116,7 @@ struct WelcomeScreen: View {
                                     VStack(spacing: 10) {
                                         Text("Select a chat from the sidebar or start a new one.")
                                             .font(.system(size: 14))
-                                            .foregroundColor(AppConstants.textSecondary)
+                                            .foregroundStyle(AppConstants.textSecondary)
 
                                         Button(action: {
                                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -129,7 +129,7 @@ struct WelcomeScreen: View {
                                                 Text("View setup guide")
                                                     .font(.system(size: 11, weight: .medium))
                                             }
-                                            .foregroundColor(AppConstants.textSecondary)
+                                            .foregroundStyle(AppConstants.textSecondary)
                                             .padding(.horizontal, 14)
                                             .padding(.vertical, 6)
                                             .background(
@@ -159,7 +159,7 @@ struct WelcomeIcon: View {
             .resizable()
             .scaledToFit()
             .frame(width: 80, height: 80)
-            .foregroundColor(AppConstants.textSecondary)
+            .foregroundStyle(AppConstants.textSecondary)
             .opacity(0.8)
     }
 }

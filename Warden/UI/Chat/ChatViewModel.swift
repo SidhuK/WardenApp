@@ -135,13 +135,15 @@ final class ChatViewModel: ObservableObject {
         }
         
         messageManager.sendMessageStream(message, in: chat, contextSize: contextSize) { [weak self] result in
-            switch result {
-            case .success:
-                self?.chat.objectWillChange.send()
-                completion(.success(()))
-                self?.reloadMessages()
-            case .failure(let error):
-                completion(.failure(error))
+            Task { @MainActor in
+                switch result {
+                case .success:
+                    self?.chat.objectWillChange.send()
+                    completion(.success(()))
+                    self?.reloadMessages()
+                case .failure(let error):
+                    completion(.failure(error))
+                }
             }
         }
     }

@@ -23,11 +23,9 @@ struct ContentView: View {
 
     @State var selectedChat: ChatEntity?
     @State var selectedProject: ProjectEntity?
-    @AppStorage("gptToken") var gptToken = ""
     @AppStorage("gptModel") var gptModel = AppConstants.chatGptDefaultModel
     @AppStorage("lastOpenedChatId") var lastOpenedChatId = ""
     @AppStorage("apiUrl") var apiUrl = AppConstants.apiUrlChatCompletions
-    @AppStorage("defaultApiService") private var defaultApiServiceID: String?
     @StateObject private var previewStateManager = PreviewStateManager()
 
     @State private var openedChatId: String? = nil
@@ -175,18 +173,6 @@ struct ContentView: View {
 
     func openSettings() {
         SettingsWindowManager.shared.openSettingsWindow()
-    }
-
-    private func getIndex(for chat: ChatEntity) -> Int {
-        if let index = chats.firstIndex(where: { $0.id == chat.id }) {
-            return index
-        }
-        else {
-            #if DEBUG
-            WardenLog.app.debug("Chat not found in array, returning 0")
-            #endif
-            return 0
-        }
     }
     
     private var detailView: some View {
@@ -420,16 +406,16 @@ struct PreviewPane: View {
             HStack(spacing: 8) {
                 Image(systemName: selectedDevice.icon)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(selectedDevice.rawValue)
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                     
                     Text("\(Int(selectedDevice.dimensions.width))×\(Int(selectedDevice.dimensions.height))")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
             
@@ -440,13 +426,13 @@ struct PreviewPane: View {
                 Button(action: rotateDevice) {
                     Image(systemName: "rotate.right")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.blue.opacity(0.1))
-                .cornerRadius(6)
+                .clipShape(.rect(cornerRadius: 6))
             }
         }
         .padding(.horizontal, 16)
@@ -460,11 +446,11 @@ struct PreviewPane: View {
             HStack(spacing: 8) {
                 Image(systemName: "safari.fill")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                 
                 Text("HTML Preview")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
             }
             
             Spacer()
@@ -477,17 +463,17 @@ struct PreviewPane: View {
                 
                 Text("Live")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
             
             // Close button with modern styling
             Button(action: { stateManager.hidePreview() }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .background(Color.clear)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
             .onHover { hovering in
                 // Could add hover effect here if needed
             }
@@ -518,13 +504,13 @@ struct PreviewPane: View {
                     Text("Refresh")
                         .font(.system(size: 11, weight: .medium))
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.blue.opacity(0.1))
-                .cornerRadius(6)
+                .clipShape(.rect(cornerRadius: 6))
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
             
             Divider()
                 .frame(height: 16)
@@ -534,22 +520,22 @@ struct PreviewPane: View {
                 Button(action: zoomOut) {
                     Image(systemName: "minus.magnifyingglass")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 .disabled(zoomLevel <= 0.5)
                 
                 Text("\(Int(zoomLevel * 100))%")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 45)
                 
                 Button(action: zoomIn) {
                     Image(systemName: "plus.magnifyingglass")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 .disabled(zoomLevel >= 2.0)
             }
             
@@ -576,20 +562,20 @@ struct PreviewPane: View {
                 HStack(spacing: 4) {
                     Image(systemName: selectedDevice.icon)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     
                     Text(selectedDevice.rawValue)
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     
                     Image(systemName: "chevron.down")
                         .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.gray.opacity(0.1))
-                .cornerRadius(6)
+                .clipShape(.rect(cornerRadius: 6))
             }
             .menuStyle(BorderlessButtonMenuStyle())
         }

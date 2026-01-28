@@ -2,22 +2,9 @@
 import CoreData
 import SwiftUI
 
-struct GlassMorphicBackground: View {
-    let color: Color
-    let isSelected: Bool
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        Rectangle()
-            .fill(color)
-            .opacity(isSelected ? 0.6 : 0.12)
-    }
-}
-
 struct PersonaChipView: View {
     let persona: PersonaEntity
     let isSelected: Bool
-    @Environment(\.colorScheme) var colorScheme
     @State private var isHovered = false
 
     private let personaSymbol: String
@@ -32,7 +19,7 @@ struct PersonaChipView: View {
         HStack(spacing: 6) {
             Image(systemName: personaSymbol)
                 .font(.system(size: 14))
-                .foregroundColor(.accentColor)
+                .foregroundStyle(Color.accentColor)
             
             Text(persona.name ?? "")
                 .foregroundStyle(.primary)
@@ -62,17 +49,42 @@ struct PersonaChipView: View {
 }
 
 struct PersonaSelectorView: View {
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \PersonaEntity.order, ascending: true)],
-        animation: .default
-    )
-    private var personas: FetchedResults<PersonaEntity>
+    enum SortMode {
+        case order
+        case addedDate
+    }
+
+    @FetchRequest private var personas: FetchedResults<PersonaEntity>
 
     private let edgeDarkColor = Color(red: 30 / 255, green: 30 / 255, blue: 30 / 255)
     private let edgeLightColor = Color.white
 
     @ObservedObject var chat: ChatEntity
-    @Environment(\.colorScheme) var colorScheme
+    let showsNoneChip: Bool
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(
+        chat: ChatEntity,
+        showsNoneChip: Bool = true,
+        sortMode: SortMode = .order
+    ) {
+        self._chat = ObservedObject(wrappedValue: chat)
+        self.showsNoneChip = showsNoneChip
+
+        switch sortMode {
+        case .order:
+            self._personas = FetchRequest(
+                sortDescriptors: [NSSortDescriptor(keyPath: \PersonaEntity.order, ascending: true)],
+                animation: .default
+            )
+        case .addedDate:
+            self._personas = FetchRequest(
+                sortDescriptors: [NSSortDescriptor(keyPath: \PersonaEntity.addedDate, ascending: true)],
+                animation: .default
+            )
+        }
+    }
 
     private func updatePersonaAndSystemMessage(to persona: PersonaEntity?) {
         chat.persona = persona
@@ -83,11 +95,11 @@ struct PersonaSelectorView: View {
             chat.gptModel = defaultApiService.model ?? AppConstants.chatGptDefaultModel
             
             // Notify that the message manager needs to be recreated
-                NotificationCenter.default.post(
-                    name: .recreateMessageManager,
-                    object: nil,
-                    userInfo: ["chatId": chat.id]
-                )
+            NotificationCenter.default.post(
+                name: .recreateMessageManager,
+                object: nil,
+                userInfo: ["chatId": chat.id]
+            )
         }
         
         chat.objectWillChange.send()
@@ -101,35 +113,50 @@ struct PersonaSelectorView: View {
         ScrollViewReader { scrollView in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    Button(action: {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            updatePersonaAndSystemMessage(to: nil)
-                        }
-                    }) {
-                        Text("None")
-                            .foregroundStyle(.primary)
-                            .frame(height: 32)
-                            .padding(.horizontal, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(chat.persona == nil ? Color.accentColor.opacity(0.6) : Color.gray.opacity(0.12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(chat.persona == nil ? Color.accentColor.opacity(0.8) : Color.gray.opacity(0.2), lineWidth: chat.persona == nil ? 2 : 1)
-                                    )
-                            )
-                            .padding(4)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    ForEach(personas, id: \.self) { persona in
-                        PersonaChipView(persona: persona, isSelected: chat.persona == persona)
-                            .onTapGesture {
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    updatePersonaAndSystemMessage(to: persona)
-                                }
+                    if showsNoneChip {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                updatePersonaAndSystemMessage(to: nil)
                             }
-                            .id(persona)
+                        } label: {
+                            Text("None")
+                                .foregroundStyle(.primary)
+                                .frame(height: 32)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(
+                                            chat.persona == nil
+                                                ? Color.accentColor.opacity(0.6)
+                                                : Color.gray.opacity(0.12)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(
+                                                    chat.persona == nil
+                                                        ? Color.accentColor.opacity(0.8)
+                                                        : Color.gray.opacity(0.2),
+                                                    lineWidth: chat.persona == nil ? 2 : 1
+                                                )
+                                        )
+                                )
+                                .padding(4)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("No persona")
+                    }
+                    
+                    ForEach(personas, id: \.objectID) { persona in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                updatePersonaAndSystemMessage(to: persona)
+                            }
+                        } label: {
+                            PersonaChipView(persona: persona, isSelected: chat.persona == persona)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(persona.name ?? "Persona"))
+                        .id(persona.objectID)
                     }
                 }
                 .padding(.horizontal, 14)
@@ -154,8 +181,8 @@ struct PersonaSelectorView: View {
                 .allowsHitTesting(false)
             }
             .onAppear {
-                if let selectedPersona = chat.persona {
-                    scrollView.scrollTo(selectedPersona, anchor: .center)
+                if let selectedPersonaID = chat.persona?.objectID {
+                    scrollView.scrollTo(selectedPersonaID, anchor: .center)
                 }
             }
         }

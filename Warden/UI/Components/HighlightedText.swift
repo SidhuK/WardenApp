@@ -13,40 +13,34 @@ struct HighlightedText: View {
     }
 
     var body: some View {
-        guard !highlight.isEmpty else {
-            return Text(text).eraseToAnyView()
+        if highlight.isEmpty {
+            Text(text)
+        } else {
+            Text(highlightedAttributedString)
         }
+    }
 
+    private var highlightedAttributedString: AttributedString {
         let attributedString = NSMutableAttributedString(string: text)
-        let range = NSString(string: text.lowercased())
-        var location = 0
+        let nsText = text as NSString
+        let highlightColor = NSColor(color).withAlphaComponent(0.2)
 
-        while location < text.count {
-            let searchRange = NSRange(location: location, length: text.count - location)
-            let foundRange = range.range(of: highlight, options: [], range: searchRange)
+        var searchRange = NSRange(location: 0, length: nsText.length)
+        while true {
+            let foundRange = nsText.range(
+                of: highlight,
+                options: [.caseInsensitive],
+                range: searchRange
+            )
+            guard foundRange.location != NSNotFound else { break }
 
-            if foundRange.location != NSNotFound {
-                attributedString.addAttribute(.backgroundColor, value: color.withAlphaComponent(0.2), range: foundRange)
-                location = foundRange.location + foundRange.length
-            }
-            else {
-                break
-            }
+            attributedString.addAttribute(.backgroundColor, value: highlightColor, range: foundRange)
+
+            let nextLocation = foundRange.location + foundRange.length
+            guard nextLocation < nsText.length else { break }
+            searchRange = NSRange(location: nextLocation, length: nsText.length - nextLocation)
         }
 
-        return Text(AttributedString(attributedString))
-            .eraseToAnyView()
-    }
-}
-
-extension Color {
-    func withAlphaComponent(_ alpha: CGFloat) -> NSColor {
-        return NSColor(self).withAlphaComponent(alpha)
-    }
-}
-
-extension View {
-    func eraseToAnyView() -> AnyView {
-        AnyView(self)
+        return AttributedString(attributedString)
     }
 }
