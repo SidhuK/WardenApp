@@ -25,12 +25,12 @@
             <pubDate>Tue, 28 Jan 2026 00:00:00 +0000</pubDate>
             <sparkle:version>0.9.9</sparkle:version>
             <sparkle:shortVersionString>0.9.9</sparkle:shortVersionString>
-            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.9/Warden-v0.9.9.dmg"
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.9/Warden.zip"
                        sparkle:version="0.9.9"
                        sparkle:shortVersionString="0.9.9"
-                       type="application/octet-stream"
-                       length="22536330"
-                       sparkle:edSignature="/BQ3Y/z/aFfH4H1hWzxg+68r1GvAaji0WLz143vuSCIT7UgXFQcC5XicNrPDM0xG490NjRQ6EiJ+bieTHbOvAg==" />
+                       type="application/zip"
+                       length="15114876"
+                       sparkle:edSignature="kaRFJxKD/9tIIUzSC3gk75dnJm6nbDNuXew8Yh09Qs9u/mSysrlKRRZqCl84uJXzy2cZwno7Ja0OPe9q7+dMAw==" />
         </item>
 
         <item>
