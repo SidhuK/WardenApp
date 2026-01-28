@@ -7,6 +7,7 @@ struct TabGeneralSettingsView: View {
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
+    @AppStorage("groupChatsByDateInSidebar") private var groupChatsByDateInSidebar: Bool = true
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
@@ -94,6 +95,17 @@ struct TabGeneralSettingsView: View {
                                 subtitle: "Show AI service logos next to chat names"
                             ) {
                                 Toggle("", isOn: $showSidebarAIIcons)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Chat Grouping",
+                                subtitle: "Group chats by date in the sidebar"
+                            ) {
+                                Toggle("", isOn: $groupChatsByDateInSidebar)
                                     .toggleStyle(.switch)
                                     .labelsHidden()
                             }
@@ -274,4 +286,3 @@ struct TabGeneralSettingsView: View {
         }
     }
 }
-
