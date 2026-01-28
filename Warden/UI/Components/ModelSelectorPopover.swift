@@ -354,6 +354,8 @@ struct ModelSelectorList: View {
         @ObservedObject private var favoriteManager = FavoriteModelsManager.shared
         @ObservedObject private var metadataCache = ModelMetadataCache.shared
 
+        @State private var isShowingMetadata = false
+
         private var displayName: String {
             ModelMetadata.formatModelDisplayName(modelId: modelId, provider: providerType)
         }
@@ -367,50 +369,34 @@ struct ModelSelectorList: View {
         }
 
         var body: some View {
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
                 Button {
+                    isShowingMetadata = false
                     if dismissOnSelect {
                         onDismiss?()
                     }
-
-                    Task { @MainActor in
-                        onSelect(providerType, modelId)
-                    }
+                    onSelect(providerType, modelId)
                 } label: {
-                    HStack(alignment: .top, spacing: 8) {
+                    HStack(alignment: .center, spacing: 8) {
                         if isSelected {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(Color.accentColor)
-                                .padding(.top, 2)
                         } else {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.clear)
-                                .padding(.top, 2)
                         }
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 8) {
-                                Text(displayName)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-
-                                capabilityIcons
-                            }
-
-                            if let meta = metadata, let info = secondaryInfoText(from: meta) {
-                                Text(info)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                            }
-                        }
+                        Text(displayName)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
 
                         Spacer(minLength: 0)
+
+                        capabilityIcons
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 7)
@@ -422,12 +408,26 @@ struct ModelSelectorList: View {
                 .buttonStyle(.plain)
 
                 Button {
+                    isShowingMetadata.toggle()
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(metadata == nil ? .tertiary : .secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(metadata == nil)
+                .help(metadata == nil ? "No metadata available" : "View model metadata")
+                .popover(isPresented: $isShowingMetadata, arrowEdge: .leading) {
+                    ModelMetadataPopover(displayName: displayName, meta: metadata)
+                        .frame(width: 320)
+                }
+
+                Button {
                     favoriteManager.toggleFavorite(provider: providerType, model: modelId)
                 } label: {
                     Image(systemName: isFavorite ? "star.fill" : "star")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(isFavorite ? .yellow : .secondary)
-                        .padding(.top, 8)
                 }
                 .buttonStyle(.plain)
                 .help(isFavorite ? "Remove from Favorites" : "Add to Favorites")
@@ -452,31 +452,76 @@ struct ModelSelectorList: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
 
-        private func secondaryInfoText(from meta: ModelMetadata) -> String? {
-            var parts: [String] = []
+    private struct ModelMetadataPopover: View {
+        let displayName: String
+        let meta: ModelMetadata?
 
-            if let context = meta.maxContextTokens {
-                parts.append("\(context.formatted()) tokens")
-            }
+        var body: some View {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(displayName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(2)
 
-            if let pricing = meta.pricing {
-                if let input = pricing.inputPer1M, let output = pricing.outputPer1M {
-                    let inputText = input.formatted(.number.precision(.fractionLength(2)))
-                    let outputText = output.formatted(.number.precision(.fractionLength(2)))
-                    parts.append("$\(inputText) / $\(outputText) per 1M")
-                } else if let input = pricing.inputPer1M {
-                    let inputText = input.formatted(.number.precision(.fractionLength(2)))
-                    parts.append("$\(inputText) per 1M")
+                if let meta {
+                    if meta.isStale {
+                        Label("May be out of date", systemImage: "exclamationmark.triangle")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        if meta.hasReasoning {
+                            Label("Reasoning", systemImage: "brain")
+                                .font(.system(size: 11))
+                        }
+                        if meta.hasVision {
+                            Label("Vision", systemImage: "eye")
+                                .font(.system(size: 11))
+                        }
+                        if meta.hasFunctionCalling {
+                            Label("Function Calling", systemImage: "wrench")
+                                .font(.system(size: 11))
+                        }
+
+                        if let context = meta.maxContextTokens {
+                            Label("\(context.formatted()) tokens", systemImage: "text.alignleft")
+                                .font(.system(size: 11))
+                        }
+
+                        if let pricing = meta.pricing {
+                            if let input = pricing.inputPer1M, let output = pricing.outputPer1M {
+                                let inputText = input.formatted(.number.precision(.fractionLength(2)))
+                                let outputText = output.formatted(.number.precision(.fractionLength(2)))
+                                Label("$\(inputText) / $\(outputText) per 1M", systemImage: "dollarsign.circle")
+                                    .font(.system(size: 11))
+                            } else if let input = pricing.inputPer1M {
+                                let inputText = input.formatted(.number.precision(.fractionLength(2)))
+                                Label("$\(inputText) per 1M", systemImage: "dollarsign.circle")
+                                    .font(.system(size: 11))
+                            }
+                        }
+
+                        if let latency = meta.latency {
+                            Label(latency.rawValue.capitalized, systemImage: "speedometer")
+                                .font(.system(size: 11))
+                        }
+                    }
+
+                    Divider()
+
+                    Text("Source: \(meta.source.rawValue) • Updated: \(meta.lastUpdated.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No metadata available for this model.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                 }
             }
-
-            if let latency = meta.latency {
-                parts.append(latency.rawValue.capitalized)
-            }
-
-            guard !parts.isEmpty else { return nil }
-            return parts.joined(separator: " • ")
+            .padding(12)
+            .background(Color(nsColor: .windowBackgroundColor))
         }
     }
 }
