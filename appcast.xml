@@ -7,6 +7,33 @@
         <language>en</language>
         
         <item>
+            <title>Version 0.9.9</title>
+            <description><![CDATA[
+                <h3>Improvements</h3>
+                <ul>
+                <li>UI code improvements and formatting fixes</li>
+                <li>Improved attachment handling across providers with off-main-actor I/O</li>
+                <li>Fixed path traversal and Core Data access issues for attachments</li>
+                <li>Fixed non-streaming fallback chain</li>
+                </ul>
+                <h3>Infrastructure</h3>
+                <ul>
+                <li>Added GitHub Actions release workflow</li>
+                <li>Commit-based changelog generation</li>
+                </ul>
+            ]]></description>
+            <pubDate>Tue, 28 Jan 2026 00:00:00 +0000</pubDate>
+            <sparkle:version>0.9.9</sparkle:version>
+            <sparkle:shortVersionString>0.9.9</sparkle:shortVersionString>
+            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v0.9.9/Warden.zip"
+                       sparkle:version="0.9.9"
+                       sparkle:shortVersionString="0.9.9"
+                       type="application/zip"
+                       length="PLACEHOLDER"
+                       sparkle:edSignature="PLACEHOLDER" />
+        </item>
+
+        <item>
             <title>Version 0.9.6</title>
             <description><![CDATA[
                 <h3>New Features</h3>
