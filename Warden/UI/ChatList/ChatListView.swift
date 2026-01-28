@@ -5,6 +5,7 @@ import os
 struct ChatListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var store: ChatStore
+    @AppStorage("groupChatsByDateInSidebar") private var groupChatsByDateInSidebar: Bool = true
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var scrollOffset: CGFloat = 0
@@ -469,31 +470,57 @@ struct ChatListView: View {
                 }
             }
             
-            // Show date-grouped unpinned chats
-            ForEach(DateGroup.allCases, id: \.self) { dateGroup in
-                if let chatsInGroup = groupedChatsWithoutProject[dateGroup], !chatsInGroup.isEmpty {
-                    Section {
-                        ForEach(chatsInGroup, id: \.id) { chat in
-                            ChatListRow(
-                                chat: chat,
-                                selectedChat: $selectedChat,
-                                viewContext: viewContext,
-                                searchText: searchText
-                            )
-                            .tag(chat.id)
+            if groupChatsByDateInSidebar {
+                // Show date-grouped unpinned chats
+                ForEach(DateGroup.allCases, id: \.self) { dateGroup in
+                    if let chatsInGroup = groupedChatsWithoutProject[dateGroup], !chatsInGroup.isEmpty {
+                        Section {
+                            ForEach(chatsInGroup, id: \.id) { chat in
+                                ChatListRow(
+                                    chat: chat,
+                                    selectedChat: $selectedChat,
+                                    viewContext: viewContext,
+                                    searchText: searchText
+                                )
+                                .tag(chat.id)
+                            }
+                        } header: {
+                            HStack {
+                                Text(dateGroup.rawValue)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
+                                    .textCase(.uppercase)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 4)
                         }
-                    } header: {
-                        HStack {
-                            Text(dateGroup.rawValue)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
                     }
+                }
+            } else if !unpinnedChatsWithoutProject.isEmpty {
+                // Show all unpinned chats without date grouping
+                Section {
+                    ForEach(unpinnedChatsWithoutProject, id: \.id) { chat in
+                        ChatListRow(
+                            chat: chat,
+                            selectedChat: $selectedChat,
+                            viewContext: viewContext,
+                            searchText: searchText
+                        )
+                        .tag(chat.id)
+                    }
+                } header: {
+                    HStack {
+                        Text("Chats")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .textCase(.uppercase)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
                 }
             }
         }
