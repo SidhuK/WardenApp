@@ -134,6 +134,7 @@ struct ModelSelectorList: View {
                                 providerType: item.providerType,
                                 modelId: item.modelId,
                                 isSelected: isSelected(providerType: item.providerType, modelId: item.modelId),
+                                showsProviderBadge: true,
                                 dismissOnSelect: dismissOnSelect,
                                 onDismiss: onDismiss,
                                 onSelect: onSelect
@@ -158,6 +159,7 @@ struct ModelSelectorList: View {
                                         providerType: section.providerType,
                                         modelId: modelId,
                                         isSelected: isSelected(providerType: section.providerType, modelId: modelId),
+                                        showsProviderBadge: false,
                                         dismissOnSelect: dismissOnSelect,
                                         onDismiss: onDismiss,
                                         onSelect: onSelect
@@ -170,6 +172,7 @@ struct ModelSelectorList: View {
                                     providerType: section.providerType,
                                     modelId: modelId,
                                     isSelected: isSelected(providerType: section.providerType, modelId: modelId),
+                                    showsProviderBadge: false,
                                     dismissOnSelect: dismissOnSelect,
                                     onDismiss: onDismiss,
                                     onSelect: onSelect
@@ -298,8 +301,14 @@ struct ModelSelectorList: View {
     }
 
     private func matchesSearch(providerType: String, modelId: String) -> Bool {
-        let displayName = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: providerType)
-        return modelId.localizedStandardContains(searchText) || displayName.localizedStandardContains(searchText)
+        let modelDisplayName = ModelMetadata.formatModelComponents(modelId: modelId).displayName
+        let providerName = providerDisplayName(for: providerType)
+        let namespaceName = ModelMetadata.modelNamespaceDisplayName(from: modelId) ?? ""
+
+        return modelId.localizedStandardContains(searchText)
+            || modelDisplayName.localizedStandardContains(searchText)
+            || providerName.localizedStandardContains(searchText)
+            || namespaceName.localizedStandardContains(searchText)
     }
 
     private func providerDisplayName(for providerType: String) -> String {
@@ -347,6 +356,7 @@ struct ModelSelectorList: View {
         let providerType: String
         let modelId: String
         let isSelected: Bool
+        let showsProviderBadge: Bool
         let dismissOnSelect: Bool
         let onDismiss: (() -> Void)?
         let onSelect: @MainActor (String, String) -> Void
@@ -356,8 +366,18 @@ struct ModelSelectorList: View {
 
         @State private var isShowingMetadata = false
 
-        private var displayName: String {
-            ModelMetadata.formatModelDisplayName(modelId: modelId, provider: providerType)
+        private var modelDisplayName: String {
+            ModelMetadata.formatModelComponents(modelId: modelId).displayName
+        }
+
+        private var providerBadgeText: String {
+            if let namespace = ModelMetadata.modelNamespaceDisplayName(from: modelId) {
+                return namespace
+            }
+            if let config = AppConstants.defaultApiConfigurations[providerType] {
+                return config.name
+            }
+            return providerType.uppercased()
         }
 
         private var isFavorite: Bool {
@@ -388,13 +408,25 @@ struct ModelSelectorList: View {
                                 .foregroundStyle(.clear)
                         }
 
-                        Text(displayName)
+                        Text(modelDisplayName)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                             .truncationMode(.middle)
 
                         Spacer(minLength: 0)
+
+                        if showsProviderBadge {
+                            Text(providerBadgeText)
+                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.primary.opacity(0.06))
+                                )
+                        }
 
                         capabilityIcons
                     }
@@ -418,7 +450,7 @@ struct ModelSelectorList: View {
                 .disabled(metadata == nil)
                 .help(metadata == nil ? "No metadata available" : "View model metadata")
                 .popover(isPresented: $isShowingMetadata, arrowEdge: .leading) {
-                    ModelMetadataPopover(displayName: displayName, meta: metadata)
+                    ModelMetadataPopover(displayName: modelDisplayName, meta: metadata)
                         .frame(width: 320)
                 }
 
