@@ -11,6 +11,7 @@ struct QuickChatView: View {
     
     // We'll use a dedicated ChatEntity for quick chat
     @State private var quickChatEntity: ChatEntity?
+    @AppStorage("quickChatChatID") private var quickChatChatID: String?
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -78,16 +79,15 @@ struct QuickChatView: View {
         }
     }
     
+    @MainActor
     private func updateWindowHeight(contentHeight: CGFloat) {
-        DispatchQueue.main.async {
-            var baseHeight: CGFloat = 120
-            if !composerState.attachedImages.isEmpty || !composerState.attachedFiles.isEmpty {
-                baseHeight += 90
-            }
-
-            let newHeight = baseHeight + contentHeight
-            FloatingPanelManager.shared.updateHeight(newHeight)
+        var baseHeight: CGFloat = 140
+        if !composerState.attachedImages.isEmpty || !composerState.attachedFiles.isEmpty {
+            baseHeight += 90
         }
+
+        let newHeight = baseHeight + contentHeight
+        FloatingPanelManager.shared.updateHeight(newHeight)
     }
     
     private func checkClipboard() {
@@ -101,49 +101,97 @@ struct QuickChatView: View {
     }
     
     private func ensureQuickChatEntity() {
-        // Cleanup empty chats first
-        if let existing = quickChatEntity, existing.messages.count == 0 {
-            viewContext.delete(existing)
-            try? viewContext.save()
-            quickChatEntity = nil
-        }
-        
-        if quickChatEntity == nil {
-            // Always create a new chat for a new session
-            let newChat = ChatEntity(context: viewContext)
-            newChat.id = UUID()
-            newChat.name = "Quick Chat"
-            newChat.createdDate = Date()
-            newChat.updatedDate = Date()
-            
-            // Use the default API service from settings
-            if let defaultServiceIDString = defaultApiServiceID,
-               let url = URL(string: defaultServiceIDString),
-               let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
-                do {
-                    if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
-                        newChat.apiService = defaultService
-                        newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
-                    }
-                } catch {
-                    WardenLog.coreData.error(
-                        "Default API service not found: \(error.localizedDescription, privacy: .public)"
-                    )
-                    // Fall back to first available service
-                    fallbackServiceSelectionFor(chat: newChat)
-                }
-            } else {
-                // No default set, fall back to first available service
-                fallbackServiceSelectionFor(chat: newChat)
-                newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+        if let quickChatEntity { return }
+
+        if let storedID = quickChatChatID, let uuid = UUID(uuidString: storedID) {
+            let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            request.fetchLimit = 1
+            request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+            if let existing = try? viewContext.fetch(request).first {
+                quickChatEntity = existing
+                let id = existing.id
+                quickChatChatID = id.uuidString
+                cleanupEmptyQuickChatDuplicates(keeping: id)
+                return
             }
-            
-            quickChatEntity = newChat
+        }
+
+        // First-run after an update: reuse the most recent existing Quick Chat instead of creating a new one.
+        do {
+            let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            request.fetchLimit = 1
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
+            request.predicate = NSPredicate(format: "name == %@", "Quick Chat")
+            if let existing = try viewContext.fetch(request).first {
+                quickChatEntity = existing
+                let id = existing.id
+                quickChatChatID = id.uuidString
+                cleanupEmptyQuickChatDuplicates(keeping: id)
+                return
+            }
+        } catch {
+            WardenLog.coreData.error("Error fetching existing Quick Chat: \(error.localizedDescription, privacy: .public)")
+        }
+
+        // Create a single long-lived Quick Chat entity (prevents sidebar duplicates when toggling quickly).
+        let newChat = ChatEntity(context: viewContext)
+        let id = UUID()
+        newChat.id = id
+        newChat.name = "Quick Chat"
+        newChat.createdDate = Date()
+        newChat.updatedDate = Date()
+
+        // Use the default API service from settings
+        if let defaultServiceIDString = defaultApiServiceID,
+           let url = URL(string: defaultServiceIDString),
+           let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
+            do {
+                if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
+                    newChat.apiService = defaultService
+                    newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
+                }
+            } catch {
+                WardenLog.coreData.error(
+                    "Default API service not found: \(error.localizedDescription, privacy: .public)"
+                )
+                // Fall back to first available service
+                fallbackServiceSelectionFor(chat: newChat)
+            }
+        } else {
+            // No default set, fall back to first available service
+            fallbackServiceSelectionFor(chat: newChat)
+            newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+        }
+
+        quickChatEntity = newChat
+        quickChatChatID = id.uuidString
+        try? viewContext.save()
+        cleanupEmptyQuickChatDuplicates(keeping: id)
+    }
+
+    private func cleanupEmptyQuickChatDuplicates(keeping keepID: UUID) {
+        let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+        request.predicate = NSPredicate(format: "name == %@", "Quick Chat")
+
+        do {
+            for chat in try viewContext.fetch(request) {
+                let id = chat.id
+                guard id != keepID else { continue }
+                if chat.messages.count == 0 {
+                    viewContext.delete(chat)
+                }
+            }
             try? viewContext.save()
+        } catch {
+            WardenLog.coreData.error("Error cleaning up Quick Chat duplicates: \(error.localizedDescription, privacy: .public)")
         }
     }
     
     private func submitQuery() {
+        if quickChatEntity == nil {
+            ensureQuickChatEntity()
+        }
+
         let trimmedText = composerState.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty
             || !composerState.attachedImages.isEmpty
@@ -360,51 +408,14 @@ struct QuickChatView: View {
     }
     
     private func resetChat() {
-        // Cleanup empty chats first
-        if let existing = quickChatEntity, existing.messages.count == 0 {
-            viewContext.delete(existing)
-        }
-        
-        // Create a completely new chat entity for the new session
-        // The old chat entity remains in Core Data (and thus in the sidebar)
-        
-        let newChat = ChatEntity(context: viewContext)
-        newChat.id = UUID()
-        newChat.name = "Quick Chat"
-        newChat.createdDate = Date()
-        newChat.updatedDate = Date()
-        
-        // Use the default API service from settings
-        if let defaultServiceIDString = defaultApiServiceID,
-           let url = URL(string: defaultServiceIDString),
-           let objectID = viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
-            do {
-                if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
-                    newChat.apiService = defaultService
-                    newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
-                }
-            } catch {
-                WardenLog.coreData.error(
-                    "Default API service not found: \(error.localizedDescription, privacy: .public)"
-                )
-                fallbackServiceSelectionFor(chat: newChat)
-                newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
-            }
-        } else {
-            fallbackServiceSelectionFor(chat: newChat)
-            newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
-        }
-        
-        quickChatEntity = newChat
-        try? viewContext.save()
-        
+        stopCurrentStream()
         isStreaming = false
         composerState.text = ""
         composerState.attachedImages = []
         composerState.attachedFiles = []
         
-        DispatchQueue.main.async {
-            FloatingPanelManager.shared.updateHeight(60)
+        Task { @MainActor in
+            FloatingPanelManager.shared.updateHeight(140)
         }
     }
     

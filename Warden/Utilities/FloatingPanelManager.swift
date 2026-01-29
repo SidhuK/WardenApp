@@ -20,6 +20,7 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     static let shared = FloatingPanelManager()
     
     var panel: NSPanel?
+    private var isOpeningPanel = false
     
     override init() {
         super.init()
@@ -44,13 +45,19 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         guard let panel = panel else { return }
         
         centerPanel()
-        // Ensure we bring the app to front but only activate the panel
+        isOpeningPanel = true
+
+        // Ensure we bring the app to front and focus the panel.
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
-        panel.makeKey()
-        
-        // Reset chat state
-        NotificationCenter.default.post(name: .resetQuickChat, object: nil)
+        panel.makeMain()
+
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            await MainActor.run {
+                self?.isOpeningPanel = false
+            }
+        }
     }
     
     func closePanel() {
@@ -59,17 +66,24 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     func updateHeight(_ height: CGFloat) {
         guard let panel = panel else { return }
-        let clampedHeight = min(max(height, 60), 600) // Min 60, Max 600
+        let minHeight: CGFloat = 140
+        let maxAllowedHeight: CGFloat = 600
+        let reservedVerticalSpace: CGFloat = 220 // Keep room for top + bottom padding.
+
+        let screenRect = panel.screen?.visibleFrame ?? NSScreen.main?.visibleFrame
+        let maxHeight = min(
+            maxAllowedHeight,
+            max(minHeight, (screenRect?.height ?? maxAllowedHeight) - reservedVerticalSpace)
+        )
+
+        let clampedHeight = min(max(height, minHeight), maxHeight)
         
         if panel.frame.height != clampedHeight {
             var frame = panel.frame
-            // Grow UPWARDS: Increase height, keep origin.y constant
-            // Cocoa coordinate system: (0,0) is bottom-left.
-            // frame.origin.y is the bottom edge.
-            // To grow UP, we just increase height. The bottom edge (y) stays same. The top edge (y+h) moves up.
-            
+            // Keep the panel's top edge fixed so it expands downward (prevents clipping off-screen).
+            let currentTop = frame.origin.y + frame.size.height
             frame.size.height = clampedHeight
-            // DO NOT change frame.origin.y if we want to anchor bottom.
+            frame.origin.y = currentTop - clampedHeight
             
             panel.setFrame(frame, display: true, animate: true)
         }
@@ -77,8 +91,8 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     
     private func createPanel() {
         let panel = QuickChatPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 60), // Wider for better pill integration
-            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView], 
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 140), // Wider and tall enough to avoid initial clipping
+            styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -115,7 +129,11 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
     }
     
     private func centerPanel() {
-        guard let panel = panel, let screen = NSScreen.main else { return }
+        guard let panel = panel else { return }
+
+        let mouseLocation = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) }) ?? NSScreen.main
+        guard let screen else { return }
         let screenRect = screen.visibleFrame
         
         // Calculate position: Top-center (like Spotlight)
@@ -123,13 +141,18 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         let height: CGFloat = panel.frame.height // Dynamic height from view
         
         let x = screenRect.midX - (width / 2)
-        let y = screenRect.maxY - 300 // 300px from top
+        let topPadding: CGFloat = 140
+        let bottomPadding: CGFloat = 80
+        let desiredY = (screenRect.maxY - topPadding) - height
+        let minY = screenRect.minY + bottomPadding
+        let y = max(desiredY, minY)
         
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
     
     // Close when focus is lost
     func windowDidResignKey(_ notification: Notification) {
+        if isOpeningPanel { return }
         closePanel()
     }
 }
