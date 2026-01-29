@@ -116,10 +116,18 @@ actor LiteLLMMetadataFetcher {
                 if modelInfo["supports_response_schema"] as? Bool == true {
                     capabilities.append("structured-output")
                 }
-                // Check for reasoning models (o1, o3, o4, etc.)
-                if modelId.hasPrefix("o1") || modelId.hasPrefix("o3") || modelId.hasPrefix("o4") ||
-                   modelId.contains("thinking") || modelId.contains("reasoning") {
+                // Check for reasoning models
+                if modelInfo["supports_reasoning"] as? Bool == true {
                     capabilities.append("reasoning")
+                } else {
+                    // Fallback heuristic for older LiteLLM data without explicit flags.
+                    let id = modelId.lowercased()
+                    if id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4") ||
+                        id.contains("-thinking") || id.contains("_thinking") || id.contains("/thinking") ||
+                        id.contains("-reasoning") || id.contains("_reasoning") || id.contains("/reasoning")
+                    {
+                        capabilities.append("reasoning")
+                    }
                 }
 
                 // Build metadata
@@ -220,8 +228,24 @@ actor LiteLLMMetadataFetcher {
 
         // Check if cache is still valid
         let timestamp = UserDefaults.standard.double(forKey: cacheTimestampKey)
+        guard timestamp > 0 else {
+            #if DEBUG
+            WardenLog.app.debug("LiteLLM: Cache timestamp missing; treating cache as expired")
+            #endif
+            UserDefaults.standard.removeObject(forKey: cacheKey)
+            UserDefaults.standard.removeObject(forKey: cacheTimestampKey)
+            return nil
+        }
+
         let age = Date().timeIntervalSince1970 - timestamp
         if age > cacheDuration * 7 { // Allow stale cache up to 7 days for fallback
+            #if DEBUG
+            WardenLog.app.debug("LiteLLM: Cache too old; treating as expired")
+            #endif
+            UserDefaults.standard.removeObject(forKey: cacheKey)
+            UserDefaults.standard.removeObject(forKey: cacheTimestampKey)
+            return nil
+        } else if age > cacheDuration {
             #if DEBUG
             WardenLog.app.debug("LiteLLM: Cache is stale but using as fallback")
             #endif
