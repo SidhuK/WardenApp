@@ -3,6 +3,11 @@ import SwiftUI
 
 // MARK: - Model Selector Popover
 
+private enum ModelSelectorPopoverTabSelection: Hashable {
+    case favorites
+    case provider(String)
+}
+
 struct ModelSelectorPopoverButton<Label: View>: View {
     let apiServices: [APIServiceEntity]
     let selectedProviderType: String?
@@ -62,7 +67,42 @@ private struct ModelSelectorPopoverContent: View {
     @Binding var isPresented: Bool
     let onSelect: @MainActor (String, String) -> Void
 
-    @State private var selectedTab: TabSelection?
+    @State private var selectedTab: ModelSelectorPopoverTabSelection
+
+    init(
+        apiServices: [APIServiceEntity],
+        selectedProviderType: String?,
+        selectedModelId: String?,
+        isPresented: Binding<Bool>,
+        onSelect: @MainActor @escaping (String, String) -> Void
+    ) {
+        self.apiServices = apiServices
+        self.selectedProviderType = selectedProviderType
+        self.selectedModelId = selectedModelId
+        self._isPresented = isPresented
+        self.onSelect = onSelect
+
+        let configured = Set(apiServices.compactMap(\.type))
+        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
+
+        let extras = configured.subtracting(ordered)
+        if !extras.isEmpty {
+            ordered.append(contentsOf: extras.sorted())
+        }
+
+        let initialProviderType: String? = {
+            if let selectedProviderType, ordered.contains(selectedProviderType) {
+                return selectedProviderType
+            }
+            return ordered.first
+        }()
+
+        if let initialProviderType {
+            self._selectedTab = State(initialValue: .provider(initialProviderType))
+        } else {
+            self._selectedTab = State(initialValue: .favorites)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -74,8 +114,8 @@ private struct ModelSelectorPopoverContent: View {
                 selectedModelId: selectedModelId,
                 providerFilter: selectedProviderTypeFilter,
                 favoritesOnly: selectedTab == .favorites,
-                showFavoritesSection: selectedTab == nil,
-                showProviderSectionHeaders: availableProviderTypes.count <= 1,
+                showFavoritesSection: false,
+                showProviderSectionHeaders: false,
                 dismissOnSelect: true,
                 onDismiss: { isPresented = false },
                 onSelect: onSelect
@@ -83,16 +123,15 @@ private struct ModelSelectorPopoverContent: View {
         }
         .padding(12)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onAppear {
-            if selectedTab == nil {
-                selectedTab = initialTab
-            }
-        }
         .onChange(of: availableProviderTypes) { _, newValue in
             if case .provider(let providerType) = selectedTab, newValue.contains(providerType) {
                 return
             }
-            selectedTab = initialTab
+            if let initialProviderType = initialProviderTab(from: newValue) {
+                selectedTab = .provider(initialProviderType)
+            } else {
+                selectedTab = .favorites
+            }
         }
     }
 
@@ -118,7 +157,7 @@ private struct ModelSelectorPopoverContent: View {
     @ViewBuilder
     private var providerTabsRow: some View {
         let providers = availableProviderTypes
-        if providers.count > 1 {
+        if !providers.isEmpty {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     tabButton(
@@ -166,29 +205,23 @@ private struct ModelSelectorPopoverContent: View {
         return availableProviderTypes.first
     }
 
-    private var initialTab: TabSelection? {
-        if let providerType = initialProviderTab {
-            return .provider(providerType)
-        }
-        return nil
-    }
-
     private var selectedProviderTypeFilter: String? {
         if case .provider(let providerType) = selectedTab {
             return providerType
         }
-        if selectedTab == nil, let providerType = initialProviderTab {
-            return providerType
-        }
         return nil
+    }
+
+    private func initialProviderTab(from providerTypes: [String]) -> String? {
+        if let selectedProviderType, providerTypes.contains(selectedProviderType) {
+            return selectedProviderType
+        }
+        return providerTypes.first
     }
 
     private func isSelectedTab(_ providerType: String) -> Bool {
         if case .provider(let selectedProviderType) = selectedTab {
             return selectedProviderType == providerType
-        }
-        if selectedTab == nil {
-            return initialProviderTab == providerType
         }
         return false
     }
@@ -254,11 +287,6 @@ private struct ModelSelectorPopoverContent: View {
         }
         .buttonStyle(.plain)
         .help(help)
-    }
-
-    private enum TabSelection: Hashable {
-        case favorites
-        case provider(String)
     }
 }
 
@@ -446,8 +474,10 @@ struct ModelSelectorList: View {
     private var favoriteModels: [FavoriteItem] {
         guard favoritesOnly || showFavoritesSection else { return [] }
         let all = allVisibleModels
-            .compactMap { providerType, modelId in
-                favoriteManager.isFavorite(provider: providerType, model: modelId) ? FavoriteItem(providerType: providerType, modelId: modelId) : nil
+            .compactMap { item -> FavoriteItem? in
+                favoriteManager.isFavorite(provider: item.providerType, model: item.modelId)
+                    ? FavoriteItem(providerType: item.providerType, modelId: item.modelId)
+                    : nil
             }
 
         if searchText.isEmpty { return all }
@@ -459,21 +489,25 @@ struct ModelSelectorList: View {
 
     private var providerSections: [ProviderSection] {
         guard !favoritesOnly else { return [] }
-        allVisibleModelsByProvider
-            .compactMap { providerType, modelIds in
-                let filtered = modelIds.filter { modelId in
-                    searchText.isEmpty || matchesSearch(providerType: providerType, modelId: modelId)
+        return allVisibleModelsByProvider
+            .compactMap { item -> ProviderSection? in
+                let filtered = item.modelIds.filter { modelId in
+                    searchText.isEmpty || matchesSearch(providerType: item.providerType, modelId: modelId)
                 }
 
                 guard !filtered.isEmpty else { return nil }
-                return ProviderSection(providerType: providerType, displayName: providerDisplayName(for: providerType), modelIds: filtered)
+                return ProviderSection(
+                    providerType: item.providerType,
+                    displayName: providerDisplayName(for: item.providerType),
+                    modelIds: filtered
+                )
             }
             .sorted { lhs, rhs in lhs.displayName < rhs.displayName }
     }
 
     private var allVisibleModels: [(providerType: String, modelId: String)] {
-        allVisibleModelsByProvider.flatMap { providerType, modelIds in
-            modelIds.map { (providerType: providerType, modelId: $0) }
+        allVisibleModelsByProvider.flatMap { item in
+            item.modelIds.map { (providerType: item.providerType, modelId: $0) }
         }
     }
 
