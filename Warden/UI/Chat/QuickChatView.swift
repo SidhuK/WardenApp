@@ -735,12 +735,6 @@ struct WindowDragGesture: Gesture {
 // Compact model selector - shows only the logo for Quick Chat
 struct CompactModelSelector: View {
     @ObservedObject var chat: ChatEntity
-    @Environment(\.managedObjectContext) private var viewContext
-    
-    @ObservedObject private var modelCache = ModelCacheManager.shared
-    @ObservedObject private var favoriteManager = FavoriteModelsManager.shared
-    @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
-    @ObservedObject private var metadataCache = ModelMetadataCache.shared
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -750,12 +744,6 @@ struct CompactModelSelector: View {
     
     @State private var isHovered = false
     
-    private static let providerNames: [String: String] = [
-        "chatgpt": "OpenAI", "claude": "Anthropic", "gemini": "Google",
-        "xai": "xAI", "perplexity": "Perplexity", "deepseek": "DeepSeek",
-        "groq": "Groq", "openrouter": "OpenRouter", "ollama": "Ollama", "mistral": "Mistral"
-    ]
-    
     private var currentProviderType: String {
         chat.apiService?.type ?? AppConstants.defaultApiType
     }
@@ -764,34 +752,6 @@ struct CompactModelSelector: View {
         let modelId = chat.gptModel
         if modelId.isEmpty { return "Select Model" }
         return ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
-    }
-    
-    private var availableModels: [(provider: String, models: [String])] {
-        var result: [(provider: String, models: [String])] = []
-        for service in apiServices {
-            guard let serviceType = service.type else { continue }
-            let serviceModels = modelCache.getModels(for: serviceType)
-            
-            let visibleModels = serviceModels.filter { model in
-                if selectedModelsManager.hasCustomSelection(for: serviceType) {
-                    return selectedModelsManager.getSelectedModelIds(for: serviceType).contains(model.id)
-                }
-                return true
-            }
-            
-            if !visibleModels.isEmpty {
-                result.append((provider: serviceType, models: visibleModels.map { $0.id }))
-            }
-        }
-        return result
-    }
-    
-    private var favoriteModels: [(provider: String, modelId: String)] {
-        availableModels.flatMap { provider, models in
-            models.compactMap { model in
-                favoriteManager.isFavorite(provider: provider, model: model) ? (provider, model) : nil
-            }
-        }
     }
     
     @MainActor
@@ -811,34 +771,17 @@ struct CompactModelSelector: View {
     }
     
     var body: some View {
-        Menu {
-            if !favoriteModels.isEmpty {
-                Section("Favorites") {
-                    ForEach(favoriteModels, id: \.modelId) { item in
-                        modelMenuItem(provider: item.provider, modelId: item.modelId)
-                    }
-                }
+        ModelSelectorPopoverButton(
+            apiServices: Array(apiServices),
+            selectedProviderType: chat.apiService?.type,
+            selectedModelId: chat.gptModel.isEmpty ? nil : chat.gptModel,
+            popoverWidth: 440,
+            popoverHeight: 560,
+            arrowEdge: .bottom,
+            onSelect: { provider, modelId in
+                selectModel(provider: provider, modelId: modelId)
             }
-            
-            ForEach(availableModels, id: \.provider) { providerModels in
-                Section(Self.providerNames[providerModels.provider] ?? providerModels.provider.capitalized) {
-                    if providerModels.provider == "openrouter" {
-                        let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: providerModels.models)
-                        ForEach(groupedModels, id: \.namespaceDisplayName) { group in
-                            Menu(group.namespaceDisplayName) {
-                                ForEach(group.modelIds, id: \.self) { modelId in
-                                    modelMenuItem(provider: providerModels.provider, modelId: modelId)
-                                }
-                            }
-                        }
-                    } else {
-                        ForEach(providerModels.models, id: \.self) { modelId in
-                            modelMenuItem(provider: providerModels.provider, modelId: modelId)
-                        }
-                    }
-                }
-            }
-        } label: {
+        ) {
             HStack(spacing: 5) {
                 Image("logo_\(currentProviderType)")
                     .resizable()
@@ -862,81 +805,8 @@ struct CompactModelSelector: View {
                     .stroke(isHovered ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.06), lineWidth: 1)
             )
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
         .fixedSize()
         .onHover { isHovered = $0 }
-        .task {
-            let services = Array(apiServices)
-            if !services.isEmpty {
-                modelCache.fetchAllModels(from: services)
-            }
-        }
         .help(currentModelLabel)
-    }
-    
-    @ViewBuilder
-    private func modelMenuItem(provider: String, modelId: String) -> some View {
-        let isSelected = chat.apiService?.type == provider && chat.gptModel == modelId
-        let displayName = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: provider)
-        let isFavorite = favoriteManager.isFavorite(provider: provider, model: modelId)
-        let metadata = metadataCache.getMetadata(provider: provider, modelId: modelId)
-        
-        Menu {
-            if let meta = metadata {
-                if meta.hasReasoning {
-                    Label("Reasoning", systemImage: "brain")
-                }
-                if meta.hasVision {
-                    Label("Vision", systemImage: "eye")
-                }
-                if meta.hasFunctionCalling {
-                    Label("Function Calling", systemImage: "wrench")
-                }
-                if let context = meta.maxContextTokens {
-                    Label("\(context.formatted()) tokens", systemImage: "text.alignleft")
-                }
-                if let pricing = meta.pricing, let input = pricing.inputPer1M {
-                    if let output = pricing.outputPer1M {
-                        Label("$\(String(format: "%.2f", input)) / $\(String(format: "%.2f", output)) per 1M", systemImage: "dollarsign.circle")
-                    } else {
-                        Label("$\(String(format: "%.2f", input)) per 1M", systemImage: "dollarsign.circle")
-                    }
-                }
-                if let latency = meta.latency {
-                    Label(latency.rawValue.capitalized, systemImage: "speedometer")
-                }
-                
-                Divider()
-            }
-            
-            Button {
-                favoriteManager.toggleFavorite(provider: provider, model: modelId)
-            } label: {
-                Label(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.slash" : "star")
-            }
-        } label: {
-            HStack {
-                if isSelected {
-                    Image(systemName: "checkmark")
-                }
-                Text(displayName)
-                
-                Spacer()
-                
-                if metadata?.hasReasoning == true {
-                    Image(systemName: "brain")
-                }
-                if metadata?.hasVision == true {
-                    Image(systemName: "eye")
-                }
-                if isFavorite {
-                    Image(systemName: "star.fill")
-                        .foregroundStyle(.yellow)
-                }
-            }
-        } primaryAction: {
-            selectModel(provider: provider, modelId: modelId)
-        }
     }
 }
