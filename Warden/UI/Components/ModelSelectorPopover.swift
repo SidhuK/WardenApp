@@ -62,7 +62,7 @@ private struct ModelSelectorPopoverContent: View {
     @Binding var isPresented: Bool
     let onSelect: @MainActor (String, String) -> Void
 
-    @State private var selectedProviderTab: String?
+    @State private var selectedTab: TabSelection?
 
     var body: some View {
         VStack(spacing: 10) {
@@ -72,7 +72,9 @@ private struct ModelSelectorPopoverContent: View {
                 apiServices: apiServices,
                 selectedProviderType: selectedProviderType,
                 selectedModelId: selectedModelId,
-                providerFilter: selectedProviderTab ?? initialProviderTab,
+                providerFilter: selectedProviderTypeFilter,
+                favoritesOnly: selectedTab == .favorites,
+                showFavoritesSection: selectedTab == nil,
                 showProviderSectionHeaders: availableProviderTypes.count <= 1,
                 dismissOnSelect: true,
                 onDismiss: { isPresented = false },
@@ -82,15 +84,15 @@ private struct ModelSelectorPopoverContent: View {
         .padding(12)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
-            if selectedProviderTab == nil {
-                selectedProviderTab = initialProviderTab
+            if selectedTab == nil {
+                selectedTab = initialTab
             }
         }
         .onChange(of: availableProviderTypes) { _, newValue in
-            if let selectedProviderTab, newValue.contains(selectedProviderTab) {
+            if case .provider(let providerType) = selectedTab, newValue.contains(providerType) {
                 return
             }
-            selectedProviderTab = initialProviderTab
+            selectedTab = initialTab
         }
     }
 
@@ -119,39 +121,24 @@ private struct ModelSelectorPopoverContent: View {
         if providers.count > 1 {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
-                    ForEach(providers, id: \.self) { providerType in
-                        Button {
-                            selectedProviderTab = providerType
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(providerLogoAssetName(for: providerType))
-                                    .resizable()
-                                    .renderingMode(.template)
-                                    .interpolation(.high)
-                                    .frame(width: 12, height: 12)
-                                    .foregroundStyle(.secondary)
+                    tabButton(
+                        title: "Favorites",
+                        image: Image(systemName: selectedTab == .favorites ? "star.fill" : "star"),
+                        isSelected: selectedTab == .favorites,
+                        help: "Favorites"
+                    ) {
+                        selectedTab = .favorites
+                    }
 
-                                Text(providerTabTitle(for: providerType))
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(isSelectedTab(providerType) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(
-                                        isSelectedTab(providerType) ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.10),
-                                        lineWidth: 1
-                                    )
-                            )
+                    ForEach(providers, id: \.self) { providerType in
+                        tabButton(
+                            title: providerTabTitle(for: providerType),
+                            image: Image(providerLogoAssetName(for: providerType)),
+                            isSelected: isSelectedTab(providerType),
+                            help: providerDisplayName(for: providerType)
+                        ) {
+                            selectedTab = .provider(providerType)
                         }
-                        .buttonStyle(.plain)
-                        .help(providerDisplayName(for: providerType))
                     }
                 }
                 .padding(.horizontal, 1)
@@ -179,8 +166,31 @@ private struct ModelSelectorPopoverContent: View {
         return availableProviderTypes.first
     }
 
+    private var initialTab: TabSelection? {
+        if let providerType = initialProviderTab {
+            return .provider(providerType)
+        }
+        return nil
+    }
+
+    private var selectedProviderTypeFilter: String? {
+        if case .provider(let providerType) = selectedTab {
+            return providerType
+        }
+        if selectedTab == nil, let providerType = initialProviderTab {
+            return providerType
+        }
+        return nil
+    }
+
     private func isSelectedTab(_ providerType: String) -> Bool {
-        selectedProviderTab == providerType || (selectedProviderTab == nil && initialProviderTab == providerType)
+        if case .provider(let selectedProviderType) = selectedTab {
+            return selectedProviderType == providerType
+        }
+        if selectedTab == nil {
+            return initialProviderTab == providerType
+        }
+        return false
     }
 
     private func providerTabTitle(for providerType: String) -> String {
@@ -208,6 +218,48 @@ private struct ModelSelectorPopoverContent: View {
         }
         return "logo_\(providerType)"
     }
+
+    private func tabButton(
+        title: String,
+        image: Image,
+        isSelected: Bool,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                image
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.high)
+                    .frame(width: 12, height: 12)
+                    .foregroundStyle(.secondary)
+
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.10), lineWidth: 1)
+            )
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
+    private enum TabSelection: Hashable {
+        case favorites
+        case provider(String)
+    }
 }
 
 // MARK: - Model Selector List (Reusable)
@@ -217,6 +269,8 @@ struct ModelSelectorList: View {
     let selectedProviderType: String?
     let selectedModelId: String?
     let providerFilter: String?
+    let favoritesOnly: Bool
+    let showFavoritesSection: Bool
     let showProviderSectionHeaders: Bool
     let dismissOnSelect: Bool
     let onDismiss: (() -> Void)?
@@ -234,6 +288,8 @@ struct ModelSelectorList: View {
         selectedProviderType: String?,
         selectedModelId: String?,
         providerFilter: String? = nil,
+        favoritesOnly: Bool = false,
+        showFavoritesSection: Bool = true,
         showProviderSectionHeaders: Bool = true,
         dismissOnSelect: Bool,
         onDismiss: (() -> Void)?,
@@ -243,6 +299,8 @@ struct ModelSelectorList: View {
         self.selectedProviderType = selectedProviderType
         self.selectedModelId = selectedModelId
         self.providerFilter = providerFilter
+        self.favoritesOnly = favoritesOnly
+        self.showFavoritesSection = showFavoritesSection
         self.showProviderSectionHeaders = showProviderSectionHeaders
         self.dismissOnSelect = dismissOnSelect
         self.onDismiss = onDismiss
@@ -386,6 +444,7 @@ struct ModelSelectorList: View {
     }
 
     private var favoriteModels: [FavoriteItem] {
+        guard favoritesOnly || showFavoritesSection else { return [] }
         let all = allVisibleModels
             .compactMap { providerType, modelId in
                 favoriteManager.isFavorite(provider: providerType, model: modelId) ? FavoriteItem(providerType: providerType, modelId: modelId) : nil
@@ -399,6 +458,7 @@ struct ModelSelectorList: View {
     }
 
     private var providerSections: [ProviderSection] {
+        guard !favoritesOnly else { return [] }
         allVisibleModelsByProvider
             .compactMap { providerType, modelIds in
                 let filtered = modelIds.filter { modelId in
@@ -515,6 +575,13 @@ struct ModelSelectorList: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
+            } else if favoritesOnly {
+                Text("No favorites yet.")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("Star models to add them here.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             } else {
                 let anyLoading = configuredProviderTypes.contains { modelCache.isLoading(for: $0) }
                 if anyLoading {
