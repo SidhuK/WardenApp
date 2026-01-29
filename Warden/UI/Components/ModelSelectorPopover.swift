@@ -73,6 +73,7 @@ struct ModelSelectorPopoverButton<Label: View>: View {
     }
 }
 
+@MainActor
 private struct ModelSelectorPopoverContent: View {
     let apiServices: [APIServiceEntity]
     let selectedProviderType: String?
@@ -82,7 +83,6 @@ private struct ModelSelectorPopoverContent: View {
 
     @State private var selectedTab: ModelSelectorPopoverTabSelection = .favorites
     @State private var hasUserSelectedTab = false
-    @State private var providerTypes: [String] = []
 
     var body: some View {
         VStack(spacing: 10) {
@@ -103,18 +103,13 @@ private struct ModelSelectorPopoverContent: View {
         }
         .padding(12)
         .background(Color(nsColor: .windowBackgroundColor))
-        .task(id: apiServices.count) {
-            let newValue = await MainActor.run { orderedProviderTypes(from: apiServices) }
-            if providerTypes != newValue {
-                providerTypes = newValue
-            }
-        }
         .onAppear {
             guard !hasUserSelectedTab else { return }
-            selectDefaultTab(providerTypes: providerTypes)
+            selectDefaultTab(providerTypes: availableProviderTypes)
         }
-        .onChange(of: providerTypes) { _, newValue in
+        .onChange(of: apiServices.count) { _, _ in
             guard !hasUserSelectedTab else { return }
+            let newValue = availableProviderTypes
             if case .provider(let providerType) = selectedTab, newValue.contains(providerType) {
                 return
             }
@@ -176,7 +171,7 @@ private struct ModelSelectorPopoverContent: View {
     }
 
     private var availableProviderTypes: [String] {
-        providerTypes
+        orderedProviderTypes(from: apiServices)
     }
 
     private var initialProviderTab: String? {
@@ -281,6 +276,7 @@ private struct ModelSelectorPopoverContent: View {
 
 // MARK: - Model Selector List (Reusable)
 
+@MainActor
 struct ModelSelectorList: View {
     let apiServices: [APIServiceEntity]
     let selectedProviderType: String?
@@ -298,7 +294,6 @@ struct ModelSelectorList: View {
     @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
     
     @State private var searchText = ""
-    @State private var providerTypes: [String] = []
     @FocusState private var isSearchFocused: Bool
 
     init(
@@ -407,11 +402,6 @@ struct ModelSelectorList: View {
             guard !apiServices.isEmpty else { return }
             modelCache.fetchAllModels(from: apiServices)
             selectedModelsManager.loadSelections(from: apiServices)
-
-            let newValue = await MainActor.run { orderedProviderTypes(from: apiServices) }
-            if providerTypes != newValue {
-                providerTypes = newValue
-            }
         }
         .onChange(of: apiServices.count) { _, _ in
             // If services changed, allow users to keep typing while list refreshes.
@@ -529,12 +519,10 @@ struct ModelSelectorList: View {
     }
 
     private var configuredProviderTypes: [String] {
-        if providerTypes.isEmpty {
-            return providerFilter.map { [$0] } ?? []
-        }
+        let providerTypes = orderedProviderTypes(from: apiServices)
 
         if let providerFilter {
-            return providerTypes.filter { $0 == providerFilter }
+            return [providerFilter]
         }
 
         return providerTypes
