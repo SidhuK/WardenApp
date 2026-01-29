@@ -160,6 +160,7 @@
 		C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C479718C2EBF3E410097C000 /* MessageListView.swift */; };
 		C4870E722ECC2EA2003930F7 /* ModelMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4870E712ECC2EA2003930F7 /* ModelMetadata.swift */; };
 		C4870E742ECC2EBC003930F7 /* ModelMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */; };
+		C492F6F42F2B49FB00820D26 /* LiteLLMMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C492F6F32F2B49FB00820D26 /* LiteLLMMetadataFetcher.swift */; };
 		C49FCBE42ECC2439003B51AF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE32ECC2439003B51AF /* SettingsView.swift */; };
 		C49FCBE62ECC2535003B51AF /* TabContributionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */; };
 		C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */; };
@@ -366,6 +367,7 @@
 		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
 		C4870E712ECC2EA2003930F7 /* ModelMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadata.swift; sourceTree = "<group>"; };
 		C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataCache.swift; sourceTree = "<group>"; };
+		C492F6F32F2B49FB00820D26 /* LiteLLMMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiteLLMMetadataFetcher.swift; sourceTree = "<group>"; };
 		C49FCBE32ECC2439003B51AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C49FCBE52ECC2535003B51AF /* TabContributionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabContributionsView.swift; sourceTree = "<group>"; };
 		C49FCBEB2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteQuickAccessBar.swift; sourceTree = "<group>"; };
@@ -634,6 +636,7 @@
 				C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */,
 				C41C38F32F0F88CC0065421C /* ChatHistoryEditor.swift */,
 				C4ADCE472F10D48F00325241 /* MenuBarManager.swift */,
+				C492F6F32F2B49FB00820D26 /* LiteLLMMetadataFetcher.swift */,
 				C4A399152F12044B00E6AA5B /* NotificationNames.swift */,
 				C466CA172F234EF90056E35B /* AttachmentStore.swift */,
 				C466CA192F234F7A0056E35B /* AttachmentMimeTypeSniffer.swift */,
@@ -1010,6 +1013,7 @@
 				C4632BDA2ECDD2DD00D72DA1 /* SearchProgressView.swift in Sources */,
 				C4632BDB2ECDD2DD00D72DA1 /* CitationBadgeView.swift in Sources */,
 				C4632BDC2ECDD2DD00D72DA1 /* SearchErrorView.swift in Sources */,
+				C492F6F42F2B49FB00820D26 /* LiteLLMMetadataFetcher.swift in Sources */,
 				C4632BDD2ECDD2DD00D72DA1 /* SearchResultsPreviewView.swift in Sources */,
 				4A1614112D430AE300A1EF8D /* ThinkingProcessView.swift in Sources */,
 				C49FCBEC2ECC2D8B003B51AF /* FavoriteQuickAccessBar.swift in Sources */,
