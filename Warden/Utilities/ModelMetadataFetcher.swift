@@ -17,28 +17,74 @@ class ModelMetadataFetcherFactory {
     static func createFetcher(for provider: String) -> ModelMetadataFetcher {
         switch ProviderID(normalizing: provider) {
         case .chatgpt:
-            return GenericMetadataFetcher(provider: "chatgpt")
+            return LiteLLMBackedFetcher(provider: "openai")
         case .claude:
-            return GenericMetadataFetcher(provider: "claude")
+            return LiteLLMBackedFetcher(provider: "anthropic")
         case .gemini:
-            return GenericMetadataFetcher(provider: "gemini")
+            return LiteLLMBackedFetcher(provider: "gemini")
         case .groq:
-            return GroqMetadataFetcher()
+            return LiteLLMBackedFetcher(provider: "groq")
         case .openrouter:
             return OpenRouterMetadataFetcher()
         case .mistral:
-            return GenericMetadataFetcher(provider: "mistral")
+            return LiteLLMBackedFetcher(provider: "mistral")
         case .xai:
-            return GenericMetadataFetcher(provider: "xai")
+            return LiteLLMBackedFetcher(provider: "xai")
         case .perplexity:
-            return GenericMetadataFetcher(provider: "perplexity")
+            return LiteLLMBackedFetcher(provider: "perplexity")
         case .deepseek:
-            return GenericMetadataFetcher(provider: "deepseek")
+            return LiteLLMBackedFetcher(provider: "deepseek")
         case .ollama, .lmstudio:
             return LocalModelMetadataFetcher()
         case nil:
             return GenericMetadataFetcher(provider: provider)
         }
+    }
+}
+
+// MARK: - LiteLLM-Backed Fetcher
+
+/// Fetches metadata from LiteLLM's community-maintained pricing data.
+/// Provides pricing, context windows, and capabilities for major providers.
+/// Sendable: All stored properties are immutable or Sendable (actor reference).
+final class LiteLLMBackedFetcher: ModelMetadataFetcher, Sendable {
+    private let provider: String
+    private let liteLLMFetcher = LiteLLMMetadataFetcher()
+
+    init(provider: String) {
+        self.provider = provider
+    }
+
+    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
+        return await liteLLMFetcher.fetchMetadata(for: provider)
+    }
+
+    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
+        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
+
+        if let metadata = allMetadata[modelId] {
+            return metadata
+        }
+
+        // Try fuzzy match (e.g., "gpt-5" might be stored as "gpt-5-0125")
+        let normalizedId = modelId.lowercased()
+        for (key, value) in allMetadata {
+            if key.lowercased().hasPrefix(normalizedId) || normalizedId.hasPrefix(key.lowercased()) {
+                return value
+            }
+        }
+
+        return ModelMetadata(
+            modelId: modelId,
+            provider: provider,
+            pricing: nil,
+            maxContextTokens: nil,
+            capabilities: [],
+            latency: nil,
+            costLevel: nil,
+            lastUpdated: Date(),
+            source: .unknown
+        )
     }
 }
 
