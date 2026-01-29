@@ -17,28 +17,99 @@ class ModelMetadataFetcherFactory {
     static func createFetcher(for provider: String) -> ModelMetadataFetcher {
         switch ProviderID(normalizing: provider) {
         case .chatgpt:
-            return GenericMetadataFetcher(provider: "chatgpt")
+            return LiteLLMBackedFetcher(provider: "openai")
         case .claude:
-            return GenericMetadataFetcher(provider: "claude")
+            return LiteLLMBackedFetcher(provider: "anthropic")
         case .gemini:
-            return GenericMetadataFetcher(provider: "gemini")
+            return LiteLLMBackedFetcher(provider: "gemini")
         case .groq:
-            return GroqMetadataFetcher()
+            return LiteLLMBackedFetcher(provider: "groq")
         case .openrouter:
             return OpenRouterMetadataFetcher()
         case .mistral:
-            return GenericMetadataFetcher(provider: "mistral")
+            return LiteLLMBackedFetcher(provider: "mistral")
         case .xai:
-            return GenericMetadataFetcher(provider: "xai")
+            return LiteLLMBackedFetcher(provider: "xai")
         case .perplexity:
-            return GenericMetadataFetcher(provider: "perplexity")
+            return LiteLLMBackedFetcher(provider: "perplexity")
         case .deepseek:
-            return GenericMetadataFetcher(provider: "deepseek")
+            return LiteLLMBackedFetcher(provider: "deepseek")
         case .ollama, .lmstudio:
             return LocalModelMetadataFetcher()
         case nil:
             return GenericMetadataFetcher(provider: provider)
         }
+    }
+}
+
+// MARK: - LiteLLM-Backed Fetcher
+
+/// Fetches metadata from LiteLLM's community-maintained pricing data.
+/// Provides pricing, context windows, and capabilities for major providers.
+/// Sendable: All stored properties are immutable or Sendable (actor reference).
+final class LiteLLMBackedFetcher: ModelMetadataFetcher, Sendable {
+    private let provider: String
+    private let liteLLMFetcher = LiteLLMMetadataFetcher()
+
+    init(provider: String) {
+        self.provider = provider
+    }
+
+    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
+        return await liteLLMFetcher.fetchMetadata(for: provider)
+    }
+
+    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
+        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
+
+        if let metadata = allMetadata[modelId] {
+            return metadata
+        }
+
+        // Deterministic fuzzy match:
+        // 1) exact (case-insensitive)
+        // 2) separator-suffix versions (e.g. "gpt-5" -> "gpt-5-0125")
+        // 3) longest-prefix match
+        let normalizedId = modelId.lowercased()
+        let sortedKeys = allMetadata.keys.sorted { $0.lowercased() < $1.lowercased() }
+
+        if let exactKey = sortedKeys.first(where: { $0.lowercased() == normalizedId }) {
+            return allMetadata[exactKey]!
+        }
+
+        let separatorSuffixes = ["-", "_", "/"].map { normalizedId + $0 }
+        if let versionKey = sortedKeys
+            .filter({ key in separatorSuffixes.contains(where: { key.lowercased().hasPrefix($0) }) })
+            .min(by: { $0.count < $1.count })
+        {
+            return allMetadata[versionKey]!
+        }
+
+        if let bestPrefixKey = sortedKeys
+            .filter({ normalizedId.hasPrefix($0.lowercased()) })
+            .max(by: { $0.count < $1.count })
+        {
+            return allMetadata[bestPrefixKey]!
+        }
+
+        if let bestExpansionKey = sortedKeys
+            .filter({ $0.lowercased().hasPrefix(normalizedId) })
+            .min(by: { $0.count < $1.count })
+        {
+            return allMetadata[bestExpansionKey]!
+        }
+
+        return ModelMetadata(
+            modelId: modelId,
+            provider: provider,
+            pricing: nil,
+            maxContextTokens: nil,
+            capabilities: [],
+            latency: nil,
+            costLevel: nil,
+            lastUpdated: Date(),
+            source: .unknown
+        )
     }
 }
 
