@@ -68,11 +68,12 @@ final class FloatingPanelManager: NSObject, NSWindowDelegate, ObservableObject {
         guard let panel = panel else { return }
         let minHeight: CGFloat = 140
         let maxAllowedHeight: CGFloat = 600
+        let reservedVerticalSpace: CGFloat = 220 // Keep room for top + bottom padding.
 
         let screenRect = panel.screen?.visibleFrame ?? NSScreen.main?.visibleFrame
         let maxHeight = min(
             maxAllowedHeight,
-            max(minHeight, (screenRect?.height ?? maxAllowedHeight) - 160)
+            max(minHeight, (screenRect?.height ?? maxAllowedHeight) - reservedVerticalSpace)
         )
 
         let clampedHeight = min(max(height, minHeight), maxHeight)

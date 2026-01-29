@@ -108,15 +108,10 @@ struct QuickChatView: View {
             request.fetchLimit = 1
             request.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             if let existing = try? viewContext.fetch(request).first {
-                if existing.id == nil {
-                    existing.id = UUID()
-                    try? viewContext.save()
-                }
                 quickChatEntity = existing
-                if let id = existing.id {
-                    quickChatChatID = id.uuidString
-                    cleanupEmptyQuickChatDuplicates(keeping: id)
-                }
+                let id = existing.id
+                quickChatChatID = id.uuidString
+                cleanupEmptyQuickChatDuplicates(keeping: id)
                 return
             }
         }
@@ -128,15 +123,10 @@ struct QuickChatView: View {
             request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
             request.predicate = NSPredicate(format: "name == %@", "Quick Chat")
             if let existing = try viewContext.fetch(request).first {
-                if existing.id == nil {
-                    existing.id = UUID()
-                }
                 quickChatEntity = existing
-                if let id = existing.id {
-                    quickChatChatID = id.uuidString
-                    try? viewContext.save()
-                    cleanupEmptyQuickChatDuplicates(keeping: id)
-                }
+                let id = existing.id
+                quickChatChatID = id.uuidString
+                cleanupEmptyQuickChatDuplicates(keeping: id)
                 return
             }
         } catch {
@@ -185,7 +175,7 @@ struct QuickChatView: View {
 
         do {
             for chat in try viewContext.fetch(request) {
-                guard let id = chat.id else { continue }
+                let id = chat.id
                 guard id != keepID else { continue }
                 if chat.messages.count == 0 {
                     viewContext.delete(chat)
