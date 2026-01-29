@@ -121,11 +121,7 @@ actor LiteLLMMetadataFetcher {
                     capabilities.append("reasoning")
                 } else {
                     // Fallback heuristic for older LiteLLM data without explicit flags.
-                    let id = modelId.lowercased()
-                    if id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4") ||
-                        id.contains("-thinking") || id.contains("_thinking") || id.contains("/thinking") ||
-                        id.contains("-reasoning") || id.contains("_reasoning") || id.contains("/reasoning")
-                    {
+                    if isReasoningModelFallback(modelId: modelId) {
                         capabilities.append("reasoning")
                     }
                 }
@@ -203,6 +199,22 @@ actor LiteLLMMetadataFetcher {
             return .slow
         }
         return .medium
+    }
+
+    nonisolated private static func isReasoningModelFallback(modelId: String) -> Bool {
+        let normalized = modelId.lowercased()
+        let lastComponent = normalized.split(separator: "/").last.map(String.init) ?? normalized
+
+        let separators = CharacterSet.alphanumerics.inverted
+        let tokens = lastComponent
+            .components(separatedBy: separators)
+            .filter { !$0.isEmpty }
+
+        if let first = tokens.first, first == "o1" || first == "o3" || first == "o4" {
+            return true
+        }
+
+        return tokens.contains("thinking") || tokens.contains("reasoning")
     }
 
     nonisolated private static func getCostLevel(for pricing: PricingInfo) -> CostLevel? {

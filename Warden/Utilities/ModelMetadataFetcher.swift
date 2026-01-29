@@ -66,12 +66,37 @@ final class LiteLLMBackedFetcher: ModelMetadataFetcher, Sendable {
             return metadata
         }
 
-        // Try fuzzy match (e.g., "gpt-5" might be stored as "gpt-5-0125")
+        // Deterministic fuzzy match:
+        // 1) exact (case-insensitive)
+        // 2) separator-suffix versions (e.g. "gpt-5" -> "gpt-5-0125")
+        // 3) longest-prefix match
         let normalizedId = modelId.lowercased()
-        for (key, value) in allMetadata {
-            if key.lowercased().hasPrefix(normalizedId) || normalizedId.hasPrefix(key.lowercased()) {
-                return value
-            }
+        let sortedKeys = allMetadata.keys.sorted { $0.lowercased() < $1.lowercased() }
+
+        if let exactKey = sortedKeys.first(where: { $0.lowercased() == normalizedId }) {
+            return allMetadata[exactKey]!
+        }
+
+        let separatorSuffixes = ["-", "_", "/"].map { normalizedId + $0 }
+        if let versionKey = sortedKeys
+            .filter({ key in separatorSuffixes.contains(where: { key.lowercased().hasPrefix($0) }) })
+            .min(by: { $0.count < $1.count })
+        {
+            return allMetadata[versionKey]!
+        }
+
+        if let bestPrefixKey = sortedKeys
+            .filter({ normalizedId.hasPrefix($0.lowercased()) })
+            .max(by: { $0.count < $1.count })
+        {
+            return allMetadata[bestPrefixKey]!
+        }
+
+        if let bestExpansionKey = sortedKeys
+            .filter({ $0.lowercased().hasPrefix(normalizedId) })
+            .min(by: { $0.count < $1.count })
+        {
+            return allMetadata[bestExpansionKey]!
         }
 
         return ModelMetadata(
