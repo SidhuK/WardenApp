@@ -8,6 +8,19 @@ private enum ModelSelectorPopoverTabSelection: Hashable {
     case provider(String)
 }
 
+@MainActor
+private func orderedProviderTypes(from apiServices: [APIServiceEntity]) -> [String] {
+    let configured = Set(apiServices.compactMap(\.type))
+    var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
+
+    let extras = configured.subtracting(ordered)
+    if !extras.isEmpty {
+        ordered.append(contentsOf: extras.sorted())
+    }
+
+    return ordered
+}
+
 struct ModelSelectorPopoverButton<Label: View>: View {
     let apiServices: [APIServiceEntity]
     let selectedProviderType: String?
@@ -67,42 +80,9 @@ private struct ModelSelectorPopoverContent: View {
     @Binding var isPresented: Bool
     let onSelect: @MainActor (String, String) -> Void
 
-    @State private var selectedTab: ModelSelectorPopoverTabSelection
-
-    init(
-        apiServices: [APIServiceEntity],
-        selectedProviderType: String?,
-        selectedModelId: String?,
-        isPresented: Binding<Bool>,
-        onSelect: @MainActor @escaping (String, String) -> Void
-    ) {
-        self.apiServices = apiServices
-        self.selectedProviderType = selectedProviderType
-        self.selectedModelId = selectedModelId
-        self._isPresented = isPresented
-        self.onSelect = onSelect
-
-        let configured = Set(apiServices.compactMap(\.type))
-        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
-
-        let extras = configured.subtracting(ordered)
-        if !extras.isEmpty {
-            ordered.append(contentsOf: extras.sorted())
-        }
-
-        let initialProviderType: String? = {
-            if let selectedProviderType, ordered.contains(selectedProviderType) {
-                return selectedProviderType
-            }
-            return ordered.first
-        }()
-
-        if let initialProviderType {
-            self._selectedTab = State(initialValue: .provider(initialProviderType))
-        } else {
-            self._selectedTab = State(initialValue: .favorites)
-        }
-    }
+    @State private var selectedTab: ModelSelectorPopoverTabSelection = .favorites
+    @State private var hasUserSelectedTab = false
+    @State private var providerTypes: [String] = []
 
     var body: some View {
         VStack(spacing: 10) {
@@ -112,7 +92,7 @@ private struct ModelSelectorPopoverContent: View {
                 apiServices: apiServices,
                 selectedProviderType: selectedProviderType,
                 selectedModelId: selectedModelId,
-                providerFilter: selectedProviderTypeFilter,
+                providerFilter: selectedProviderFilter,
                 favoritesOnly: selectedTab == .favorites,
                 showFavoritesSection: false,
                 showProviderSectionHeaders: false,
@@ -123,15 +103,22 @@ private struct ModelSelectorPopoverContent: View {
         }
         .padding(12)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onChange(of: availableProviderTypes) { _, newValue in
+        .task(id: apiServices.count) {
+            let newValue = await MainActor.run { orderedProviderTypes(from: apiServices) }
+            if providerTypes != newValue {
+                providerTypes = newValue
+            }
+        }
+        .onAppear {
+            guard !hasUserSelectedTab else { return }
+            selectDefaultTab(providerTypes: providerTypes)
+        }
+        .onChange(of: providerTypes) { _, newValue in
+            guard !hasUserSelectedTab else { return }
             if case .provider(let providerType) = selectedTab, newValue.contains(providerType) {
                 return
             }
-            if let initialProviderType = initialProviderTab(from: newValue) {
-                selectedTab = .provider(initialProviderType)
-            } else {
-                selectedTab = .favorites
-            }
+            selectDefaultTab(providerTypes: newValue)
         }
     }
 
@@ -166,6 +153,7 @@ private struct ModelSelectorPopoverContent: View {
                         isSelected: selectedTab == .favorites,
                         help: "Favorites"
                     ) {
+                        hasUserSelectedTab = true
                         selectedTab = .favorites
                     }
 
@@ -176,6 +164,7 @@ private struct ModelSelectorPopoverContent: View {
                             isSelected: isSelectedTab(providerType),
                             help: providerDisplayName(for: providerType)
                         ) {
+                            hasUserSelectedTab = true
                             selectedTab = .provider(providerType)
                         }
                     }
@@ -187,15 +176,7 @@ private struct ModelSelectorPopoverContent: View {
     }
 
     private var availableProviderTypes: [String] {
-        let configured = Set(apiServices.compactMap(\.type))
-        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
-
-        let extras = configured.subtracting(ordered)
-        if !extras.isEmpty {
-            ordered.append(contentsOf: extras.sorted())
-        }
-
-        return ordered
+        providerTypes
     }
 
     private var initialProviderTab: String? {
@@ -205,18 +186,25 @@ private struct ModelSelectorPopoverContent: View {
         return availableProviderTypes.first
     }
 
-    private var selectedProviderTypeFilter: String? {
+    private var selectedProviderFilter: String? {
         if case .provider(let providerType) = selectedTab {
             return providerType
         }
         return nil
     }
 
-    private func initialProviderTab(from providerTypes: [String]) -> String? {
+    private func selectDefaultTab(providerTypes: [String]) {
         if let selectedProviderType, providerTypes.contains(selectedProviderType) {
-            return selectedProviderType
+            selectedTab = .provider(selectedProviderType)
+            return
         }
-        return providerTypes.first
+
+        if let first = providerTypes.first {
+            selectedTab = .provider(first)
+            return
+        }
+
+        selectedTab = .favorites
     }
 
     private func isSelectedTab(_ providerType: String) -> Bool {
@@ -288,6 +276,7 @@ private struct ModelSelectorPopoverContent: View {
         .buttonStyle(.plain)
         .help(help)
     }
+
 }
 
 // MARK: - Model Selector List (Reusable)
@@ -309,6 +298,7 @@ struct ModelSelectorList: View {
     @ObservedObject private var selectedModelsManager = SelectedModelsManager.shared
     
     @State private var searchText = ""
+    @State private var providerTypes: [String] = []
     @FocusState private var isSearchFocused: Bool
 
     init(
@@ -413,10 +403,15 @@ struct ModelSelectorList: View {
         .onAppear {
             isSearchFocused = true
         }
-        .task(id: servicesSignature) {
+        .task(id: apiServices.count) {
             guard !apiServices.isEmpty else { return }
             modelCache.fetchAllModels(from: apiServices)
             selectedModelsManager.loadSelections(from: apiServices)
+
+            let newValue = await MainActor.run { orderedProviderTypes(from: apiServices) }
+            if providerTypes != newValue {
+                providerTypes = newValue
+            }
         }
         .onChange(of: apiServices.count) { _, _ in
             // If services changed, allow users to keep typing while list refreshes.
@@ -534,19 +529,15 @@ struct ModelSelectorList: View {
     }
 
     private var configuredProviderTypes: [String] {
-        let configured = Set(apiServices.compactMap(\.type))
-        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
-
-        let extras = configured.subtracting(ordered)
-        if !extras.isEmpty {
-            ordered.append(contentsOf: extras.sorted())
+        if providerTypes.isEmpty {
+            return providerFilter.map { [$0] } ?? []
         }
 
         if let providerFilter {
-            return ordered.filter { $0 == providerFilter }
+            return providerTypes.filter { $0 == providerFilter }
         }
 
-        return ordered
+        return providerTypes
     }
 
     private func matchesSearch(providerType: String, modelId: String) -> Bool {
@@ -631,13 +622,6 @@ struct ModelSelectorList: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
-    }
-
-    private var servicesSignature: String {
-        apiServices
-            .map { $0.objectID.uriRepresentation().absoluteString }
-            .sorted()
-            .joined(separator: "|")
     }
 
     private struct ProviderSection {
