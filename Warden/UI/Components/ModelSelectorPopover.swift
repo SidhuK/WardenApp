@@ -62,13 +62,18 @@ private struct ModelSelectorPopoverContent: View {
     @Binding var isPresented: Bool
     let onSelect: @MainActor (String, String) -> Void
 
+    @State private var selectedProviderTab: String?
+
     var body: some View {
         VStack(spacing: 10) {
             header
+            providerTabsRow
             ModelSelectorList(
                 apiServices: apiServices,
                 selectedProviderType: selectedProviderType,
                 selectedModelId: selectedModelId,
+                providerFilter: selectedProviderTab ?? initialProviderTab,
+                showProviderSectionHeaders: availableProviderTypes.count <= 1,
                 dismissOnSelect: true,
                 onDismiss: { isPresented = false },
                 onSelect: onSelect
@@ -76,6 +81,17 @@ private struct ModelSelectorPopoverContent: View {
         }
         .padding(12)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            if selectedProviderTab == nil {
+                selectedProviderTab = initialProviderTab
+            }
+        }
+        .onChange(of: availableProviderTypes) { _, newValue in
+            if let selectedProviderTab, newValue.contains(selectedProviderTab) {
+                return
+            }
+            selectedProviderTab = initialProviderTab
+        }
     }
 
     private var header: some View {
@@ -96,6 +112,102 @@ private struct ModelSelectorPopoverContent: View {
             .help("Close")
         }
     }
+
+    @ViewBuilder
+    private var providerTabsRow: some View {
+        let providers = availableProviderTypes
+        if providers.count > 1 {
+            ScrollView(.horizontal) {
+                HStack(spacing: 8) {
+                    ForEach(providers, id: \.self) { providerType in
+                        Button {
+                            selectedProviderTab = providerType
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(providerLogoAssetName(for: providerType))
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .interpolation(.high)
+                                    .frame(width: 12, height: 12)
+                                    .foregroundStyle(.secondary)
+
+                                Text(providerTabTitle(for: providerType))
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(isSelectedTab(providerType) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(
+                                        isSelectedTab(providerType) ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.10),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .help(providerDisplayName(for: providerType))
+                    }
+                }
+                .padding(.horizontal, 1)
+            }
+            .scrollIndicators(.hidden)
+        }
+    }
+
+    private var availableProviderTypes: [String] {
+        let configured = Set(apiServices.compactMap(\.type))
+        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
+
+        let extras = configured.subtracting(ordered)
+        if !extras.isEmpty {
+            ordered.append(contentsOf: extras.sorted())
+        }
+
+        return ordered
+    }
+
+    private var initialProviderTab: String? {
+        if let selectedProviderType, availableProviderTypes.contains(selectedProviderType) {
+            return selectedProviderType
+        }
+        return availableProviderTypes.first
+    }
+
+    private func isSelectedTab(_ providerType: String) -> Bool {
+        selectedProviderTab == providerType || (selectedProviderTab == nil && initialProviderTab == providerType)
+    }
+
+    private func providerTabTitle(for providerType: String) -> String {
+        switch providerType {
+        case "chatgpt":
+            return "OpenAI"
+        case "gemini":
+            return "Google"
+        case "claude":
+            return "Anthropic"
+        case "openai_custom":
+            return "OpenAI Compat"
+        default:
+            return providerDisplayName(for: providerType)
+        }
+    }
+
+    private func providerDisplayName(for providerType: String) -> String {
+        AppConstants.defaultApiConfigurations[providerType]?.name ?? providerType.capitalized
+    }
+
+    private func providerLogoAssetName(for providerType: String) -> String {
+        if providerType == "openai_custom" {
+            return "logo_chatgpt"
+        }
+        return "logo_\(providerType)"
+    }
 }
 
 // MARK: - Model Selector List (Reusable)
@@ -104,6 +216,8 @@ struct ModelSelectorList: View {
     let apiServices: [APIServiceEntity]
     let selectedProviderType: String?
     let selectedModelId: String?
+    let providerFilter: String?
+    let showProviderSectionHeaders: Bool
     let dismissOnSelect: Bool
     let onDismiss: (() -> Void)?
     let onSelect: @MainActor (String, String) -> Void
@@ -115,6 +229,26 @@ struct ModelSelectorList: View {
     @State private var searchText = ""
     @FocusState private var isSearchFocused: Bool
 
+    init(
+        apiServices: [APIServiceEntity],
+        selectedProviderType: String?,
+        selectedModelId: String?,
+        providerFilter: String? = nil,
+        showProviderSectionHeaders: Bool = true,
+        dismissOnSelect: Bool,
+        onDismiss: (() -> Void)?,
+        onSelect: @MainActor @escaping (String, String) -> Void
+    ) {
+        self.apiServices = apiServices
+        self.selectedProviderType = selectedProviderType
+        self.selectedModelId = selectedModelId
+        self.providerFilter = providerFilter
+        self.showProviderSectionHeaders = showProviderSectionHeaders
+        self.dismissOnSelect = dismissOnSelect
+        self.onDismiss = onDismiss
+        self.onSelect = onSelect
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             searchRow
@@ -124,37 +258,55 @@ struct ModelSelectorList: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 8) {
-                    if !favoriteModels.isEmpty {
-                        sectionHeader(title: "Favorites", providerType: nil)
+            if providerSections.isEmpty, favoriteModels.isEmpty {
+                emptyState
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        if !favoriteModels.isEmpty {
+                            sectionHeader(title: "Favorites", providerType: nil)
 
-                        ForEach(favoriteModels, id: \.stableId) { item in
-                            ModelSelectorRow(
-                                providerType: item.providerType,
-                                modelId: item.modelId,
-                                isSelected: isSelected(providerType: item.providerType, modelId: item.modelId),
-                                showsProviderBadge: true,
-                                dismissOnSelect: dismissOnSelect,
-                                onDismiss: onDismiss,
-                                onSelect: onSelect
-                            )
+                            ForEach(favoriteModels, id: \.stableId) { item in
+                                ModelSelectorRow(
+                                    providerType: item.providerType,
+                                    modelId: item.modelId,
+                                    isSelected: isSelected(providerType: item.providerType, modelId: item.modelId),
+                                    showsProviderBadge: providerFilter == nil,
+                                    dismissOnSelect: dismissOnSelect,
+                                    onDismiss: onDismiss,
+                                    onSelect: onSelect
+                                )
+                            }
                         }
-                    }
 
-                    ForEach(providerSections, id: \.providerType) { section in
-                        sectionHeader(title: section.displayName, providerType: section.providerType)
+                        ForEach(providerSections, id: \.providerType) { section in
+                            if showProviderSectionHeaders {
+                                sectionHeader(title: section.displayName, providerType: section.providerType)
+                            }
 
-                        if section.providerType == "openrouter" {
-                            let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: section.modelIds)
-                            ForEach(groupedModels, id: \.namespaceDisplayName) { group in
-                                Text(group.namespaceDisplayName)
-                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.top, 4)
+                            if section.providerType == "openrouter" {
+                                let groupedModels = ModelMetadata.groupModelIDsByNamespace(modelIds: section.modelIds)
+                                ForEach(groupedModels, id: \.namespaceDisplayName) { group in
+                                    Text(group.namespaceDisplayName)
+                                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.top, 4)
 
-                                ForEach(group.modelIds, id: \.self) { modelId in
+                                    ForEach(group.modelIds, id: \.self) { modelId in
+                                        ModelSelectorRow(
+                                            providerType: section.providerType,
+                                            modelId: modelId,
+                                            isSelected: isSelected(providerType: section.providerType, modelId: modelId),
+                                            showsProviderBadge: false,
+                                            dismissOnSelect: dismissOnSelect,
+                                            onDismiss: onDismiss,
+                                            onSelect: onSelect
+                                        )
+                                    }
+                                }
+                            } else {
+                                ForEach(section.modelIds, id: \.self) { modelId in
                                     ModelSelectorRow(
                                         providerType: section.providerType,
                                         modelId: modelId,
@@ -166,22 +318,10 @@ struct ModelSelectorList: View {
                                     )
                                 }
                             }
-                        } else {
-                            ForEach(section.modelIds, id: \.self) { modelId in
-                                ModelSelectorRow(
-                                    providerType: section.providerType,
-                                    modelId: modelId,
-                                    isSelected: isSelected(providerType: section.providerType, modelId: modelId),
-                                    showsProviderBadge: false,
-                                    dismissOnSelect: dismissOnSelect,
-                                    onDismiss: onDismiss,
-                                    onSelect: onSelect
-                                )
-                            }
                         }
                     }
+                    .padding(.vertical, 6)
                 }
-                .padding(.vertical, 6)
             }
         }
         .onAppear {
@@ -225,7 +365,7 @@ struct ModelSelectorList: View {
     private func sectionHeader(title: String, providerType: String?) -> some View {
         HStack(spacing: 6) {
             if let providerType {
-                Image("logo_\(providerType)")
+                Image(providerLogoAssetName(for: providerType))
                     .resizable()
                     .renderingMode(.template)
                     .interpolation(.high)
@@ -280,8 +420,7 @@ struct ModelSelectorList: View {
     private var allVisibleModelsByProvider: [(providerType: String, modelIds: [String])] {
         var result: [(providerType: String, modelIds: [String])] = []
 
-        for service in apiServices {
-            guard let providerType = service.type else { continue }
+        for providerType in configuredProviderTypes {
             let serviceModels = modelCache.getModels(for: providerType)
 
             let visibleModels = serviceModels.filter { model in
@@ -298,6 +437,22 @@ struct ModelSelectorList: View {
         }
 
         return result
+    }
+
+    private var configuredProviderTypes: [String] {
+        let configured = Set(apiServices.compactMap(\.type))
+        var ordered = AppConstants.apiTypes.filter { configured.contains($0) }
+
+        let extras = configured.subtracting(ordered)
+        if !extras.isEmpty {
+            ordered.append(contentsOf: extras.sorted())
+        }
+
+        if let providerFilter {
+            return ordered.filter { $0 == providerFilter }
+        }
+
+        return ordered
     }
 
     private func matchesSearch(providerType: String, modelId: String) -> Bool {
@@ -330,6 +485,51 @@ struct ModelSelectorList: View {
         ]
 
         return fallback[providerType] ?? providerType.capitalized
+    }
+
+    private func providerLogoAssetName(for providerType: String) -> String {
+        if providerType == "openai_custom" {
+            return "logo_chatgpt"
+        }
+        return "logo_\(providerType)"
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        VStack(spacing: 10) {
+            if let providerFilter {
+                if modelCache.isLoading(for: providerFilter) {
+                    ProgressView("Loading models…")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else if let error = modelCache.getError(for: providerFilter) {
+                    Text("Couldn’t load models: \(error)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text("No models available.")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text("Check your API key in Settings → API Services.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                let anyLoading = configuredProviderTypes.contains { modelCache.isLoading(for: $0) }
+                if anyLoading {
+                    ProgressView("Loading models…")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No models available.")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 
     private var servicesSignature: String {
