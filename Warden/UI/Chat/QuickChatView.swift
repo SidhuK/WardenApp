@@ -55,7 +55,7 @@ struct QuickChatView: View {
                 onAddImage: selectAndAddImages,
                 onAddFile: selectAndAddFiles,
                 onStopStreaming: stopCurrentStream,
-                inputPlaceholderText: "Ask anything...",
+                inputPlaceholderText: "Ask Anything",
                 cornerRadius: 20.0
             )
             .padding(.horizontal, 16)

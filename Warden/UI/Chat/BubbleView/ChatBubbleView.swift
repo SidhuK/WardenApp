@@ -248,19 +248,19 @@ struct ChatBubbleView: View {
             }
 
             if content.systemMessage {
-                ToolbarButton(icon: "pencil", text: "Edit") {
+                ToolbarButton(icon: "pencil", text: "") {
                     onEdit?()
                 }
             }
-            
+
             if content.own && !content.systemMessage, message != nil {
-                ToolbarButton(icon: "pencil", text: "Edit") {
+                ToolbarButton(icon: "pencil", text: "") {
                     onEdit?()
                 }
             }
 
             if content.isLatestMessage && !content.systemMessage {
-                ToolbarButton(icon: "arrow.clockwise", text: "Retry") {
+                ToolbarButton(icon: "arrow.clockwise", text: "") {
                     NotificationCenter.default.post(name: .retryMessage, object: nil)
                 }
             }
@@ -270,7 +270,7 @@ struct ChatBubbleView: View {
                 BranchToolbarButton(message: msg)
             }
 
-            ToolbarButton(icon: isCopied ? "checkmark" : "doc.on.doc", text: "Copy") {
+            ToolbarButton(icon: isCopied ? "checkmark" : "doc.on.doc", text: "") {
                 copyMessageToClipboard(content.message)
             }
 
@@ -623,13 +623,8 @@ struct BranchToolbarButton: View {
         Button(action: {
             showPopover = true
         }) {
-            HStack(spacing: 4) {
-                Image(systemName: "arrow.triangle.branch")
-                    .font(.system(size: 10, weight: .medium))
-                
-                Text("Branch")
-                    .font(.system(size: 11, weight: .medium))
-            }
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 10, weight: .medium))
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(

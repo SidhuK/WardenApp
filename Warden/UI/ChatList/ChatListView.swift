@@ -244,11 +244,11 @@ struct ChatListView: View {
                     .foregroundColor(.gray)
             }
 
-            TextField("Search chats", text: $searchText)
+            TextField("Search", text: $searchText)
                 .textFieldStyle(PlainTextFieldStyle())
                 .font(.system(.body))
                 .focused($isSearchFocused)
-                .accessibilityLabel("Search chats")
+                .accessibilityLabel("Search")
                 .onExitCommand {
                     searchText = ""
                     isSearchFocused = false
