@@ -32,7 +32,7 @@ struct MessageInputView: View {
     var onAddFile: () -> Void
     var onAddAssistant: (() -> Void)?
     var onStopStreaming: (() -> Void)?
-    var inputPlaceholderText: String = "Enter a message here, press ⏎ to send"
+    var inputPlaceholderText: String = "Ask Anything"
     var cornerRadius: Double = 18.0
     
     @StateObject private var mcpManager = MCPManager.shared
@@ -107,31 +107,7 @@ struct MessageInputView: View {
                             .help("Web Search")
                             .accessibilityLabel("Web Search")
                         }
-                        
-                        // Rephrase (Text tool icon)
-                        if showsRephraseButton {
-                            Button(action: rephraseText) {
-                                ZStack {
-                                    if rephraseService.isRephrasing {
-                                        ProgressView()
-                                            .scaleEffect(0.5)
-                                            .frame(width: 14, height: 14)
-                                    } else {
-                                        Image(systemName: "wand.and.stars")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(rephraseService.isRephrasing ? .white : .secondary)
-                                    }
-                                }
-                                .frame(width: 24, height: 24)
-                                .background(rephraseService.isRephrasing ? Color.accentColor : Color.clear)
-                                .cornerRadius(6)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Rephrase Message")
-                            .accessibilityLabel("Rephrase Message")
-                            .disabled(!canRephrase)
-                        }
-                        
+
                         // Multi-Agent Mode
                         if enableMultiAgentMode {
                             HStack(spacing: 8) {
@@ -235,7 +211,19 @@ struct MessageInputView: View {
             Button(action: onAddFile) {
                 Label("Add File", systemImage: "doc")
             }
-            
+
+            if showsRephraseButton {
+                Divider()
+                Button(action: rephraseText) {
+                    if rephraseService.isRephrasing {
+                        Label("Rephrasing...", systemImage: "wand.and.stars")
+                    } else {
+                        Label("Rephrase", systemImage: "wand.and.stars")
+                    }
+                }
+                .disabled(!canRephrase || rephraseService.isRephrasing)
+            }
+
             if showsMCPTools {
                 Divider()
                 

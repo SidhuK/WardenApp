@@ -38,18 +38,6 @@ struct CenteredInputView: View {
                     Spacer()
                     
                     VStack(spacing: 40) {
-                        // Greeting Header
-                        VStack(spacing: 8) {
-                            Text("What can I help you with?")
-                                .font(.system(size: 28, weight: .medium))
-                                .foregroundStyle(.primary)
-                            
-                            Text("Ask questions, generate code, or get creative ideas")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.bottom, 20)
-                        
                         // Input Section
                         VStack(spacing: 24) {
                             // Enhanced Input Container
@@ -66,7 +54,7 @@ struct CenteredInputView: View {
                                     onAddFile: onAddFile,
                                     onAddAssistant: onAddAssistant,
                                     onStopStreaming: onStopStreaming,
-                                    inputPlaceholderText: "Enter a message here, press ⏎ to send",
+                                    inputPlaceholderText: "Ask Anything",
                                     cornerRadius: 18.0
                                 )
                                 .frame(maxWidth: 1000)
