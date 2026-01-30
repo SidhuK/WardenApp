@@ -17,17 +17,13 @@ struct ProjectSettingsView: View {
     
     // Predefined color options (same as CreateProjectView)
     private let colorOptions: [String] = [
-        "#007AFF", // Blue
-        "#34C759", // Green
-        "#FF9500", // Orange
-        "#FF3B30", // Red
-        "#AF52DE", // Purple
+        "#007AFF", // Blue (system)
+        "#34C759", // Green (system)
+        "#FF9500", // Orange (system)
+        "#AF52DE", // Purple (system)
         "#FF2D92", // Pink
-        "#5AC8FA", // Light Blue
-        "#FFCC00", // Yellow
+        "#5AC8FA", // Teal
         "#8E8E93", // Gray
-        "#32D74B", // Mint
-        "#FF6B35", // Coral
         "#6C7CE0"  // Indigo
     ]
     
@@ -127,22 +123,22 @@ struct ProjectSettingsView: View {
                 Button(project.isArchived ? "Unarchive" : "Archive") {
                     store.setProjectArchived(project, archived: !project.isArchived)
                 }
-                .foregroundColor(project.isArchived ? .accentColor : .orange)
+                .foregroundStyle(project.isArchived ? Color.accentColor : .secondary)
             }
             
             HStack {
                 if let chatCount = project.chats?.count, chatCount > 0 {
                     Label("\(chatCount) chat\(chatCount == 1 ? "" : "s")", systemImage: "message")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                
+
                 if let createdAt = project.createdAt {
                     Label("Created \(createdAt, style: .relative)", systemImage: "calendar")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer()
             }
             
@@ -196,8 +192,8 @@ struct ProjectSettingsView: View {
             Text("Project Color")
                 .font(.headline)
                 .fontWeight(.medium)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), spacing: 8) {
                 ForEach(colorOptions, id: \.self) { colorHex in
                     ColorOption(
                         colorHex: colorHex,
@@ -230,14 +226,14 @@ struct ProjectSettingsView: View {
                         customInstructions = ""
                     }
                     .font(.caption)
-                    .foregroundColor(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 }
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("These instructions are applied to all chats in this project, providing context-specific guidance to the AI.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 
                 TextEditor(text: $customInstructions)
                     .font(.system(.body, design: .monospaced))
@@ -262,7 +258,7 @@ struct ProjectSettingsView: View {
             Text("Danger Zone")
                 .font(.headline)
                 .fontWeight(.medium)
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
             
             VStack(spacing: 12) {
                 HStack {
@@ -273,7 +269,7 @@ struct ProjectSettingsView: View {
                         
                         Text("Permanently delete this project. Chats will be moved to \"No Project\".")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
@@ -281,7 +277,7 @@ struct ProjectSettingsView: View {
                     Button("Delete") {
                         showingDeleteConfirmation = true
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .buttonStyle(.bordered)
                 }
             }
@@ -332,11 +328,11 @@ extension ProjectSettingsView {
         let colorHex: String
         let isSelected: Bool
         let onSelect: () -> Void
-        
+
         private var color: Color {
             Color(hex: colorHex) ?? .accentColor
         }
-        
+
         var body: some View {
             Button(action: onSelect) {
                 Circle()
@@ -344,7 +340,7 @@ extension ProjectSettingsView {
                     .frame(width: 32, height: 32)
                     .overlay(
                         Circle()
-                            .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                            .stroke(Color.primary.opacity(0.15), lineWidth: 1)
                     )
                     .overlay(
                         Group {
@@ -352,12 +348,12 @@ extension ProjectSettingsView {
                                 Image(systemName: "checkmark")
                                     .font(.caption)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                             }
                         }
                     )
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
         }
     }
 }

@@ -15,8 +15,7 @@ struct ProjectSummaryView: View {
     private var projectColor: Color {
         Color(hex: project.colorCode ?? "#007AFF") ?? .accentColor
     }
-    
-    @State private var recentChats: [ChatEntity] = []
+
     @State private var allChats: [ChatEntity] = []
     @State private var messageCount: Int = 0
     @State private var activeDays: Int = 0
@@ -24,19 +23,20 @@ struct ProjectSummaryView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 24) {
                 // Horizontal project header layout
                 horizontalProjectHeader
-                
-                // Recent activity
-                recentActivitySection
-                
-                // Bottom compact cards - Stats and Insights
-                bottomCompactSection
-                
-                // All Chats List
-                allChatsSection
-                
+
+                // Two-column layout: Stats on left, Chats on right
+                HStack(alignment: .top, spacing: 24) {
+                    // Left column - Stats box
+                    statsBox
+                        .frame(width: 280)
+
+                    // Right column - All Chats
+                    allChatsSection
+                }
+
                 Spacer(minLength: 100)
             }
             .padding(24)
@@ -59,6 +59,44 @@ struct ProjectSummaryView: View {
             // Using task(id:) to ensure data reloads when switching between projects
             await loadProjectData()
         }
+    }
+
+    // MARK: - Stats Box (Left Column)
+
+    private var statsBox: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            statRow(title: "Total Chats", value: "\(project.chats?.count ?? 0)", icon: "bubble.left.and.bubble.right")
+            Divider().padding(.leading, 40)
+            statRow(title: "Messages", value: "\(messageCount)", icon: "text.bubble")
+            Divider().padding(.leading, 40)
+            statRow(title: "Days Active", value: "\(activeDays)", icon: "calendar")
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.controlBackgroundColor))
+        )
+    }
+
+    private func statRow(title: String, value: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
     
     // Marked explicitly as @MainActor to safely update state
@@ -114,7 +152,6 @@ struct ProjectSummaryView: View {
         if let data = result {
             let chats = data.chatIDs.compactMap { viewContext.object(with: $0) as? ChatEntity }
             allChats = chats
-            recentChats = Array(chats.prefix(3))
             messageCount = data.count
             activeDays = data.days
         }
@@ -123,16 +160,11 @@ struct ProjectSummaryView: View {
     
     private var horizontalProjectHeader: some View {
         HStack(alignment: .top, spacing: 24) {
-             // Hero Icon on the left
-             ZStack {
-                 RoundedRectangle(cornerRadius: 16)
-                     .fill(projectColor.opacity(0.1))
-                     .frame(width: 80, height: 80)
-                 
-                 Image(systemName: "folder.fill")
-                     .font(.system(size: 40))
-                     .foregroundStyle(projectColor)
-             }
+             // Hero Icon on the left - simplified without background
+             Image(systemName: "folder.fill")
+                 .font(.system(size: 48))
+                 .foregroundStyle(projectColor)
+                 .frame(width: 64, height: 64)
             
             // Project Identity
             VStack(alignment: .leading, spacing: 8) {
@@ -143,11 +175,11 @@ struct ProjectSummaryView: View {
                 HStack(spacing: 12) {
                     if project.isArchived {
                         Text("Archived")
-                            .font(.xsCaps)
+                            .font(.caption.weight(.medium))
                             .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.orange.opacity(0.1))
-                            .foregroundStyle(.orange)
+                            .padding(.vertical, 3)
+                            .background(Color.secondary.opacity(0.12))
+                            .foregroundStyle(.secondary)
                             .clipShape(Capsule())
                     }
                     
@@ -165,88 +197,18 @@ struct ProjectSummaryView: View {
             }
             
             Spacer()
-            
+
             // Primary Action
             newChatButton
         }
     }
-    
-    // Custom Font modifier helper (will need to be defined or just generic system font)
-    // using .caption.weight(.medium) for xsCaps feel
 
-    
-    private var bottomCompactSection: some View {
-        HStack(spacing: 16) {
-            statCard(title: "Total Chats", value: "\(project.chats?.count ?? 0)", icon: "bubble.left.and.bubble.right.fill", color: .blue)
-            statCard(title: "Messages", value: "\(messageCount)", icon: "text.bubble.fill", color: .purple)
-            statCard(title: "Days Active", value: "\(activeDays)", icon: "calendar.badge.clock", color: .orange)
-        }
-    }
-    
-    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundStyle(color)
-                .frame(width: 48, height: 48)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(value)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
-    }
-    
-
-    
-    private var recentActivitySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Recent Activity")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            if recentChats.isEmpty && !isLoadingStats {
-                // Show nothing here if empty, empty state is likely handled elsewhere or acceptable
-                Text("No recent activity")
-                    .foregroundStyle(.secondary)
-                    .italic()
-            } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)], spacing: 16) {
-                    ForEach(recentChats, id: \.objectID) { chat in
-                        ChatCard(chat: chat, projectColor: projectColor, showDate: false) {
-                            NotificationCenter.default.post(
-                                name: .selectChatFromProjectSummary,
-                                object: chat
-                            )
-                        }
-                        .contextMenu {
-                            chatContextMenu(for: chat)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
     private var allChatsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("All Chats")
-                .font(.title2)
-                .fontWeight(.bold)
-            
+            Text("Chats")
+                .font(.title3)
+                .fontWeight(.semibold)
+
              if allChats.isEmpty && !isLoadingStats {
                  ProjectEmptyStateView(
                      icon: "bubble.left.and.bubble.right",
@@ -501,25 +463,25 @@ private struct ProjectEmptyStateView: View {
     let title: String
     let description: String
     let action: (String, () -> Void)?
-    
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
-            
+                .foregroundStyle(.secondary)
+
             VStack(spacing: 8) {
                 Text(title)
                     .font(.headline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
+                    .foregroundStyle(.primary)
+
                 Text(description)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            
+
             if let action = action {
                 Button(action: action.1) {
                     Text(action.0)
@@ -538,75 +500,6 @@ private struct ProjectEmptyStateView: View {
     }
 }
 
-struct ChatCard: View {
-    let chat: ChatEntity
-    let projectColor: Color
-    var showDate: Bool = true
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.accentColor.opacity(0.1))
-                            .frame(width: 32, height: 32)
-                        
-                        Image("logo_\(chat.apiService?.type ?? "")")
-                            .resizable()
-                            .renderingMode(.template)
-                            .interpolation(.high)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 18, height: 18)
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(chat.name)
-                            .font(.headline)
-                            .lineLimit(1)
-                            .foregroundStyle(.primary)
-                        // Removed relative time Text
-                    }
-                    
-                    Spacer()
-                    
-                    if chat.isPinned {
-                         Image(systemName: "pin.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .rotationEffect(.degrees(45))
-                    }
-                }
-                
-                // Snippet
-                if let lastMessage = chat.lastMessage?.body {
-                    Text(lastMessage.trimmingCharacters(in: .whitespacesAndNewlines))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                } else {
-                    Text("No messages yet")
-                        .font(.caption)
-                        .italic()
-                        .foregroundStyle(.secondary.opacity(0.7))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.controlBackgroundColor))
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 #Preview {
     if let sampleProject = PreviewStateManager.shared.sampleProject {
         ProjectSummaryView(project: sampleProject)
@@ -614,11 +507,5 @@ struct ChatCard: View {
             .environment(\.managedObjectContext, PreviewStateManager.shared.persistenceController.container.viewContext)
     } else {
         Text("No sample project available")
-    }
-} 
-
-extension Font {
-    static var xsCaps: Font {
-        .caption.weight(.bold)
     }
 }
