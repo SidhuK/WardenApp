@@ -18,9 +18,14 @@ struct CreateProjectView: View {
     let onCancel: () -> Void
     
     private let colorOptions: [String] = [
-        "#007AFF", "#34C759", "#FF9500", "#FF3B30",
-        "#AF52DE", "#FF2D92", "#5AC8FA", "#FFCC00",
-        "#8E8E93", "#32D74B", "#FF6B35", "#6C7CE0"
+        "#007AFF", // Blue (system)
+        "#34C759", // Green (system)
+        "#FF9500", // Orange (system)
+        "#AF52DE", // Purple (system)
+        "#FF2D92", // Pink
+        "#5AC8FA", // Teal
+        "#8E8E93", // Gray
+        "#6C7CE0"  // Indigo
     ]
     
     private var filteredTemplates: [AppConstants.ProjectTemplate] {
@@ -142,7 +147,7 @@ struct CreateProjectView: View {
     
     private var colorSection: some View {
         Section {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 8) {
                 ForEach(colorOptions, id: \.self) { hex in
                     Button {
                         selectedColor = hex
@@ -228,57 +233,45 @@ private struct TemplateCard: View {
     let color: Color
     let isSelected: Bool
     let action: () -> Void
-    
-    private var cardBackground: Color {
-        isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor)
-    }
-    
-    private var borderColor: Color {
-        isSelected ? Color.accentColor : Color.primary.opacity(0.1)
-    }
-    
+
     var body: some View {
         Button(action: action) {
-            cardContent
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
-    }
-    
-    private var cardContent: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(color)
-                .frame(width: 24)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            if isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.accentColor)
-            }
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(cardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(borderColor, lineWidth: 1)
-        )
     }
 }
 

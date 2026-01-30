@@ -85,16 +85,16 @@ struct ProjectListView: View {
             Text("Projects")
                 .font(.headline)
                 .fontWeight(.semibold)
-                .foregroundColor(.primary)
-            
+                .foregroundStyle(.primary)
+
             Spacer()
-            
+
             Button(action: {
                 showingCreateProject = true
             }) {
                 Image(systemName: "plus")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.accentColor)
+                    .foregroundStyle(Color.accentColor)
             }
             .buttonStyle(PlainButtonStyle())
             .help("Create New Project")
@@ -116,16 +116,16 @@ struct ProjectListView: View {
                         .font(.system(size: 10, weight: .medium))
                         .rotationEffect(.degrees(showingArchivedProjects ? 90 : 0))
                         .animation(.easeInOut(duration: 0.2), value: showingArchivedProjects)
-                    
+
                     Text("Archived Projects")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                    
+                        .foregroundStyle(.secondary)
+
                     Text("(\(archivedProjects.count))")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                    
+                        .foregroundStyle(.tertiary)
+
                     Spacer()
                 }
                 .padding(.horizontal, 16)
@@ -229,14 +229,14 @@ struct ProjectRow: View {
             }
         }) {
             HStack(spacing: 8) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isSelected ? .white : projectColor)
+                Image(systemName: isSelected ? "folder.fill" : "folder")
+                    .font(.system(size: 13))
+                    .foregroundStyle(projectColor)
                     .frame(width: 16, height: 16)
 
                 Text(project.name ?? "Untitled Project")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isSelected ? .white : .primary)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer()
@@ -245,12 +245,12 @@ struct ProjectRow: View {
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(
                         isSelected
-                            ? Color.accentColor
+                            ? Color.primary.opacity(0.08)
                             : isHovered
-                                ? Color.primary.opacity(0.05)
+                                ? Color.primary.opacity(0.04)
                                 : Color.clear
                     )
             )
@@ -383,14 +383,14 @@ struct ProjectRowInList: View {
             }
         }) {
             HStack(spacing: 8) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isSelected ? .white : projectColor)
+                Image(systemName: isSelected ? "folder.fill" : "folder")
+                    .font(.system(size: 13))
+                    .foregroundStyle(projectColor)
                     .frame(width: 16, height: 16)
 
                 Text(project.name ?? "Untitled Project")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isSelected ? .white : .primary)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer()
@@ -399,12 +399,12 @@ struct ProjectRowInList: View {
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(
                         isSelected
-                            ? Color.accentColor
+                            ? Color.primary.opacity(0.08)
                             : isHovered
-                                ? Color.primary.opacity(0.05)
+                                ? Color.primary.opacity(0.04)
                                 : Color.clear
                     )
             )
