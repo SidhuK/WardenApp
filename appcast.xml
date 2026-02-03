@@ -1,16 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-    <channel>
-        <title>Warden Changelog</title>
-        <link>https://github.com/SidhuK/WardenApp</link>
-        <description>Most recent version of Warden</description>
-        <language>en</language>
-        
-        <item>
-            <title>Version 0.9.9</title>
-            <description><![CDATA[
-                <h3>Improvements</h3>
-                <ul>
+	    <channel>
+	        <title>Warden Changelog</title>
+	        <link>https://github.com/SidhuK/WardenApp</link>
+	        <description>Most recent version of Warden</description>
+	        <language>en</language>
+	        
+	        <item>
+	            <title>Version 1.0</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>OpenRouter models are now sub-categorized by provider (Anthropic, OpenAI, xAI, ZAI, and more)</li>
+	                <li>Option to group or ungroup chats by date in the sidebar</li>
+	                <li>Metadata and properties are now shown for most models (credit: LiteLLM on GitHub)</li>
+	                </ul>
+	                <h3>Improvements</h3>
+	                <ul>
+	                <li>Model Selector dropdown now has tabs, improved organization, and faster performance</li>
+	                <li>Quick Chat improvements and a more robust experience</li>
+	                <li>Cleaner sidebar with more chats visible</li>
+	                <li>UI improvements to the sidebar and chat area</li>
+	                <li>Projects UI simplifications and more native macOS touches</li>
+	                </ul>
+	                <h3>Maintenance</h3>
+	                <ul>
+	                <li>Code quality improvements</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Tue, 03 Feb 2026 00:00:00 +0000</pubDate>
+	            <sparkle:version>1.0</sparkle:version>
+	            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.0/Warden.zip"
+	                       sparkle:version="1.0"
+	                       sparkle:shortVersionString="1.0"
+	                       type="application/zip"
+	                       length="15207124"
+	                       sparkle:edSignature="C+xC9rqsQisS2DD2xZEbRxCQX0yHlOhQZX8bk8I1k2P6kLnk9fXc1PxuWF7sCUv6YK3k5yAko/n9fJEx4BPrAA==" />
+	        </item>
+	
+	        <item>
+	            <title>Version 0.9.9</title>
+	            <description><![CDATA[
+	                <h3>Improvements</h3>
+	                <ul>
                 <li>UI code improvements and formatting fixes</li>
                 <li>Improved attachment handling across providers with off-main-actor I/O</li>
                 <li>Fixed path traversal and Core Data access issues for attachments</li>
