@@ -8,6 +8,7 @@ struct ChatBottomContainerView: View {
     var imageUploadsAllowed: Bool
     var isStreaming: Bool
     var enableMultiAgentMode: Bool
+    var focusToken: Int = 0
     
     var onSendMessage: () -> Void
     var onAddImage: () -> Void
@@ -22,6 +23,7 @@ struct ChatBottomContainerView: View {
         imageUploadsAllowed: Bool = false,
         isStreaming: Bool = false,
         enableMultiAgentMode: Bool = false,
+        focusToken: Int = 0,
         onSendMessage: @escaping () -> Void,
         onAddImage: @escaping () -> Void = {},
         onAddFile: @escaping () -> Void = {},
@@ -34,6 +36,7 @@ struct ChatBottomContainerView: View {
         self.imageUploadsAllowed = imageUploadsAllowed
         self.isStreaming = isStreaming
         self.enableMultiAgentMode = enableMultiAgentMode
+        self.focusToken = focusToken
         self.onSendMessage = onSendMessage
         self.onAddImage = onAddImage
         self.onAddFile = onAddFile
@@ -60,7 +63,8 @@ struct ChatBottomContainerView: View {
                           onExpandedStateChange?(isExpanded)
                       }
                   },
-                  onStopStreaming: onStopStreaming
+                  onStopStreaming: onStopStreaming,
+                  focusToken: focusToken
               )
               .frame(maxWidth: 1000) // Slightly wider, about 90% of typical window
               .padding(.horizontal, 24)

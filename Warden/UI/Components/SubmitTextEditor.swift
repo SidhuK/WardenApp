@@ -4,6 +4,7 @@ import AppKit
 struct SubmitTextEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var dynamicHeight: CGFloat
+    var focusToken: Int = 0
     var onSubmit: () -> Void
     var font: NSFont = .systemFont(ofSize: 14)
     var maxHeight: CGFloat = 160
@@ -51,6 +52,7 @@ struct SubmitTextEditor: NSViewRepresentable {
         }
         
         context.coordinator.updateHeight(for: textView)
+        context.coordinator.requestFocusIfNeeded(on: textView, focusToken: focusToken)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -59,6 +61,7 @@ struct SubmitTextEditor: NSViewRepresentable {
     
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SubmitTextEditor
+        private var lastFocusToken: Int?
         
         init(_ parent: SubmitTextEditor) {
             self.parent = parent
@@ -82,9 +85,24 @@ struct SubmitTextEditor: NSViewRepresentable {
                 self.parent.dynamicHeight = newHeight
             }
         }
+
+        func requestFocusIfNeeded(on textView: NSTextView, focusToken: Int) {
+            guard focusToken != lastFocusToken else { return }
+            lastFocusToken = focusToken
+
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            let submitCommands: [Selector] = [
+                #selector(NSResponder.insertNewline(_:)),
+                #selector(NSResponder.insertLineBreak(_:)),
+                #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:))
+            ]
+
+            if submitCommands.contains(commandSelector) {
                 if let event = NSApp.currentEvent, event.modifierFlags.contains(.shift) {
                     return false // Allow new line with Shift+Enter
                 } else {

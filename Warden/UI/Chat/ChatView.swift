@@ -37,6 +37,7 @@ struct ChatView: View {
     @State private var isSearchingWeb = false
     
     @State private var showAgentSelector = false
+    @State private var composerFocusToken = 0
     
     // Multi-agent UI state is stored in `composerState`.
     @StateObject private var multiAgentManager: MultiAgentMessageManager
@@ -105,6 +106,7 @@ struct ChatView: View {
         .onAppear(perform: {
             self.lastOpenedChatId = chat.id.uuidString
             composerState.selectedMCPAgents = chatViewModel.selectedMCPAgents
+            requestComposerFocus()
         })
         .onChange(of: composerState.selectedMCPAgents) { _, newValue in
             if chatViewModel.selectedMCPAgents != newValue {
@@ -185,7 +187,8 @@ struct ChatView: View {
             },
             onStopStreaming: {
                 stopStreaming()
-            }
+            },
+            focusToken: composerFocusToken
         )
         .background(.clear)
     }
@@ -209,6 +212,7 @@ struct ChatView: View {
             imageUploadsAllowed: chat.apiService?.imageUploadsAllowed ?? false,
             isStreaming: isStreaming,
             enableMultiAgentMode: enableMultiAgentMode,
+            focusToken: composerFocusToken,
             onSendMessage: {
                 if editSystemMessage {
                     chat.systemMessage = composerState.text
@@ -653,6 +657,8 @@ extension ChatView {
         if multiAgentManager.isProcessing {
             multiAgentManager.isProcessing = false
         }
+
+        requestComposerFocus()
     }
     
     private func isSearchCompleted(_ status: SearchStatus) -> Bool {
@@ -959,5 +965,9 @@ extension ChatView {
             object: nil,
             userInfo: ["message": message, "icon": icon]
         )
+    }
+
+    private func requestComposerFocus() {
+        composerFocusToken += 1
     }
 }

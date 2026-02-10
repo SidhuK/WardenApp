@@ -1,4 +1,3 @@
-import OmenTextField
 import SwiftUI
 import UniformTypeIdentifiers
 import CoreData
@@ -34,13 +33,12 @@ struct MessageInputView: View {
     var onStopStreaming: (() -> Void)?
     var inputPlaceholderText: String = "Ask Anything"
     var cornerRadius: Double = 18.0
+    var focusToken: Int = 0
     
     @StateObject private var mcpManager = MCPManager.shared
 
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.wardenTheme) private var theme
-    @State var frontReturnKeyType = OmenTextField.ReturnKeyType.next
-    @State var isFocused: Focus?
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
     @State private var showingPersonaPopover = false
@@ -74,10 +72,6 @@ struct MessageInputView: View {
         !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         chat?.apiService != nil && 
         !rephraseService.isRephrasing
-    }
-
-    enum Focus {
-        case focused, notFocused
     }
 
     var body: some View {
@@ -188,11 +182,6 @@ struct MessageInputView: View {
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isHoveringDropZone) { providers in
             return handleDrop(providers: providers)
-        }
-        .onAppear {
-            DispatchQueue.main.async {
-                isFocused = .focused
-            }
         }
         .alert("Rephrase Error", isPresented: $showingRephraseError) {
             Button("OK") { }
@@ -519,6 +508,7 @@ struct MessageInputView: View {
             SubmitTextEditor(
                 text: $state.text,
                 dynamicHeight: $dynamicHeight,
+                focusToken: focusToken,
                 onSubmit: {
                     if canSend {
                         onEnter()

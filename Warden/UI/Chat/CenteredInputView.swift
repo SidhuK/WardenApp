@@ -14,6 +14,7 @@ struct CenteredInputView: View {
     let onAddFile: () -> Void
     let onAddAssistant: (() -> Void)?
     let onStopStreaming: (() -> Void)?
+    var focusToken: Int = 0
     
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
@@ -55,7 +56,8 @@ struct CenteredInputView: View {
                                     onAddAssistant: onAddAssistant,
                                     onStopStreaming: onStopStreaming,
                                     inputPlaceholderText: "Ask Anything",
-                                    cornerRadius: 18.0
+                                    cornerRadius: 18.0,
+                                    focusToken: focusToken
                                 )
                                 .frame(maxWidth: 1000)
                                 .padding(6)

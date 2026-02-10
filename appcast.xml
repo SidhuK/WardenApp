@@ -7,6 +7,27 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.01</title>
+	            <description><![CDATA[
+	                <h3>Bug Fixes</h3>
+	                <ul>
+	                <li>Fixed chat composer focus behavior so the input regains focus automatically after a model response finishes.</li>
+	                <li>Fixed Enter-key submission in the chat input (Shift+Enter still inserts a newline), including OpenAI-compatible provider flows.</li>
+	                <li>Improves keyboard-only chat loop reliability on macOS (including Sequoia).</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Tue, 10 Feb 2026 00:00:00 +0000</pubDate>
+	            <sparkle:version>1.01</sparkle:version>
+	            <sparkle:shortVersionString>1.01</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.01/Warden.zip"
+	                       sparkle:version="1.01"
+	                       sparkle:shortVersionString="1.01"
+	                       type="application/zip"
+	                       length="15207159"
+	                       sparkle:edSignature="aUUJy2K8yMa2QK8VYHNsf8WZpiV5pdJbJ35tRc34Gl/0SxFNO9hTbBOYAU9KmhutvEAFxZ7/xsI+kVW9V6uiCg==" />
+	        </item>
+	        
+	        <item>
 	            <title>Version 1.0</title>
 	            <description><![CDATA[
 	                <h3>New</h3>
