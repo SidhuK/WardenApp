@@ -123,6 +123,14 @@ struct CodexRateLimitsStatus: Sendable {
     }
 }
 
+struct CodexModelInfo: Sendable {
+    let id: String
+    let inputModalities: [String]
+    let defaultReasoningEffort: String?
+    let supportedReasoningEfforts: [String]
+    let supportedReasoningEffortDescriptions: [String: String]
+}
+
 private enum CodexRPCError: LocalizedError {
     case transportNotReady
     case invalidJSON
@@ -270,13 +278,14 @@ actor CodexAppServerClient {
         return nil
     }
 
-    func listModelIDs() async throws -> [String] {
+    func listModels() async throws -> [CodexModelInfo] {
         var cursor: String?
-        var allModelIDs: [String] = []
+        var allModels: [CodexModelInfo] = []
         var visitedCursors = Set<String>()
+        var seenModelIDs = Set<String>()
 
         while true {
-            var params: [String: Any] = [:]
+            var params: [String: Any] = ["limit": 100]
             if let cursor, !cursor.isEmpty {
                 params["cursor"] = cursor
             }
@@ -288,11 +297,37 @@ actor CodexAppServerClient {
 
             if let dataArray = dict["data"] as? [[String: Any]] {
                 for model in dataArray {
-                    if let id = model["id"] as? String, !id.isEmpty {
-                        allModelIDs.append(id)
-                    } else if let modelID = model["model"] as? String, !modelID.isEmpty {
-                        allModelIDs.append(modelID)
+                    guard let modelID = parseModelID(model), !modelID.isEmpty else {
+                        continue
                     }
+                    guard seenModelIDs.insert(modelID).inserted else {
+                        continue
+                    }
+
+                    let inputModalities = parseStringArray(from: model["inputModalities"])
+                    let defaultReasoningEffort = normalizeEffort(model["defaultReasoningEffort"] as? String)
+                    var parsedReasoning = parseReasoningEfforts(from: model["reasoningEffort"])
+                    var supportedReasoningEfforts = parsedReasoning.efforts
+                    var supportedReasoningEffortDescriptions = parsedReasoning.descriptions
+
+                    if supportedReasoningEfforts.isEmpty {
+                        parsedReasoning = parseReasoningEfforts(from: model["supportedReasoningEfforts"])
+                        supportedReasoningEfforts = parsedReasoning.efforts
+                        supportedReasoningEffortDescriptions = parsedReasoning.descriptions
+                    }
+                    if supportedReasoningEfforts.isEmpty, let defaultReasoningEffort {
+                        supportedReasoningEfforts = [defaultReasoningEffort]
+                    }
+
+                    allModels.append(
+                        CodexModelInfo(
+                            id: modelID,
+                            inputModalities: inputModalities,
+                            defaultReasoningEffort: defaultReasoningEffort,
+                            supportedReasoningEfforts: supportedReasoningEfforts,
+                            supportedReasoningEffortDescriptions: supportedReasoningEffortDescriptions
+                        )
+                    )
                 }
             }
 
@@ -309,9 +344,11 @@ actor CodexAppServerClient {
             cursor = nextCursor
         }
 
-        // Preserve order while removing duplicates.
-        var seen = Set<String>()
-        return allModelIDs.filter { seen.insert($0).inserted }
+        return allModels
+    }
+
+    func listModelIDs() async throws -> [String] {
+        try await listModels().map(\.id)
     }
 
     func startThread(
@@ -377,7 +414,8 @@ actor CodexAppServerClient {
     func startTurn(
         threadID: String,
         inputText: String,
-        model: String?
+        model: String?,
+        effort: ReasoningEffort?
     ) async throws -> String {
         var params: [String: Any] = [
             "threadId": threadID,
@@ -386,6 +424,9 @@ actor CodexAppServerClient {
 
         if let model, !model.isEmpty {
             params["model"] = model
+        }
+        if let effort, effort != .off {
+            params["effort"] = effort.openAIReasoningEffortValue
         }
 
         let result = try await request(method: "turn/start", params: params)
@@ -670,6 +711,81 @@ actor CodexAppServerClient {
         }
         return Date(timeIntervalSince1970: TimeInterval(unix))
     }
+
+    private func parseModelID(_ model: [String: Any]) -> String? {
+        if let id = model["id"] as? String, !id.isEmpty {
+            return id
+        }
+        if let modelID = model["model"] as? String, !modelID.isEmpty {
+            return modelID
+        }
+        return nil
+    }
+
+    private func parseStringArray(from value: Any?) -> [String] {
+        guard let rawArray = value as? [Any] else { return [] }
+        var seen = Set<String>()
+        var normalized: [String] = []
+        for raw in rawArray {
+            guard let stringValue = raw as? String else { continue }
+            let lower = stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !lower.isEmpty, seen.insert(lower).inserted else { continue }
+            normalized.append(lower)
+        }
+        return normalized
+    }
+
+    private func parseReasoningEfforts(from value: Any?) -> (efforts: [String], descriptions: [String: String]) {
+        var efforts: [String] = []
+        var descriptions: [String: String] = [:]
+
+        if let strings = value as? [String] {
+            efforts = strings.compactMap(normalizeEffort)
+        } else if let array = value as? [Any] {
+            efforts = array.compactMap { item in
+                if let effort = item as? String {
+                    return normalizeEffort(effort)
+                }
+                if let dict = item as? [String: Any],
+                   let effort = (dict["reasoningEffort"] as? String) ?? (dict["effort"] as? String)
+                {
+                    if let normalizedEffort = normalizeEffort(effort) {
+                        if let description = dict["description"] as? String,
+                           !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        {
+                            descriptions[normalizedEffort] = description
+                        }
+                        return normalizedEffort
+                    }
+                    return nil
+                }
+                return nil
+            }
+        }
+
+        var seen = Set<String>()
+        let dedupedEfforts = efforts.filter { seen.insert($0).inserted }
+        return (dedupedEfforts, descriptions)
+    }
+
+    private func normalizeEffort(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "off", "none":
+            return "none"
+        case "low":
+            return "low"
+        case "medium":
+            return "medium"
+        case "high":
+            return "high"
+        case "xhigh", "extra_high", "extra-high":
+            return "xhigh"
+        default:
+            return nil
+        }
+    }
 }
 
 final class CodexAppServerHandler: BaseAPIHandler {
@@ -726,8 +842,8 @@ final class CodexAppServerHandler: BaseAPIHandler {
 
     override func fetchModels() async throws -> [AIModel] {
         do {
-            let modelIDs = try await codexClient.listModelIDs()
-            return modelIDs.map(AIModel.init(id:))
+            let models = try await codexClient.listModels()
+            return models.map { AIModel(id: $0.id) }
         } catch {
             throw mapToAPIError(error)
         }
@@ -736,12 +852,12 @@ final class CodexAppServerHandler: BaseAPIHandler {
     override func sendMessage(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]? = nil,
-        settings _: GenerationSettings,
+        settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
         Task(priority: .userInitiated) {
             do {
-                let response = try await sendMessageSync(requestMessages)
+                let response = try await sendMessageSync(requestMessages, settings: settings)
                 await MainActor.run {
                     completion(.success((response, nil)))
                 }
@@ -760,7 +876,7 @@ final class CodexAppServerHandler: BaseAPIHandler {
     override func sendMessageStream(
         _ requestMessages: [[String: String]],
         tools _: [[String: Any]]? = nil,
-        settings _: GenerationSettings
+        settings: GenerationSettings
     ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
         let (inputText, baseInstructions, includeHistory) = buildInputPayload(from: requestMessages)
 
@@ -805,7 +921,8 @@ final class CodexAppServerHandler: BaseAPIHandler {
                     let turnID = try await codexClient.startTurn(
                         threadID: threadID,
                         inputText: turnInput,
-                        model: model
+                        model: model,
+                        effort: settings.reasoningEffort == .off ? nil : settings.reasoningEffort
                     )
 
                     for await event in stream {
@@ -876,8 +993,8 @@ final class CodexAppServerHandler: BaseAPIHandler {
         (false, nil, nil, nil, nil)
     }
 
-    private func sendMessageSync(_ requestMessages: [[String: String]]) async throws -> String {
-        let stream = try await sendMessageStream(requestMessages, tools: nil, settings: GenerationSettings(temperature: 1))
+    private func sendMessageSync(_ requestMessages: [[String: String]], settings: GenerationSettings) async throws -> String {
+        let stream = try await sendMessageStream(requestMessages, tools: nil, settings: settings)
         var output = ""
         for try await (chunk, _) in stream {
             if let chunk {

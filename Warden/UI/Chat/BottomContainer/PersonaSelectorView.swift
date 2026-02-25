@@ -93,6 +93,9 @@ struct PersonaSelectorView: View {
         if let persona = persona, let defaultApiService = persona.defaultApiService {
             chat.apiService = defaultApiService
             chat.gptModel = defaultApiService.model ?? AppConstants.chatGptDefaultModel
+            if defaultApiService.type?.lowercased() == "codex", chat.reasoningEffort == .off {
+                chat.reasoningEffort = .medium
+            }
             
             // Notify that the message manager needs to be recreated
             NotificationCenter.default.post(

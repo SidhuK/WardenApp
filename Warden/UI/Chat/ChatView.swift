@@ -891,6 +891,9 @@ extension ChatView {
         
         // Switch the chat's active service to the selected one
         chat.apiService = selectedService
+        if selectedService.type?.lowercased() == "codex", chat.reasoningEffort == .off {
+            chat.reasoningEffort = .medium
+        }
         
         // Exit multi-agent mode
         composerState.isMultiAgentMode = false

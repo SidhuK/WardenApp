@@ -606,6 +606,9 @@ struct BetterCompactModelSelector: View {
             chat.apiService = service
         }
         chat.gptModel = modelId
+        if provider.lowercased() == "codex", chat.reasoningEffort == .off {
+            chat.reasoningEffort = .medium
+        }
         chat.updatedDate = Date()
         chat.objectWillChange.send()
         

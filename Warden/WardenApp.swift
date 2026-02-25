@@ -353,10 +353,6 @@ struct WardenApp: App {
                 continue
             }
             
-            if providerType == "codex" {
-                continue
-            }
-
             // Fetch metadata for this provider
             await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
         }

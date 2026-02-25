@@ -173,6 +173,7 @@ final class APIServiceDetailViewModel: ObservableObject {
             do {
                 let models = try await apiService.fetchModels()
                 self.fetchedModels = models
+                await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: self.type.lowercased(), apiKey: self.apiKey)
                 self.isLoadingModels = false
 
                 if !models.contains(where: { $0.id == self.selectedModel })

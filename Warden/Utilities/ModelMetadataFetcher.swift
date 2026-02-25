@@ -19,7 +19,7 @@ class ModelMetadataFetcherFactory {
         case .chatgpt:
             return LiteLLMBackedFetcher(provider: "openai")
         case .codex:
-            return GenericMetadataFetcher(provider: "codex")
+            return CodexMetadataFetcher()
         case .claude:
             return LiteLLMBackedFetcher(provider: "anthropic")
         case .gemini:
@@ -41,6 +41,72 @@ class ModelMetadataFetcherFactory {
         case nil:
             return GenericMetadataFetcher(provider: provider)
         }
+    }
+}
+
+// MARK: - Codex App Server Fetcher
+
+final class CodexMetadataFetcher: ModelMetadataFetcher {
+    func fetchAllMetadata(apiKey _: String) async throws -> [String: ModelMetadata] {
+        let models = try await CodexAppServerClient.shared.listModels()
+        var metadataByModelID: [String: ModelMetadata] = [:]
+        metadataByModelID.reserveCapacity(models.count)
+
+        for model in models {
+            var capabilities = ["reasoning"]
+            if model.inputModalities.contains("image") {
+                capabilities.append("vision")
+            }
+
+            let supportedEfforts = model.supportedReasoningEfforts
+                .filter { !$0.isEmpty }
+
+            metadataByModelID[model.id] = ModelMetadata(
+                modelId: model.id,
+                provider: "codex",
+                pricing: nil,
+                maxContextTokens: nil,
+                capabilities: capabilities,
+                supportedParameters: ["effort"],
+                defaultReasoningEffort: model.defaultReasoningEffort,
+                supportedReasoningEfforts: supportedEfforts.isEmpty ? nil : supportedEfforts,
+                supportedReasoningEffortDescriptions: model.supportedReasoningEffortDescriptions.isEmpty ? nil : model.supportedReasoningEffortDescriptions,
+                latency: nil,
+                costLevel: nil,
+                lastUpdated: Date(),
+                source: .apiResponse
+            )
+        }
+
+        return metadataByModelID
+    }
+
+    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
+        let metadata = try await fetchAllMetadata(apiKey: apiKey)
+        if let match = metadata[modelId] {
+            return match
+        }
+
+        return ModelMetadata(
+            modelId: modelId,
+            provider: "codex",
+            pricing: nil,
+            maxContextTokens: nil,
+            capabilities: ["reasoning"],
+            supportedParameters: ["effort"],
+            defaultReasoningEffort: "medium",
+            supportedReasoningEfforts: ["low", "medium", "high", "xhigh"],
+            supportedReasoningEffortDescriptions: [
+                "low": "Fast responses with lighter reasoning",
+                "medium": "Balances speed and reasoning depth for everyday tasks",
+                "high": "Greater reasoning depth for complex problems",
+                "xhigh": "Extra high reasoning depth for complex problems",
+            ],
+            latency: nil,
+            costLevel: nil,
+            lastUpdated: Date(),
+            source: .unknown
+        )
     }
 }
 

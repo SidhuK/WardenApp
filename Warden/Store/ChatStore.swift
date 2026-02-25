@@ -212,6 +212,12 @@ final class ChatStore: ObservableObject {
         }
     }
 
+    private func applyProviderReasoningDefaults(to chat: ChatEntity) {
+        guard chat.reasoningEffort == .off else { return }
+        guard chat.apiService?.type?.lowercased() == "codex" else { return }
+        chat.reasoningEffort = .medium
+    }
+
     func deleteAllChats() {
         deleteEntities(ChatEntity.self, predicate: nil)
     }
@@ -249,6 +255,7 @@ final class ChatStore: ObservableObject {
                 }
             }
         }
+        applyProviderReasoningDefaults(to: chat)
 
         do {
             try viewContext.save()
@@ -696,6 +703,7 @@ final class ChatStore: ObservableObject {
                 newChat.systemMessage = instructions
             }
         }
+        applyProviderReasoningDefaults(to: newChat)
         
         saveInCoreData()
         return newChat
