@@ -312,6 +312,7 @@ extension ModelMetadata {
             "anthropic": "ANTHROPIC",
             "openai": "OPENAI",
             "chatgpt": "OPENAI",
+            "codex": "OPENAI",
             "google": "GOOGLE",
             "gemini": "GOOGLE",
             "meta": "META",

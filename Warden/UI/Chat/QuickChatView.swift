@@ -303,6 +303,10 @@ struct QuickChatView: View {
         }
         
         let handler = APIServiceFactory.createAPIService(config: config)
+        if let codexHandler = handler as? CodexAppServerHandler {
+            codexHandler.setCurrentThreadID(chat.codexThreadId)
+            codexHandler.clearLatestThreadID()
+        }
         
         var messages: [[String: String]] = []
         if !chat.systemMessage.isEmpty {
@@ -337,6 +341,13 @@ struct QuickChatView: View {
                         aiMessage.body = currentBody
                         try? viewContext.save()
                     }
+                }
+
+                if let codexHandler = handler as? CodexAppServerHandler,
+                   let threadID = codexHandler.getLatestThreadID(),
+                   chat.codexThreadId != threadID
+                {
+                    chat.codexThreadId = threadID
                 }
                 
                 isStreaming = false
@@ -669,6 +680,7 @@ struct QuickChatProviderLogo: View {
     private func providerIconName(for provider: String) -> String {
         let lowerProvider = provider.lowercased()
         switch lowerProvider {
+        case _ where lowerProvider.contains("codex"): return "logo_codex"
         case _ where lowerProvider.contains("openai"): return "logo_chatgpt"
         case _ where lowerProvider.contains("anthropic"): return "logo_claude"
         case _ where lowerProvider.contains("google"): return "logo_gemini"

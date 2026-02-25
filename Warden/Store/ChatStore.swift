@@ -144,6 +144,7 @@ final class ChatStore: ObservableObject {
                             chatEntity.updatedDate = Date()
                             chatEntity.requestMessages = oldChat.requestMessages
                             chatEntity.gptModel = oldChat.gptModel ?? AppConstants.chatGptDefaultModel
+                            chatEntity.codexThreadId = oldChat.codexThreadId
                             chatEntity.name = oldChat.name ?? ""
                             
                             self.attachAPIService(to: chatEntity, from: oldChat, default: defaultApiService)

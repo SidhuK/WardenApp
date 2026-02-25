@@ -13,7 +13,7 @@ struct ButtonTestApiTokenAndModel: View {
 
     var body: some View {
         ButtonWithStatusIndicator(
-            title: "Test API token & model",
+            title: apiType == "codex" ? "Test Codex connection" : "Test API token & model",
             action: { testAPI() },
             isLoading: lampColor == .yellow,
             hasError: lampColor == .red,

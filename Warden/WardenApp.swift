@@ -349,10 +349,14 @@ struct WardenApp: App {
 	            }
             
             // Skip if no API key (except for providers that don't require it)
-            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" else {
+            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" || providerType == "codex" else {
                 continue
             }
             
+            if providerType == "codex" {
+                continue
+            }
+
             // Fetch metadata for this provider
             await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
         }

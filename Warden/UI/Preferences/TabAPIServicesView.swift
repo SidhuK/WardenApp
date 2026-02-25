@@ -1,6 +1,7 @@
 import CoreData
 import SwiftUI
 import os
+import AppKit
 
 struct TabAPIServicesView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -340,6 +341,98 @@ struct APIServiceDetailContent: View {
                                             .font(.system(size: 11))
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+
+                if viewModel.isCodexProvider {
+                    GlassCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            SettingsSectionHeader(title: "Codex Account")
+
+                            SettingsRow(title: "Status") {
+                                Text(viewModel.codexStatusText)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(viewModel.codexIsAuthenticated ? .green : .secondary)
+                                    .frame(maxWidth: 260, alignment: .trailing)
+                            }
+
+                            SettingsDivider()
+
+                            HStack(spacing: 8) {
+                                if viewModel.codexIsAuthenticated {
+                                    Button("Sign Out") {
+                                        viewModel.logoutCodex()
+                                    }
+                                    .buttonStyle(.bordered)
+                                } else if viewModel.isCodexLoginInProgress {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                    Button("Cancel") {
+                                        viewModel.cancelCodexLogin()
+                                    }
+                                    .buttonStyle(.bordered)
+                                } else {
+                                    Button("Sign In with ChatGPT") {
+                                        viewModel.startCodexLogin()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+
+                                Button("Refresh") {
+                                    viewModel.refreshCodexAuthState()
+                                }
+                                .buttonStyle(.bordered)
+
+                                Spacer()
+                            }
+
+                            if viewModel.codexIsAuthenticated {
+                                SettingsDivider()
+
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("Usage limits")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Button("Refresh Limits") {
+                                        viewModel.refreshCodexRateLimits(showNotificationOnFailure: true)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .font(.system(size: 11))
+                                }
+
+                                if viewModel.codexRateLimitRows.isEmpty {
+                                    Text("No usage data available yet.")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(viewModel.codexRateLimitRows) { row in
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack {
+                                                Text(row.label)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                Spacer()
+                                                Text(row.remainingText)
+                                                    .font(.system(size: 12, design: .monospaced))
+                                            }
+                                            if let resetText = row.resetText {
+                                                Text(resetText)
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if let loginURL = viewModel.codexLoginURL, !viewModel.codexIsAuthenticated {
+                                Button("Open ChatGPT Login Page") {
+                                    NSWorkspace.shared.open(loginURL)
+                                }
+                                .buttonStyle(.link)
+                                .font(.system(size: 12))
                             }
                         }
                     }

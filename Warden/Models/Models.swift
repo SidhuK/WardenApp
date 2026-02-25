@@ -92,6 +92,7 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var branchSourceMessageID: Int64
     @NSManaged public var branchSourceRole: String?
     @NSManaged public var branchRootID: UUID?
+    @NSManaged public var codexThreadId: String?
 
     public var messagesArray: [MessageEntity] {
         messages.array as? [MessageEntity] ?? []
@@ -306,6 +307,7 @@ struct ChatBackup: Codable {
     var newMessage: String?
     var reasoningEffortRaw: String?
     var gptModel: String?
+    var codexThreadId: String?
     var systemMessage: String?
     var name: String?
     var apiServiceName: String?
@@ -322,6 +324,7 @@ struct ChatBackup: Codable {
         self.reasoningEffortRaw = chatEntity.reasoningEffortRaw
         self.requestMessages = chatEntity.requestMessages
         self.gptModel = chatEntity.gptModel
+        self.codexThreadId = chatEntity.codexThreadId
         self.systemMessage = chatEntity.systemMessage
         self.name = chatEntity.name
         self.apiServiceName = chatEntity.apiService?.name

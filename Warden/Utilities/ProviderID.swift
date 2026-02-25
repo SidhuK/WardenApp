@@ -2,6 +2,7 @@ import Foundation
 
 enum ProviderID: String, Codable, CaseIterable, Sendable {
     case chatgpt
+    case codex
     case claude
     case gemini
     case groq
@@ -20,6 +21,8 @@ extension ProviderID {
         switch normalized {
         case "chatgpt", "chat gpt", "openai":
             self = .chatgpt
+        case "codex", "codex app server", "codex_app_server":
+            self = .codex
         case "claude", "anthropic":
             self = .claude
         case "gemini", "google":
@@ -54,6 +57,12 @@ struct ProviderAttachmentCapabilities: Sendable {
     static func forProvider(_ providerID: ProviderID) -> ProviderAttachmentCapabilities {
         switch providerID {
         case .chatgpt:
+            return ProviderAttachmentCapabilities(
+                providerID: providerID,
+                supportsImageInputs: true,
+                supportsNativeFileInputs: true
+            )
+        case .codex:
             return ProviderAttachmentCapabilities(
                 providerID: providerID,
                 supportsImageInputs: true,
@@ -101,4 +110,3 @@ struct ProviderAttachmentCapabilities: Sendable {
         return parts.joined(separator: " • ")
     }
 }
-

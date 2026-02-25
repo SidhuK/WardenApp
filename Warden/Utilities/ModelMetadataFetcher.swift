@@ -18,6 +18,8 @@ class ModelMetadataFetcherFactory {
         switch ProviderID(normalizing: provider) {
         case .chatgpt:
             return LiteLLMBackedFetcher(provider: "openai")
+        case .codex:
+            return GenericMetadataFetcher(provider: "codex")
         case .claude:
             return LiteLLMBackedFetcher(provider: "anthropic")
         case .gemini:

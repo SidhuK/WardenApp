@@ -484,6 +484,8 @@ struct ChatBubbleView: View {
     private func providerIconName(for provider: String) -> String {
         let lowerProvider = provider.lowercased()
         switch lowerProvider {
+        case _ where lowerProvider.contains("codex"):
+            return "logo_codex"
         case _ where lowerProvider.contains("openai"):
             return "logo_chatgpt"
         case _ where lowerProvider.contains("anthropic"):

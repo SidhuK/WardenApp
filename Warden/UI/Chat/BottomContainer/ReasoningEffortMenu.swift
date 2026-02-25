@@ -38,6 +38,8 @@ struct ReasoningEffortMenu: View {
             return true
         case .chatgpt:
             return hasReasoningCapability
+        case .codex:
+            return hasReasoningCapability
         case .xai:
             return true
         case .openrouter:
@@ -57,6 +59,8 @@ struct ReasoningEffortMenu: View {
         case .xai:
             return true
         case .openrouter:
+            return hasReasoningCapability
+        case .codex:
             return hasReasoningCapability
         case .chatgpt:
             return hasReasoningCapability

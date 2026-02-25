@@ -2,6 +2,7 @@
 import Combine
 import SwiftUI
 import os
+import AppKit
 
 @MainActor
 final class APIServiceDetailViewModel: ObservableObject {
@@ -29,8 +30,16 @@ final class APIServiceDetailViewModel: ObservableObject {
     @Published var isLoadingModels: Bool = false
     @Published var modelFetchError: String? = nil
     @Published var userNotification: UserNotification?
+    @Published var codexAuthMode: String? = nil
+    @Published var codexAccountEmail: String? = nil
+    @Published var codexPlanType: String? = nil
+    @Published var isCodexLoginInProgress: Bool = false
+    @Published var codexLoginURL: URL? = nil
+    @Published var codexLoginID: String? = nil
+    @Published var codexRateLimits: CodexRateLimitsStatus? = nil
     
     private let selectedModelsManager = SelectedModelsManager.shared
+    private var codexLoginTask: Task<Void, Never>?
     
     // User-facing notification structure
     struct UserNotification: Identifiable {
@@ -46,6 +55,13 @@ final class APIServiceDetailViewModel: ObservableObject {
         }
     }
 
+    struct CodexRateLimitDisplayRow: Identifiable {
+        let id = UUID()
+        let label: String
+        let remainingText: String
+        let resetText: String?
+    }
+
     init(viewContext: NSManagedObjectContext, apiService: APIServiceEntity?) {
         self.viewContext = viewContext
         self.apiService = apiService
@@ -53,6 +69,9 @@ final class APIServiceDetailViewModel: ObservableObject {
         setupInitialValues()
         setupBindings()
         fetchModelsForService()
+        if type == "codex" {
+            refreshCodexAuthState()
+        }
     }
 
     private func setupInitialValues() {
@@ -67,8 +86,13 @@ final class APIServiceDetailViewModel: ObservableObject {
             imageUploadsAllowed = service.imageUploadsAllowed
             defaultAiPersona = service.defaultPersona
             defaultApiConfiguration = AppConstants.defaultApiConfigurations[type]
-            isCustomModel = !(defaultApiConfiguration?.models.contains(model) ?? false)
-            selectedModel = isCustomModel ? "custom" : model
+            if type == "codex" {
+                isCustomModel = false
+                selectedModel = model.isEmpty ? "custom" : model
+            } else {
+                isCustomModel = !(defaultApiConfiguration?.models.contains(model) ?? false)
+                selectedModel = isCustomModel ? "custom" : model
+            }
 
             if let serviceIDString = service.id?.uuidString {
                 do {
@@ -267,6 +291,19 @@ final class APIServiceDetailViewModel: ObservableObject {
             self.isCustomModel = true
         }
 
+        if type == "codex" {
+            refreshCodexAuthState()
+        } else {
+            codexLoginTask?.cancel()
+            isCodexLoginInProgress = false
+            codexAuthMode = nil
+            codexAccountEmail = nil
+            codexPlanType = nil
+            codexLoginURL = nil
+            codexLoginID = nil
+            codexRateLimits = nil
+        }
+
         fetchModelsForService()
     }
 
@@ -337,5 +374,207 @@ final class APIServiceDetailViewModel: ObservableObject {
         default:
             return error.localizedDescription
         }
+    }
+
+    // MARK: - Codex App Server Account Management
+
+    var isCodexProvider: Bool {
+        type == "codex"
+    }
+
+    var codexIsAuthenticated: Bool {
+        codexAuthMode == "chatgpt" && (codexAccountEmail?.isEmpty == false)
+    }
+
+    var codexStatusText: String {
+        if isCodexLoginInProgress {
+            return "Waiting for ChatGPT sign-in completion..."
+        }
+        if codexIsAuthenticated {
+            let plan = codexPlanType ?? "unknown"
+            return "Connected as \(codexAccountEmail ?? "unknown") (\(plan))"
+        }
+        if codexAuthMode == "apikey" {
+            return "Connected via API key mode"
+        }
+        return "Not connected"
+    }
+
+    var codexRateLimitRows: [CodexRateLimitDisplayRow] {
+        guard let codexRateLimits else { return [] }
+
+        let windows = codexRateLimits.preferredSnapshot.windows
+        guard !windows.isEmpty else { return [] }
+
+        var rows: [CodexRateLimitDisplayRow] = []
+        let weeklyWindow = windows.first(where: { $0.windowDurationMinutes == 10_080 })
+        let fiveHourWindow = windows.first(where: { $0.windowDurationMinutes == 300 })
+
+        if let weeklyWindow {
+            rows.append(makeRateLimitRow(window: weeklyWindow, label: "Weekly"))
+        }
+
+        if let fiveHourWindow {
+            rows.append(makeRateLimitRow(window: fiveHourWindow, label: "5-hour"))
+        }
+
+        if rows.isEmpty {
+            let sorted = windows.sorted { ($0.windowDurationMinutes ?? 0) < ($1.windowDurationMinutes ?? 0) }
+            for window in sorted {
+                rows.append(makeRateLimitRow(window: window, label: windowLabel(minutes: window.windowDurationMinutes)))
+            }
+        }
+
+        return rows
+    }
+
+    func refreshCodexAuthState() {
+        guard isCodexProvider else { return }
+
+        Task {
+            do {
+                let account = try await CodexAppServerClient.shared.readAccount(refreshToken: false)
+                applyCodexAccountState(account)
+                if account.isChatGPTAuthenticated {
+                    refreshCodexRateLimits(showNotificationOnFailure: false)
+                }
+            } catch {
+                userNotification = UserNotification(
+                    type: .warning,
+                    message: "Unable to read Codex auth status: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    func startCodexLogin() {
+        guard isCodexProvider else { return }
+        codexLoginTask?.cancel()
+        isCodexLoginInProgress = true
+
+        codexLoginTask = Task {
+            do {
+                let login = try await CodexAppServerClient.shared.startChatGPTLogin()
+                codexLoginURL = login.authURL
+                codexLoginID = login.loginID
+                NSWorkspace.shared.open(login.authURL)
+
+                let account = try await CodexAppServerClient.shared.waitForChatGPTLogin(timeoutSeconds: 300)
+                isCodexLoginInProgress = false
+
+                if let account {
+                    applyCodexAccountState(account)
+                    userNotification = UserNotification(
+                        type: .success,
+                        message: "Signed in with ChatGPT successfully"
+                    )
+                    refreshCodexRateLimits(showNotificationOnFailure: true)
+                    fetchModelsForService()
+                } else {
+                    userNotification = UserNotification(
+                        type: .warning,
+                        message: "ChatGPT sign-in timed out. You can retry."
+                    )
+                }
+            } catch is CancellationError {
+                isCodexLoginInProgress = false
+            } catch {
+                isCodexLoginInProgress = false
+                userNotification = UserNotification(
+                    type: .error,
+                    message: "Failed to start ChatGPT login: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    func cancelCodexLogin() {
+        guard isCodexProvider else { return }
+        codexLoginTask?.cancel()
+        codexLoginTask = nil
+
+        if let codexLoginID {
+            Task {
+                try? await CodexAppServerClient.shared.cancelLogin(loginID: codexLoginID)
+            }
+        }
+
+        isCodexLoginInProgress = false
+        codexLoginID = nil
+    }
+
+    func logoutCodex() {
+        guard isCodexProvider else { return }
+
+        Task {
+            do {
+                try await CodexAppServerClient.shared.logout()
+                codexAuthMode = nil
+                codexAccountEmail = nil
+                codexPlanType = nil
+                codexLoginID = nil
+                isCodexLoginInProgress = false
+                codexRateLimits = nil
+                userNotification = UserNotification(type: .success, message: "Signed out from Codex")
+            } catch {
+                userNotification = UserNotification(
+                    type: .error,
+                    message: "Failed to sign out: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    private func applyCodexAccountState(_ account: CodexAccountStatus) {
+        codexAuthMode = account.authMode
+        codexAccountEmail = account.email
+        codexPlanType = account.planType
+        if account.isChatGPTAuthenticated {
+            codexLoginID = nil
+            isCodexLoginInProgress = false
+        } else {
+            codexRateLimits = nil
+        }
+    }
+
+    func refreshCodexRateLimits(showNotificationOnFailure: Bool = false) {
+        guard isCodexProvider else { return }
+
+        Task {
+            do {
+                let limits = try await CodexAppServerClient.shared.readRateLimits()
+                codexRateLimits = limits
+            } catch {
+                if showNotificationOnFailure {
+                    userNotification = UserNotification(
+                        type: .warning,
+                        message: "Unable to fetch Codex usage limits: \(error.localizedDescription)"
+                    )
+                }
+            }
+        }
+    }
+
+    private func makeRateLimitRow(window: CodexRateLimitWindow, label: String) -> CodexRateLimitDisplayRow {
+        let remainingText = "\(window.remainingPercent)% remaining"
+        let resetText: String?
+        if let date = window.resetsAt {
+            resetText = "Resets \(DateFormatter.localizedString(from: date, dateStyle: .short, timeStyle: .short))"
+        } else {
+            resetText = nil
+        }
+
+        return CodexRateLimitDisplayRow(
+            label: label,
+            remainingText: remainingText,
+            resetText: resetText
+        )
+    }
+
+    private func windowLabel(minutes: Int?) -> String {
+        guard let minutes else { return "Usage window" }
+        if minutes == 10_080 { return "Weekly" }
+        if minutes == 300 { return "5-hour" }
+        return "\(minutes)-minute"
     }
 }
