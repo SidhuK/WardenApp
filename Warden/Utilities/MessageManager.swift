@@ -707,6 +707,13 @@ final class MessageManager: ObservableObject {
             
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                if let codexService = self.apiService as? CodexAppServerHandler,
+                   let updatedThreadID = codexService.getLatestThreadID(),
+                   chat.codexThreadId != updatedThreadID
+                {
+                    chat.codexThreadId = updatedThreadID
+                }
+
                 switch result {
                 case .success(let (fullMessage, _)):
                     if let messageText = fullMessage {

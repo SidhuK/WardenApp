@@ -543,7 +543,6 @@ actor CodexAppServerClient {
             payload["params"] = params
         }
 
-        try sendRawJSON(payload)
         let timeoutNanoseconds = requestTimeoutNanoseconds
         let timeoutTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: timeoutNanoseconds)
@@ -554,6 +553,13 @@ actor CodexAppServerClient {
 
         return try await withCheckedThrowingContinuation { continuation in
             pendingRequests[requestIDKey] = continuation
+
+            do {
+                try sendRawJSON(payload)
+            } catch {
+                let pendingContinuation = pendingRequests.removeValue(forKey: requestIDKey)
+                pendingContinuation?.resume(throwing: error)
+            }
         }
     }
 
@@ -648,6 +654,9 @@ actor CodexAppServerClient {
 
         stdoutHandle?.readabilityHandler = nil
         stderrHandle?.readabilityHandler = nil
+        stdinHandle?.closeFile()
+        stdoutHandle?.closeFile()
+        stderrHandle?.closeFile()
 
         process = nil
         stdinHandle = nil
@@ -885,6 +894,7 @@ final class CodexAppServerHandler: BaseAPIHandler {
                 do {
                     let existingThreadID = readCurrentThreadID()
                     let threadID: String
+                    var turnInput = inputText
 
                     if let existingThreadID, !existingThreadID.isEmpty {
                         do {
@@ -899,6 +909,11 @@ final class CodexAppServerHandler: BaseAPIHandler {
                                 baseInstructions: baseInstructions,
                                 cwd: FileManager.default.currentDirectoryPath
                             )
+
+                            if !includeHistory {
+                                let (historyInput, _, _) = buildInputPayload(from: requestMessages, includeHistory: true)
+                                turnInput = historyInput
+                            }
                         }
                     } else {
                         threadID = try await codexClient.startThread(
@@ -910,13 +925,6 @@ final class CodexAppServerHandler: BaseAPIHandler {
 
                     writeLatestThreadID(threadID)
 
-                    let turnInput: String = {
-                        if includeHistory {
-                            return inputText
-                        }
-                        return inputText
-                    }()
-
                     let stream = await codexClient.notificationStream()
                     let turnID = try await codexClient.startTurn(
                         threadID: threadID,
@@ -924,45 +932,50 @@ final class CodexAppServerHandler: BaseAPIHandler {
                         model: model,
                         effort: settings.reasoningEffort == .off ? nil : settings.reasoningEffort
                     )
+                    try await withTaskCancellationHandler {
+                        for await event in stream {
+                            try Task.checkCancellation()
 
-                    for await event in stream {
-                        try Task.checkCancellation()
+                            switch event.method {
+                            case "item/agentMessage/delta":
+                                if let payload = try? JSONDecoder().decode(AgentMessageDeltaPayload.self, from: event.paramsData),
+                                   payload.threadId == threadID,
+                                   payload.turnId == turnID
+                                {
+                                    continuation.yield((payload.delta, nil))
+                                }
 
-                        switch event.method {
-                        case "item/agentMessage/delta":
-                            if let payload = try? JSONDecoder().decode(AgentMessageDeltaPayload.self, from: event.paramsData),
-                               payload.threadId == threadID,
-                               payload.turnId == turnID
-                            {
-                                continuation.yield((payload.delta, nil))
+                            case "error":
+                                if let payload = try? JSONDecoder().decode(TurnErrorPayload.self, from: event.paramsData),
+                                   payload.threadId == threadID,
+                                   payload.turnId == turnID,
+                                   !payload.willRetry
+                                {
+                                    throw APIError.serverError(payload.error.message)
+                                }
+
+                            case "turn/completed":
+                                if let payload = try? JSONDecoder().decode(TurnCompletedPayload.self, from: event.paramsData),
+                                   payload.threadId == threadID,
+                                   payload.turn.id == turnID
+                                {
+                                    continuation.finish()
+                                    return
+                                }
+
+                            default:
+                                continue
                             }
-
-                        case "error":
-                            if let payload = try? JSONDecoder().decode(TurnErrorPayload.self, from: event.paramsData),
-                               payload.threadId == threadID,
-                               payload.turnId == turnID,
-                               !payload.willRetry
-                            {
-                                throw APIError.serverError(payload.error.message)
-                            }
-
-                        case "turn/completed":
-                            if let payload = try? JSONDecoder().decode(TurnCompletedPayload.self, from: event.paramsData),
-                               payload.threadId == threadID,
-                               payload.turn.id == turnID
-                            {
-                                continuation.finish()
-                                return
-                            }
-
-                        default:
-                            continue
+                        }
+                    } onCancel: {
+                        Task.detached(priority: .userInitiated) {
+                            try? await CodexAppServerClient.shared.interruptTurn(threadID: threadID, turnID: turnID)
                         }
                     }
 
                     continuation.finish()
                 } catch is CancellationError {
-                    continuation.finish()
+                    continuation.finish(throwing: CancellationError())
                 } catch {
                     continuation.finish(throwing: mapToAPIError(error))
                 }
@@ -1005,6 +1018,11 @@ final class CodexAppServerHandler: BaseAPIHandler {
     }
 
     private func buildInputPayload(from requestMessages: [[String: String]]) -> (String, String?, Bool) {
+        let includeHistory = readCurrentThreadID()?.isEmpty ?? true
+        return buildInputPayload(from: requestMessages, includeHistory: includeHistory)
+    }
+
+    private func buildInputPayload(from requestMessages: [[String: String]], includeHistory: Bool) -> (String, String?, Bool) {
         let normalizedMessages: [(role: String, content: String)] = requestMessages.compactMap { message in
             guard let role = message["role"], let rawContent = message["content"], !rawContent.isEmpty else {
                 return nil
@@ -1033,7 +1051,6 @@ final class CodexAppServerHandler: BaseAPIHandler {
         let systemMessage = normalizedMessages.first(where: { $0.role == "system" })?.content
         let lastUserMessage = normalizedMessages.last(where: { $0.role == "user" })?.content
 
-        let includeHistory = readCurrentThreadID()?.isEmpty ?? true
         if includeHistory {
             let transcript = normalizedMessages
                 .map { message in

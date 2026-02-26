@@ -113,7 +113,7 @@ struct ReasoningEffortMenu: View {
         if providerID == .codex {
             let codexEfforts = availableCodexEfforts
             if codexEfforts.isEmpty {
-                return [.off, .low, .medium, .high]
+                return [.off]
             }
             return [.off] + codexEfforts
         }
@@ -208,7 +208,7 @@ struct ReasoningEffortMenu: View {
         guard providerID == .codex else { return }
         guard chat.reasoningEffort == .off else { return }
 
-        let defaultEffort = modelMetadata?.suggestedReasoningEffort ?? .medium
+        guard let defaultEffort = modelMetadata?.suggestedReasoningEffort else { return }
         guard defaultEffort != .off else { return }
 
         chat.reasoningEffort = defaultEffort
@@ -223,7 +223,7 @@ struct ReasoningEffortMenu: View {
         let effortCount = metadata?.supportedReasoningEfforts?.count ?? 0
         let descriptionCount = metadata?.supportedReasoningEffortDescriptions?.count ?? 0
 
-        guard effortCount <= 1 || descriptionCount == 0 else { return }
+        guard effortCount == 0 && descriptionCount == 0 else { return }
         await metadataCache.refreshMetadata(provider: providerType.lowercased(), apiKey: "")
     }
 

@@ -584,7 +584,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
             defaultModel: "codex-mini-latest",
             models: [],
             modelsFetching: true,
-            imageUploadsSupported: true
+            imageUploadsSupported: false
         ),
         "ollama": defaultApiConfiguration(name: "Ollama", url: "http://localhost:11434/api/chat", apiKeyRef: "", apiModelRef: "https://ollama.com/library", defaultModel: "llama3.1", models: ["llama3.3", "llama3.2", "llama3.1", "llama3.1:70b", "llama3.1:400b", "qwen2.5:3b", "qwen2.5", "qwen2.5:14b", "qwen2.5:32b", "qwen2.5:72b", "qwen2.5-coder", "phi3", "gemma"]),
         "claude": defaultApiConfiguration(name: "Claude", url: "https://api.anthropic.com/v1/messages", apiKeyRef: "https://docs.anthropic.com/en/docs/initial-setup#prerequisites", apiModelRef: "https://docs.anthropic.com/en/docs/about-claude/models", defaultModel: "claude-3-5-sonnet-latest", models: ["claude-3-5-sonnet-latest", "claude-3-opus-latest", "claude-3-haiku-20240307"], maxTokens: 4096),
@@ -604,6 +604,20 @@ Remember that true productivity serves your overall life satisfaction and well-b
         "chatgpt", "codex", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq",
         "mistral", "lmstudio", "openai_custom",
     ]
+
+    static func defaultReasoningEffort(provider: String, modelId: String) -> ReasoningEffort {
+        guard ProviderID(normalizing: provider) == .codex else {
+            return .off
+        }
+
+        if let metadata = ModelMetadataStorage.getMetadata(provider: "codex", modelId: modelId),
+           let suggested = metadata.suggestedReasoningEffort,
+           suggested != .off {
+            return suggested
+        }
+
+        return .medium
+    }
     
     // MARK: - Notifications
     static let newChatNotification = Notification.Name("newChatNotification")

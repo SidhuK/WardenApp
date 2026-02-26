@@ -65,8 +65,8 @@ struct ProviderAttachmentCapabilities: Sendable {
         case .codex:
             return ProviderAttachmentCapabilities(
                 providerID: providerID,
-                supportsImageInputs: true,
-                supportsNativeFileInputs: true
+                supportsImageInputs: false,
+                supportsNativeFileInputs: false
             )
         case .claude:
             return ProviderAttachmentCapabilities(

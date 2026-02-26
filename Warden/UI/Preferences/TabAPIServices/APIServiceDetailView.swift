@@ -447,5 +447,8 @@ struct APIServiceDetailView: View {
                 secondaryButton: .cancel()
             )
         }
+        .onDisappear {
+            viewModel.cancelPendingTasks()
+        }
     }
 }

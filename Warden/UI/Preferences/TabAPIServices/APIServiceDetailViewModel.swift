@@ -168,12 +168,19 @@ final class APIServiceDetailViewModel: ObservableObject {
         )
 
         let apiService = APIServiceFactory.createAPIService(config: config)
+        let requestedType = type
+        let requestedApiKey = apiKey
 
-        Task {
+        Task { [weak self, requestedType, requestedApiKey] in
+            guard let self else { return }
             do {
                 let models = try await apiService.fetchModels()
+                await ModelMetadataCache.shared.fetchMetadataIfNeeded(
+                    provider: requestedType.lowercased(),
+                    apiKey: requestedApiKey
+                )
+                guard self.type == requestedType else { return }
                 self.fetchedModels = models
-                await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: self.type.lowercased(), apiKey: self.apiKey)
                 self.isLoadingModels = false
 
                 if !models.contains(where: { $0.id == self.selectedModel })
@@ -183,26 +190,27 @@ final class APIServiceDetailViewModel: ObservableObject {
                     self.isCustomModel = true
                 }
 
-                userNotification = UserNotification(
+                self.userNotification = UserNotification(
                     type: .success,
                     message: "✅ Fetched \(models.count) models from API"
                 )
 
-                notificationDismissTask?.cancel()
-                notificationDismissTask = Task { [weak self] in
+                self.notificationDismissTask?.cancel()
+                self.notificationDismissTask = Task { [weak self] in
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     guard let self, case .success? = self.userNotification?.type else { return }
                     self.userNotification = nil
                 }
             }
             catch {
-                modelFetchError = error.localizedDescription
-                isLoadingModels = false
-                fetchedModels = []
+                guard self.type == requestedType else { return }
+                self.modelFetchError = error.localizedDescription
+                self.isLoadingModels = false
+                self.fetchedModels = []
 
-                userNotification = UserNotification(
+                self.userNotification = UserNotification(
                     type: .error,
-                    message: "Failed to fetch models: \(getUserFriendlyErrorMessage(error))"
+                    message: "Failed to fetch models: \(self.getUserFriendlyErrorMessage(error))"
                 )
 
                 #if DEBUG
@@ -432,15 +440,18 @@ final class APIServiceDetailViewModel: ObservableObject {
     func refreshCodexAuthState() {
         guard isCodexProvider else { return }
 
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             do {
                 let account = try await CodexAppServerClient.shared.readAccount(refreshToken: false)
-                applyCodexAccountState(account)
+                guard self.isCodexProvider else { return }
+                self.applyCodexAccountState(account)
                 if account.isChatGPTAuthenticated {
-                    refreshCodexRateLimits(showNotificationOnFailure: false)
+                    self.refreshCodexRateLimits(showNotificationOnFailure: false)
                 }
             } catch {
-                userNotification = UserNotification(
+                guard self.isCodexProvider else { return }
+                self.userNotification = UserNotification(
                     type: .warning,
                     message: "Unable to read Codex auth status: \(error.localizedDescription)"
                 )
@@ -453,35 +464,38 @@ final class APIServiceDetailViewModel: ObservableObject {
         codexLoginTask?.cancel()
         isCodexLoginInProgress = true
 
-        codexLoginTask = Task {
+        codexLoginTask = Task { [weak self] in
+            guard let self else { return }
             do {
                 let login = try await CodexAppServerClient.shared.startChatGPTLogin()
-                codexLoginURL = login.authURL
-                codexLoginID = login.loginID
+                guard self.isCodexProvider else { return }
+                self.codexLoginURL = login.authURL
+                self.codexLoginID = login.loginID
                 NSWorkspace.shared.open(login.authURL)
 
                 let account = try await CodexAppServerClient.shared.waitForChatGPTLogin(timeoutSeconds: 300)
-                isCodexLoginInProgress = false
+                guard self.isCodexProvider else { return }
+                self.isCodexLoginInProgress = false
 
                 if let account {
-                    applyCodexAccountState(account)
-                    userNotification = UserNotification(
+                    self.applyCodexAccountState(account)
+                    self.userNotification = UserNotification(
                         type: .success,
                         message: "Signed in with ChatGPT successfully"
                     )
-                    refreshCodexRateLimits(showNotificationOnFailure: true)
-                    fetchModelsForService()
+                    self.refreshCodexRateLimits(showNotificationOnFailure: true)
+                    self.fetchModelsForService()
                 } else {
-                    userNotification = UserNotification(
+                    self.userNotification = UserNotification(
                         type: .warning,
                         message: "ChatGPT sign-in timed out. You can retry."
                     )
                 }
             } catch is CancellationError {
-                isCodexLoginInProgress = false
+                self.isCodexLoginInProgress = false
             } catch {
-                isCodexLoginInProgress = false
-                userNotification = UserNotification(
+                self.isCodexLoginInProgress = false
+                self.userNotification = UserNotification(
                     type: .error,
                     message: "Failed to start ChatGPT login: \(error.localizedDescription)"
                 )
@@ -490,11 +504,10 @@ final class APIServiceDetailViewModel: ObservableObject {
     }
 
     func cancelCodexLogin() {
-        guard isCodexProvider else { return }
         codexLoginTask?.cancel()
         codexLoginTask = nil
 
-        if let codexLoginID {
+        if isCodexProvider, let codexLoginID {
             Task {
                 try? await CodexAppServerClient.shared.cancelLogin(loginID: codexLoginID)
             }
@@ -541,19 +554,28 @@ final class APIServiceDetailViewModel: ObservableObject {
     func refreshCodexRateLimits(showNotificationOnFailure: Bool = false) {
         guard isCodexProvider else { return }
 
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             do {
                 let limits = try await CodexAppServerClient.shared.readRateLimits()
-                codexRateLimits = limits
+                guard self.isCodexProvider else { return }
+                self.codexRateLimits = limits
             } catch {
+                guard self.isCodexProvider else { return }
                 if showNotificationOnFailure {
-                    userNotification = UserNotification(
+                    self.userNotification = UserNotification(
                         type: .warning,
                         message: "Unable to fetch Codex usage limits: \(error.localizedDescription)"
                     )
                 }
             }
         }
+    }
+
+    func cancelPendingTasks() {
+        notificationDismissTask?.cancel()
+        notificationDismissTask = nil
+        cancelCodexLogin()
     }
 
     private func makeRateLimitRow(window: CodexRateLimitWindow, label: String) -> CodexRateLimitDisplayRow {

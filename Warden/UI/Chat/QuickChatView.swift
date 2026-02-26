@@ -221,8 +221,19 @@ struct QuickChatView: View {
 
     private func applyCodexReasoningDefaultIfNeeded(to chat: ChatEntity) {
         guard chat.reasoningEffort == .off else { return }
-        guard chat.apiService?.type?.lowercased() == "codex" else { return }
-        chat.reasoningEffort = .medium
+        guard let provider = chat.apiService?.type else { return }
+        let defaultEffort = AppConstants.defaultReasoningEffort(provider: provider, modelId: chat.gptModel)
+        guard defaultEffort != .off else { return }
+        chat.reasoningEffort = defaultEffort
+    }
+
+    @MainActor
+    private func persistLatestCodexThreadID(from handler: APIService, in chat: ChatEntity) {
+        if let codexHandler = handler as? CodexAppServerHandler,
+           let threadID = codexHandler.getLatestThreadID(),
+           chat.codexThreadId != threadID {
+            chat.codexThreadId = threadID
+        }
     }
     
     @MainActor
@@ -351,21 +362,19 @@ struct QuickChatView: View {
                     }
                 }
 
-                if let codexHandler = handler as? CodexAppServerHandler,
-                   let threadID = codexHandler.getLatestThreadID(),
-                   chat.codexThreadId != threadID
-                {
-                    chat.codexThreadId = threadID
-                }
+                persistLatestCodexThreadID(from: handler, in: chat)
                 
                 isStreaming = false
                 currentStreamingTask = nil
                 try? viewContext.save()
                 generateChatNameIfNeeded(chat: chat, apiService: apiService)
             } catch is CancellationError {
+                persistLatestCodexThreadID(from: handler, in: chat)
                 isStreaming = false
                 currentStreamingTask = nil
+                try? viewContext.save()
             } catch {
+                persistLatestCodexThreadID(from: handler, in: chat)
                 aiMessage.body += "\nError: \(error.localizedDescription)"
                 aiMessage.waitingForResponse = false
                 isStreaming = false
@@ -793,8 +802,11 @@ struct CompactModelSelector: View {
             chat.apiService = service
         }
         chat.gptModel = modelId
-        if provider.lowercased() == "codex", chat.reasoningEffort == .off {
-            chat.reasoningEffort = .medium
+        if chat.reasoningEffort == .off {
+            let defaultEffort = AppConstants.defaultReasoningEffort(provider: provider, modelId: modelId)
+            if defaultEffort != .off {
+                chat.reasoningEffort = defaultEffort
+            }
         }
         chat.updatedDate = Date()
         chat.objectWillChange.send()
