@@ -7,6 +7,46 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.02</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>Added Codex App Server as a provider.</li>
+	                <li>Added ChatGPT OAuth sign-in flow for Codex.</li>
+	                <li>Added Codex usage/rate-limit visibility in API service settings.</li>
+	                <li>Added Codex thread persistence support for better conversation continuity.</li>
+	                </ul>
+	                <h3>Improved</h3>
+	                <ul>
+	                <li>Improved reasoning effort controls (including better provider/model handling).</li>
+	                <li>Improved Codex model metadata/fetch flows and initialization paths.</li>
+	                <li>Refined Codex transport and auth lifecycle behavior for better reliability.</li>
+	                </ul>
+	                <h3>Fixed</h3>
+	                <ul>
+	                <li>Fixed chat composer focus behavior so input reliably regains focus.</li>
+	                <li>Fixed Enter-to-send handling (while preserving Shift+Enter for newline).</li>
+	                <li>Fixed Codex-related issues from review: transport edge cases, auth task lifecycle, and thread persistence consistency.</li>
+	                </ul>
+	                <h3>Security & Distribution</h3>
+	                <ul>
+	                <li>The app is now signed with an Apple Developer signature.</li>
+	                <li>The app is now Apple notarized.</li>
+	                <li>Previous builds were not notarized.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Thu, 26 Feb 2026 03:57:10 +0000</pubDate>
+	            <sparkle:version>1.02</sparkle:version>
+	            <sparkle:shortVersionString>1.02</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.02/Warden.zip"
+	                       sparkle:version="1.02"
+	                       sparkle:shortVersionString="1.02"
+	                       type="application/zip"
+	                       length="15440985"
+	                       sparkle:edSignature="uvUzMiOz85zzXKba5SW7JnTTznusoUsbHb/T6aF98s/897KF9MSbIA5yHhiTXAi4tlYsq+/yFWEv86ou+HFRDA==" />
+	        </item>
+	        
+	        <item>
 	            <title>Version 1.01</title>
 	            <description><![CDATA[
 	                <h3>Bug Fixes</h3>
