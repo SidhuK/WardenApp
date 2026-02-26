@@ -1,6 +1,7 @@
 
 import SwiftUI
 import CoreData
+import AppKit
 
 struct APIServiceDetailView: View {
     @StateObject private var viewModel: APIServiceDetailViewModel
@@ -121,6 +122,84 @@ struct APIServiceDetailView: View {
                                 )
                                 .font(.subheadline)
                                 .foregroundColor(.blue)
+                            }
+                        }
+                    }
+
+                    if viewModel.isCodexProvider {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .center, spacing: 8) {
+                                Text("Codex Auth:")
+                                    .frame(width: 100, alignment: .leading)
+
+                                Text(viewModel.codexStatusText)
+                                    .font(.caption)
+                                    .foregroundColor(viewModel.codexIsAuthenticated ? .green : .secondary)
+
+                                Spacer()
+
+                                if viewModel.codexIsAuthenticated {
+                                    Button("Sign Out") {
+                                        viewModel.logoutCodex()
+                                    }
+                                } else if viewModel.isCodexLoginInProgress {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                    Button("Cancel") {
+                                        viewModel.cancelCodexLogin()
+                                    }
+                                } else {
+                                    Button("Sign In with ChatGPT") {
+                                        viewModel.startCodexLogin()
+                                    }
+                                }
+
+                                Button("Refresh") {
+                                    viewModel.refreshCodexAuthState()
+                                }
+                            }
+
+                            if viewModel.codexIsAuthenticated {
+                                HStack {
+                                    Text("Usage:")
+                                        .frame(width: 100, alignment: .leading)
+                                    Button("Refresh Limits") {
+                                        viewModel.refreshCodexRateLimits(showNotificationOnFailure: true)
+                                    }
+                                    Spacer()
+                                }
+
+                                if viewModel.codexRateLimitRows.isEmpty {
+                                    Text("No usage limit data available yet.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .padding(.leading, 108)
+                                } else {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        ForEach(viewModel.codexRateLimitRows) { row in
+                                            VStack(alignment: .leading, spacing: 1) {
+                                                Text("\(row.label): \(row.remainingText)")
+                                                    .font(.caption)
+                                                if let resetText = row.resetText {
+                                                    Text(resetText)
+                                                        .font(.caption2)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(.leading, 108)
+                                }
+                            }
+                        }
+
+                        if let loginURL = viewModel.codexLoginURL, !viewModel.codexIsAuthenticated {
+                            HStack {
+                                Spacer()
+                                Button("Open ChatGPT Login Page") {
+                                    NSWorkspace.shared.open(loginURL)
+                                }
+                                .font(.subheadline)
                             }
                         }
                     }
@@ -367,6 +446,9 @@ struct APIServiceDetailView: View {
                 },
                 secondaryButton: .cancel()
             )
+        }
+        .onDisappear {
+            viewModel.cancelPendingTasks()
         }
     }
 }

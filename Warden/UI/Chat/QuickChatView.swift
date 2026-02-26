@@ -149,6 +149,7 @@ struct QuickChatView: View {
                 if let defaultService = try viewContext.existingObject(with: objectID) as? APIServiceEntity {
                     newChat.apiService = defaultService
                     newChat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
+                    applyCodexReasoningDefaultIfNeeded(to: newChat)
                 }
             } catch {
                 WardenLog.coreData.error(
@@ -161,6 +162,7 @@ struct QuickChatView: View {
             // No default set, fall back to first available service
             fallbackServiceSelectionFor(chat: newChat)
             newChat.gptModel = newChat.apiService?.model ?? AppConstants.chatGptDefaultModel
+            applyCodexReasoningDefaultIfNeeded(to: newChat)
         }
 
         quickChatEntity = newChat
@@ -215,6 +217,23 @@ struct QuickChatView: View {
         currentStreamingTask?.cancel()
         currentStreamingTask = nil
         isStreaming = false
+    }
+
+    private func applyCodexReasoningDefaultIfNeeded(to chat: ChatEntity) {
+        guard chat.reasoningEffort == .off else { return }
+        guard let provider = chat.apiService?.type else { return }
+        let defaultEffort = AppConstants.defaultReasoningEffort(provider: provider, modelId: chat.gptModel)
+        guard defaultEffort != .off else { return }
+        chat.reasoningEffort = defaultEffort
+    }
+
+    @MainActor
+    private func persistLatestCodexThreadID(from handler: APIService, in chat: ChatEntity) {
+        if let codexHandler = handler as? CodexAppServerHandler,
+           let threadID = codexHandler.getLatestThreadID(),
+           chat.codexThreadId != threadID {
+            chat.codexThreadId = threadID
+        }
     }
     
     @MainActor
@@ -303,6 +322,10 @@ struct QuickChatView: View {
         }
         
         let handler = APIServiceFactory.createAPIService(config: config)
+        if let codexHandler = handler as? CodexAppServerHandler {
+            codexHandler.setCurrentThreadID(chat.codexThreadId)
+            codexHandler.clearLatestThreadID()
+        }
         
         var messages: [[String: String]] = []
         if !chat.systemMessage.isEmpty {
@@ -324,7 +347,7 @@ struct QuickChatView: View {
                 let stream = try await handler.sendMessageStream(
                     messages,
                     tools: nil,
-                    settings: GenerationSettings(temperature: 0.7)
+                    settings: GenerationSettings(temperature: 0.7, reasoningEffort: chat.reasoningEffort)
                 )
                 aiMessage.waitingForResponse = false
                 try? viewContext.save()
@@ -338,15 +361,20 @@ struct QuickChatView: View {
                         try? viewContext.save()
                     }
                 }
+
+                persistLatestCodexThreadID(from: handler, in: chat)
                 
                 isStreaming = false
                 currentStreamingTask = nil
                 try? viewContext.save()
                 generateChatNameIfNeeded(chat: chat, apiService: apiService)
             } catch is CancellationError {
+                persistLatestCodexThreadID(from: handler, in: chat)
                 isStreaming = false
                 currentStreamingTask = nil
+                try? viewContext.save()
             } catch {
+                persistLatestCodexThreadID(from: handler, in: chat)
                 aiMessage.body += "\nError: \(error.localizedDescription)"
                 aiMessage.waitingForResponse = false
                 isStreaming = false
@@ -400,6 +428,7 @@ struct QuickChatView: View {
                 if chat.gptModel.isEmpty {
                     chat.gptModel = AppConstants.chatGptDefaultModel
                 }
+                applyCodexReasoningDefaultIfNeeded(to: chat)
                 try? viewContext.save()
             }
         } catch {
@@ -425,6 +454,7 @@ struct QuickChatView: View {
             let services = try viewContext.fetch(request)
             if let service = services.first(where: { $0.type == "chatgpt" }) ?? services.first {
                 chat.apiService = service
+                applyCodexReasoningDefaultIfNeeded(to: chat)
             }
         } catch {
             WardenLog.coreData.error("Error fetching services: \(error.localizedDescription, privacy: .public)")
@@ -669,6 +699,7 @@ struct QuickChatProviderLogo: View {
     private func providerIconName(for provider: String) -> String {
         let lowerProvider = provider.lowercased()
         switch lowerProvider {
+        case _ where lowerProvider.contains("codex"): return "logo_codex"
         case _ where lowerProvider.contains("openai"): return "logo_chatgpt"
         case _ where lowerProvider.contains("anthropic"): return "logo_claude"
         case _ where lowerProvider.contains("google"): return "logo_gemini"
@@ -771,6 +802,12 @@ struct CompactModelSelector: View {
             chat.apiService = service
         }
         chat.gptModel = modelId
+        if chat.reasoningEffort == .off {
+            let defaultEffort = AppConstants.defaultReasoningEffort(provider: provider, modelId: modelId)
+            if defaultEffort != .off {
+                chat.reasoningEffort = defaultEffort
+            }
+        }
         chat.updatedDate = Date()
         chat.objectWillChange.send()
         

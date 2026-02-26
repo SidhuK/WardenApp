@@ -45,6 +45,9 @@ struct ModelMetadata: Codable {
     let maxContextTokens: Int?
     let capabilities: [String]       // ["vision", "reasoning", "function-calling"]
     let supportedParameters: [String]? // Raw provider params when available (e.g. OpenRouter `supported_parameters`)
+    let defaultReasoningEffort: String?
+    let supportedReasoningEfforts: [String]?
+    let supportedReasoningEffortDescriptions: [String: String]?
     let latency: LatencyLevel?
     let costLevel: CostLevel?
     let lastUpdated: Date
@@ -57,6 +60,9 @@ struct ModelMetadata: Codable {
         maxContextTokens: Int?,
         capabilities: [String],
         supportedParameters: [String]? = nil,
+        defaultReasoningEffort: String? = nil,
+        supportedReasoningEfforts: [String]? = nil,
+        supportedReasoningEffortDescriptions: [String: String]? = nil,
         latency: LatencyLevel?,
         costLevel: CostLevel?,
         lastUpdated: Date,
@@ -68,6 +74,9 @@ struct ModelMetadata: Codable {
         self.maxContextTokens = maxContextTokens
         self.capabilities = capabilities
         self.supportedParameters = supportedParameters
+        self.defaultReasoningEffort = defaultReasoningEffort
+        self.supportedReasoningEfforts = supportedReasoningEfforts
+        self.supportedReasoningEffortDescriptions = supportedReasoningEffortDescriptions
         self.latency = latency
         self.costLevel = costLevel
         self.lastUpdated = lastUpdated
@@ -119,6 +128,11 @@ struct ModelMetadata: Codable {
     /// Check if model has function calling capability
     var hasFunctionCalling: Bool {
         return hasCapability("function-calling")
+    }
+
+    var suggestedReasoningEffort: ReasoningEffort? {
+        guard let defaultReasoningEffort else { return nil }
+        return ReasoningEffort.fromProviderValue(defaultReasoningEffort)
     }
 }
 
@@ -312,6 +326,7 @@ extension ModelMetadata {
             "anthropic": "ANTHROPIC",
             "openai": "OPENAI",
             "chatgpt": "OPENAI",
+            "codex": "OPENAI",
             "google": "GOOGLE",
             "gemini": "GOOGLE",
             "meta": "META",

@@ -249,6 +249,11 @@ final class MessageManager: ObservableObject {
         Task { @MainActor in
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
+
+            if let codexService = apiService as? CodexAppServerHandler {
+                codexService.setCurrentThreadID(chat.codexThreadId)
+                codexService.clearLatestThreadID()
+            }
             
             #if DEBUG
             WardenLog.app.debug("[MCP] Fetching tools for \(selectedAgents.count, privacy: .public) selected agent(s)")
@@ -291,6 +296,13 @@ final class MessageManager: ObservableObject {
                 switch result {
                 case .success(let (messageBody, toolCalls)):
                     chat.waitingForResponse = false
+
+                    if let codexService = self.apiService as? CodexAppServerHandler,
+                       let updatedThreadID = codexService.getLatestThreadID(),
+                       chat.codexThreadId != updatedThreadID
+                    {
+                        chat.codexThreadId = updatedThreadID
+                    }
                     
                     if let messageBody = messageBody {
                         addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
@@ -403,6 +415,11 @@ final class MessageManager: ObservableObject {
             // Fetch tools
             let viewModel = ChatViewModel(chat: chat, viewContext: self.viewContext)
             let selectedAgents = viewModel.selectedMCPAgents
+
+            if let codexService = apiService as? CodexAppServerHandler {
+                codexService.setCurrentThreadID(chat.codexThreadId)
+                codexService.clearLatestThreadID()
+            }
             
             #if DEBUG
             WardenLog.app.debug("[MCP] Fetching tools for \(selectedAgents.count, privacy: .public) selected agent(s) (stream)")
@@ -475,6 +492,13 @@ final class MessageManager: ObservableObject {
                     "Stream finished: \(chunkCount, privacy: .public) chunk(s) in \(String(format: "%.2f", elapsed), privacy: .public)s"
                 )
                 #endif
+
+                if let codexService = apiService as? CodexAppServerHandler,
+                   let updatedThreadID = codexService.getLatestThreadID(),
+                   chat.codexThreadId != updatedThreadID
+                {
+                    chat.codexThreadId = updatedThreadID
+                }
                 flushChunkBuffer(force: true)
 
                 let finalResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
@@ -683,6 +707,13 @@ final class MessageManager: ObservableObject {
             
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                if let codexService = self.apiService as? CodexAppServerHandler,
+                   let updatedThreadID = codexService.getLatestThreadID(),
+                   chat.codexThreadId != updatedThreadID
+                {
+                    chat.codexThreadId = updatedThreadID
+                }
+
                 switch result {
                 case .success(let (fullMessage, _)):
                     if let messageText = fullMessage {

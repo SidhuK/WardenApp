@@ -349,7 +349,7 @@ struct WardenApp: App {
 	            }
             
             // Skip if no API key (except for providers that don't require it)
-            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" else {
+            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" || providerType == "codex" else {
                 continue
             }
             

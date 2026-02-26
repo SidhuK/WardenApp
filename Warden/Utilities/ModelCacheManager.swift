@@ -226,6 +226,10 @@ final class ModelCacheManager: ObservableObject {
     }
     
     private func hasValidToken(for service: APIServiceEntity) -> Bool {
+        if service.type == "codex" {
+            return true
+        }
+
         guard let serviceId = service.id?.uuidString else { return false }
         do {
             let token = try TokenManager.getToken(for: serviceId)

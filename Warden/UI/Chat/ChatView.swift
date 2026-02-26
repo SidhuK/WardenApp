@@ -891,6 +891,15 @@ extension ChatView {
         
         // Switch the chat's active service to the selected one
         chat.apiService = selectedService
+        if chat.reasoningEffort == .off {
+            let defaultEffort = AppConstants.defaultReasoningEffort(
+                provider: selectedService.type ?? "",
+                modelId: selectedService.model ?? chat.gptModel
+            )
+            if defaultEffort != .off {
+                chat.reasoningEffort = defaultEffort
+            }
+        }
         
         // Exit multi-agent mode
         composerState.isMultiAgentMode = false

@@ -155,7 +155,7 @@ class APIServiceManager {
         }
         
         // Fallback to any available service (prioritize reliable ones for summarization)
-        let priorityOrder = ["chatgpt", "claude", "gemini", "deepseek", "perplexity"]
+        let priorityOrder = ["chatgpt", "codex", "claude", "gemini", "deepseek", "perplexity"]
         
         for serviceType in priorityOrder {
             if let service = allServices.first(where: { 
@@ -361,6 +361,8 @@ class APIServiceManager {
         switch serviceType.lowercased() {
         case "chatgpt":
             return AppConstants.chatGptDefaultModel
+        case "codex":
+            return AppConstants.defaultApiConfigurations["codex"]?.defaultModel ?? "codex-mini-latest"
         case "claude":
             return "claude-3-5-sonnet-20241022"
         case "gemini":

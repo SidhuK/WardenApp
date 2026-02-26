@@ -66,6 +66,23 @@ enum ReasoningEffort: String, Codable, CaseIterable, Sendable {
             return 32768
         }
     }
+
+    static func fromProviderValue(_ value: String) -> ReasoningEffort? {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "none", "off":
+            return .off
+        case "low":
+            return .low
+        case "medium":
+            return .medium
+        case "high":
+            return .high
+        case "xhigh", "extra_high", "extra-high":
+            return .extraHigh
+        default:
+            return nil
+        }
+    }
 }
 
 struct GenerationSettings: Codable, Sendable, Equatable {

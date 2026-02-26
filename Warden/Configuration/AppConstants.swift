@@ -576,6 +576,16 @@ Remember that true productivity serves your overall life satisfaction and well-b
     /// A dictionary of default API configurations by type.
     static let defaultApiConfigurations: [String: defaultApiConfiguration] = [
         "chatgpt": defaultApiConfiguration(name: "OpenAI", url: "https://api.openai.com/v1/chat/completions", apiKeyRef: "https://platform.openai.com/docs/api-reference/api-keys", apiModelRef: "https://platform.openai.com/docs/models", defaultModel: "gpt-4o-mini", models: ["o1-preview", "o1-mini", "gpt-4o", "chatgpt-4o-latest", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"], imageUploadsSupported: true),
+        "codex": defaultApiConfiguration(
+            name: "Codex (App Server)",
+            url: "stdio://",
+            apiKeyRef: "",
+            apiModelRef: "https://developers.openai.com/codex/app-server/",
+            defaultModel: "codex-mini-latest",
+            models: [],
+            modelsFetching: true,
+            imageUploadsSupported: false
+        ),
         "ollama": defaultApiConfiguration(name: "Ollama", url: "http://localhost:11434/api/chat", apiKeyRef: "", apiModelRef: "https://ollama.com/library", defaultModel: "llama3.1", models: ["llama3.3", "llama3.2", "llama3.1", "llama3.1:70b", "llama3.1:400b", "qwen2.5:3b", "qwen2.5", "qwen2.5:14b", "qwen2.5:32b", "qwen2.5:72b", "qwen2.5-coder", "phi3", "gemma"]),
         "claude": defaultApiConfiguration(name: "Claude", url: "https://api.anthropic.com/v1/messages", apiKeyRef: "https://docs.anthropic.com/en/docs/initial-setup#prerequisites", apiModelRef: "https://docs.anthropic.com/en/docs/about-claude/models", defaultModel: "claude-3-5-sonnet-latest", models: ["claude-3-5-sonnet-latest", "claude-3-opus-latest", "claude-3-haiku-20240307"], maxTokens: 4096),
         "xai": defaultApiConfiguration(name: "xAI", url: "https://api.x.ai/v1/chat/completions", apiKeyRef: "https://console.x.ai/", apiModelRef: "https://docs.x.ai/docs#models", defaultModel: "grok-beta", models: ["grok-beta"], inherits: "chatgpt"),
@@ -590,7 +600,24 @@ Remember that true productivity serves your overall life satisfaction and well-b
     ]
 
     /// A list of available API types.
-    static let apiTypes = ["chatgpt", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq", "mistral", "lmstudio", "openai_custom"]
+    static let apiTypes = [
+        "chatgpt", "codex", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "openrouter", "groq",
+        "mistral", "lmstudio", "openai_custom",
+    ]
+
+    static func defaultReasoningEffort(provider: String, modelId: String) -> ReasoningEffort {
+        guard ProviderID(normalizing: provider) == .codex else {
+            return .off
+        }
+
+        if let metadata = ModelMetadataStorage.getMetadata(provider: "codex", modelId: modelId),
+           let suggested = metadata.suggestedReasoningEffort,
+           suggested != .off {
+            return suggested
+        }
+
+        return .medium
+    }
     
     // MARK: - Notifications
     static let newChatNotification = Notification.Name("newChatNotification")

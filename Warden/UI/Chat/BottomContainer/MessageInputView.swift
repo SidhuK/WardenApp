@@ -606,6 +606,12 @@ struct BetterCompactModelSelector: View {
             chat.apiService = service
         }
         chat.gptModel = modelId
+        if chat.reasoningEffort == .off {
+            let defaultEffort = AppConstants.defaultReasoningEffort(provider: provider, modelId: modelId)
+            if defaultEffort != .off {
+                chat.reasoningEffort = defaultEffort
+            }
+        }
         chat.updatedDate = Date()
         chat.objectWillChange.send()
         
