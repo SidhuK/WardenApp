@@ -129,4 +129,32 @@ enum ModelMetadataStorage {
             return nil
         }
     }
+
+    static func store(metadata: ModelMetadata, provider: String) {
+        var decoded = loadAllMetadata()
+        decoded[provider, default: [:]][metadata.modelId] = metadata
+        saveAllMetadata(decoded)
+    }
+
+    static func removeMetadata(provider: String, modelId: String) {
+        var decoded = loadAllMetadata()
+        decoded[provider]?[modelId] = nil
+        if decoded[provider]?.isEmpty == true {
+            decoded[provider] = nil
+        }
+        saveAllMetadata(decoded)
+    }
+
+    private static func loadAllMetadata() -> [String: [String: ModelMetadata]] {
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey), !data.isEmpty else {
+            return [:]
+        }
+
+        return (try? JSONDecoder().decode([String: [String: ModelMetadata]].self, from: data)) ?? [:]
+    }
+
+    private static func saveAllMetadata(_ metadata: [String: [String: ModelMetadata]]) {
+        guard let encoded = try? JSONEncoder().encode(metadata) else { return }
+        UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+    }
 }

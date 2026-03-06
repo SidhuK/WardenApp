@@ -14,6 +14,43 @@ private struct Model: Codable {
 }
 
 class GeminiHandler: ChatGPTHandler {
+    override internal func prepareRequest(
+        requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        model: String,
+        settings: GenerationSettings,
+        attachmentPolicy: AttachmentPolicy,
+        stream: Bool
+    ) async throws -> URLRequest {
+        var request = try await super.prepareRequest(
+            requestMessages: requestMessages,
+            tools: tools,
+            model: model,
+            settings: settings,
+            attachmentPolicy: attachmentPolicy,
+            stream: stream
+        )
+
+        guard settings.reasoningEffort == .off,
+              let body = request.httpBody,
+              var json = try? JSONSerialization.jsonObject(with: body, options: []) as? [String: Any]
+        else {
+            return request
+        }
+
+        // Gemini uses model defaults when reasoning configuration is omitted.
+        // Avoid serializing an explicit "off" value through the OpenAI-compatible path.
+        json.removeValue(forKey: "reasoning_effort")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: json, options: [])
+        } catch {
+            throw APIError.decodingFailed(error.localizedDescription)
+        }
+
+        return request
+    }
+
     override func fetchModels() async throws -> [AIModel] {
         var urlComponents = URLComponents(url: baseURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("models"), resolvingAgainstBaseURL: true)
         urlComponents?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
