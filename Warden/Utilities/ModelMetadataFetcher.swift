@@ -36,6 +36,8 @@ class ModelMetadataFetcherFactory {
             return LiteLLMBackedFetcher(provider: "perplexity")
         case .deepseek:
             return LiteLLMBackedFetcher(provider: "deepseek")
+        case .pollinations:
+            return GenericMetadataFetcher(provider: "pollinations")
         case .ollama, .lmstudio:
             return LocalModelMetadataFetcher()
         case nil:

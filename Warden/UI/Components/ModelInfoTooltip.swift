@@ -127,6 +127,7 @@ struct ModelInfoTooltip: View {
         case "xai": return "xAI"
         case "perplexity": return "Perplexity"
         case "deepseek": return "DeepSeek"
+        case "pollinations": return "Pollinations AI"
         case "groq": return "Groq"
         case "openrouter": return "OpenRouter"
         case "ollama": return "Ollama"

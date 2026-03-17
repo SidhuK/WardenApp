@@ -336,6 +336,7 @@ extension ModelMetadata {
             "cohere": "COHERE",
             "perplexity": "PERPLEXITY",
             "deepseek": "DEEPSEEK",
+            "pollinations": "POLLINATIONS",
             "qwen": "QWEN",
             "nvidia": "NVIDIA",
             "groq": "GROQ",

@@ -7,6 +7,35 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.03</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>Added support for the Pollinations API provider.</li>
+	                <li>Added Pollinations logo assets with 1x/2x/3x SVG sizing.</li>
+	                </ul>
+	                <h3>Improved</h3>
+	                <ul>
+	                <li>Improved Gemini reasoning parameter handling when reasoning is disabled.</li>
+	                <li>Expanded provider model metadata coverage and storage helpers.</li>
+	                </ul>
+	                <h3>Maintenance</h3>
+	                <ul>
+	                <li>Updated Sparkle appcast metadata for the v1.03 distribution package.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Tue, 17 Mar 2026 12:17:50 +0000</pubDate>
+	            <sparkle:version>1.03</sparkle:version>
+	            <sparkle:shortVersionString>1.03</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.03/Warden.zip"
+	                       sparkle:version="1.03"
+	                       sparkle:shortVersionString="1.03"
+	                       type="application/zip"
+	                       length="15480175"
+	                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+	        </item>
+	        
+	        <item>
 	            <title>Version 1.02</title>
 	            <description><![CDATA[
 	                <h3>New</h3>

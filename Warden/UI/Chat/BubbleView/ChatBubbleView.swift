@@ -502,6 +502,8 @@ struct ChatBubbleView: View {
             return "logo_perplexity"
         case _ where lowerProvider.contains("deepseek"):
             return "logo_deepseek"
+        case _ where lowerProvider.contains("pollinations"):
+            return "logo_pollinations"
         case _ where lowerProvider.contains("mistral"):
             return "logo_mistral"
         case _ where lowerProvider.contains("ollama"):

@@ -217,6 +217,7 @@ struct InteractiveOnboardingView: View {
             ("OpenAI", "logo_chatgpt"),
             ("Claude", "logo_claude"),
             ("Gemini", "logo_gemini"),
+            ("Pollinations AI", "logo_pollinations"),
             ("Ollama", "logo_ollama"),
             ("Groq", "logo_groq"),
             ("Mistral", "logo_mistral")

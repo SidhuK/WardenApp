@@ -551,6 +551,7 @@ struct ModelSelectorList: View {
             "xai": "xAI",
             "perplexity": "Perplexity",
             "deepseek": "DeepSeek",
+            "pollinations": "Pollinations AI",
             "groq": "Groq",
             "openrouter": "OpenRouter",
             "ollama": "Ollama",
