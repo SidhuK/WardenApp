@@ -218,18 +218,24 @@ class MCPManager: ObservableObject {
         var result: [[String: Any]] = []
         for item in content {
             switch item {
-            case .text(let text):
+            case .text(let text, _, _):
                 result.append(["type": "text", "text": text])
-            case .image(let img):
-                result.append(["type": "image", "mimeType": img.mimeType])
-            case .resource(let res):
-                var dict: [String: Any] = ["type": "resource",  "uri": res.uri, "mimeType": res.mimeType]
+            case .image(_, let mimeType, _, _):
+                result.append(["type": "image", "mimeType": mimeType])
+            case .audio(_, let mimeType, _, _):
+                result.append(["type": "audio", "mimeType": mimeType])
+            case .resource(let res, _, _):
+                var dict: [String: Any] = ["type": "resource", "uri": res.uri]
+                if let mimeType = res.mimeType {
+                    dict["mimeType"] = mimeType
+                }
                 if let text = res.text {
                     dict["text"] = text
                 }
                 result.append(dict)
+            case .resourceLink(let uri, let name, _, _, _, _):
+                result.append(["type": "resource_link", "uri": uri, "name": name])
             @unknown default:
-                // Handle any future cases
                 result.append(["type": "unknown"])
             }
         }
