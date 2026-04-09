@@ -7,6 +7,27 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.05</title>
+	            <description><![CDATA[
+	                <h3>Improved</h3>
+	                <ul>
+	                <li>Settings UI cleaned up and made more native.</li>
+	                <li>Code fixes and improvements to the updater.</li>
+	                <li>Changed update manager for improved reliability.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Wed, 09 Apr 2026 00:00:00 +0000</pubDate>
+	            <sparkle:version>1.05</sparkle:version>
+	            <sparkle:shortVersionString>1.05</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.05/Warden.zip"
+	                       sparkle:version="1.05"
+	                       sparkle:shortVersionString="1.05"
+	                       type="application/zip"
+	                       length="16160195"
+	                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+	        </item>
+
+	        <item>
 	            <title>Version 1.04</title>
 	            <description><![CDATA[
 	                <h3>Improved</h3>
