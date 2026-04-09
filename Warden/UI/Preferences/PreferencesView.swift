@@ -22,6 +22,17 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
         case .contributions: return "heart.fill"
         }
     }
+
+    var iconColor: Color {
+        switch self {
+        case .general: return .gray
+        case .apiServices: return .blue
+        case .aiPersonas: return .purple
+        case .tools: return .orange
+        case .keyboardShortcuts: return .green
+        case .contributions: return .pink
+        }
+    }
 }
 
 // MARK: - Sidebar Tab Row
@@ -35,8 +46,13 @@ struct SidebarTabRow: View {
                 .font(.system(size: 13, weight: isSelected ? .medium : .regular))
         } icon: {
             Image(systemName: tab.icon)
-                .font(.system(size: 14))
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(tab.iconColor.gradient)
+                )
         }
         .padding(.vertical, 4)
     }
