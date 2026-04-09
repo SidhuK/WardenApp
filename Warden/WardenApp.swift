@@ -88,7 +88,7 @@ struct WardenApp: App {
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @StateObject private var store = ChatStore(persistenceController: PersistenceController.shared)
-    @ObservedObject private var updaterManager = UpdaterManager.shared
+    @StateObject private var updaterManager = UpdaterManager.shared
 
     var preferredColorScheme: ColorScheme? {
         switch preferredColorSchemeRaw {

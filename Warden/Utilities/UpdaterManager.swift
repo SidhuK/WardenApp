@@ -27,7 +27,10 @@ final class UpdaterManager: ObservableObject {
         
         // Observe canCheckForUpdates to keep our published property in sync
         cancellable = updaterController.updater.publisher(for: \.canCheckForUpdates)
-            .assign(to: \.canCheckForUpdates, on: self)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                self?.canCheckForUpdates = value
+            }
         
         #if DEBUG
         WardenLog.app.debug("Sparkle updater started successfully")
