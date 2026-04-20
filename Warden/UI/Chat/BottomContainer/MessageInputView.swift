@@ -510,9 +510,7 @@ struct MessageInputView: View {
                 dynamicHeight: $dynamicHeight,
                 focusToken: focusToken,
                 onSubmit: {
-                    if canSend {
-                        onEnter()
-                    }
+                    onEnter()
                 },
                 font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize)),
                 maxHeight: maxInputHeight

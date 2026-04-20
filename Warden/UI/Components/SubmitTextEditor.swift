@@ -17,7 +17,7 @@ struct SubmitTextEditor: NSViewRepresentable {
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         
-        let textView = NSTextView()
+        let textView = SubmitAwareTextView()
         textView.delegate = context.coordinator
         textView.drawsBackground = false
         textView.isRichText = false
@@ -28,6 +28,9 @@ struct SubmitTextEditor: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
         textView.textContainerInset = NSSize(width: 0, height: 8)
+        textView.onSubmit = { [weak coordinator = context.coordinator] in
+            coordinator?.handleSubmit()
+        }
         
         // Transparent background
         textView.backgroundColor = .clear
@@ -94,6 +97,12 @@ struct SubmitTextEditor: NSViewRepresentable {
                 textView.window?.makeFirstResponder(textView)
             }
         }
+
+        func handleSubmit() {
+            DispatchQueue.main.async {
+                self.parent.onSubmit()
+            }
+        }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             let submitCommands: [Selector] = [
@@ -106,11 +115,43 @@ struct SubmitTextEditor: NSViewRepresentable {
                 if let event = NSApp.currentEvent, event.modifierFlags.contains(.shift) {
                     return false // Allow new line with Shift+Enter
                 } else {
-                    parent.onSubmit()
+                    handleSubmit()
                     return true // Consume Enter to submit
                 }
             }
             return false
         }
+    }
+}
+
+private final class SubmitAwareTextView: NSTextView {
+    var onSubmit: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        if shouldSubmit(for: event) {
+            onSubmit?()
+            return
+        }
+
+        super.keyDown(with: event)
+    }
+
+    private func shouldSubmit(for event: NSEvent) -> Bool {
+        let returnKeyCodes: Set<UInt16> = [36, 76] // Return + keypad Enter
+        guard returnKeyCodes.contains(event.keyCode) else { return false }
+        if hasMarkedText() {
+            return false
+        }
+
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags.contains(.shift) {
+            return false // Shift+Enter inserts newline
+        }
+
+        if flags.contains(.command) || flags.contains(.option) || flags.contains(.control) {
+            return false
+        }
+
+        return true
     }
 }
