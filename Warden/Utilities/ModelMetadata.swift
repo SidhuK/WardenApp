@@ -238,7 +238,7 @@ extension ModelMetadata {
     }
     
     private static func formatModelName(_ modelName: String) -> String {
-        var name = modelName
+        let name = modelName
         
         // Known model name mappings for cleaner display
         let knownModels: [String: String] = [
@@ -256,6 +256,8 @@ extension ModelMetadata {
             "claude-4-sonnet": "Claude Sonnet 4",
             "claude-opus-4": "Claude Opus 4",
             "claude-4-opus": "Claude Opus 4",
+            "claude-haiku-4": "Claude Haiku 4",
+            "claude-4-haiku": "Claude Haiku 4",
             "gemini-1.5-pro": "Gemini 1.5 Pro",
             "gemini-1.5-flash": "Gemini 1.5 Flash",
             "gemini-2.0-flash": "Gemini 2.0 Flash",
@@ -280,16 +282,27 @@ extension ModelMetadata {
             "o3-mini": "O3 Mini",
         ]
         
-        // Check for exact match first (case-insensitive)
+        // Check for exact or prefix match first (case-insensitive)
         let lowerName = name.lowercased()
-        for (key, value) in knownModels {
-            if lowerName == key.lowercased() || lowerName.hasPrefix(key.lowercased()) {
-                // Handle version suffixes like "-20241022"
-                let suffix = String(name.dropFirst(key.count))
-                if suffix.isEmpty || suffix.hasPrefix("-") || suffix.hasPrefix("@") {
-                    return value
-                }
+        let sortedKnownModelKeys = knownModels.keys.sorted { $0.count > $1.count }
+        for key in sortedKnownModelKeys {
+            let lowerKey = key.lowercased()
+            guard let value = knownModels[key] else { continue }
+
+            if lowerName == lowerKey {
+                return value
             }
+
+            guard lowerName.hasPrefix(lowerKey), name.count > key.count else { continue }
+            let suffix = String(name.dropFirst(key.count))
+            guard suffix.hasPrefix("-") || suffix.hasPrefix("@") else { continue }
+
+            let suffixValue = String(suffix.dropFirst())
+            if suffixValue.isEmpty {
+                return value
+            }
+
+            return formatKnownModelDisplay(baseDisplayName: value, suffix: suffixValue)
         }
         
         // Generic formatting: convert kebab-case/snake_case to Title Case
@@ -317,6 +330,45 @@ extension ModelMetadata {
         }.joined(separator: " ")
         
         return formatted
+    }
+
+    private static func formatKnownModelDisplay(baseDisplayName: String, suffix: String) -> String {
+        let normalizedSuffix = suffix.replacingOccurrences(of: "_", with: "-")
+        let suffixTokens = normalizedSuffix.split(separator: "-").map(String.init)
+
+        // Handle patterns like:
+        // - `...-5` -> `... 4.5`
+        // - `...-20250514` -> `... 4 (20250514)`
+        // - `...-5-20250514` -> `... 4.5 (20250514)`
+        if baseDisplayName.last?.isNumber == true, !suffixTokens.isEmpty {
+            if suffixTokens.count == 1 {
+                let token = suffixTokens[0]
+                if isShortNumericVersionToken(token) {
+                    return "\(baseDisplayName).\(token)"
+                }
+                if isDateToken(token) {
+                    return "\(baseDisplayName) (\(token))"
+                }
+            } else if suffixTokens.count == 2 {
+                let pointToken = suffixTokens[0]
+                let dateToken = suffixTokens[1]
+                if isShortNumericVersionToken(pointToken), isDateToken(dateToken) {
+                    return "\(baseDisplayName).\(pointToken) (\(dateToken))"
+                }
+            }
+        }
+
+        return "\(baseDisplayName) (\(normalizedSuffix))"
+    }
+
+    private static func isShortNumericVersionToken(_ token: String) -> Bool {
+        guard token.allSatisfy(\.isNumber) else { return false }
+        return token.count <= 2
+    }
+
+    private static func isDateToken(_ token: String) -> Bool {
+        guard token.count == 8, token.allSatisfy(\.isNumber) else { return false }
+        return true
     }
     
     private static func mapProviderName(_ provider: String) -> String {
