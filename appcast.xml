@@ -7,6 +7,25 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.06</title>
+	            <description><![CDATA[
+	                <h3>Updated</h3>
+	                <ul>
+	                <li>Update for v1.06.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Mon, 20 Apr 2026 00:00:00 +0000</pubDate>
+	            <sparkle:version>1.06</sparkle:version>
+	            <sparkle:shortVersionString>1.06</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.06/Warden.zip"
+	                       sparkle:version="1.06"
+	                       sparkle:shortVersionString="1.06"
+	                       type="application/zip"
+	                       length="16169035"
+	                       sparkle:edSignature="8XL8e5diKtp1fXDBnGetWW1+74eCKmjPuQc53n7K6bmXhRKfdkPPz+0N54kjzsMComrO2v00USxDwe6ol09/DQ==" />
+	        </item>
+	        
+	        <item>
 	            <title>Version 1.05</title>
 	            <description><![CDATA[
 	                <h3>Improved</h3>
