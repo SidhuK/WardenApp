@@ -12,6 +12,7 @@ struct QuickChatView: View {
     // We'll use a dedicated ChatEntity for quick chat
     @State private var quickChatEntity: ChatEntity?
     @AppStorage("quickChatChatID") private var quickChatChatID: String?
+    @AppStorage("quickChatUsesClipboardContext") private var quickChatUsesClipboardContext: Bool = true
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -74,6 +75,13 @@ struct QuickChatView: View {
             ensureQuickChatEntity()
             checkClipboard()
         }
+        .onChange(of: quickChatUsesClipboardContext) { _, usesClipboardContext in
+            if usesClipboardContext {
+                checkClipboard()
+            } else {
+                clipboardContext = nil
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .resetQuickChat)) { _ in
             resetChat()
         }
@@ -91,13 +99,24 @@ struct QuickChatView: View {
     }
     
     private func checkClipboard() {
-        // If clipboard has text, show it as context
-        let pasteboard = NSPasteboard.general
-        if let string = pasteboard.string(forType: .string), !string.isEmpty {
-            if string.count < 5000 {
-                self.clipboardContext = string
-            }
+        guard quickChatUsesClipboardContext else {
+            clipboardContext = nil
+            return
         }
+
+        let pasteboard = NSPasteboard.general
+        clipboardContext = Self.clipboardContext(
+            from: pasteboard.string(forType: .string),
+            usesClipboardContext: quickChatUsesClipboardContext
+        )
+    }
+
+    static func clipboardContext(from string: String?, usesClipboardContext: Bool) -> String? {
+        guard usesClipboardContext, let string, !string.isEmpty, string.count < 5000 else {
+            return nil
+        }
+
+        return string
     }
     
     private func ensureQuickChatEntity() {
