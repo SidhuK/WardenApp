@@ -99,14 +99,8 @@ struct QuickChatView: View {
     }
     
     private func checkClipboard() {
-        guard quickChatUsesClipboardContext else {
-            clipboardContext = nil
-            return
-        }
-
-        let pasteboard = NSPasteboard.general
         clipboardContext = Self.clipboardContext(
-            from: pasteboard.string(forType: .string),
+            from: NSPasteboard.general.string(forType: .string),
             usesClipboardContext: quickChatUsesClipboardContext
         )
     }
