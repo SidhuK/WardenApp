@@ -38,3 +38,17 @@ final class ModelMetadataFormattingTests: XCTestCase {
         XCTAssertEqual(displayName, "Claude Haiku 4.5 (20251001)")
     }
 }
+
+final class QuickChatClipboardContextTests: XCTestCase {
+    func testClipboardContextUsesTextWhenEnabled() {
+        let context = QuickChatView.clipboardContext(from: "Existing clipboard text", usesClipboardContext: true)
+
+        XCTAssertEqual(context, "Existing clipboard text")
+    }
+
+    func testClipboardContextIgnoresTextWhenDisabled() {
+        let context = QuickChatView.clipboardContext(from: "Existing clipboard text", usesClipboardContext: false)
+
+        XCTAssertNil(context)
+    }
+}

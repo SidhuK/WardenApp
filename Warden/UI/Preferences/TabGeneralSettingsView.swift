@@ -9,6 +9,7 @@ struct TabGeneralSettingsView: View {
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
     @AppStorage("groupChatsByDateInSidebar") private var groupChatsByDateInSidebar: Bool = true
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
+    @AppStorage("quickChatUsesClipboardContext") private var quickChatUsesClipboardContext: Bool = true
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
@@ -152,6 +153,17 @@ struct TabGeneralSettingsView: View {
                                 subtitle: "Show Warden in the menu bar for quick access"
                             ) {
                                 Toggle("", isOn: $showMenuBarIcon)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
+                            }
+
+                            SettingsDivider()
+
+                            SettingsRow(
+                                title: "Quick Chat Clipboard Context",
+                                subtitle: "Use clipboard text as context in Quick Chat"
+                            ) {
+                                Toggle("", isOn: $quickChatUsesClipboardContext)
                                     .toggleStyle(.switch)
                                     .labelsHidden()
                             }
