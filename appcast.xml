@@ -7,6 +7,29 @@
 	        <language>en</language>
 	        
 	        <item>
+	            <title>Version 1.07</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>Added a Quick Chat Clipboard Context toggle in General Settings to control whether Quick Chat uses clipboard text as prompt context.</li>
+	                </ul>
+	                <h3>Improved</h3>
+	                <ul>
+	                <li>Refactored Quick Chat clipboard handling into a testable helper with unit coverage.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Tue, 28 Apr 2026 00:00:00 +0000</pubDate>
+	            <sparkle:version>1.07</sparkle:version>
+	            <sparkle:shortVersionString>1.07</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.07/Warden.zip"
+	                       sparkle:version="1.07"
+	                       sparkle:shortVersionString="1.07"
+	                       type="application/zip"
+	                       length="16170260"
+	                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+	        </item>
+	        
+	        <item>
 	            <title>Version 1.06</title>
 	            <description><![CDATA[
 	                <h3>Updated</h3>
