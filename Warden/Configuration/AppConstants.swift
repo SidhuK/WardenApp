@@ -683,6 +683,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     // MARK: - Web Search Configuration
     struct WebSearchConfig {
         static let providerKey = "webSearchProvider"
+        static let maxResultsKey = "tavilyMaxResults"
         static let defaultMaxResults = 5
         static let maxResultsLimit = 10
         static let searchCommandPrefix = "/search"
@@ -694,7 +695,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
         static let baseURL = "https://api.tavily.com"
         static let defaultSearchDepth = "basic"
         static let searchDepthKey = "tavilySearchDepth"
-        static let maxResultsKey = "tavilyMaxResults"
+        static let maxResultsKey = WebSearchConfig.maxResultsKey
         static let includeAnswerKey = "tavilyIncludeAnswer"
     }
 
@@ -707,6 +708,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     
     // Maintain backward compatibility
     static let webSearchProviderKey = WebSearchConfig.providerKey
+    static let webSearchMaxResultsKey = WebSearchConfig.maxResultsKey
     static let webSearchDefaultMaxResults = WebSearchConfig.defaultMaxResults
     static let webSearchMaxResultsLimit = WebSearchConfig.maxResultsLimit
     static let tavilyBaseURL = TavilyConfig.baseURL

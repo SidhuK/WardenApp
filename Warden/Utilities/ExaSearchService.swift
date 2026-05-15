@@ -24,7 +24,7 @@ class ExaSearchService {
             query: query,
             type: searchType,
             numResults: maxResults,
-            contents: ExaSearchContents(highlights: true)
+            contents: ExaSearchContents(highlights: true, text: true)
         )
 
         let request = try prepareRequest(searchRequest, apiKey: apiKey)

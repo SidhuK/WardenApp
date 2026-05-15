@@ -11,6 +11,7 @@ struct ExaSearchRequest: Encodable {
 
 struct ExaSearchContents: Encodable {
     let highlights: Bool
+    let text: Bool
 }
 
 // MARK: - Exa Search Response

@@ -27,7 +27,7 @@ class WebSearchService {
         await onStatusUpdate(.searching(query: query))
 
         let provider = WebSearchProvider.selected
-        let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
+        let maxResults = UserDefaults.standard.integer(forKey: AppConstants.webSearchMaxResultsKey)
         let resultsLimit = maxResults > 0 ? maxResults : AppConstants.webSearchDefaultMaxResults
 
         #if DEBUG

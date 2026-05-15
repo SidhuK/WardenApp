@@ -249,7 +249,7 @@ struct TabWebSearchView: View {
             ?? AppConstants.tavilyDefaultSearchDepth
         exaSearchType = UserDefaults.standard.string(forKey: AppConstants.exaSearchTypeKey)
             ?? AppConstants.exaDefaultSearchType
-        maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
+        maxResults = UserDefaults.standard.integer(forKey: AppConstants.webSearchMaxResultsKey)
         if maxResults == 0 { maxResults = AppConstants.webSearchDefaultMaxResults }
 
         if UserDefaults.standard.object(forKey: AppConstants.tavilyIncludeAnswerKey) == nil {
@@ -266,7 +266,7 @@ struct TabWebSearchView: View {
         UserDefaults.standard.set(selectedProvider.rawValue, forKey: AppConstants.webSearchProviderKey)
         UserDefaults.standard.set(searchDepth, forKey: AppConstants.tavilySearchDepthKey)
         UserDefaults.standard.set(exaSearchType, forKey: AppConstants.exaSearchTypeKey)
-        UserDefaults.standard.set(maxResults, forKey: AppConstants.tavilyMaxResultsKey)
+        UserDefaults.standard.set(maxResults, forKey: AppConstants.webSearchMaxResultsKey)
         UserDefaults.standard.set(includeAnswer, forKey: AppConstants.tavilyIncludeAnswerKey)
         showingSaveSuccess = true
     }

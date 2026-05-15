@@ -166,9 +166,7 @@ class ChatGPTHandler: BaseAPIHandler {
             "temperature": temperatureOverride,
         ]
 
-        let isOpenAIReasoningModel = Self.isReasoningModel(self.model, provider: name)
-        let shouldSendReasoningEffort =
-            isOpenAIReasoningModel || provider == .xai || (provider == .fireworks && settings.reasoningEffort != .off)
+        let shouldSendReasoningEffort = isReasoningModel || provider == .xai
         
         if shouldSendReasoningEffort {
             jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
