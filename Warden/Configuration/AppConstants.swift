@@ -665,29 +665,47 @@ Remember that true productivity serves your overall life satisfaction and well-b
         static let quickChat = "⌘⇧Space"
     }
     
-    // MARK: - Tavily Search Configuration
-    struct TavilyConfig {
-        static let baseURL = "https://api.tavily.com"
-        static let defaultSearchDepth = "basic"
+    // MARK: - Web Search Configuration
+    struct WebSearchConfig {
+        static let providerKey = "webSearchProvider"
         static let defaultMaxResults = 5
         static let maxResultsLimit = 10
         static let searchCommandPrefix = "/search"
         static let searchCommandAliases = ["/search", "/web", "/google"]
+    }
+
+    // MARK: - Tavily Search Configuration
+    struct TavilyConfig {
+        static let baseURL = "https://api.tavily.com"
+        static let defaultSearchDepth = "basic"
         static let searchDepthKey = "tavilySearchDepth"
         static let maxResultsKey = "tavilyMaxResults"
         static let includeAnswerKey = "tavilyIncludeAnswer"
     }
+
+    // MARK: - Exa Search Configuration
+    struct ExaConfig {
+        static let baseURL = "https://api.exa.ai"
+        static let defaultSearchType = "auto"
+        static let searchTypeKey = "exaSearchType"
+    }
     
     // Maintain backward compatibility
+    static let webSearchProviderKey = WebSearchConfig.providerKey
+    static let webSearchDefaultMaxResults = WebSearchConfig.defaultMaxResults
+    static let webSearchMaxResultsLimit = WebSearchConfig.maxResultsLimit
     static let tavilyBaseURL = TavilyConfig.baseURL
     static let tavilyDefaultSearchDepth = TavilyConfig.defaultSearchDepth
-    static let tavilyDefaultMaxResults = TavilyConfig.defaultMaxResults
-    static let tavilyMaxResultsLimit = TavilyConfig.maxResultsLimit
-    static let searchCommandPrefix = TavilyConfig.searchCommandPrefix
-    static let searchCommandAliases = TavilyConfig.searchCommandAliases
+    static let tavilyDefaultMaxResults = WebSearchConfig.defaultMaxResults
+    static let tavilyMaxResultsLimit = WebSearchConfig.maxResultsLimit
+    static let searchCommandPrefix = WebSearchConfig.searchCommandPrefix
+    static let searchCommandAliases = WebSearchConfig.searchCommandAliases
     static let tavilySearchDepthKey = TavilyConfig.searchDepthKey
     static let tavilyMaxResultsKey = TavilyConfig.maxResultsKey
     static let tavilyIncludeAnswerKey = TavilyConfig.includeAnswerKey
+    static let exaBaseURL = ExaConfig.baseURL
+    static let exaDefaultSearchType = ExaConfig.defaultSearchType
+    static let exaSearchTypeKey = ExaConfig.searchTypeKey
     
     // MARK: - HTML Preview Configuration
     static let viewportMeta = "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"

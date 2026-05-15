@@ -5,22 +5,26 @@ import os
 class TavilyKeyManager {
     static let shared = TavilyKeyManager()
     
-    private let service = "com.warden.tavily"
-    private let account = "tavily-api-key"
+    private let legacyTavilyService = "com.warden.tavily"
     
     private init() {}
     
     // MARK: - Save API Key
     
-    func saveApiKey(_ apiKey: String) -> Bool {
-        guard let data = apiKey.data(using: .utf8) else {
+    func saveApiKey(_ apiKey: String, for provider: WebSearchProvider = .tavily) -> Bool {
+        let trimmedApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedApiKey.isEmpty else {
+            return deleteApiKey(for: provider)
+        }
+
+        guard let data = trimmedApiKey.data(using: .utf8) else {
             return false
         }
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecAttrService as String: service(for: provider),
+            kSecAttrAccount as String: account(for: provider),
             kSecValueData as String: data
         ]
         
@@ -30,9 +34,11 @@ class TavilyKeyManager {
         
         #if DEBUG
         if status == errSecSuccess {
-            WardenLog.app.debug("Tavily API key saved successfully")
+            WardenLog.app.debug("\(provider.displayName, privacy: .public) API key saved successfully")
         } else {
-            WardenLog.app.debug("Failed to save Tavily API key (status: \(status, privacy: .public))")
+            WardenLog.app.debug(
+                "Failed to save \(provider.displayName, privacy: .public) API key (status: \(status, privacy: .public))"
+            )
         }
         #endif
         
@@ -41,11 +47,11 @@ class TavilyKeyManager {
     
     // MARK: - Retrieve API Key
     
-    func getApiKey() -> String? {
+    func getApiKey(for provider: WebSearchProvider = .tavily) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecAttrService as String: service(for: provider),
+            kSecAttrAccount as String: account(for: provider),
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
@@ -58,31 +64,36 @@ class TavilyKeyManager {
               let apiKey = String(data: data, encoding: .utf8) else {
             #if DEBUG
             if status != errSecItemNotFound {
-                WardenLog.app.debug("Failed to retrieve Tavily API key (status: \(status, privacy: .public))")
+                WardenLog.app.debug(
+                    "Failed to retrieve \(provider.displayName, privacy: .public) API key (status: \(status, privacy: .public))"
+                )
             }
             #endif
             return nil
         }
         
-        return apiKey
+        let trimmedApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedApiKey.isEmpty ? nil : trimmedApiKey
     }
     
     // MARK: - Delete API Key
     
-    func deleteApiKey() -> Bool {
+    func deleteApiKey(for provider: WebSearchProvider = .tavily) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
+            kSecAttrService as String: service(for: provider),
+            kSecAttrAccount as String: account(for: provider)
         ]
         
         let status = SecItemDelete(query as CFDictionary)
         
         #if DEBUG
         if status == errSecSuccess {
-            WardenLog.app.debug("Tavily API key deleted successfully")
+            WardenLog.app.debug("\(provider.displayName, privacy: .public) API key deleted successfully")
         } else if status != errSecItemNotFound {
-            WardenLog.app.debug("Failed to delete Tavily API key (status: \(status, privacy: .public))")
+            WardenLog.app.debug(
+                "Failed to delete \(provider.displayName, privacy: .public) API key (status: \(status, privacy: .public))"
+            )
         }
         #endif
         
@@ -91,7 +102,25 @@ class TavilyKeyManager {
     
     // MARK: - Check if API Key Exists
     
-    func hasApiKey() -> Bool {
-        return getApiKey() != nil
+    func hasApiKey(for provider: WebSearchProvider = .tavily) -> Bool {
+        return getApiKey(for: provider) != nil
+    }
+
+    private func service(for provider: WebSearchProvider) -> String {
+        switch provider {
+        case .tavily:
+            return legacyTavilyService
+        case .exa:
+            return "com.warden.exa"
+        }
+    }
+
+    private func account(for provider: WebSearchProvider) -> String {
+        switch provider {
+        case .tavily:
+            return "tavily-api-key"
+        case .exa:
+            return "exa-api-key"
+        }
     }
 }

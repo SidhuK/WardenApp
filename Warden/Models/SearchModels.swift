@@ -1,5 +1,37 @@
 import Foundation
 
+// MARK: - Web Search Provider
+
+enum WebSearchProvider: String, CaseIterable, Identifiable, Codable {
+    case tavily
+    case exa
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .tavily:
+            return "Tavily"
+        case .exa:
+            return "Exa"
+        }
+    }
+
+    var apiKeyURL: URL {
+        switch self {
+        case .tavily:
+            return URL(string: "https://app.tavily.com")!
+        case .exa:
+            return URL(string: "https://dashboard.exa.ai/api-keys")!
+        }
+    }
+
+    static var selected: WebSearchProvider {
+        let rawValue = UserDefaults.standard.string(forKey: AppConstants.webSearchProviderKey)
+        return rawValue.flatMap(WebSearchProvider.init(rawValue:)) ?? .tavily
+    }
+}
+
 // MARK: - Tool Call Status
 
 public enum WardenToolCallStatus: Equatable, Identifiable, Codable {

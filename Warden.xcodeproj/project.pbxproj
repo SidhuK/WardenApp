@@ -155,6 +155,10 @@
 		C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */; };
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
 		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
+		C4E5A0012F40000100E5A001 /* ExaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0022F40000100E5A002 /* ExaModels.swift */; };
+		C4E5A0032F40000100E5A003 /* WebSearchError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0042F40000100E5A004 /* WebSearchError.swift */; };
+		C4E5A0052F40000100E5A005 /* ExaSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0062F40000100E5A006 /* ExaSearchService.swift */; };
+		C4E5A0072F40000100E5A007 /* WebSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0082F40000100E5A008 /* WebSearchService.swift */; };
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
 		C46B73E82EB1D66A00D07416 /* TabToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E72EB1D66A00D07416 /* TabToolsView.swift */; };
 		C46C81692ED47DAD00F238F3 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = C46C81682ED47DAD00F238F3 /* MCP */; };
@@ -364,6 +368,10 @@
 		C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilySearchService.swift; sourceTree = "<group>"; };
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
 		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
+		C4E5A0022F40000100E5A002 /* ExaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaModels.swift; sourceTree = "<group>"; };
+		C4E5A0042F40000100E5A004 /* WebSearchError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchError.swift; sourceTree = "<group>"; };
+		C4E5A0062F40000100E5A006 /* ExaSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaSearchService.swift; sourceTree = "<group>"; };
+		C4E5A0082F40000100E5A008 /* WebSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchService.swift; sourceTree = "<group>"; };
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
 		C46B73E72EB1D66A00D07416 /* TabToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabToolsView.swift; sourceTree = "<group>"; };
 		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
@@ -616,6 +624,7 @@
 			isa = PBXGroup;
 			children = (
 				C46B73DE2EB1D5BB00D07415 /* TavilyModels.swift */,
+				C4E5A0022F40000100E5A002 /* ExaModels.swift */,
 				4A27FF922DA1C4640075D730 /* ImageAttachment.swift */,
 				C4632BC12ECDD29000D72DA1 /* SearchModels.swift */,
 				7F4955A92E06FAFF00516E2D /* FileAttachment.swift */,
@@ -653,7 +662,10 @@
 				C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */,
 				4AADD98B2C924FB400242D20 /* APIServiceManager.swift */,
 				C450598F2ED6BEB500AF3449 /* ChatBranchingManager.swift */,
+				C4E5A0082F40000100E5A008 /* WebSearchService.swift */,
 				C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */,
+				C4E5A0062F40000100E5A006 /* ExaSearchService.swift */,
+				C4E5A0042F40000100E5A004 /* WebSearchError.swift */,
 				C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */,
 				C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */,
 				C4870E732ECC2EBC003930F7 /* ModelMetadataCache.swift */,
@@ -1024,6 +1036,7 @@
 				C479718D2EBF3E410097C000 /* MessageListView.swift in Sources */,
 				C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */,
 				C46B73E82EB1D66A00D07416 /* TabToolsView.swift in Sources */,
+				C4E5A0012F40000100E5A001 /* ExaModels.swift in Sources */,
 				4A885C562CEA3F6C0018BBED /* ChatListView.swift in Sources */,
 				4AADD98C2C924FBA00242D20 /* APIServiceManager.swift in Sources */,
 				7F60244E2DEA0771007AB8FC /* RephraseService.swift in Sources */,
@@ -1053,10 +1066,12 @@
 				4A27FF912DA1C43E0075D730 /* MessageInputView.swift in Sources */,
 				C4F1D0A22F5D123400ABCDE1 /* ReasoningEffortMenu.swift in Sources */,
 				C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */,
+				C4E5A0032F40000100E5A003 /* WebSearchError.swift in Sources */,
 				7F298E1C2DF81EAD00326DBB /* ProjectSummaryView.swift in Sources */,
 				4A49187A2D9F4186007EB4A2 /* ToolbarButton.swift in Sources */,
 				4A270AE329D4AFE7005E063C /* AppConstants.swift in Sources */,
 				C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */,
+				C4E5A0052F40000100E5A005 /* ExaSearchService.swift in Sources */,
 				4A399C9929BC8FEF00E98796 /* WardenApp.swift in Sources */,
 				4A775A042C1486F3004301D3 /* Extensions.swift in Sources */,
 				7F6BED732DF701D3006B9E6E /* ProjectSettingsView.swift in Sources */,
@@ -1072,6 +1087,7 @@
 				C450598E2ED6A49900AF3449 /* SubmitTextEditor.swift in Sources */,
 				4A399CC629BCF02500E98796 /* ChatStore.swift in Sources */,
 				C4632BC22ECDD29000D72DA1 /* SearchModels.swift in Sources */,
+				C4E5A0072F40000100E5A007 /* WebSearchService.swift in Sources */,
 				4A315DB22C8CD8410095ABD1 /* TabAIPersonasView.swift in Sources */,
 				C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */,
 				C4FF238D2EED7FD300C17D8B /* StreamingTaskController.swift in Sources */,
@@ -1384,7 +1400,7 @@
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1407,7 +1423,7 @@
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1429,7 +1445,7 @@
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAIUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1451,7 +1467,7 @@
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAIUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

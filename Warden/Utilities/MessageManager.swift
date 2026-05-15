@@ -8,7 +8,7 @@ final class MessageManager: ObservableObject {
     private var apiService: APIService
     private var viewContext: NSManagedObjectContext
     private let streamingTaskController = StreamingTaskController()
-    private let tavilyService = TavilySearchService()
+    private let webSearchService = WebSearchService()
     private let streamUpdateInterval = AppConstants.streamedResponseUpdateUIInterval
     
     // Debounce saving to Core Data
@@ -42,7 +42,7 @@ final class MessageManager: ObservableObject {
     }
     
     func isSearchCommand(_ message: String) -> (isSearch: Bool, query: String?) {
-        return tavilyService.isSearchCommand(message)
+        return webSearchService.isSearchCommand(message)
     }
     
     func stopStreaming() {
@@ -71,10 +71,10 @@ final class MessageManager: ObservableObject {
         viewContext.performSaveWithRetry(attempts: 1)
     }
     
-    // MARK: - Tavily Search Support
+    // MARK: - Web Search Support
     
     func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
-        let (context, urls, sources) = try await tavilyService.performSearch(query: query) { [weak self] status in
+        let (context, urls, sources) = try await webSearchService.performSearch(query: query) { [weak self] status in
             self?.searchStatus = status
             if case .completed(let sources) = status {
                 self?.lastSearchSources = sources
@@ -101,7 +101,7 @@ final class MessageManager: ObservableObject {
         var finalMessage = message
          
          // Check if web search is enabled (either by toggle or by command)
-        let searchCheck = tavilyService.isSearchCommand(message)
+        let searchCheck = webSearchService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
         
         if shouldSearch {
@@ -168,7 +168,7 @@ final class MessageManager: ObservableObject {
         var finalMessage = message
          
          // Check if web search is enabled (either by toggle or by command)
-        let searchCheck = tavilyService.isSearchCommand(message)
+        let searchCheck = webSearchService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
         
         if shouldSearch {
@@ -871,7 +871,7 @@ final class MessageManager: ObservableObject {
         // Convert citations to clickable links if we have search URLs
         let finalMessage: String
         if let urls = searchUrls, !urls.isEmpty {
-            finalMessage = tavilyService.convertCitationsToLinks(message, urls: urls)
+            finalMessage = webSearchService.convertCitationsToLinks(message, urls: urls)
         } else {
             finalMessage = message
         }
@@ -945,7 +945,7 @@ final class MessageManager: ObservableObject {
         // Only convert citations at the final update, not during intermediate streaming updates
         let finalMessage: String
         if appendCitations, let urls = searchUrls, !urls.isEmpty {
-            finalMessage = tavilyService.convertCitationsToLinks(accumulatedResponse, urls: urls)
+            finalMessage = webSearchService.convertCitationsToLinks(accumulatedResponse, urls: urls)
         } else {
             finalMessage = accumulatedResponse
         }

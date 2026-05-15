@@ -1,42 +1,6 @@
 import Foundation
 import os
 
-// MARK: - Tavily Error
-
-enum TavilyError: Error {
-    case noApiKey
-    case invalidRequest
-    case networkError(Error)
-    case invalidResponse
-    case decodingFailed(String)
-    case serverError(String)
-    case unauthorized
-    case rateLimited
-}
-
-extension TavilyError: LocalizedError {
-    var errorDescription: String? {
-        switch self {
-        case .noApiKey:
-            return "Tavily API key not configured. Please add it in Preferences > Web Search."
-        case .invalidRequest:
-            return "Invalid search request. Please try again."
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
-        case .invalidResponse:
-            return "Invalid response from Tavily API."
-        case .decodingFailed(let message):
-            return "Failed to decode response: \(message)"
-        case .serverError(let message):
-            return "Tavily server error: \(message)"
-        case .unauthorized:
-            return "Invalid Tavily API key. Please check your API key in Preferences."
-        case .rateLimited:
-            return "Tavily API rate limit exceeded. Please try again later."
-        }
-    }
-}
-
 // MARK: - Tavily Search Service
 
 class TavilySearchService {
@@ -70,7 +34,9 @@ class TavilySearchService {
             ?? AppConstants.tavilyDefaultSearchDepth
         let maxResults = UserDefaults.standard.integer(forKey: AppConstants.tavilyMaxResultsKey)
         let resultsLimit = maxResults > 0 ? maxResults : AppConstants.tavilyDefaultMaxResults
-        let includeAnswer = UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
+        let includeAnswer = UserDefaults.standard.object(forKey: AppConstants.tavilyIncludeAnswerKey) == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: AppConstants.tavilyIncludeAnswerKey)
         
         #if DEBUG
         WardenLog.app.debug(

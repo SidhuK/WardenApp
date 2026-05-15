@@ -24,7 +24,7 @@ struct TabToolsView: View {
             
             switch selectedSection {
             case .webSearch:
-                TabTavilySearchView()
+                TabWebSearchView()
             case .mcpAgents:
                 MCPSettingsView()
             }

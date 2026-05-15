@@ -3,7 +3,7 @@ import SwiftUI
 
 enum ErrorType {
     case apiError(APIError)
-    case tavilyError(TavilyError)
+    case webSearchError(WebSearchError)
     case generic(Error)
 }
 
@@ -21,7 +21,7 @@ struct ErrorMessage {
         switch type {
         case .apiError(let apiError):
             return apiErrorTitle(apiError)
-        case .tavilyError:
+        case .webSearchError:
             return "Web Search Failed"
         case .generic:
             return "Error"
@@ -32,8 +32,8 @@ struct ErrorMessage {
         switch type {
         case .apiError(let apiError):
             return apiErrorMessage(apiError)
-        case .tavilyError(let tavilyError):
-            return tavilyError.localizedDescription ?? "An error occurred during search"
+        case .webSearchError(let webSearchError):
+            return webSearchError.localizedDescription ?? "An error occurred during search"
         case .generic(let error):
             return error.localizedDescription
         }
@@ -44,8 +44,8 @@ struct ErrorMessage {
         case .apiError(let apiError):
             if case .unauthorized = apiError { return false }
             return retryCount < 3
-        case .tavilyError(let tavilyError):
-            if case .unauthorized = tavilyError { return false }
+        case .webSearchError(let webSearchError):
+            if case .unauthorized = webSearchError { return false }
             return retryCount < 3
         case .generic:
             return retryCount < 3
@@ -56,7 +56,7 @@ struct ErrorMessage {
         switch type {
         case .apiError(.unauthorized):
             return true
-        case .tavilyError(.noApiKey), .tavilyError(.unauthorized):
+        case .webSearchError(.noApiKey), .webSearchError(.unauthorized):
             return true
         default:
             return false
@@ -111,15 +111,19 @@ struct ErrorMessage {
         self.init(type: .apiError(apiError), timestamp: timestamp)
     }
     
+    init(webSearchError: WebSearchError, timestamp: Date = Date()) {
+        self.init(type: .webSearchError(webSearchError), timestamp: timestamp)
+    }
+
     init(tavilyError: TavilyError, timestamp: Date = Date()) {
-        self.init(type: .tavilyError(tavilyError), timestamp: timestamp)
+        self.init(webSearchError: tavilyError, timestamp: timestamp)
     }
     
     init(error: Error, timestamp: Date = Date()) {
         if let apiError = error as? APIError {
             self.init(type: .apiError(apiError), timestamp: timestamp)
-        } else if let tavilyError = error as? TavilyError {
-            self.init(type: .tavilyError(tavilyError), timestamp: timestamp)
+        } else if let webSearchError = error as? WebSearchError {
+            self.init(type: .webSearchError(webSearchError), timestamp: timestamp)
         } else {
             self.init(type: .generic(error), timestamp: timestamp)
         }
@@ -212,7 +216,7 @@ struct ErrorBubbleView: View {
 
         ErrorBubbleView(
             error: ErrorMessage(
-                tavilyError: .noApiKey,
+                webSearchError: .noApiKey,
                 timestamp: Date()
             ),
             onRetry: {},

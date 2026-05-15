@@ -91,15 +91,15 @@ struct SearchErrorView: View {
     }
     
     private var errorMessage: String {
-        if let tavilyError = error as? TavilyError {
-            return tavilyError.localizedDescription
+        if let webSearchError = error as? WebSearchError {
+            return webSearchError.localizedDescription
         }
         return error.localizedDescription
     }
     
     private var isApiKeyError: Bool {
-        if let tavilyError = error as? TavilyError {
-            switch tavilyError {
+        if let webSearchError = error as? WebSearchError {
+            switch webSearchError {
             case .noApiKey, .unauthorized:
                 return true
             default:
@@ -116,14 +116,14 @@ struct SearchErrorView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 16) {
             SearchErrorView(
-                error: TavilyError.noApiKey,
+                error: WebSearchError.noApiKey,
                 onRetry: {},
                 onDismiss: {},
                 onGoToSettings: {}
             )
             
             SearchErrorView(
-                error: TavilyError.rateLimited,
+                error: WebSearchError.rateLimited,
                 onRetry: {},
                 onDismiss: {},
                 onGoToSettings: nil
