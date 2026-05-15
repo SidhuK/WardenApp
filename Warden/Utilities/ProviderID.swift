@@ -12,6 +12,7 @@ enum ProviderID: String, Codable, CaseIterable, Sendable {
     case perplexity
     case deepseek
     case pollinations
+    case fireworks
     case ollama
     case lmstudio
 }
@@ -42,6 +43,8 @@ extension ProviderID {
             self = .deepseek
         case "pollinations", "pollinations ai":
             self = .pollinations
+        case "fireworks", "fireworks ai":
+            self = .fireworks
         case "ollama":
             self = .ollama
         case "lmstudio", "lm studio":
@@ -78,7 +81,7 @@ struct ProviderAttachmentCapabilities: Sendable {
                 supportsNativeFileInputs: true
             )
 
-        case .deepseek, .gemini, .lmstudio, .openrouter, .pollinations, .xai:
+        case .deepseek, .fireworks, .gemini, .lmstudio, .openrouter, .pollinations, .xai:
             return ProviderAttachmentCapabilities(
                 providerID: providerID,
                 supportsImageInputs: true,

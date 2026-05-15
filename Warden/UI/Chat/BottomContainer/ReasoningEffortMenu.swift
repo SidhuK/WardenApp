@@ -44,6 +44,8 @@ struct ReasoningEffortMenu: View {
             return hasReasoningCapability
         case .codex:
             return true
+        case .fireworks:
+            return hasReasoningCapability
         case .xai:
             return true
         case .openrouter:
@@ -64,6 +66,8 @@ struct ReasoningEffortMenu: View {
         switch providerID {
         case .claude:
             return true
+        case .fireworks:
+            return false
         case .xai:
             return true
         case .openrouter:

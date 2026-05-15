@@ -38,6 +38,8 @@ class ModelMetadataFetcherFactory {
             return LiteLLMBackedFetcher(provider: "deepseek")
         case .pollinations:
             return GenericMetadataFetcher(provider: "pollinations")
+        case .fireworks:
+            return FireworksMetadataFetcher()
         case .ollama, .lmstudio:
             return LocalModelMetadataFetcher()
         case nil:
@@ -172,6 +174,63 @@ final class LiteLLMBackedFetcher: ModelMetadataFetcher, Sendable {
         return ModelMetadata(
             modelId: modelId,
             provider: provider,
+            pricing: nil,
+            maxContextTokens: nil,
+            capabilities: [],
+            latency: nil,
+            costLevel: nil,
+            lastUpdated: Date(),
+            source: .unknown
+        )
+    }
+}
+
+// MARK: - Fireworks Fetcher
+
+final class FireworksMetadataFetcher: ModelMetadataFetcher, Sendable {
+    private let liteLLMFetcher = LiteLLMMetadataFetcher()
+
+    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
+        let metadata = await liteLLMFetcher.fetchMetadata(for: "fireworks")
+        var expanded = metadata
+
+        for (modelId, value) in metadata {
+            guard !modelId.hasPrefix("accounts/") else { continue }
+            expanded["accounts/fireworks/models/\(modelId)"] = ModelMetadata(
+                modelId: "accounts/fireworks/models/\(modelId)",
+                provider: "fireworks",
+                pricing: value.pricing,
+                maxContextTokens: value.maxContextTokens,
+                capabilities: value.capabilities,
+                supportedParameters: value.supportedParameters,
+                defaultReasoningEffort: value.defaultReasoningEffort,
+                supportedReasoningEfforts: value.supportedReasoningEfforts,
+                supportedReasoningEffortDescriptions: value.supportedReasoningEffortDescriptions,
+                latency: value.latency,
+                costLevel: value.costLevel,
+                lastUpdated: value.lastUpdated,
+                source: value.source
+            )
+        }
+
+        return expanded
+    }
+
+    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
+        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
+
+        if let metadata = allMetadata[modelId] {
+            return metadata
+        }
+
+        let shortID = modelId.split(separator: "/").last.map(String.init) ?? modelId
+        if let metadata = allMetadata[shortID] {
+            return metadata
+        }
+
+        return ModelMetadata(
+            modelId: modelId,
+            provider: "fireworks",
             pricing: nil,
             maxContextTokens: nil,
             capabilities: [],

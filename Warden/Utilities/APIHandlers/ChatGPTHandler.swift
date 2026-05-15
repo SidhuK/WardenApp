@@ -167,7 +167,8 @@ class ChatGPTHandler: BaseAPIHandler {
         ]
 
         let isOpenAIReasoningModel = Self.isReasoningModel(self.model, provider: name)
-        let shouldSendReasoningEffort = isOpenAIReasoningModel || provider == .xai
+        let shouldSendReasoningEffort =
+            isOpenAIReasoningModel || provider == .xai || (provider == .fireworks && settings.reasoningEffort != .off)
         
         if shouldSendReasoningEffort {
             jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue

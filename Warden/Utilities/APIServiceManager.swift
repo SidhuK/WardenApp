@@ -371,6 +371,8 @@ class APIServiceManager {
             return "deepseek-chat"
         case "pollinations":
             return AppConstants.defaultApiConfigurations["pollinations"]?.defaultModel ?? "openai"
+        case "fireworks":
+            return AppConstants.defaultApiConfigurations["fireworks"]?.defaultModel ?? "accounts/fireworks/models/deepseek-v3p1"
         case "perplexity":
             return "llama-3.1-sonar-small-128k-online"
         default:

@@ -177,6 +177,8 @@ actor LiteLLMMetadataFetcher {
             return lp == "perplexity"
         case "groq":
             return lp == "groq"
+        case "fireworks", "fireworks ai":
+            return lp == "fireworks_ai"
         default:
             return lp == target
         }
