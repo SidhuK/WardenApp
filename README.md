@@ -1,4 +1,4 @@
-<div align="center">
+ 
 
 # Warden
 
@@ -11,7 +11,7 @@ No Electron, no web wrappers—just a premium native experience.
 
 ![Warden Dark Mode](./assets/Dark%20Mode.png)
 
-</div>
+ 
 
 ```bash
 brew install --cask SidhuK/warden/warden
@@ -53,15 +53,18 @@ brew install --cask SidhuK/warden/warden
 
 ### Manual Download
 
-<div align="center">
+ 
 
-|                                           **Typical User**                                            |                             **Developer**                             |
-| :---------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------: |
-| [**Download Installer**](https://github.com/SidhuK/WardenApp/releases)<br>Simply drag to Applications | [**Build from Source**](#build-from-source)<br>Clone and run in Xcode |
 
-</div>
+| **Typical User**                                                                                   | **Developer**                                                      |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **[Download Installer](https://github.com/SidhuK/WardenApp/releases)** Simply drag to Applications | **[Build from Source](#build-from-source)** Clone and run in Xcode |
 
-<br>
+
+ 
+
+  
+
 
 ### Build from Source
 
@@ -87,11 +90,9 @@ Warden is open source and free. If you enjoy using it, you can support developme
 
 ---
 
-<div align="center">
+ 
 
-<a href="https://wisprflow.ai/r?KARAT1">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png" alt="Wispr Flow" width="40" />
-</a>
+![Wispr Flow](https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png)
 
 **[Get 1 month of Wispr Flow free](https://wisprflow.ai/r?KARAT1)** — Voice-to-text, 4x faster than typing
 
@@ -102,17 +103,12 @@ Licensed under Apache 2.0
 ![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
 
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%2FWardenApp&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%252FWardenApp&labelColor=171717&color=FF570A&link=https%253A%252F%252Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
-<a href="https://findly.tools/wardenapp?utm_source=wardenapp" target="_blank">
-  <img 
-    src="https://findly.tools/badges/findly-tools-badge-light.svg" 
-    alt="Featured on findly.tools" 
-    width="150" 
-  />
+![Featured on findly.tools](https://findly.tools/badges/findly-tools-badge-light.svg)
 
-</div>
+ 
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=sidhuk/wardenapp&type=timeline&legend=bottom-right)](https://www.star-history.com/#sidhuk/wardenapp&type=timeline&legend=bottom-right)
+![Star History Chart](https://api.star-history.com/svg?repos=sidhuk/wardenapp&type=timeline&legend=bottom-right)
