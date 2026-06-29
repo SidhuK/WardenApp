@@ -29,7 +29,7 @@ Warden is different. It's built with 100% native code, making it:
 
 ## 🚀 Features
 
-- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity, OpenRouter and more using your own API key.
+- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity, OpenRouter, Requesty and more using your own API key.
 - **Local AI**: Full support for Ollama and LM Studio.
 - **Projects & Workspaces**: Organize chats into projects with colors, descriptions, and project-specific instructions.
 - **AI Assistants (Personas)**: Create custom assistants with different roles, tones, and default settings.

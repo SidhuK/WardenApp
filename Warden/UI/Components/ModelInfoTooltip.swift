@@ -130,6 +130,7 @@ struct ModelInfoTooltip: View {
         case "pollinations": return "Pollinations AI"
         case "groq": return "Groq"
         case "openrouter": return "OpenRouter"
+        case "requesty": return "Requesty"
         case "ollama": return "Ollama"
         case "mistral": return "Mistral"
         default: return provider.capitalized
