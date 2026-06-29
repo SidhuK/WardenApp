@@ -50,6 +50,8 @@ struct ReasoningEffortMenu: View {
             return true
         case .openrouter:
             return hasReasoningCapability
+        case .requesty:
+            return hasReasoningCapability
         default:
             if providerType.lowercased() == "openai_custom" {
                 return hasReasoningCapability
@@ -71,6 +73,8 @@ struct ReasoningEffortMenu: View {
         case .xai:
             return true
         case .openrouter:
+            return hasReasoningCapability
+        case .requesty:
             return hasReasoningCapability
         case .codex:
             return hasReasoningCapability

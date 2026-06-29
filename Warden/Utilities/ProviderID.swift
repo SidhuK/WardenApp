@@ -7,6 +7,7 @@ enum ProviderID: String, Codable, CaseIterable, Sendable {
     case gemini
     case groq
     case openrouter
+    case requesty
     case mistral
     case xai
     case perplexity
@@ -33,6 +34,8 @@ extension ProviderID {
             self = .groq
         case "openrouter", "open router":
             self = .openrouter
+        case "requesty":
+            self = .requesty
         case "mistral":
             self = .mistral
         case "xai":
@@ -81,7 +84,7 @@ struct ProviderAttachmentCapabilities: Sendable {
                 supportsNativeFileInputs: true
             )
 
-        case .deepseek, .fireworks, .gemini, .lmstudio, .openrouter, .pollinations, .xai:
+        case .deepseek, .fireworks, .gemini, .lmstudio, .openrouter, .pollinations, .requesty, .xai:
             return ProviderAttachmentCapabilities(
                 providerID: providerID,
                 supportsImageInputs: true,

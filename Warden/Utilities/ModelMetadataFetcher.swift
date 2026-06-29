@@ -28,6 +28,8 @@ class ModelMetadataFetcherFactory {
             return LiteLLMBackedFetcher(provider: "groq")
         case .openrouter:
             return OpenRouterMetadataFetcher()
+        case .requesty:
+            return GenericMetadataFetcher(provider: "requesty")
         case .mistral:
             return LiteLLMBackedFetcher(provider: "mistral")
         case .xai:
