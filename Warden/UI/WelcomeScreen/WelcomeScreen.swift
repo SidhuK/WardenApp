@@ -7,27 +7,18 @@ struct WelcomeScreen: View {
     let newChat: () -> Void
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var showOnboarding = false
+    @State private var onboardingPresenter = WardenOnboardingPresenter()
 
     var body: some View {
-        Group {
-            if showOnboarding {
-                ZStack {
-                    AppConstants.backgroundWindow.ignoresSafeArea()
-                    WardenOnboardingView(
-                        apiServiceIsPresent: apiServiceIsPresent,
-                        onFinish: completeOnboarding,
-                        onDismiss: dismissOnboarding
-                    )
+        welcomeEmptyState
+            .onAppear {
+                if !hasCompletedOnboarding {
+                    presentOnboarding()
                 }
-            } else {
-                welcomeEmptyState
             }
-        }
-        .animation(.easeInOut(duration: 0.35), value: showOnboarding)
-        .onAppear {
-            showOnboarding = !hasCompletedOnboarding
-        }
+            .onDisappear {
+                onboardingPresenter.close()
+            }
     }
 
     private var welcomeEmptyState: some View {
@@ -114,7 +105,7 @@ struct WelcomeScreen: View {
     }
 
     private func setupGuideButton(icon: String) -> some View {
-        Button(action: replayOnboarding) {
+        Button(action: presentOnboarding) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 11))
@@ -132,9 +123,16 @@ struct WelcomeScreen: View {
         .buttonStyle(.plain)
     }
 
+    private func presentOnboarding() {
+        onboardingPresenter.present(
+            apiServiceIsPresent: apiServiceIsPresent,
+            onFinish: completeOnboarding,
+            onDismiss: dismissOnboarding
+        )
+    }
+
     private func completeOnboarding() {
         hasCompletedOnboarding = true
-        showOnboarding = false
         if apiServiceIsPresent {
             newChat()
         } else {
@@ -144,11 +142,6 @@ struct WelcomeScreen: View {
 
     private func dismissOnboarding() {
         hasCompletedOnboarding = true
-        showOnboarding = false
-    }
-
-    private func replayOnboarding() {
-        showOnboarding = true
     }
 }
 

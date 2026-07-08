@@ -1,24 +1,10 @@
-import SwiftUI
+import AppKit
 import TourKit
 
-struct WardenOnboardingView: View {
-    let apiServiceIsPresent: Bool
-    let onFinish: () -> Void
-    let onDismiss: () -> Void
+enum WardenOnboarding {
+    static let width: CGFloat = 660
 
-    var body: some View {
-        TourSlideshowView(
-            pages: Self.pages,
-            width: 660,
-            continueButtonTitle: "Continue",
-            finishButtonTitle: apiServiceIsPresent ? "Start Chatting" : "Open Settings",
-            onFinish: onFinish,
-            onClose: onDismiss
-        )
-        .padding()
-    }
-
-    private static let pages: [TourPage] = [
+    static let pages: [TourPage] = [
         TourPage(
             imageName: "tour-welcome",
             title: "Welcome to Warden",
@@ -47,11 +33,27 @@ struct WardenOnboardingView: View {
     ]
 }
 
-#Preview {
-    WardenOnboardingView(
-        apiServiceIsPresent: false,
-        onFinish: {},
-        onDismiss: {}
-    )
-    .frame(width: 800, height: 600)
+/// Presents TourKit's native macOS floating onboarding window.
+@MainActor
+final class WardenOnboardingPresenter {
+    private let tourController = TourKitWindowController()
+
+    func present(
+        apiServiceIsPresent: Bool,
+        onFinish: @escaping () -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
+        tourController.present(
+            pages: WardenOnboarding.pages,
+            width: WardenOnboarding.width,
+            continueButtonTitle: "Continue",
+            finishButtonTitle: apiServiceIsPresent ? "Start Chatting" : "Open Settings",
+            onFinish: onFinish,
+            onClose: onDismiss
+        )
+    }
+
+    func close() {
+        tourController.close()
+    }
 }
