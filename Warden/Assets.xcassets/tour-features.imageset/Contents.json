@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "tour-features.png",
+      "filename": "tour-features.jpg",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "tour-features@2x.png",
+      "filename": "tour-features@2x.jpg",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "tour-features@3x.png",
+      "filename": "tour-features@3x.jpg",
       "idiom": "universal",
       "scale": "3x"
     }

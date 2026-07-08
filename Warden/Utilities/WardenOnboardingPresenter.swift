@@ -34,7 +34,7 @@ enum WardenOnboarding {
     ]
 }
 
-/// Presents TourKit's onboarding card as a child of the main window for native macOS integration.
+/// Presents TourKit's floating onboarding window exactly as shown in the TourKit demo.
 @MainActor
 final class WardenOnboardingPresenter: ObservableObject {
     static let shared = WardenOnboardingPresenter()
@@ -42,7 +42,6 @@ final class WardenOnboardingPresenter: ObservableObject {
     @Published private(set) var isPresenting = false
 
     private let tourController = TourKitWindowController()
-    private weak var presentedWindow: NSWindow?
 
     private init() {}
 
@@ -54,13 +53,9 @@ final class WardenOnboardingPresenter: ObservableObject {
         guard !isPresenting else { return }
 
         Task {
-            try? await Task.sleep(for: .milliseconds(200))
+            try? await Task.sleep(for: .milliseconds(250))
             guard !isPresenting else { return }
-            present(
-                apiServiceIsPresent: apiServiceIsPresent,
-                onFinish: onFinish,
-                onDismiss: onDismiss
-            )
+            present(apiServiceIsPresent: apiServiceIsPresent, onFinish: onFinish, onDismiss: onDismiss)
         }
     }
 
@@ -69,18 +64,13 @@ final class WardenOnboardingPresenter: ObservableObject {
         onFinish: @escaping () -> Void,
         onDismiss: @escaping () -> Void
     ) {
-        guard !isPresenting else {
-            presentedWindow?.makeKeyAndOrderFront(nil)
-            return
-        }
-
         isPresenting = true
 
-        let window = tourController.present(
+        tourController.present(
             pages: WardenOnboarding.pages,
             width: WardenOnboarding.width,
             continueButtonTitle: "Continue",
-            finishButtonTitle: apiServiceIsPresent ? "Start Chatting" : "Open Settings",
+            finishButtonTitle: "Get Started",
             onFinish: { [weak self] in
                 self?.finishPresentation()
                 onFinish()
@@ -90,49 +80,15 @@ final class WardenOnboardingPresenter: ObservableObject {
                 onDismiss()
             }
         )
-
-        presentedWindow = window
-        attachToMainWindow(window)
     }
 
     func close() {
         guard isPresenting else { return }
-
-        if let window = presentedWindow, let parent = window.parent {
-            parent.removeChildWindow(window)
-        }
-
         tourController.close()
         finishPresentation()
     }
 
     private func finishPresentation() {
-        if let window = presentedWindow, let parent = window.parent {
-            parent.removeChildWindow(window)
-        }
         isPresenting = false
-        presentedWindow = nil
-    }
-
-    private func attachToMainWindow(_ tourWindow: NSWindow) {
-        tourWindow.level = .normal
-
-        guard let parent = NSApp.mainWindow ?? NSApp.keyWindow else {
-            tourWindow.center()
-            return
-        }
-
-        parent.addChildWindow(tourWindow, ordered: .above)
-        center(tourWindow, in: parent)
-        NSApp.activate(ignoringOtherApps: false)
-        tourWindow.makeKeyAndOrderFront(nil)
-    }
-
-    private func center(_ tourWindow: NSWindow, in parent: NSWindow) {
-        let parentFrame = parent.frame
-        var frame = tourWindow.frame
-        frame.origin.x = parentFrame.midX - frame.width / 2
-        frame.origin.y = parentFrame.midY - frame.height / 2
-        tourWindow.setFrame(frame, display: true)
     }
 }

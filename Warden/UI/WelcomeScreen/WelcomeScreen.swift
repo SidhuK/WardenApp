@@ -26,12 +26,17 @@ struct WelcomeScreen: View {
     }
 
     private var shouldShowOnboardingBackdrop: Bool {
-        onboardingPresenter.isPresenting && !hasCompletedOnboarding
+        onboardingPresenter.isPresenting
     }
 
     private var onboardingBackdrop: some View {
-        AppConstants.backgroundWindow
-            .ignoresSafeArea()
+        ZStack {
+            AppConstants.backgroundWindow
+                .ignoresSafeArea()
+            // Dim the main window so the floating TourKit card reads like the README demo.
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+        }
     }
 
     private var welcomeEmptyState: some View {

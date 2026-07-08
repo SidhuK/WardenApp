@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "tour-providers.png",
+      "filename": "tour-providers.jpg",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "tour-providers@2x.png",
+      "filename": "tour-providers@2x.jpg",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "tour-providers@3x.png",
+      "filename": "tour-providers@3x.jpg",
       "idiom": "universal",
       "scale": "3x"
     }
