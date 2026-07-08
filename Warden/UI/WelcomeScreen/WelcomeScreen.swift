@@ -7,18 +7,31 @@ struct WelcomeScreen: View {
     let newChat: () -> Void
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var onboardingPresenter = WardenOnboardingPresenter()
+    @ObservedObject private var onboardingPresenter = WardenOnboardingPresenter.shared
 
     var body: some View {
-        welcomeEmptyState
-            .onAppear {
-                if !hasCompletedOnboarding {
-                    presentOnboarding()
-                }
+        Group {
+            if shouldShowOnboardingBackdrop {
+                onboardingBackdrop
+            } else {
+                welcomeEmptyState
             }
-            .onDisappear {
+        }
+        .onAppear(perform: scheduleInitialOnboardingIfNeeded)
+        .onDisappear {
+            if onboardingPresenter.isPresenting {
                 onboardingPresenter.close()
             }
+        }
+    }
+
+    private var shouldShowOnboardingBackdrop: Bool {
+        onboardingPresenter.isPresenting && !hasCompletedOnboarding
+    }
+
+    private var onboardingBackdrop: some View {
+        AppConstants.backgroundWindow
+            .ignoresSafeArea()
     }
 
     private var welcomeEmptyState: some View {
@@ -26,74 +39,68 @@ struct WelcomeScreen: View {
             AppConstants.backgroundWindow
                 .ignoresSafeArea()
 
-            VStack(spacing: 32) {
+            VStack(spacing: 28) {
                 Spacer(minLength: 40)
 
                 WelcomeIcon()
 
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     Text("Welcome to Warden")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.largeTitle.weight(.semibold))
                         .foregroundStyle(AppConstants.textPrimary)
 
                     Text("A focused workspace for your AI conversations.")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(AppConstants.textSecondary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 420)
                 }
 
                 if !apiServiceIsPresent {
-                    VStack(spacing: 14) {
-                        Button(action: openPreferencesView) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "gearshape")
-                                    .font(.system(size: 14, weight: .medium))
-                                Text("Open Settings")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.accentColor)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                    VStack(spacing: 12) {
+                        ModernButton(
+                            "Open Settings",
+                            icon: "gearshape",
+                            variant: .primary,
+                            size: .large,
+                            action: openPreferencesView
+                        )
 
-                        setupGuideButton(icon: "sparkles")
+                        ModernButton(
+                            "View setup guide",
+                            icon: "sparkles",
+                            variant: .tertiary,
+                            size: .small,
+                            action: presentOnboarding
+                        )
                     }
                 } else if chatsCount == 0 {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 12) {
                         Text("You are connected. Start your first conversation.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(AppConstants.textSecondary)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                        Button(action: newChat) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus.bubble")
-                                    .font(.system(size: 14, weight: .medium))
-                                Text("New Chat")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 9)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.accentColor)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        ModernButton(
+                            "New Chat",
+                            icon: "plus.bubble",
+                            variant: .primary,
+                            size: .large,
+                            action: newChat
+                        )
                     }
                 } else {
                     VStack(spacing: 10) {
                         Text("Select a chat from the sidebar or start a new one.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(AppConstants.textSecondary)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                        setupGuideButton(icon: "questionmark.circle")
+                        ModernButton(
+                            "View setup guide",
+                            icon: "questionmark.circle",
+                            variant: .tertiary,
+                            size: .small,
+                            action: presentOnboarding
+                        )
                     }
                 }
 
@@ -104,23 +111,13 @@ struct WelcomeScreen: View {
         }
     }
 
-    private func setupGuideButton(icon: String) -> some View {
-        Button(action: presentOnboarding) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11))
-                Text("View setup guide")
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .foregroundStyle(AppConstants.textSecondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 7)
-                    .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-            )
-        }
-        .buttonStyle(.plain)
+    private func scheduleInitialOnboardingIfNeeded() {
+        guard !hasCompletedOnboarding else { return }
+        onboardingPresenter.presentIfNeeded(
+            apiServiceIsPresent: apiServiceIsPresent,
+            onFinish: completeOnboarding,
+            onDismiss: dismissOnboarding
+        )
     }
 
     private func presentOnboarding() {
@@ -150,9 +147,8 @@ struct WelcomeIcon: View {
         Image("WelcomeIcon")
             .resizable()
             .scaledToFit()
-            .frame(width: 80, height: 80)
-            .foregroundStyle(AppConstants.textSecondary)
-            .opacity(0.8)
+            .frame(width: 72, height: 72)
+            .foregroundStyle(.secondary)
     }
 }
 
