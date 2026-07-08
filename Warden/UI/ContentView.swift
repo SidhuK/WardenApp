@@ -25,7 +25,6 @@ struct ContentView: View {
     @State var selectedProject: ProjectEntity?
     @AppStorage("gptModel") var gptModel = AppConstants.chatGptDefaultModel
     @AppStorage("lastOpenedChatId") var lastOpenedChatId = ""
-    @AppStorage("apiUrl") var apiUrl = AppConstants.apiUrlChatCompletions
     @AppStorage("lastDonationPromptedVersion") private var lastDonationPromptedVersion = ""
     @AppStorage("lastDiscordPromptedVersion") private var lastDiscordPromptedVersion = ""
     @AppStorage("shouldSuppressDonationPrompt") private var shouldSuppressDonationPrompt = false
@@ -304,7 +303,6 @@ struct ContentView: View {
         ContentDetailView(
             chatsCount: chats.count,
             apiServicesCount: apiServices.count,
-            apiUrl: apiUrl,
             viewContext: viewContext,
             openedChatId: openedChatId,
             selectedChat: $selectedChat,
@@ -321,7 +319,6 @@ struct ContentView: View {
 private struct ContentDetailView: View {
     let chatsCount: Int
     let apiServicesCount: Int
-    let apiUrl: String
     let viewContext: NSManagedObjectContext
     let openedChatId: String?
 
@@ -376,7 +373,6 @@ private struct ContentDetailView: View {
             WelcomeScreen(
                 chatsCount: chatsCount,
                 apiServiceIsPresent: apiServicesCount > 0,
-                customUrl: apiUrl != AppConstants.apiUrlChatCompletions,
                 openPreferencesView: onOpenSettings,
                 newChat: onNewChat
             )

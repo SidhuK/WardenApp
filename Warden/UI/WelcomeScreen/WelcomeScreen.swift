@@ -3,7 +3,6 @@ import SwiftUI
 struct WelcomeScreen: View {
     var chatsCount: Int
     var apiServiceIsPresent: Bool
-    var customUrl: Bool
     let openPreferencesView: () -> Void
     let newChat: () -> Void
 
@@ -11,26 +10,21 @@ struct WelcomeScreen: View {
     @State private var showOnboarding = false
 
     var body: some View {
-        GeometryReader { _ in
-            ZStack {
-                if showOnboarding {
+        Group {
+            if showOnboarding {
+                ZStack {
+                    AppConstants.backgroundWindow.ignoresSafeArea()
                     WardenOnboardingView(
                         apiServiceIsPresent: apiServiceIsPresent,
-                        openPreferencesView: openPreferencesView,
-                        newChat: newChat,
-                        onComplete: {
-                            withAnimation(.easeInOut(duration: 0.35)) {
-                                showOnboarding = false
-                            }
-                        }
+                        onFinish: completeOnboarding,
+                        onDismiss: dismissOnboarding
                     )
-                    .transition(.opacity)
-                } else {
-                    welcomeEmptyState
-                        .transition(.opacity)
                 }
+            } else {
+                welcomeEmptyState
             }
         }
+        .animation(.easeInOut(duration: 0.35), value: showOnboarding)
         .onAppear {
             showOnboarding = !hasCompletedOnboarding
         }
@@ -77,22 +71,7 @@ struct WelcomeScreen: View {
                         }
                         .buttonStyle(.plain)
 
-                        Button(action: replayOnboarding) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 11))
-                                Text("View setup guide")
-                                    .font(.system(size: 11, weight: .medium))
-                            }
-                            .foregroundStyle(AppConstants.textSecondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7)
-                                    .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        setupGuideButton(icon: "sparkles")
                     }
                 } else if chatsCount == 0 {
                     VStack(spacing: 14) {
@@ -123,22 +102,7 @@ struct WelcomeScreen: View {
                             .font(.system(size: 14))
                             .foregroundStyle(AppConstants.textSecondary)
 
-                        Button(action: replayOnboarding) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "questionmark.circle")
-                                    .font(.system(size: 11))
-                                Text("View setup guide")
-                                    .font(.system(size: 11, weight: .medium))
-                            }
-                            .foregroundStyle(AppConstants.textSecondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7)
-                                    .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        setupGuideButton(icon: "questionmark.circle")
                     }
                 }
 
@@ -149,10 +113,42 @@ struct WelcomeScreen: View {
         }
     }
 
-    private func replayOnboarding() {
-        withAnimation(.easeInOut(duration: 0.35)) {
-            showOnboarding = true
+    private func setupGuideButton(icon: String) -> some View {
+        Button(action: replayOnboarding) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text("View setup guide")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(AppConstants.textSecondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(AppConstants.borderSubtle, lineWidth: 0.8)
+            )
         }
+        .buttonStyle(.plain)
+    }
+
+    private func completeOnboarding() {
+        hasCompletedOnboarding = true
+        showOnboarding = false
+        if apiServiceIsPresent {
+            newChat()
+        } else {
+            openPreferencesView()
+        }
+    }
+
+    private func dismissOnboarding() {
+        hasCompletedOnboarding = true
+        showOnboarding = false
+    }
+
+    private func replayOnboarding() {
+        showOnboarding = true
     }
 }
 
@@ -170,11 +166,11 @@ struct WelcomeIcon: View {
 struct WelcomeScreen_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: false, customUrl: false, openPreferencesView: {}, newChat: {})
+            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: false, openPreferencesView: {}, newChat: {})
                 .preferredColorScheme(.light)
                 .previewDisplayName("Light - No API")
 
-            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: true, customUrl: false, openPreferencesView: {}, newChat: {})
+            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: true, openPreferencesView: {}, newChat: {})
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark - With API")
         }
