@@ -50,11 +50,11 @@ struct WelcomeScreen: View {
                 WelcomeIcon()
 
                 VStack(spacing: 8) {
-                    Text("Welcome to Warden")
+                    Text("Warden")
                         .font(.largeTitle.weight(.semibold))
                         .foregroundStyle(AppConstants.textPrimary)
 
-                    Text("A focused workspace for your AI conversations.")
+                    Text("Chat with AI models from one native Mac app.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -72,7 +72,7 @@ struct WelcomeScreen: View {
                         )
 
                         ModernButton(
-                            "View setup guide",
+                            "Replay intro",
                             icon: "sparkles",
                             variant: .tertiary,
                             size: .small,
@@ -81,7 +81,7 @@ struct WelcomeScreen: View {
                     }
                 } else if chatsCount == 0 {
                     VStack(spacing: 12) {
-                        Text("You are connected. Start your first conversation.")
+                        Text("You're connected. Start a chat.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -100,7 +100,7 @@ struct WelcomeScreen: View {
                             .foregroundStyle(.secondary)
 
                         ModernButton(
-                            "View setup guide",
+                            "Replay intro",
                             icon: "questionmark.circle",
                             variant: .tertiary,
                             size: .small,

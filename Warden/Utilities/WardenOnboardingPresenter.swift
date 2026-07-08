@@ -8,28 +8,28 @@ enum WardenOnboarding {
     static let pages: [TourPage] = [
         TourPage(
             imageName: "tour-welcome",
-            title: "Welcome to Warden",
-            description: "A focused workspace for private AI conversations on your Mac."
+            title: "AI chat on your Mac",
+            description: "Warden is a native app built in SwiftUI. Your chats stay on your Mac until you send them to a provider."
         ),
         TourPage(
             imageName: "tour-providers",
-            title: "Connect Any Provider",
-            description: "Use OpenAI, Claude, Gemini, Ollama, Groq, and 12+ more — all from one app."
+            title: "Your keys, your models",
+            description: "Connect OpenAI, Claude, Gemini, Perplexity, or OpenRouter. Run Ollama or LM Studio locally if you prefer."
         ),
         TourPage(
             imageName: "tour-privacy",
-            title: "Privacy First",
-            description: "Your chats stay on your device. No telemetry, no tracking — ever."
+            title: "Projects and personas",
+            description: "Group chats into projects with their own instructions. Create personas when you want a different tone or role."
         ),
         TourPage(
             imageName: "tour-features",
-            title: "Built for Power Users",
-            description: "Markdown rendering, code highlighting, attachments, MCP tools, and multi-agent workflows."
+            title: "Files, search, and compare",
+            description: "Drag in PDFs and spreadsheets. Search the web with citations. Ask up to three models the same question and pick the best answer."
         ),
         TourPage(
             imageName: "tour-ready",
-            title: "You're Ready",
-            description: "Add your API key in Settings, then start your first conversation."
+            title: "Add a key to start",
+            description: "Open Settings, connect your provider, and start a new chat. Use Ollama if you want everything to run locally."
         ),
     ]
 }
