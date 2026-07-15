@@ -7,6 +7,25 @@
 	        <language>en</language>
 
 	        <item>
+	            <title>Version 1.09</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>Added a guided onboarding experience for new users, powered by TourKit.</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Wed, 15 Jul 2026 07:18:08 +0000</pubDate>
+	            <sparkle:version>31</sparkle:version>
+	            <sparkle:shortVersionString>1.09</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.09/Warden.zip"
+	                       sparkle:version="31"
+	                       sparkle:shortVersionString="1.09"
+	                       type="application/zip"
+	                       length="16625344"
+	                       sparkle:edSignature="4ZvzlCK82U3ZgP+h15e811FrAUKYBf/7554QAUW9np5qRIipQFPiRDLxBGFfCRsLdCj2jw8z1M3X+8I50/apCQ==" />
+	        </item>
+
+	        <item>
 	            <title>Version 1.08</title>
 	            <description><![CDATA[
 	                <h3>New</h3>
