@@ -1,114 +1,88 @@
- 
+<p align="center">
+  <img src="./assets/Dark%20Mode.png" alt="Warden in dark mode" width="900">
+</p>
 
-# Warden
+<h1 align="center">Warden</h1>
 
-### The Native AI Chat Experience for macOS
+<p align="center">A native, privacy-focused AI chat client for macOS.</p>
 
-Warden is a fast, beautiful, and privacy-focused AI client built purely in SwiftUI.
-No Electron, no web wrappers—just a premium native experience.
+<p align="center">
+  <a href="https://github.com/SidhuK/WardenApp/releases">Download for macOS</a>
+  &nbsp;·&nbsp;
+  <a href="https://karatsidhu.gumroad.com/l/warden">Visit the website</a>
+</p>
 
-[Download for macOS](https://github.com/SidhuK/WardenApp/releases) • [View Website](https://karatsidhu.gumroad.com/l/warden)
+<p align="center">
+  <a href="https://github.com/SidhuK/WardenApp/stargazers">
+    <img src="https://img.shields.io/github/stars/SidhuK/WardenApp?style=for-the-badge&logo=github&label=Stars" alt="GitHub stars">
+  </a>
+  <img src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS">
+  <img src="https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white" alt="Swift">
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge" alt="Apache 2.0 license">
+</p>
 
-![Warden Dark Mode](./assets/Dark%20Mode.png)
+## Why Warden?
 
- 
+Warden uses native SwiftUI and macOS frameworks for a responsive, battery-conscious chat experience. Your conversations stay on your device, except for requests sent to the AI provider you choose.
+
+## Features
+
+- **Multi-model support:** OpenAI, Anthropic, Gemini, Perplexity, OpenRouter, and more with your own API key.
+- **Local AI:** Ollama and LM Studio support.
+- **Projects and workspaces:** Organize chats with colors, descriptions, and project-specific instructions.
+- **AI assistants:** Create custom assistants with distinct roles, tones, and default settings.
+- **File and PDF chat:** Drop in PDFs, CSVs, text files, and more to ask questions about their contents.
+- **Multi-model compare (beta):** Ask up to three models, compare their responses, then continue with one.
+- **Web search:** Get real-time search results with citations.
+- **Developer tools:** Run code and read syntax-highlighted snippets.
+- **Tools and agents:** Enable tools per message and connect MCP agents.
+- **Menu bar access:** Open Warden quickly from the menu bar.
+- **Native design:** macOS-focused interactions, animations, and Liquid Glass support for macOS 26.
+
+## Installation
+
+<p align="center">
+  <img src="./assets/Welcome%20Page.png" alt="Warden welcome screen" width="900">
+</p>
+
+### Homebrew
 
 ```bash
 brew install --cask SidhuK/warden/warden
 ```
 
-## ✨ Why Warden?
+### Download or build
 
-Most AI apps today are just websites wrapped in a window (Electron). They feel heavy, drain battery, and don't integrate well with macOS.
+| For most people | For developers |
+| --- | --- |
+| [Download the installer](https://github.com/SidhuK/WardenApp/releases) and drag Warden to Applications. | [Build from source](#build-from-source) in Xcode. |
 
-Warden is different. It's built with 100% native code, making it:
-
-- **Blazing Fast**: Launches instantly, uses minimal RAM (<150MB).
-- **Battery Friendly**: Optimized for Apple Silicon efficiency.
-- **Truly Private**: Your data never leaves your device (except to your chosen AI provider).
-
-## 🚀 Features
-
-- **Multi-Model Support**: Use OpenAI, Anthropic (Claude), Gemini, Perplexity, OpenRouter and more using your own API key.
-- **Local AI**: Full support for Ollama and LM Studio.
-- **Projects & Workspaces**: Organize chats into projects with colors, descriptions, and project-specific instructions.
-- **AI Assistants (Personas)**: Create custom assistants with different roles, tones, and default settings.
-- **File & PDF Chat**: Drag & drop files (PDF, CSV, text, and more) and ask questions about what’s inside.
-- **Multi-Model Compare (Beta)**: Ask up to 3 models at once, compare responses, then continue with your favorite.
-- **Search Capabilities**: Real-time web search integration with citation support.
-- **Developer Tools**: Native code execution and syntax highlighting.
-- **Tools & Agents**: Toggle tools per message (like web search) and connect optional MCP agents for advanced integrations.
-- **Menu Bar Access**: Keep Warden in your menu bar for quick access.
-- **Fluid Design**: Animations and interactions that feel right at home on your Mac, including liquid glass support for MacOS 26.
-
-## 📥 Installation
-
-![Warden Dark Mode](./assets/Welcome%20Page.png)
-
-### Homebrew (Recommended)
-
-```bash
-brew install --cask SidhuK/warden/warden
-```
-
-### Manual Download
-
- 
-
-
-| **Typical User**                                                                                   | **Developer**                                                      |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **[Download Installer](https://github.com/SidhuK/WardenApp/releases)** Simply drag to Applications | **[Build from Source](#build-from-source)** Clone and run in Xcode |
-
-
- 
-
-  
-
-
-### Build from Source
+### Build from source
 
 ```bash
 git clone https://github.com/SidhuK/WardenApp.git
 cd WardenApp
 open Warden.xcodeproj
-# Press Cmd+R to run
 ```
 
-### Automatic Updates:
+Press Command-R in Xcode to build and run Warden.
 
-Users who have downloaded the app version 0.9 or lower, please download the latest version from the [releases page](https://github.com/SidhuK/WardenApp/releases) to get automatic updates. Earlier versions will not receive updates.
+### Automatic updates
 
-## ❤️ Support
+If you use version 0.9 or earlier, download the current release from the [releases page](https://github.com/SidhuK/WardenApp/releases) once to enable automatic updates.
 
-Warden is open source and free. If you enjoy using it, you can support development:
+## Support
 
-- [Star this repo](https://github.com/SidhuK/WardenApp) 🌟
-- [Pay for Warden](https://karatsidhu.gumroad.com/l/warden) — Warden is free to use, but please contribute if you can.
-- [Join the Discord](https://discord.gg/fasY8gAQR)
-- [Buy Me a Coffee](https://www.buymeacoffee.com/karatsidhu) ☕️
+Warden is free and open source. You can support its development by [starring the repository](https://github.com/SidhuK/WardenApp), [contributing through Gumroad](https://karatsidhu.gumroad.com/l/warden), [joining Discord](https://discord.gg/fasY8gAQR), or [buying me a coffee](https://www.buymeacoffee.com/karatsidhu).
 
----
+<p align="center">
+  <a href="https://wisprflow.ai/r?KARAT1">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png" alt="Wispr Flow" height="36">
+  </a>
+  <br>
+  <a href="https://wisprflow.ai/r?KARAT1">Get one month of Wispr Flow free</a> · Voice-to-text, 4× faster than typing
+</p>
 
- 
-
-![Wispr Flow](https://upload.wikimedia.org/wikipedia/commons/d/d4/Wispr_Flow_Logo.png)
-
-**[Get 1 month of Wispr Flow free](https://wisprflow.ai/r?KARAT1)** — Voice-to-text, 4x faster than typing
-
-Created by [Karat Sidhu](https://x.com/karat_sidhu)
-Licensed under Apache 2.0
-
-![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
-![Swift](https://img.shields.io/badge/Swift-FA7343?style=for-the-badge&logo=swift&logoColor=white)
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
-
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SidhuK/WardenApp?utm_source=oss&utm_medium=github&utm_campaign=SidhuK%252FWardenApp&labelColor=171717&color=FF570A&link=https%253A%252F%252Fcoderabbit.ai&label=CodeRabbit+Reviews)
-
-![Featured on findly.tools](https://findly.tools/badges/findly-tools-badge-light.svg)
-
- 
-
-## Star History
-
-![Star History Chart](https://api.star-history.com/svg?repos=sidhuk/wardenapp&type=timeline&legend=bottom-right)
+<p align="center">
+  Created by <a href="https://x.com/karat_sidhu">Karat Sidhu</a> · Licensed under Apache 2.0
+</p>
