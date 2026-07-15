@@ -1,5 +1,5 @@
-import AppKit
-import Combine
+import Observation
+import SwiftUI
 import TourKit
 
 enum WardenOnboarding {
@@ -8,40 +8,41 @@ enum WardenOnboarding {
     static let pages: [TourPage] = [
         TourPage(
             imageName: "tour-welcome",
-            title: "AI chat on your Mac",
-            description: "Warden is a native app built in SwiftUI. Your chats stay on your Mac until you send them to a provider."
+            title: "AI chat for your Mac",
+            description: "Chat history stays on your Mac. Warden sends a message to a provider when you submit it."
         ),
         TourPage(
             imageName: "tour-providers",
-            title: "Your keys, your models",
-            description: "Connect OpenAI, Claude, Gemini, Perplexity, or OpenRouter. Run Ollama or LM Studio locally if you prefer."
+            title: "Connect the models you use",
+            description: "Add a provider in Settings, or run Ollama or LM Studio on your Mac."
         ),
         TourPage(
             imageName: "tour-privacy",
-            title: "Projects and personas",
-            description: "Group chats into projects with their own instructions. Create personas when you want a different tone or role."
+            title: "Keep your work in context",
+            description: "Use projects for shared instructions and personas for reusable roles."
         ),
         TourPage(
             imageName: "tour-features",
-            title: "Files, search, and compare",
-            description: "Drag in PDFs and spreadsheets. Search the web with citations. Ask up to three models the same question and pick the best answer."
+            title: "Bring more to each chat",
+            description: "Add files, search the web with citations, or compare answers from up to three models."
         ),
         TourPage(
             imageName: "tour-ready",
-            title: "Add a key to start",
-            description: "Open Settings, connect your provider, and start a new chat. Use Ollama if you want everything to run locally."
+            title: "Start chatting",
+            description: "Add a provider in Settings. Choose Ollama for a local setup."
         ),
     ]
 }
 
-/// Presents TourKit's floating onboarding window exactly as shown in the TourKit demo.
 @MainActor
-final class WardenOnboardingPresenter: ObservableObject {
+@Observable
+final class WardenOnboardingPresenter {
     static let shared = WardenOnboardingPresenter()
 
-    @Published private(set) var isPresenting = false
+    private(set) var isPresenting = false
 
     private let tourController = TourKitWindowController()
+    private var presentationTask: Task<Void, Never>?
 
     private init() {}
 
@@ -52,10 +53,17 @@ final class WardenOnboardingPresenter: ObservableObject {
     ) {
         guard !isPresenting else { return }
 
-        Task {
-            try? await Task.sleep(for: .milliseconds(250))
-            guard !isPresenting else { return }
-            present(apiServiceIsPresent: apiServiceIsPresent, onFinish: onFinish, onDismiss: onDismiss)
+        presentationTask?.cancel()
+        presentationTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+            }
+            catch {
+                return
+            }
+
+            guard !Task.isCancelled, let self, !self.isPresenting else { return }
+            self.present(apiServiceIsPresent: apiServiceIsPresent, onFinish: onFinish, onDismiss: onDismiss)
         }
     }
 
@@ -64,13 +72,17 @@ final class WardenOnboardingPresenter: ObservableObject {
         onFinish: @escaping () -> Void,
         onDismiss: @escaping () -> Void
     ) {
+        guard !isPresenting else { return }
+
+        presentationTask?.cancel()
+        presentationTask = nil
         isPresenting = true
 
         tourController.present(
             pages: WardenOnboarding.pages,
             width: WardenOnboarding.width,
             continueButtonTitle: "Continue",
-            finishButtonTitle: "Get Started",
+            finishButtonTitle: apiServiceIsPresent ? "Start Chat" : "Set Up Provider",
             onFinish: { [weak self] in
                 self?.finishPresentation()
                 onFinish()
@@ -82,7 +94,31 @@ final class WardenOnboardingPresenter: ObservableObject {
         )
     }
 
+    func replay() {
+        guard !isPresenting else { return }
+
+        presentationTask?.cancel()
+        presentationTask = nil
+        isPresenting = true
+
+        tourController.present(
+            pages: WardenOnboarding.pages,
+            width: WardenOnboarding.width,
+            continueButtonTitle: "Continue",
+            finishButtonTitle: "Done",
+            onFinish: { [weak self] in
+                self?.finishPresentation()
+            },
+            onClose: { [weak self] in
+                self?.finishPresentation()
+            }
+        )
+    }
+
     func close() {
+        presentationTask?.cancel()
+        presentationTask = nil
+
         guard isPresenting else { return }
         tourController.close()
         finishPresentation()

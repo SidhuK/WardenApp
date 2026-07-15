@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct WelcomeScreen: View {
     var chatsCount: Int
     var apiServiceIsPresent: Bool
@@ -7,22 +8,19 @@ struct WelcomeScreen: View {
     let newChat: () -> Void
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @ObservedObject private var onboardingPresenter = WardenOnboardingPresenter.shared
+    @State private var onboardingPresenter = WardenOnboardingPresenter.shared
 
     var body: some View {
         Group {
             if shouldShowOnboardingBackdrop {
                 onboardingBackdrop
-            } else {
+            }
+            else {
                 welcomeEmptyState
             }
         }
         .onAppear(perform: scheduleInitialOnboardingIfNeeded)
-        .onDisappear {
-            if onboardingPresenter.isPresenting {
-                onboardingPresenter.close()
-            }
-        }
+        .onDisappear(perform: onboardingPresenter.close)
     }
 
     private var shouldShowOnboardingBackdrop: Bool {
@@ -54,7 +52,7 @@ struct WelcomeScreen: View {
                         .font(.largeTitle.weight(.semibold))
                         .foregroundStyle(AppConstants.textPrimary)
 
-                    Text("Chat with AI models from one native Mac app.")
+                    Text("Choose a model, then keep your chats in one Mac app.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -79,9 +77,10 @@ struct WelcomeScreen: View {
                             action: presentOnboarding
                         )
                     }
-                } else if chatsCount == 0 {
+                }
+                else if chatsCount == 0 {
                     VStack(spacing: 12) {
-                        Text("You're connected. Start a chat.")
+                        Text("Your provider is connected. Start a chat.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -93,7 +92,8 @@ struct WelcomeScreen: View {
                             action: newChat
                         )
                     }
-                } else {
+                }
+                else {
                     VStack(spacing: 10) {
                         Text("Select a chat from the sidebar or start a new one.")
                             .font(.subheadline)
@@ -137,7 +137,8 @@ struct WelcomeScreen: View {
         hasCompletedOnboarding = true
         if apiServiceIsPresent {
             newChat()
-        } else {
+        }
+        else {
             openPreferencesView()
         }
     }
@@ -157,16 +158,12 @@ struct WelcomeIcon: View {
     }
 }
 
-struct WelcomeScreen_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: false, openPreferencesView: {}, newChat: {})
-                .preferredColorScheme(.light)
-                .previewDisplayName("Light - No API")
+#Preview("Light - No API") {
+    WelcomeScreen(chatsCount: 0, apiServiceIsPresent: false, openPreferencesView: {}, newChat: {})
+        .preferredColorScheme(.light)
+}
 
-            WelcomeScreen(chatsCount: 0, apiServiceIsPresent: true, openPreferencesView: {}, newChat: {})
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Dark - With API")
-        }
-    }
+#Preview("Dark - With API") {
+    WelcomeScreen(chatsCount: 0, apiServiceIsPresent: true, openPreferencesView: {}, newChat: {})
+        .preferredColorScheme(.dark)
 }
