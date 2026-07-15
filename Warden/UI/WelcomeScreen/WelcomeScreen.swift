@@ -116,7 +116,10 @@ struct WelcomeScreen: View {
     }
 
     private func presentOnboarding() {
-        onboardingPresenter.replay()
+        onboardingPresenter.replay(
+            onFinish: completeOnboarding,
+            onDismiss: dismissOnboarding
+        )
     }
 
     private func completeOnboarding() {

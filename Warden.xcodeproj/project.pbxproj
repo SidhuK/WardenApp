@@ -111,8 +111,6 @@
 		7F97AE1B2E0D75000050CAFE /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 7F97AE1A2E0D75000050CAFE /* Markdown */; };
 		7F97AE1D2E0D75CE0050CAFE /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */; };
 		7FDDAED02DE8BA5C0072EA51 /* MistralHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */; };
-		E8A1B2C32F01000300A1B201 /* TourKit in Frameworks */ = {isa = PBXBuildFile; productRef = E8A1B2C32F01000200A1B201 /* TourKit */; };
-		E8A1B2C32F01000700A1B201 /* WardenOnboardingPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A1B2C32F01000600A1B201 /* WardenOnboardingPresenter.swift */; };
 		7FF903B82DEAAE070054CD7B /* ModelCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */; };
 		7FF903BA2DEAAE1F0054CD7B /* ModelSelectorDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */; };
 		7FF903BC2DEAB0DB0054CD7B /* FavoriteModelsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */; };
@@ -155,10 +153,6 @@
 		C46B73E12EB1D5D300D07415 /* TavilySearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */; };
 		C46B73E32EB1D5F200D07415 /* TavilyKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */; };
 		C46B73E52EB1D66A00D07415 /* TabTavilySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */; };
-		C4E5A0012F40000100E5A001 /* ExaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0022F40000100E5A002 /* ExaModels.swift */; };
-		C4E5A0032F40000100E5A003 /* WebSearchError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0042F40000100E5A004 /* WebSearchError.swift */; };
-		C4E5A0052F40000100E5A005 /* ExaSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0062F40000100E5A006 /* ExaSearchService.swift */; };
-		C4E5A0072F40000100E5A007 /* WebSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0082F40000100E5A008 /* WebSearchService.swift */; };
 		C46B73E72EB1E41200D07415 /* ClickableAttributedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */; };
 		C46B73E82EB1D66A00D07416 /* TabToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B73E72EB1D66A00D07416 /* TabToolsView.swift */; };
 		C46C81692ED47DAD00F238F3 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = C46C81682ED47DAD00F238F3 /* MCP */; };
@@ -175,6 +169,10 @@
 		C4A734502F1F40D100E060E6 /* ReasoningEffort.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A7344F2F1F40D100E060E6 /* ReasoningEffort.swift */; };
 		C4ADCE482F10D48F00325241 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4ADCE472F10D48F00325241 /* MenuBarManager.swift */; };
 		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
+		C4E5A0012F40000100E5A001 /* ExaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0022F40000100E5A002 /* ExaModels.swift */; };
+		C4E5A0032F40000100E5A003 /* WebSearchError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0042F40000100E5A004 /* WebSearchError.swift */; };
+		C4E5A0052F40000100E5A005 /* ExaSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0062F40000100E5A006 /* ExaSearchService.swift */; };
+		C4E5A0072F40000100E5A007 /* WebSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0082F40000100E5A008 /* WebSearchService.swift */; };
 		C4EB88D62ECC421C00AA0829 /* ModernButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D52ECC421C00AA0829 /* ModernButton.swift */; };
 		C4EB88D82ECC4EE900AA0829 /* ModelMetadataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */; };
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
@@ -187,6 +185,8 @@
 		C4FF238D2EED7FD300C17D8B /* StreamingTaskController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */; };
 		C4FF238E2EED7FD300C17D8B /* WardenSignpost.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */; };
 		DAD2E19560A64CC290850A1D /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C5F31F2F664B9BBD13C0CC /* ChatService.swift */; };
+		E8A1B2C32F01000300A1B201 /* TourKit in Frameworks */ = {isa = PBXBuildFile; productRef = E8A1B2C32F01000200A1B201 /* TourKit */; };
+		E8A1B2C32F01000700A1B201 /* WardenOnboardingPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A1B2C32F01000600A1B201 /* WardenOnboardingPresenter.swift */; };
 		F508922783C94D36A9947657 /* MCPSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E14DF97A8974C028719A178 /* MCPSettingsView.swift */; };
 		FAFC89E8E4A6414588B6B15C /* MCPServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4DE0E203854D60AC391E45 /* MCPServerConfig.swift */; };
 /* End PBXBuildFile section */
@@ -324,7 +324,6 @@
 		7F8D7CA82DE9DB13003E7BCA /* MultiAgentMessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAgentMessageManager.swift; sourceTree = "<group>"; };
 		7F97AE1C2E0D75CE0050CAFE /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		7FDDAECF2DE8BA5C0072EA51 /* MistralHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MistralHandler.swift; sourceTree = "<group>"; };
-		E8A1B2C32F01000600A1B201 /* WardenOnboardingPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenOnboardingPresenter.swift; sourceTree = "<group>"; };
 		7FF903B72DEAAE070054CD7B /* ModelCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCacheManager.swift; sourceTree = "<group>"; };
 		7FF903B92DEAAE1F0054CD7B /* ModelSelectorDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectorDropdown.swift; sourceTree = "<group>"; };
 		7FF903BB2DEAB0DB0054CD7B /* FavoriteModelsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteModelsManager.swift; sourceTree = "<group>"; };
@@ -367,10 +366,6 @@
 		C46B73E02EB1D5D300D07415 /* TavilySearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilySearchService.swift; sourceTree = "<group>"; };
 		C46B73E22EB1D5F200D07415 /* TavilyKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyKeyManager.swift; sourceTree = "<group>"; };
 		C46B73E42EB1D66A00D07415 /* TabTavilySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTavilySearchView.swift; sourceTree = "<group>"; };
-		C4E5A0022F40000100E5A002 /* ExaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaModels.swift; sourceTree = "<group>"; };
-		C4E5A0042F40000100E5A004 /* WebSearchError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchError.swift; sourceTree = "<group>"; };
-		C4E5A0062F40000100E5A006 /* ExaSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaSearchService.swift; sourceTree = "<group>"; };
-		C4E5A0082F40000100E5A008 /* WebSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchService.swift; sourceTree = "<group>"; };
 		C46B73E62EB1E41200D07415 /* ClickableAttributedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickableAttributedText.swift; sourceTree = "<group>"; };
 		C46B73E72EB1D66A00D07416 /* TabToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabToolsView.swift; sourceTree = "<group>"; };
 		C479718C2EBF3E410097C000 /* MessageListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListView.swift; sourceTree = "<group>"; };
@@ -386,6 +381,10 @@
 		C4A7344F2F1F40D100E060E6 /* ReasoningEffort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffort.swift; sourceTree = "<group>"; };
 		C4ADCE472F10D48F00325241 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
+		C4E5A0022F40000100E5A002 /* ExaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaModels.swift; sourceTree = "<group>"; };
+		C4E5A0042F40000100E5A004 /* WebSearchError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchError.swift; sourceTree = "<group>"; };
+		C4E5A0062F40000100E5A006 /* ExaSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaSearchService.swift; sourceTree = "<group>"; };
+		C4E5A0082F40000100E5A008 /* WebSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchService.swift; sourceTree = "<group>"; };
 		C4EB88D52ECC421C00AA0829 /* ModernButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernButton.swift; sourceTree = "<group>"; };
 		C4EB88D72ECC4EE900AA0829 /* ModelMetadataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelMetadataFetcher.swift; sourceTree = "<group>"; };
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
@@ -397,6 +396,7 @@
 		C4FF23892EED7B3000C17D8B /* AttachmentResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentResolver.swift; sourceTree = "<group>"; };
 		C4FF238B2EED7FD300C17D8B /* StreamingTaskController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTaskController.swift; sourceTree = "<group>"; };
 		C4FF238C2EED7FD300C17D8B /* WardenSignpost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenSignpost.swift; sourceTree = "<group>"; };
+		E8A1B2C32F01000600A1B201 /* WardenOnboardingPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenOnboardingPresenter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1301,7 +1301,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1327,7 +1327,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.08;
+				MARKETING_VERSION = 1.09;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1351,7 +1351,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1377,7 +1377,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.08;
+				MARKETING_VERSION = 1.09;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";

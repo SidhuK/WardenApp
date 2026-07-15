@@ -99,7 +99,10 @@ final class WardenOnboardingPresenter {
         )
     }
 
-    func replay() {
+    func replay(
+        onFinish: @escaping () -> Void = {},
+        onDismiss: @escaping () -> Void = {}
+    ) {
         guard !isPresenting else { return }
 
         presentationTask?.cancel()
@@ -113,9 +116,11 @@ final class WardenOnboardingPresenter {
             finishButtonTitle: "Done",
             onFinish: { [weak self] in
                 self?.finishPresentation()
+                onFinish()
             },
             onClose: { [weak self] in
                 self?.finishPresentation()
+                onDismiss()
             }
         )
     }
