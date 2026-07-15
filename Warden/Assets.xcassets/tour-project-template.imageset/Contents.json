@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "tour-project-template.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

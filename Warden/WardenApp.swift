@@ -1,8 +1,8 @@
+import CoreData
+import Darwin
+import Sparkle
 import SwiftUI
 import UserNotifications
-import CoreData
-import Sparkle
-import Darwin
 import os
 
 struct WardenTheme {
@@ -33,52 +33,53 @@ class PersistenceController {
 
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "wardenDataModel")
-        
+
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
-        
+
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
-        
+
         // Enable persistent history tracking for better multi-context support
         let description = container.persistentStoreDescriptions.first
         description?.shouldMigrateStoreAutomatically = true
         description?.shouldInferMappingModelAutomatically = true
         description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        
-	        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-	            if let error = error as NSError? {
-	                WardenLog.coreData.critical(
-	                    "Core Data failed to load: \(error.localizedDescription, privacy: .public)"
-	                )
-                
+
+        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+            if let error = error as NSError? {
+                WardenLog.coreData.critical(
+                    "Core Data failed to load: \(error.localizedDescription, privacy: .public)"
+                )
+
                 // Show user-friendly error dialog
                 DispatchQueue.main.async {
                     let alert = NSAlert()
                     alert.messageText = "Database Error"
-                    alert.informativeText = "Failed to load the application database. The app will use a temporary database for this session. Your data is safe, but changes won't be saved until you restart the app.\n\nError: \(error.localizedDescription)"
+                    alert.informativeText =
+                        "Failed to load the application database. The app will use a temporary database for this session. Your data is safe, but changes won't be saved until you restart the app.\n\nError: \(error.localizedDescription)"
                     alert.alertStyle = .critical
                     alert.addButton(withTitle: "OK")
                     alert.runModal()
                 }
-                
-	                // Fall back to in-memory store as last resort
-	                WardenLog.coreData.warning("Falling back to in-memory database")
-	                let inMemoryDescription = NSPersistentStoreDescription()
-	                inMemoryDescription.type = NSInMemoryStoreType
-	                self.container.persistentStoreDescriptions = [inMemoryDescription]
-	                self.container.loadPersistentStores { _, fallbackError in
-	                    if let fallbackError = fallbackError {
-	                        WardenLog.coreData.critical(
-	                            "In-memory store fallback failed: \(fallbackError.localizedDescription, privacy: .public)"
-	                        )
-	                    }
-	                }
-	                return
-	            }
-	        })
+
+                // Fall back to in-memory store as last resort
+                WardenLog.coreData.warning("Falling back to in-memory database")
+                let inMemoryDescription = NSPersistentStoreDescription()
+                inMemoryDescription.type = NSInMemoryStoreType
+                self.container.persistentStoreDescriptions = [inMemoryDescription]
+                self.container.loadPersistentStores { _, fallbackError in
+                    if let fallbackError = fallbackError {
+                        WardenLog.coreData.critical(
+                            "In-memory store fallback failed: \(fallbackError.localizedDescription, privacy: .public)"
+                        )
+                    }
+                }
+                return
+            }
+        })
     }
 }
 
@@ -104,7 +105,7 @@ struct WardenApp: App {
     init() {
         // Ignore SIGPIPE to prevent crashes when MCP server processes terminate
         signal(SIGPIPE, SIG_IGN)
-        
+
         ValueTransformer.setValueTransformer(
             RequestMessagesTransformer(),
             forName: RequestMessagesTransformer.name
@@ -114,7 +115,7 @@ struct WardenApp: App {
 
         DatabasePatcher.applyPatches(context: persistenceController.container.viewContext)
         DatabasePatcher.migrateExistingConfiguration(context: persistenceController.container.viewContext)
-        
+
         // Initialize automatic updates
         _ = UpdaterManager.shared
     }
@@ -133,38 +134,38 @@ struct WardenApp: App {
                     if let window = NSApp.windows.first {
                         // Set frame autosave name for persistence
                         window.setFrameAutosaveName("MainWindow")
-                        
+
                         // Only set initial size if no saved frame exists
                         // The key format is "NSWindow Frame MainWindow"
                         let savedFrame = UserDefaults.standard.string(forKey: "NSWindow Frame MainWindow")
-                        
+
                         if savedFrame == nil, let screen = NSScreen.main {
                             // Set initial window size to 70% of screen for first launch
                             let screenWidth = screen.frame.width
                             let screenHeight = screen.frame.height
                             let windowWidth = screenWidth * 0.70
                             let windowHeight = screenHeight * 0.70
-                            
+
                             // Center the window on screen
                             let x = (screenWidth - windowWidth) / 2
                             let y = (screenHeight - windowHeight) / 2
-                            
+
                             window.setFrame(
                                 NSRect(x: x, y: y, width: windowWidth, height: windowHeight),
                                 display: true
                             )
                         }
                     }
-                    
+
                     // Initialize model cache and metadata cache with all configured API services
                     initializeModelAndMetadataCache()
-                    
+
                     // Setup Global Hotkeys
                     setupGlobalHotkeys()
-                    
+
                     // Auto-connect MCP servers after a delay
                     autoConnectMCPServers()
-                    
+
                     // Initialize menu bar icon based on stored preference
                     MenuBarManager.shared.updateVisibility(enabled: showMenuBarIcon)
                 }
@@ -177,37 +178,42 @@ struct WardenApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1000, height: 700)
-        
+
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Warden") {
                     NSApplication.shared.orderFrontStandardAboutPanel([
                         NSApplication.AboutPanelOptionKey.applicationName: "Warden",
-                        NSApplication.AboutPanelOptionKey.applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown",
-                        NSApplication.AboutPanelOptionKey.version: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown",
-                        NSApplication.AboutPanelOptionKey.credits: NSAttributedString(string: """
-                        A native macOS AI chat client supporting multiple providers.
-                        
-                        Based on macai by Renset (github.com/Renset/macai)
-                        Licensed under Apache 2.0
-                        
-                        Pay for Warden: karatsidhu.gumroad.com/l/warden
-                        Support the developer: buymeacoffee.com/karatsidhu
-                        Discord: discord.gg/fasY8gAQR
-                        Source code: github.com/SidhuK/WardenApp
-                        """)
+                        NSApplication.AboutPanelOptionKey.applicationVersion: Bundle.main.infoDictionary?[
+                            "CFBundleShortVersionString"
+                        ] as? String ?? "Unknown",
+                        NSApplication.AboutPanelOptionKey.version: Bundle.main.infoDictionary?["CFBundleVersion"]
+                            as? String ?? "Unknown",
+                        NSApplication.AboutPanelOptionKey.credits: NSAttributedString(
+                            string: """
+                                A native macOS AI chat client supporting multiple providers.
+
+                                Based on macai by Renset (github.com/Renset/macai)
+                                Licensed under Apache 2.0
+
+                                Pay for Warden: karatsidhu.gumroad.com/l/warden
+                                Support the developer: buymeacoffee.com/karatsidhu
+                                Discord: discord.gg/fasY8gAQR
+                                Source code: github.com/SidhuK/WardenApp
+                                """
+                        ),
                     ])
                 }
-                
+
                 Divider()
-                
+
                 Button("Check for Updates...") {
                     UpdaterManager.shared.checkForUpdates()
                 }
                 .disabled(!updaterManager.canCheckForUpdates)
-                
+
                 Divider()
-                
+
                 Button("Send Feedback...") {
                     if let url = URL(string: "https://github.com/SidhuK/WardenApp/issues/new") {
                         NSWorkspace.shared.open(url)
@@ -226,12 +232,18 @@ struct WardenApp: App {
                     }
                 }
             }
-            
+
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
                     SettingsWindowManager.shared.openSettingsWindow()
                 }
                 .keyboardShortcut(",", modifiers: .command)
+            }
+
+            CommandGroup(after: .help) {
+                Button("Replay Onboarding") {
+                    WardenOnboardingPresenter.shared.replay()
+                }
             }
 
             CommandMenu("Chat") {
@@ -242,9 +254,9 @@ struct WardenApp: App {
                     )
                 }
                 .keyboardShortcut("r", modifiers: .command)
-                
+
                 Divider()
-                
+
                 // Hotkey Actions
                 Button("Copy Last AI Response") {
                     NotificationCenter.default.post(
@@ -253,7 +265,7 @@ struct WardenApp: App {
                     )
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
-                
+
                 Button("Copy Entire Chat") {
                     NotificationCenter.default.post(
                         name: AppConstants.copyChatNotification,
@@ -261,7 +273,7 @@ struct WardenApp: App {
                     )
                 }
                 .keyboardShortcut("a", modifiers: [.command, .shift])
-                
+
                 Button("Export Chat") {
                     NotificationCenter.default.post(
                         name: AppConstants.exportChatNotification,
@@ -269,7 +281,7 @@ struct WardenApp: App {
                     )
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
-                
+
                 Button("Copy Last User Message") {
                     NotificationCenter.default.post(
                         name: AppConstants.copyLastUserMessageNotification,
@@ -277,9 +289,9 @@ struct WardenApp: App {
                     )
                 }
                 .keyboardShortcut("u", modifiers: [.command, .shift])
-                
+
                 Divider()
-                
+
                 Button("Send Feedback...") {
                     if let url = URL(string: "https://github.com/SidhuK/WardenApp/issues/new") {
                         NSWorkspace.shared.open(url)
@@ -322,60 +334,63 @@ struct WardenApp: App {
             }
         }
     }
-    
+
     // MARK: - Model Cache & Metadata Cache Initialization
-    
+
     private func initializeModelAndMetadataCache() {
         // Fetch all API services from Core Data
         let fetchRequest = APIServiceEntity.fetchRequest() as! NSFetchRequest<APIServiceEntity>
-        
+
         do {
             let apiServices = try persistenceController.container.viewContext.fetch(fetchRequest)
-            
+
             // Initialize selected models manager with existing configurations
             SelectedModelsManager.shared.loadSelections(from: apiServices)
-            
+
             // Initialize model cache with all configured services
             // This will fetch models in the background for better performance
             ModelCacheManager.shared.fetchAllModels(from: apiServices)
-            
+
             // Initialize metadata cache for all configured services
             // This fetches pricing and capability information in the background
             Task.detached(priority: .background) {
                 await self.initializeMetadataCache(for: apiServices)
             }
-	        } catch {
-	            WardenLog.coreData.error(
-	                "Error fetching API services for model cache initialization: \(error.localizedDescription, privacy: .public)"
-	            )
-	        }
-	    }
-    
+        }
+        catch {
+            WardenLog.coreData.error(
+                "Error fetching API services for model cache initialization: \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
+
     private func initializeMetadataCache(for apiServices: [APIServiceEntity]) async {
         for service in apiServices {
             guard let providerType = service.type else { continue }
-            
+
             // Get the API key for this service
             var apiKey = ""
-	            do {
-	                apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
-	            } catch {
-	                WardenLog.app.error(
-	                    "Failed to get token for \(providerType, privacy: .public): \(error.localizedDescription, privacy: .public)"
-	                )
-	                continue
-	            }
-            
-            // Skip if no API key (except for providers that don't require it)
-            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" || providerType == "codex" else {
+            do {
+                apiKey = try TokenManager.getToken(for: service.id?.uuidString ?? "") ?? ""
+            }
+            catch {
+                WardenLog.app.error(
+                    "Failed to get token for \(providerType, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
                 continue
             }
-            
+
+            // Skip if no API key (except for providers that don't require it)
+            guard !apiKey.isEmpty || providerType == "ollama" || providerType == "lmstudio" || providerType == "codex"
+            else {
+                continue
+            }
+
             // Fetch metadata for this provider
             await ModelMetadataCache.shared.fetchMetadataIfNeeded(provider: providerType, apiKey: apiKey)
         }
     }
-    
+
     private func setupGlobalHotkeys() {
         // Register the Quick Chat hotkey
         if let shortcut = HotkeyManager.shared.getShortcut(for: "quickChat") {
@@ -384,19 +399,19 @@ struct WardenApp: App {
             }
         }
     }
-    
+
     private func autoConnectMCPServers() {
         // Auto-connect MCP servers after a delay to allow app initialization to complete
         Task {
             // Wait 3 seconds to ensure app is fully initialized
             try? await Task.sleep(nanoseconds: 3_000_000_000)
-            
-	            // Connect all enabled MCP servers in the background
-	            await MCPManager.shared.restartAll()
-	            #if DEBUG
-	            WardenLog.app.debug("Auto-connected MCP servers")
-	            #endif
-	        }
-	    }
+
+            // Connect all enabled MCP servers in the background
+            await MCPManager.shared.restartAll()
+            #if DEBUG
+                WardenLog.app.debug("Auto-connected MCP servers")
+            #endif
+        }
+    }
 
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "0a590f2475ab070452614532ce1c7cbf1e1db31b8b87a1a3a9cefb52f2ccbb5a",
+  "originHash" : "9e3ab596e2a49a70601fee26f1192a572ecb2cb61f4409c4470e6b5734eaae34",
   "pins" : [
     {
       "identity" : "attributedtext",
@@ -134,6 +134,15 @@
       "state" : {
         "revision" : "606f9be66db6afe0c41c3b064723a57061723db7",
         "version" : "1.7.1"
+      }
+    },
+    {
+      "identity" : "tourkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rampatra/TourKit.git",
+      "state" : {
+        "revision" : "0cac3a51069e105286635601e82117c195058ee9",
+        "version" : "1.0.0"
       }
     }
   ],
