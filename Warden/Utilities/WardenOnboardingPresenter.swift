@@ -7,7 +7,7 @@ enum WardenOnboarding {
 
     static let pages: [TourPage] = [
         TourPage(
-            imageName: "tour-welcome",
+            imageName: "tour-chat",
             title: "AI chat for your Mac",
             description: "Chat history stays on your Mac. Warden sends a message to a provider when you submit it."
         ),
@@ -17,19 +17,24 @@ enum WardenOnboarding {
             description: "Add a provider in Settings, or run Ollama or LM Studio on your Mac."
         ),
         TourPage(
-            imageName: "tour-privacy",
-            title: "Keep your work in context",
-            description: "Use projects for shared instructions and personas for reusable roles."
+            imageName: "tour-project-template",
+            title: "Set up a project",
+            description: "Start with a template or create a project tailored to the work at hand."
         ),
         TourPage(
-            imageName: "tour-features",
-            title: "Bring more to each chat",
-            description: "Add files, search the web with citations, or compare answers from up to three models."
+            imageName: "tour-projects",
+            title: "Keep project chats together",
+            description: "Projects keep related chats, shared instructions, and context in one place."
         ),
         TourPage(
-            imageName: "tour-ready",
-            title: "Start chatting",
-            description: "Add a provider in Settings. Choose Ollama for a local setup."
+            imageName: "tour-assistants",
+            title: "Create reusable assistants",
+            description: "Give assistants their own system prompts to bring the right role into each conversation."
+        ),
+        TourPage(
+            imageName: "tour-new-assistant",
+            title: "Make it your own",
+            description: "Choose an icon, tune the temperature, and select a default AI service for each assistant."
         ),
     ]
 }

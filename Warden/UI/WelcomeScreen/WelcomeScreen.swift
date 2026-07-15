@@ -11,30 +11,20 @@ struct WelcomeScreen: View {
     @State private var onboardingPresenter = WardenOnboardingPresenter.shared
 
     var body: some View {
-        Group {
-            if shouldShowOnboardingBackdrop {
-                onboardingBackdrop
+        welcomeEmptyState
+            .overlay {
+                if onboardingPresenter.isPresenting {
+                    onboardingBackdrop
+                }
             }
-            else {
-                welcomeEmptyState
-            }
-        }
         .onAppear(perform: scheduleInitialOnboardingIfNeeded)
         .onDisappear(perform: onboardingPresenter.close)
     }
 
-    private var shouldShowOnboardingBackdrop: Bool {
-        onboardingPresenter.isPresenting
-    }
-
     private var onboardingBackdrop: some View {
-        ZStack {
-            AppConstants.backgroundWindow
-                .ignoresSafeArea()
-            // Dim the main window so the floating TourKit card reads like the README demo.
-            Color.black.opacity(0.55)
-                .ignoresSafeArea()
-        }
+        Color.black.opacity(0.55)
+            .ignoresSafeArea()
+            .allowsHitTesting(true)
     }
 
     private var welcomeEmptyState: some View {
@@ -126,11 +116,7 @@ struct WelcomeScreen: View {
     }
 
     private func presentOnboarding() {
-        onboardingPresenter.present(
-            apiServiceIsPresent: apiServiceIsPresent,
-            onFinish: completeOnboarding,
-            onDismiss: dismissOnboarding
-        )
+        onboardingPresenter.replay()
     }
 
     private func completeOnboarding() {

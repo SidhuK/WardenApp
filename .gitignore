@@ -107,4 +107,16 @@ UI_plan.md
 !*/
 !*.md
 !.gitignore
+!Warden/Assets.xcassets/tour-chat.imageset/
+!Warden/Assets.xcassets/tour-chat.imageset/**
+!Warden/Assets.xcassets/tour-providers.imageset/
+!Warden/Assets.xcassets/tour-providers.imageset/**
+!Warden/Assets.xcassets/tour-project-template.imageset/
+!Warden/Assets.xcassets/tour-project-template.imageset/**
+!Warden/Assets.xcassets/tour-projects.imageset/
+!Warden/Assets.xcassets/tour-projects.imageset/**
+!Warden/Assets.xcassets/tour-assistants.imageset/
+!Warden/Assets.xcassets/tour-assistants.imageset/**
+!Warden/Assets.xcassets/tour-new-assistant.imageset/
+!Warden/Assets.xcassets/tour-new-assistant.imageset/**
 # <<< Glyph Git Sync <<<
