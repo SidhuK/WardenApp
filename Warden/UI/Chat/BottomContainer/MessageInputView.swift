@@ -85,7 +85,8 @@ struct MessageInputView: View {
                     PromptCompletionListView(state: promptCompletion) { prompt in
                         if let newText = promptCompletion.acceptSelected(
                             currentText: state.text,
-                            libraryManager: .shared
+                            libraryManager: .shared,
+                            prompt: prompt
                         ) {
                             state.text = newText
                         }
@@ -533,6 +534,11 @@ struct MessageInputView: View {
             .frame(height: dynamicHeight)
             .onChange(of: state.text) { _, newText in
                 promptCompletion.sync(with: newText)
+            }
+            .onAppear {
+                // A composer can be created with a "/query" already in the text;
+                // sync once so suggestions appear without waiting for an edit.
+                promptCompletion.sync(with: state.text)
             }
         }
         .padding(.vertical, 0)

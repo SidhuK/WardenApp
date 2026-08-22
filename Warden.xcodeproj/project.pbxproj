@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		066C487A4C4D90158727285C /* UsageTrackingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6F0B7C0F3CD12F0C219424 /* UsageTrackingService.swift */; }
-		9E90CAF7EB7832BE1278D6CE /* PromptLibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A795AF4334DC0A0A24A65315 /* PromptLibraryManager.swift */; }
-		6578702A99D87DCFE85988AD /* PromptCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505468F06FE848C40DB1C44D /* PromptCompletionView.swift */; }
-		15A13334CD61C6A012339A24 /* TabPromptLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CAE40899A1CDCA21BC23F4 /* TabPromptLibraryView.swift */; }
-		A888979D6D89F6230989A1BA /* TabUsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A2537625D8F98A96D866BC6 /* TabUsageView.swift */; }
+		066C487A4C4D90158727285C /* UsageTrackingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6F0B7C0F3CD12F0C219424 /* UsageTrackingService.swift */; };
+		9E90CAF7EB7832BE1278D6CE /* PromptLibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A795AF4334DC0A0A24A65315 /* PromptLibraryManager.swift */; };
+		6578702A99D87DCFE85988AD /* PromptCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505468F06FE848C40DB1C44D /* PromptCompletionView.swift */; };
+		15A13334CD61C6A012339A24 /* TabPromptLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CAE40899A1CDCA21BC23F4 /* TabPromptLibraryView.swift */; };
+		A888979D6D89F6230989A1BA /* TabUsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A2537625D8F98A96D866BC6 /* TabUsageView.swift */; };
 		1944D194B23F4B968C99D50A /* MCPAgentSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BFEA1423CE44C558E44763C /* MCPAgentSelector.swift */; };
 		4A0BCBBC2D5199140033AB96 /* ButtonWithStatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0BCBBB2D5199140033AB96 /* ButtonWithStatusIndicator.swift */; };
 		4A0E02852D0F571000D2FAF3 /* PerplexityHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0E02842D0F571000D2FAF3 /* PerplexityHandler.swift */; };

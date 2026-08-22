@@ -8,12 +8,14 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
     internal let session: URLSession
     internal let streamingSession: URLSession
 
-    /// Token usage reported by the provider for the most recent completion
-    /// (streaming or non-streaming). Read after a request finishes.
-    /// Guarded by `usageLock` because handlers are used from concurrent tasks.
-    private var lastUsage: TokenUsage?
+    /// Token usage reported by the provider, keyed by request ID so overlapping or
+    /// retried requests can't inherit each other's usage. Guarded by `usageLock`
+    /// because handlers are used from concurrent tasks.
+    private var pendingUsage: [UUID: TokenUsage] = [:]
+    /// The request a parsing path should attribute captured usage to.
+    private var currentRequestID: UUID?
     private let usageLock = NSLock()
-    
+
     init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
         self.name = config.name
         self.baseURL = config.apiUrl
@@ -25,20 +27,40 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
 
     // MARK: - Usage Capture
 
-    /// Records token usage seen in a response payload. Called from parsing paths.
-    func captureUsage(_ usage: TokenUsage) {
+    /// Begins a new capture scope. Usage seen until the matching consume/discard
+    /// is attributed to the returned request ID.
+    func beginUsageCapture() -> UUID {
+        let id = UUID()
         usageLock.lock()
-        lastUsage = TokenUsage.merged(usage, into: lastUsage)
+        currentRequestID = id
+        pendingUsage[id] = nil
         usageLock.unlock()
+        return id
     }
 
-    /// Returns and clears the captured usage for the most recent completion.
-    func consumeCapturedUsage() -> TokenUsage? {
+    /// Records token usage seen in a response payload for the active request scope.
+    func captureUsage(_ usage: TokenUsage) {
         usageLock.lock()
         defer { usageLock.unlock() }
-        let usage = lastUsage
-        lastUsage = nil
-        return usage
+        guard let requestID = currentRequestID else { return }
+        pendingUsage[requestID] = TokenUsage.merged(usage, into: pendingUsage[requestID])
+    }
+
+    /// Returns and clears the usage captured for `requestID`.
+    func consumeCapturedUsage(for requestID: UUID) -> TokenUsage? {
+        usageLock.lock()
+        defer { usageLock.unlock() }
+        currentRequestID = nil
+        return pendingUsage.removeValue(forKey: requestID)
+    }
+
+    /// Discards usage captured for `requestID` without recording it (cancellation,
+    /// errors) so partial reports never reach the usage tracker.
+    func discardCapturedUsage(for requestID: UUID) {
+        usageLock.lock()
+        defer { usageLock.unlock() }
+        if currentRequestID == requestID { currentRequestID = nil }
+        pendingUsage.removeValue(forKey: requestID)
     }
     
     convenience init(config: APIServiceConfiguration, session: URLSession) {
@@ -85,6 +107,7 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                     await controller.finish()
                     return
                 }
+                let usageRequestID = self.beginUsageCapture()
                 do {
                     var attemptSettings = settings
                     var didRetryWithoutReasoning = false
@@ -155,8 +178,15 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                             try Task.checkCancellation()
 
                             if let data = dataString.data(using: .utf8) {
-                                // Capture token usage if this chunk carries it (usually the final chunk).
-                                if let usage = UsageExtractor.extract(fromStreamData: data) {
+                                // Capture token usage if this chunk carries it (usually the final
+                                // chunk). Cheap substring check first — most chunks have no usage,
+                                // and this avoids deserializing every SSE event twice.
+                                let looksLikeUsageChunk =
+                                    dataString.contains("\"usage\"")
+                                    || dataString.contains("eval_count")
+                                    || dataString.contains("prompt_eval_count")
+                                if looksLikeUsageChunk,
+                                   let usage = UsageExtractor.extract(fromStreamData: data) {
                                     self.captureUsage(usage)
                                 }
 
@@ -208,9 +238,12 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                         return
                     }
                 } catch is CancellationError {
-                    // Silently finish on cancellation - don't throw
+                    // Cancelled mid-stream: drop any partially captured usage so a
+                    // partial report is never recorded as a full completion.
+                    self.discardCapturedUsage(for: usageRequestID)
                     await controller.finish()
                 } catch {
+                    self.discardCapturedUsage(for: usageRequestID)
                     await controller.finish(throwing: error)
                 }
             }

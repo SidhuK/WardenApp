@@ -20,7 +20,12 @@ final class PromptCompletionState: ObservableObject {
         self.library = library
     }
 
-    var isVisible: Bool { query != nil }
+    /// Visible only while there is an active query AND at least one suggestion,
+    /// otherwise arrow keys would be consumed with nothing to navigate.
+    var isVisible: Bool {
+        guard query != nil else { return false }
+        return !suggestions.isEmpty
+    }
 
     var suggestions: [PromptEntity] {
         library.prompts(matchingQuery: query)
@@ -63,10 +68,16 @@ final class PromptCompletionState: ObservableObject {
     }
 
     /// Applies the chosen (or top) prompt to the composer text.
+    /// Pass `prompt` explicitly from tap/activation paths; keyboard acceptance
+    /// omits it and uses the currently highlighted row.
     /// Returns the replacement text, or nil if nothing could be applied.
     @discardableResult
-    func acceptSelected(currentText: String, libraryManager: PromptLibraryManager) -> String? {
-        guard let prompt = selectedPrompt,
+    func acceptSelected(
+        currentText: String,
+        libraryManager: PromptLibraryManager,
+        prompt: PromptEntity? = nil
+    ) -> String? {
+        guard let prompt = prompt ?? selectedPrompt,
               let content = prompt.resolvedContent(selection: nil) else {
             return nil
         }

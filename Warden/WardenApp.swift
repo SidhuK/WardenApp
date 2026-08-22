@@ -116,6 +116,11 @@ struct WardenApp: App {
         DatabasePatcher.applyPatches(context: persistenceController.container.viewContext)
         DatabasePatcher.migrateExistingConfiguration(context: persistenceController.container.viewContext)
 
+        // Seed the prompt library's starter prompts on first launch
+        Task { @MainActor in
+            PromptLibraryManager.warmUp()
+        }
+
         // Initialize automatic updates
         _ = UpdaterManager.shared
     }

@@ -15,13 +15,16 @@ struct TabPromptLibraryView: View {
     private var prompts: FetchedResults<PromptEntity>
 
     @State private var promptInSheet: PromptInSheet?
+    @State private var newPromptSheetIsPresented = false
     @State private var promptToDelete: PromptEntity?
     @State private var showingDeleteConfirmation = false
 
     struct PromptInSheet: Identifiable {
         let id: NSManagedObjectID
-        var entity: PromptEntity? {
-            try? PersistenceController.shared.container.viewContext.object(with: id) as? PromptEntity
+        /// Resolve through `existingObject(with:)` so a deleted prompt yields nil
+        /// instead of an unfulfillable fault that would crash the edit sheet.
+        func entity(in context: NSManagedObjectContext) -> PromptEntity? {
+            try? context.existingObject(with: id) as? PromptEntity
         }
     }
 
@@ -62,7 +65,11 @@ struct TabPromptLibraryView: View {
             .padding(20)
         }
         .sheet(item: $promptInSheet) { item in
-            PromptEditSheet(prompt: item.entity)
+            PromptEditSheet(prompt: item.entity(in: viewContext))
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $newPromptSheetIsPresented) {
+            PromptEditSheet(prompt: nil)
                 .environment(\.managedObjectContext, viewContext)
         }
         .confirmationDialog(
@@ -105,8 +112,9 @@ struct TabPromptLibraryView: View {
     }
 
     private func onAdd() {
-        let newPrompt = PromptLibraryManager.shared.addPrompt(name: "", content: "")
-        promptInSheet = PromptInSheet(id: newPrompt.objectID)
+        // Don't create anything here — only the sheet's Save persists a new prompt.
+        // Creating up front would leak an empty prompt if the user cancels.
+        newPromptSheetIsPresented = true
     }
 }
 

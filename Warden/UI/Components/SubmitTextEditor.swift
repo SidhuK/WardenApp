@@ -116,9 +116,11 @@ struct SubmitTextEditor: NSViewRepresentable {
 
             switch command {
             case .moveDown:
+                guard !state.suggestions.isEmpty else { return false }
                 state.moveSelection(1)
                 return true
             case .moveUp:
+                guard !state.suggestions.isEmpty else { return false }
                 state.moveSelection(-1)
                 return true
             case .escape:
@@ -186,10 +188,13 @@ private final class SubmitAwareTextView: NSTextView {
     }
 
     /// Maps arrow/escape/return key presses to completion commands.
-    /// Arrows are only claimed when "/" completion is actually active (non-nil handler + visible state),
-    /// so normal cursor movement is unaffected otherwise.
+    /// Only unmodified keys are claimed (Shift/Cmd/Opt/Ctrl combos keep their normal
+    /// behavior, e.g. Shift+Return newline), and only while "/" completion is actually
+    /// active, so normal cursor movement is unaffected otherwise.
     private func completionCommand(for event: NSEvent) -> CompletionCommand? {
         guard onCompletionCommand != nil else { return nil }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.subtracting(.function).subtracting(.numericPad).isEmpty else { return nil }
         switch event.keyCode {
         case 125: return .moveDown   // Down arrow
         case 126: return .moveUp     // Up arrow

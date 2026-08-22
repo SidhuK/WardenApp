@@ -15,6 +15,12 @@ final class PromptLibraryManager {
         addPresetsIfNeeded()
     }
 
+    /// Forces the singleton (and first-run preset seeding) to initialize at app
+    /// startup, so starter prompts exist even if no composer is ever opened.
+    static func warmUp() {
+        _ = shared
+    }
+
     // MARK: - CRUD
 
     @discardableResult
@@ -167,14 +173,21 @@ final class PromptLibraryManager {
         return value
     }
 
-    private func save() {
-        guard viewContext.hasChanges else { return }
+    /// Persists pending changes. On failure the failed mutations are rolled back
+    /// (rather than left dangling in the context) and `false` is returned so
+    /// callers can't assume an operation persisted when it didn't.
+    @discardableResult
+    private func save() -> Bool {
+        guard viewContext.hasChanges else { return true }
         do {
             try viewContext.save()
+            return true
         } catch {
+            viewContext.rollback()
             WardenLog.app.error(
                 "[Prompts] Save failed: \(error.localizedDescription, privacy: .public)"
             )
+            return false
         }
     }
 }

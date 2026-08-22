@@ -31,31 +31,48 @@ struct TokenUsage: Codable, Equatable {
 enum UsageExtractor {
     /// Extracts usage from an OpenAI-compatible JSON dictionary (`usage.prompt_tokens` / `completion_tokens`).
     static func fromOpenAIDictionary(_ dict: [String: Any]) -> TokenUsage? {
-        guard let usage = dict["usage"] as? [String: Any] else { return nil }
-
-        // Responses API style names first, then chat-completions names.
-        let input = (usage["input_tokens"] as? NSNumber)?.intValue
-            ?? (usage["prompt_tokens"] as? NSNumber)?.intValue ?? 0
-        let output = (usage["output_tokens"] as? NSNumber)?.intValue
-            ?? (usage["completion_tokens"] as? NSNumber)?.intValue ?? 0
-
-        guard input > 0 || output > 0 else { return nil }
-
-        var result = TokenUsage(inputTokens: input, outputTokens: output)
-
-        if let details = usage["prompt_tokens_details"] as? [String: Any] {
-            result.cachedInputTokens = (details["cached_tokens"] as? NSNumber)?.intValue ?? 0
-        } else if let details = usage["input_tokens_details"] as? [String: Any] {
-            result.cachedInputTokens = (details["cached_tokens"] as? NSNumber)?.intValue ?? 0
+        // Chat-completions bodies carry `usage` at top level; Responses-API stream
+        // events nest it under `response` (e.g. `response.completed`).
+        var containers: [[String: Any]] = [dict]
+        if let response = dict["response"] as? [String: Any] {
+            containers.append(response)
         }
 
-        if let details = usage["completion_tokens_details"] as? [String: Any] {
-            result.reasoningTokens = (details["reasoning_tokens"] as? NSNumber)?.intValue ?? 0
-        } else if let details = usage["output_tokens_details"] as? [String: Any] {
-            result.reasoningTokens = (details["reasoning_tokens"] as? NSNumber)?.intValue ?? 0
-        }
+        for container in containers {
+            guard let usage = container["usage"] as? [String: Any] else { continue }
+            // Anthropic payloads also expose a top-level `usage`, but with
+            // provider-specific keys the OpenAI parser would drop (cached input).
+            // Defer to the Anthropic parser when those keys are present.
+            guard usage["cache_read_input_tokens"] == nil,
+                  usage["cache_creation_input_tokens"] == nil else {
+                return nil
+            }
 
-        return result
+            // Responses API style names first, then chat-completions names.
+            let input = (usage["input_tokens"] as? NSNumber)?.intValue
+                ?? (usage["prompt_tokens"] as? NSNumber)?.intValue ?? 0
+            let output = (usage["output_tokens"] as? NSNumber)?.intValue
+                ?? (usage["completion_tokens"] as? NSNumber)?.intValue ?? 0
+
+            guard input > 0 || output > 0 else { continue }
+
+            var result = TokenUsage(inputTokens: input, outputTokens: output)
+
+            if let details = usage["prompt_tokens_details"] as? [String: Any] {
+                result.cachedInputTokens = (details["cached_tokens"] as? NSNumber)?.intValue ?? 0
+            } else if let details = usage["input_tokens_details"] as? [String: Any] {
+                result.cachedInputTokens = (details["cached_tokens"] as? NSNumber)?.intValue ?? 0
+            }
+
+            if let details = usage["completion_tokens_details"] as? [String: Any] {
+                result.reasoningTokens = (details["reasoning_tokens"] as? NSNumber)?.intValue ?? 0
+            } else if let details = usage["output_tokens_details"] as? [String: Any] {
+                result.reasoningTokens = (details["reasoning_tokens"] as? NSNumber)?.intValue ?? 0
+            }
+
+            return result
+        }
+        return nil
     }
 
     /// Extracts usage from an Anthropic `message_start` / `message_delta` event dictionary
@@ -75,8 +92,7 @@ enum UsageExtractor {
 
             var result = TokenUsage(inputTokens: input, outputTokens: output)
             result.cachedInputTokens = (usage["cache_read_input_tokens"] as? NSNumber)?.intValue ?? 0
-            if let outputDelta = usage["output_tokens"] as? NSNumber,
-               let deltaReasoning = usage["reasoning_output_tokens"] as? NSNumber {
+            if let deltaReasoning = usage["reasoning_output_tokens"] as? NSNumber {
                 result.reasoningTokens = deltaReasoning.intValue
             }
             return result
@@ -93,9 +109,11 @@ enum UsageExtractor {
         return TokenUsage(inputTokens: promptEval.intValue, outputTokens: eval.intValue)
     }
 
-    /// Provider-agnostic entry point: tries OpenAI-compatible, Anthropic, then Ollama shapes.
+    /// Provider-agnostic entry point: tries Anthropic, OpenAI-compatible, then Ollama shapes.
+    /// Anthropic first: its payloads also expose a top-level `usage` that would otherwise
+    /// be mis-parsed by the OpenAI path and lose cached-input token counts.
     static func extract(from dict: [String: Any]) -> TokenUsage? {
-        fromOpenAIDictionary(dict) ?? fromAnthropicDictionary(dict) ?? fromOllamaDictionary(dict)
+        fromAnthropicDictionary(dict) ?? fromOpenAIDictionary(dict) ?? fromOllamaDictionary(dict)
     }
 
     /// Extracts usage from raw SSE event data (streaming path).
@@ -134,12 +152,11 @@ enum UsageCostCalculator {
         // the provider metadata doesn't distinguish it (conservative middle ground).
         let billableInput = max(0, usage.inputTokens - usage.cachedInputTokens)
         let cachedCost = Double(usage.cachedInputTokens) * inputPerToken * 0.5
-        let reasoningCost = Double(usage.reasoningTokens) * outputPerToken
 
+        // outputTokens already includes reasoning tokens, so charge total output once.
         let cost = Double(billableInput) * inputPerToken
             + cachedCost
             + (Double(usage.outputTokens) * outputPerToken)
-            + reasoningCost
 
         let source: String
         if metadata.isStale {
@@ -163,6 +180,9 @@ final class UsageTrackingService {
     }
 
     /// Records one completion's usage. No-ops when the provider reported no usage.
+    ///
+    /// Writes on a dedicated background context so a failed save can never discard
+    /// unsaved changes sitting in the shared view context (chat edits, etc.).
     func record(
         usage: TokenUsage,
         providerName: String,
@@ -172,33 +192,36 @@ final class UsageTrackingService {
         guard !usage.isEmpty else { return }
 
         let cost = UsageCostCalculator.cost(for: usage, providerName: providerName, modelId: modelId)
+        let context = PersistenceController.shared.container.newBackgroundContext()
 
-        let record = UsageRecordEntity(context: viewContext)
-        record.id = UUID()
-        record.date = Date()
-        record.providerName = providerName
-        record.modelId = modelId
-        record.chatID = chatID
-        record.inputTokens = Int64(usage.inputTokens)
-        record.outputTokens = Int64(usage.outputTokens)
-        record.cachedInputTokens = Int64(usage.cachedInputTokens)
-        record.reasoningTokens = Int64(usage.reasoningTokens)
-        record.estimatedCostUSD = cost.costUSD
-        record.pricingSource = cost.source
+        context.perform {
+            let record = UsageRecordEntity(context: context)
+            record.id = UUID()
+            record.date = Date()
+            record.providerName = providerName
+            record.modelId = modelId
+            record.chatID = chatID
+            record.inputTokens = Int64(usage.inputTokens)
+            record.outputTokens = Int64(usage.outputTokens)
+            record.cachedInputTokens = Int64(usage.cachedInputTokens)
+            record.reasoningTokens = Int64(usage.reasoningTokens)
+            record.estimatedCostUSD = cost.costUSD
+            record.pricingSource = cost.source
 
-        do {
-            try viewContext.save()
-            #if DEBUG
-            WardenLog.app.debug(
-                "[Usage] Recorded \(usage.inputTokens, privacy: .public) in / \(usage.outputTokens, privacy: .public) out tokens (~$\(String(format: "%.4f", cost.costUSD), privacy: .public)) for \(modelId, privacy: .public)"
-            )
-            #endif
-        } catch {
-            // Never let usage accounting break a chat — log and continue.
-            viewContext.rollback()
-            WardenLog.app.error(
-                "[Usage] Failed to save usage record: \(error.localizedDescription, privacy: .public)"
-            )
+            do {
+                try context.save()
+                #if DEBUG
+                WardenLog.app.debug(
+                    "[Usage] Recorded \(usage.inputTokens, privacy: .public) in / \(usage.outputTokens, privacy: .public) out tokens (~$\(String(format: "%.4f", cost.costUSD), privacy: .public)) for \(modelId, privacy: .public)"
+                )
+                #endif
+            } catch {
+                // Never let usage accounting break a chat — log and continue.
+                context.rollback()
+                WardenLog.app.error(
+                    "[Usage] Failed to save usage record: \(error.localizedDescription, privacy: .public)"
+                )
+            }
         }
     }
 
@@ -213,6 +236,7 @@ final class UsageTrackingService {
 
     struct ModelBreakdown: Identifiable {
         let id: String
+        let modelId: String
         let providerName: String
         var totals: Totals
     }
@@ -232,10 +256,13 @@ final class UsageTrackingService {
     func breakdownByModel(from: Date? = nil, to: Date? = nil) -> [ModelBreakdown] {
         var grouped: [String: ModelBreakdown] = [:]
         for record in fetchRecords(from: from, to: to) {
-            let key = "\(record.providerName ?? "unknown")/\(record.modelId ?? "unknown")"
+            let provider = record.providerName ?? "Unknown"
+            let modelId = record.modelId ?? "unknown"
+            let key = "\(provider)/\(modelId)"
             var entry = grouped[key] ?? ModelBreakdown(
                 id: key,
-                providerName: record.providerName ?? "Unknown",
+                modelId: modelId,
+                providerName: provider,
                 totals: Totals()
             )
             entry.totals.inputTokens += record.inputTokens
@@ -257,7 +284,7 @@ final class UsageTrackingService {
 
         var buckets: [Date: Totals] = [:]
         for offset in 0..<days {
-            if let day = calendar.date(byAdding: .day, value: offset, to: startOfToday) {
+            if let day = calendar.date(byAdding: .day, value: offset, to: windowStart) {
                 buckets[day] = Totals()
             }
         }
@@ -265,7 +292,8 @@ final class UsageTrackingService {
         for record in fetchRecords(from: windowStart) {
             guard let date = record.date else { continue }
             let day = calendar.startOfDay(for: date)
-            var totals = buckets[day] ?? Totals()
+            guard buckets[day] != nil else { continue } // Skip records outside the requested window
+            var totals = buckets[day]!
             totals.inputTokens += record.inputTokens
             totals.outputTokens += record.outputTokens
             totals.costUSD += record.estimatedCostUSD

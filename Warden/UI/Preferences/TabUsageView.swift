@@ -35,6 +35,8 @@ struct TabUsageView: View {
     }
 
     @State private var window: TimeWindow = .thirtyDays
+    /// Bumped whenever usage records change so computed cards/chart re-render.
+    @State private var refreshTrigger = 0
 
     private let service = UsageTrackingService()
 
@@ -53,6 +55,15 @@ struct TabUsageView: View {
             }
             .padding(20)
         }
+        .id(refreshTrigger)
+        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { note in
+            // Re-render when any save touches a UsageRecordEntity (e.g. a completion
+            // finishing in another window while this tab is open).
+            if let objects = note.object as? Set<NSManagedObject>,
+               objects.contains(where: { $0 is UsageRecordEntity }) {
+                refreshTrigger &+= 1
+            }
+        }
     }
 
     // MARK: - Sections
@@ -61,7 +72,7 @@ struct TabUsageView: View {
         HStack {
             SettingsSectionHeader(title: "Usage & Cost")
             Spacer()
-            Picker("", selection: $window) {
+            Picker("Time Window", selection: $window) {
                 ForEach(TimeWindow.allCases) { window in
                     Text(window.rawValue).tag(window)
                 }
@@ -117,7 +128,7 @@ struct TabUsageView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label(title, systemImage: icon)
                     .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(color)
                 Text(value)
                     .font(.system(size: 22, weight: .semibold, design: .rounded))
                 if !subtitle.isEmpty {
@@ -194,7 +205,7 @@ struct TabUsageView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(entry.providerName)
                                         .font(.system(size: 13, weight: .medium))
-                                    Text(entry.id)
+                                    Text(entry.modelId)
                                         .font(.system(size: 11, design: .monospaced))
                                         .foregroundColor(.secondary)
                                         .lineLimit(1)
@@ -226,24 +237,32 @@ struct TabUsageView: View {
     // MARK: - Formatting
 
     private func formatUSD(_ amount: Double) -> String {
+        // Locale-aware currency formatting, pinned to USD (pricing source is USD).
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
         if amount >= 100 {
-            return String(format: "$%.0f", amount)
+            formatter.maximumFractionDigits = 0
         } else if amount >= 1 {
-            return String(format: "$%.2f", amount)
-        } else if amount > 0 {
-            return String(format: "$%.4f", amount)
+            formatter.maximumFractionDigits = 2
+            formatter.minimumFractionDigits = 2
+        } else {
+            formatter.maximumFractionDigits = 4
+            formatter.minimumFractionDigits = amount > 0 ? 4 : 2
         }
-        return "$0.00"
+        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
     }
 
     private func formatTokenCount(_ count: Int64) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal  // Respects the user's grouping/decimal separators
         switch count {
         case 1_000_000...:
-            return String(format: "%.1fM", Double(count) / 1_000_000)
+            return String(format: "%.1fM", locale: Locale.current, Double(count) / 1_000_000)
         case 1_000...:
-            return String(format: "%.1fk", Double(count) / 1_000)
+            return String(format: "%.1fk", locale: Locale.current, Double(count) / 1_000)
         default:
-            return "\(count)"
+            return formatter.string(from: NSNumber(value: count)) ?? "\(count)"
         }
     }
 }
