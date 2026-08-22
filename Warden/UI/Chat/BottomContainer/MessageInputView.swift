@@ -36,6 +36,7 @@ struct MessageInputView: View {
     var focusToken: Int = 0
     
     @StateObject private var mcpManager = MCPManager.shared
+    @StateObject private var promptCompletion = PromptCompletionState()
 
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.wardenTheme) private var theme
@@ -77,8 +78,21 @@ struct MessageInputView: View {
     var body: some View {
         VStack(spacing: 0) {
             attachmentPreviewsSection
-            
+
             VStack(alignment: .leading, spacing: 10) {
+                // "/" prompt-completion suggestions float above the text input
+                if promptCompletion.isVisible {
+                    PromptCompletionListView(state: promptCompletion) { prompt in
+                        if let newText = promptCompletion.acceptSelected(
+                            currentText: state.text,
+                            libraryManager: .shared
+                        ) {
+                            state.text = newText
+                        }
+                    }
+                    .padding(.bottom, 4)
+                }
+
                 // Text Input Area
                 textInputArea
                 
@@ -513,9 +527,13 @@ struct MessageInputView: View {
                     onEnter()
                 },
                 font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize)),
-                maxHeight: maxInputHeight
+                maxHeight: maxInputHeight,
+                completionState: promptCompletion
             )
             .frame(height: dynamicHeight)
+            .onChange(of: state.text) { _, newText in
+                promptCompletion.sync(with: newText)
+            }
         }
         .padding(.vertical, 0)
         .frame(minWidth: 200)

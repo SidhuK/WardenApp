@@ -13,6 +13,7 @@ class ChatService {
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings,
+        chatID: UUID? = nil,
         onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
         return try await APIServiceManager.handleStream(
@@ -20,6 +21,7 @@ class ChatService {
             messages: messages,
             tools: tools,
             settings: settings,
+            chatID: chatID,
             onChunk: onChunk
         )
     }

@@ -103,4 +103,27 @@
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="chats" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChatEntity" inverseName="project" inverseEntity="ChatEntity"/>
     </entity>
+    <entity name="PromptEntity" representedClassName="PromptEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="content" optional="YES" attributeType="String"/>
+        <attribute name="shortcut" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="usageCount" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastUsedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="UsageRecordEntity" representedClassName="UsageRecordEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="providerName" optional="YES" attributeType="String"/>
+        <attribute name="modelId" optional="YES" attributeType="String"/>
+        <attribute name="chatID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="inputTokens" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="outputTokens" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="cachedInputTokens" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="reasoningTokens" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="estimatedCostUSD" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="pricingSource" optional="YES" attributeType="String"/>
+    </entity>
 </model>

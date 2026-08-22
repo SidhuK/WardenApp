@@ -457,7 +457,8 @@ final class MessageManager: ObservableObject {
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort),
+                    chatID: chat.id
                 ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }

@@ -8,6 +8,8 @@ struct SubmitTextEditor: NSViewRepresentable {
     var onSubmit: () -> Void
     var font: NSFont = .systemFont(ofSize: 14)
     var maxHeight: CGFloat = 160
+    /// When set, arrow/enter/escape are forwarded while "/" completion is active.
+    var completionState: PromptCompletionState?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -30,6 +32,9 @@ struct SubmitTextEditor: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 8)
         textView.onSubmit = { [weak coordinator = context.coordinator] in
             coordinator?.handleSubmit()
+        }
+        textView.onCompletionCommand = { [weak coordinator = context.coordinator] command in
+            coordinator?.handleCompletionCommand(command)
         }
         
         // Transparent background
@@ -103,6 +108,38 @@ struct SubmitTextEditor: NSViewRepresentable {
                 self.parent.onSubmit()
             }
         }
+
+        /// Returns true when the command was consumed by "/" completion (and should not
+        /// perform its default action, e.g. submitting on Enter).
+        func handleCompletionCommand(_ command: SubmitAwareTextView.CompletionCommand) -> Bool {
+            guard let state = parent.completionState, state.isVisible else { return false }
+
+            switch command {
+            case .moveDown:
+                state.moveSelection(1)
+                return true
+            case .moveUp:
+                state.moveSelection(-1)
+                return true
+            case .escape:
+                state.dismiss()
+                return true
+            case .enter:
+                if state.suggestions.isEmpty { return false }
+                guard let newText = state.acceptSelected(
+                    currentText: parent.text,
+                    libraryManager: .shared
+                ) else { return false }
+                parent.text = newText
+                // Keep the editor view in sync immediately.
+                DispatchQueue.main.async {
+                    if let textView = NSApp.keyWindow?.firstResponder as? NSTextView {
+                        textView.string = newText
+                    }
+                }
+                return true
+            }
+        }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             let submitCommands: [Selector] = [
@@ -126,14 +163,40 @@ struct SubmitTextEditor: NSViewRepresentable {
 
 private final class SubmitAwareTextView: NSTextView {
     var onSubmit: (() -> Void)?
+    var onCompletionCommand: ((CompletionCommand) -> Bool)?
+
+    enum CompletionCommand {
+        case moveUp
+        case moveDown
+        case escape
+        case enter
+    }
 
     override func keyDown(with event: NSEvent) {
+        if let command = completionCommand(for: event), onCompletionCommand?(command) {
+            return
+        }
+
         if shouldSubmit(for: event) {
             onSubmit?()
             return
         }
 
         super.keyDown(with: event)
+    }
+
+    /// Maps arrow/escape/return key presses to completion commands.
+    /// Arrows are only claimed when "/" completion is actually active (non-nil handler + visible state),
+    /// so normal cursor movement is unaffected otherwise.
+    private func completionCommand(for event: NSEvent) -> CompletionCommand? {
+        guard onCompletionCommand != nil else { return nil }
+        switch event.keyCode {
+        case 125: return .moveDown   // Down arrow
+        case 126: return .moveUp     // Up arrow
+        case 53: return .escape      // Escape
+        case 36, 76: return .enter   // Return / keypad Enter
+        default: return nil
+        }
     }
 
     private func shouldSubmit(for event: NSEvent) -> Bool {

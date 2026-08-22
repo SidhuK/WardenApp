@@ -209,6 +209,7 @@ class APIServiceManager {
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings,
+        chatID: UUID? = nil,
         onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, settings: settings)
@@ -305,6 +306,20 @@ class APIServiceManager {
         os_signpost(.end, log: WardenSignpost.streaming, name: "Stream", signpostID: streamSignpostID)
         #endif
         
+        // Record token usage captured by the handler during streaming (best effort —
+        // usage accounting must never break a chat).
+        if let baseHandler = apiService as? BaseAPIHandler {
+            let usage = baseHandler.consumeCapturedUsage()
+            if let usage, !usage.isEmpty {
+                UsageTrackingService.shared.record(
+                    usage: usage,
+                    providerName: apiService.name,
+                    modelId: model,
+                    chatID: chatID
+                )
+            }
+        }
+
         return allToolCalls
     }
     

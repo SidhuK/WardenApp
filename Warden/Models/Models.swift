@@ -372,3 +372,67 @@ extension APIServiceEntity: NSCopying {
         return copy
     }
 }
+
+// MARK: - Prompt Library
+
+public class PromptEntity: NSManagedObject, Identifiable {
+    @NSManaged public var id: UUID
+    @NSManaged public var name: String?
+    @NSManaged public var content: String?
+    @NSManaged public var shortcut: String?
+    @NSManaged public var category: String?
+    @NSManaged public var usageCount: Int64
+    @NSManaged public var createdDate: Date?
+    @NSManaged public var lastUsedDate: Date?
+
+    /// Slash-command trigger, e.g. "/explain". Falls back to the lowercased name.
+    public var commandTrigger: String {
+        if let shortcut = shortcut?.trimmingCharacters(in: .whitespacesAndNewlines), !shortcut.isEmpty {
+            return shortcut.hasPrefix("/") ? shortcut : "/" + shortcut
+        }
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedName.isEmpty ? "" : "/" + trimmedName.lowercased()
+    }
+
+    /// Replaces {{text}} placeholders with the provided selection (kept as-is when no selection).
+    public func resolvedContent(selection: String?) -> String? {
+        guard var resolved = content else { return nil }
+        if let selection = selection, !selection.isEmpty {
+            resolved = resolved
+                .replacingOccurrences(of: "{{text}}", with: selection)
+                .replacingOccurrences(of: "{{selection}}", with: selection)
+        }
+        return resolved
+    }
+
+    public static func fetchRequest(sortedByUsage: Bool = false) -> NSFetchRequest<PromptEntity> {
+        let request = NSFetchRequest<PromptEntity>(entityName: "PromptEntity")
+        request.sortDescriptors = [
+            NSSortDescriptor(
+                key: sortedByUsage ? "usageCount" : "name",
+                ascending: !sortedByUsage
+            )
+        ]
+        return request
+    }
+}
+
+// MARK: - Usage Tracking
+
+public class UsageRecordEntity: NSManagedObject, Identifiable {
+    @NSManaged public var id: UUID
+    @NSManaged public var date: Date?
+    @NSManaged public var providerName: String?
+    @NSManaged public var modelId: String?
+    @NSManaged public var chatID: UUID?
+    @NSManaged public var inputTokens: Int64
+    @NSManaged public var outputTokens: Int64
+    @NSManaged public var cachedInputTokens: Int64
+    @NSManaged public var reasoningTokens: Int64
+    @NSManaged public var estimatedCostUSD: Double
+    @NSManaged public var pricingSource: String?
+
+    public static func fetchRequest() -> NSFetchRequest<UsageRecordEntity> {
+        NSFetchRequest<UsageRecordEntity>(entityName: "UsageRecordEntity")
+    }
+}

@@ -149,6 +149,13 @@ extension APIService {
             switch result {
             case .success(let responseData):
                 if let responseData = responseData {
+                    // Capture token usage from the non-streaming response body.
+                    if let json = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any],
+                       let usage = UsageExtractor.extract(from: json),
+                       let baseHandler = self as? BaseAPIHandler {
+                        baseHandler.captureUsage(usage)
+                    }
+
                     guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
                         #if DEBUG
                         WardenLog.app.debug(

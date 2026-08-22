@@ -7,6 +7,12 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
     let model: String
     internal let session: URLSession
     internal let streamingSession: URLSession
+
+    /// Token usage reported by the provider for the most recent completion
+    /// (streaming or non-streaming). Read after a request finishes.
+    /// Guarded by `usageLock` because handlers are used from concurrent tasks.
+    private var lastUsage: TokenUsage?
+    private let usageLock = NSLock()
     
     init(config: APIServiceConfiguration, session: URLSession, streamingSession: URLSession) {
         self.name = config.name
@@ -15,6 +21,24 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
         self.model = config.model
         self.session = session
         self.streamingSession = streamingSession
+    }
+
+    // MARK: - Usage Capture
+
+    /// Records token usage seen in a response payload. Called from parsing paths.
+    func captureUsage(_ usage: TokenUsage) {
+        usageLock.lock()
+        lastUsage = TokenUsage.merged(usage, into: lastUsage)
+        usageLock.unlock()
+    }
+
+    /// Returns and clears the captured usage for the most recent completion.
+    func consumeCapturedUsage() -> TokenUsage? {
+        usageLock.lock()
+        defer { usageLock.unlock() }
+        let usage = lastUsage
+        lastUsage = nil
+        return usage
     }
     
     convenience init(config: APIServiceConfiguration, session: URLSession) {
@@ -131,6 +155,11 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                             try Task.checkCancellation()
 
                             if let data = dataString.data(using: .utf8) {
+                                // Capture token usage if this chunk carries it (usually the final chunk).
+                                if let usage = UsageExtractor.extract(fromStreamData: data) {
+                                    self.captureUsage(usage)
+                                }
+
                                 let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: data)
 
                                 if let error = error {
