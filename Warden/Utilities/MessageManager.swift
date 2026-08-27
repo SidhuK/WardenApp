@@ -289,7 +289,8 @@ final class MessageManager: ObservableObject {
                 apiService: apiService,
                 messages: requestMessages,
                 tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+                settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort),
+                chatID: chat.id
             ) { [weak self] result in
                 guard let self = self else { return }
 
@@ -457,7 +458,8 @@ final class MessageManager: ObservableObject {
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort),
+                    chatID: chat.id
                 ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }
@@ -701,7 +703,8 @@ final class MessageManager: ObservableObject {
             apiService: apiService,
             messages: requestMessages,
             tools: nil, // Don't provide tools again to avoid loops
-            settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+            settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort),
+            chatID: chat.id
         ) { [weak self] result in
             guard let self = self else { return }
             

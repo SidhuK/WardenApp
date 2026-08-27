@@ -6,6 +6,8 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
     case general = "General"
     case apiServices = "API Services"
     case aiPersonas = "AI Assistants"
+    case promptLibrary = "Prompt Library"
+    case usageTracking = "Usage"
     case tools = "Tools"
     case keyboardShortcuts = "Keyboard Shortcuts"
     case contributions = "Contributions"
@@ -17,6 +19,8 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
         case .general: return "gearshape.fill"
         case .apiServices: return "network"
         case .aiPersonas: return "person.2.fill"
+        case .promptLibrary: return "text.bubble.fill"
+        case .usageTracking: return "chart.bar.fill"
         case .tools: return "wrench.and.screwdriver.fill"
         case .keyboardShortcuts: return "keyboard.fill"
         case .contributions: return "heart.fill"
@@ -28,6 +32,8 @@ enum PreferencesTabs: String, CaseIterable, Identifiable {
         case .general: return .gray
         case .apiServices: return .blue
         case .aiPersonas: return .purple
+        case .promptLibrary: return .teal
+        case .usageTracking: return .mint
         case .tools: return .orange
         case .keyboardShortcuts: return .green
         case .contributions: return .pink
@@ -89,6 +95,12 @@ struct SettingsDetailView: View {
                 TabAPIServicesView()
             case .aiPersonas:
                 TabAIPersonasView()
+                    .environment(\.managedObjectContext, viewContext)
+            case .promptLibrary:
+                TabPromptLibraryView()
+                    .environment(\.managedObjectContext, viewContext)
+            case .usageTracking:
+                TabUsageView()
                     .environment(\.managedObjectContext, viewContext)
             case .tools:
                 TabToolsView()

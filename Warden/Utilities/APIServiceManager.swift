@@ -209,9 +209,32 @@ class APIServiceManager {
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings,
+        chatID: UUID? = nil,
         onChunk: @MainActor @escaping (String) async -> Void
     ) async throws -> [ToolCall]? {
+        // Begin the capture scope before creating the stream so usage from the very
+        // first chunk is already attributable to this request.
+        let usageRequestID = apiService.beginUsageCapture()
         let stream = try await apiService.sendMessageStream(messages, tools: tools, settings: settings)
+
+        defer {
+            // Record token usage captured by the handler during streaming. Runs on
+            // every exit path (success, error, cancellation) so captured usage is
+            // always consumed and never bleeds into the next request. Best effort —
+            // usage accounting must never break a chat.
+            let usage = apiService.consumeCapturedUsage(for: usageRequestID)
+            if let usage, !usage.isEmpty {
+                Task { @MainActor in
+                    UsageTrackingService.shared.record(
+                        usage: usage,
+                        providerName: apiService.name,
+                        modelId: apiService.model,
+                        chatID: chatID
+                    )
+                }
+            }
+        }
+
         var pendingChunkParts: [String] = []
         var pendingChunkCharacterCount = 0
         let updateInterval = AppConstants.streamedResponseUpdateUIInterval
@@ -296,15 +319,8 @@ class APIServiceManager {
         }
 
         await flushPendingChunkBuffer()
-        
-        #if DEBUG
-        if !didEndTTFT {
-            didEndTTFT = true
-            os_signpost(.end, log: WardenSignpost.streaming, name: "TTFT", signpostID: ttftSignpostID)
-        }
-        os_signpost(.end, log: WardenSignpost.streaming, name: "Stream", signpostID: streamSignpostID)
-        #endif
-        
+
+
         return allToolCalls
     }
     

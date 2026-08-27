@@ -61,8 +61,31 @@ protocol APIService {
     ) async throws -> URLRequest
     
     func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)?
-    
+
     func parseDeltaJSONResponse(data: Data?) -> (Bool, Error?, String?, String?, [ToolCall]?)
+
+    // MARK: - Usage Capture
+
+    /// Begins a usage capture scope for one request; returns its request ID.
+    func beginUsageCapture() -> UUID
+
+    /// Records token usage seen in a response payload for the active request scope.
+    func captureUsage(_ usage: TokenUsage)
+
+    /// Returns and clears the usage captured for `requestID`.
+    func consumeCapturedUsage(for requestID: UUID) -> TokenUsage?
+
+    /// Discards usage captured for `requestID` without recording it.
+    func discardCapturedUsage(for requestID: UUID)
+}
+
+/// Default no-op implementations so conformers that don't support usage capture
+/// still satisfy the protocol (they simply report nothing).
+extension APIService {
+    func beginUsageCapture() -> UUID { UUID() }
+    func captureUsage(_ usage: TokenUsage) {}
+    func consumeCapturedUsage(for requestID: UUID) -> TokenUsage? { nil }
+    func discardCapturedUsage(for requestID: UUID) {}
 }
 
 protocol APIServiceConfiguration {
@@ -149,6 +172,13 @@ extension APIService {
             switch result {
             case .success(let responseData):
                 if let responseData = responseData {
+                    // Capture token usage from the non-streaming response body,
+                    // scoped to this request.
+                    if let json = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any],
+                       let usage = UsageExtractor.extract(from: json) {
+                        captureUsage(usage)
+                    }
+
                     guard let (messageContent, _, toolCalls) = self.parseJSONResponse(data: responseData) else {
                         #if DEBUG
                         WardenLog.app.debug(
