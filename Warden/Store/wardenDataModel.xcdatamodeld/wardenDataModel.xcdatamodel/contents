@@ -103,7 +103,7 @@
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="chats" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChatEntity" inverseName="project" inverseEntity="ChatEntity"/>
     </entity>
-    <entity name="PromptEntity" representedClassName="PromptEntity" syncable="YES" codeGenerationType="class">
+    <entity name="PromptEntity" representedClassName="PromptEntity" syncable="YES">
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="content" optional="YES" attributeType="String"/>
@@ -113,7 +113,7 @@
         <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastUsedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="UsageRecordEntity" representedClassName="UsageRecordEntity" syncable="YES" codeGenerationType="class">
+    <entity name="UsageRecordEntity" representedClassName="UsageRecordEntity" syncable="YES">
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="providerName" optional="YES" attributeType="String"/>

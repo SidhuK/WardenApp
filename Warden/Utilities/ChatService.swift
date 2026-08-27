@@ -37,21 +37,20 @@ class ChatService {
     ) {
         let requestID = apiService.beginUsageCapture()
         apiService.sendMessage(messages, tools: tools, settings: settings) { [weak self] result in
-            // Record token usage captured by the handler for this non-streaming
-            // completion (best effort — usage accounting must never break a chat).
-            // Only the main chat path passes a chatID; auxiliary calls (chat-name
-            // generation, connection tests) leave it nil and are not tracked.
-            if let self, let chatID {
-                let usage = apiService.consumeCapturedUsage(for: requestID)
-                if let usage, !usage.isEmpty {
-                    Task { @MainActor in
-                        UsageTrackingService.shared.record(
-                            usage: usage,
-                            providerName: apiService.name,
-                            modelId: apiService.model,
-                            chatID: chatID
-                        )
-                    }
+            // Close the capture scope on every exit path so captured usage never
+            // lingers on the handler. Only main-chat completions (chatID passed)
+            // are recorded; auxiliary calls (chat-name generation, connection
+            // tests) have their partial usage discarded. Best effort — usage
+            // accounting must never break a chat.
+            let usage = apiService.consumeCapturedUsage(for: requestID)
+            if let self, let chatID, let usage, !usage.isEmpty {
+                Task { @MainActor in
+                    UsageTrackingService.shared.record(
+                        usage: usage,
+                        providerName: apiService.name,
+                        modelId: apiService.model,
+                        chatID: chatID
+                    )
                 }
             }
             completion(result.mapError { $0 as Error })

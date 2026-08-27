@@ -225,11 +225,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4F6F0B7C0F3CD12F0C219424 /* UsageTrackingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageTrackingService.swift; sourceTree = "<group>" };
-		A795AF4334DC0A0A24A65315 /* PromptLibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLibraryManager.swift; sourceTree = "<group>" };
-		505468F06FE848C40DB1C44D /* PromptCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCompletionView.swift; sourceTree = "<group>" };
-		A5CAE40899A1CDCA21BC23F4 /* TabPromptLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabPromptLibraryView.swift; sourceTree = "<group>" };
-		8A2537625D8F98A96D866BC6 /* TabUsageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabUsageView.swift; sourceTree = "<group>" };
+		4F6F0B7C0F3CD12F0C219424 /* UsageTrackingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageTrackingService.swift; sourceTree = "<group>"; };
+		A795AF4334DC0A0A24A65315 /* PromptLibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLibraryManager.swift; sourceTree = "<group>"; };
+		505468F06FE848C40DB1C44D /* PromptCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptCompletionView.swift; sourceTree = "<group>"; };
+		A5CAE40899A1CDCA21BC23F4 /* TabPromptLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabPromptLibraryView.swift; sourceTree = "<group>"; };
+		8A2537625D8F98A96D866BC6 /* TabUsageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabUsageView.swift; sourceTree = "<group>"; };
 		09C5F31F2F664B9BBD13C0CC /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		1E14DF97A8974C028719A178 /* MCPSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPSettingsView.swift; sourceTree = "<group>"; };
 		442D774F210E4BC89CB19BDF /* AddMCPAgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMCPAgentSheet.swift; sourceTree = "<group>"; };

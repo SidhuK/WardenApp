@@ -224,12 +224,14 @@ class APIServiceManager {
             // usage accounting must never break a chat.
             let usage = apiService.consumeCapturedUsage(for: usageRequestID)
             if let usage, !usage.isEmpty {
-                UsageTrackingService.shared.record(
-                    usage: usage,
-                    providerName: apiService.name,
-                    modelId: apiService.model,
-                    chatID: chatID
-                )
+                Task { @MainActor in
+                    UsageTrackingService.shared.record(
+                        usage: usage,
+                        providerName: apiService.name,
+                        modelId: apiService.model,
+                        chatID: chatID
+                    )
+                }
             }
         }
 

@@ -34,7 +34,9 @@ struct SubmitTextEditor: NSViewRepresentable {
             coordinator?.handleSubmit()
         }
         textView.onCompletionCommand = { [weak coordinator = context.coordinator] command in
-            coordinator?.handleCompletionCommand(command)
+            MainActor.assumeIsolated {
+                coordinator?.handleCompletionCommand(command) ?? false
+            }
         }
         
         // Transparent background
@@ -103,6 +105,7 @@ struct SubmitTextEditor: NSViewRepresentable {
             }
         }
 
+        @MainActor
         func handleSubmit() {
             DispatchQueue.main.async {
                 self.parent.onSubmit()
@@ -111,7 +114,8 @@ struct SubmitTextEditor: NSViewRepresentable {
 
         /// Returns true when the command was consumed by "/" completion (and should not
         /// perform its default action, e.g. submitting on Enter).
-        func handleCompletionCommand(_ command: SubmitAwareTextView.CompletionCommand) -> Bool {
+        @MainActor
+        fileprivate func handleCompletionCommand(_ command: SubmitAwareTextView.CompletionCommand) -> Bool {
             guard let state = parent.completionState, state.isVisible else { return false }
 
             switch command {
@@ -154,7 +158,7 @@ struct SubmitTextEditor: NSViewRepresentable {
                 if let event = NSApp.currentEvent, event.modifierFlags.contains(.shift) {
                     return false // Allow new line with Shift+Enter
                 } else {
-                    handleSubmit()
+                    MainActor.assumeIsolated { handleSubmit() }
                     return true // Consume Enter to submit
                 }
             }
@@ -175,8 +179,11 @@ private final class SubmitAwareTextView: NSTextView {
     }
 
     override func keyDown(with event: NSEvent) {
-        if let command = completionCommand(for: event), onCompletionCommand?(command) {
-            return
+        if let command = completionCommand(for: event) {
+            let consumed = MainActor.assumeIsolated { onCompletionCommand?(command) ?? false }
+            if consumed {
+                return
+            }
         }
 
         if shouldSubmit(for: event) {
