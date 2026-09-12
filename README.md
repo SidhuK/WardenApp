@@ -27,7 +27,7 @@ Warden uses native SwiftUI and macOS frameworks for a responsive, battery-consci
 
 ## Features
 
-- **Multi-model support:** OpenAI, Anthropic, Gemini, Perplexity, OpenRouter, and more with your own API key.
+- **Multi-model support:** OpenAI, Anthropic, Gemini, Perplexity, OpenRouter, Requesty, and more with your own API key.
 - **Local AI:** Ollama and LM Studio support.
 - **Projects and workspaces:** Organize chats with colors, descriptions, and project-specific instructions.
 - **AI assistants:** Create custom assistants with distinct roles, tones, and default settings.

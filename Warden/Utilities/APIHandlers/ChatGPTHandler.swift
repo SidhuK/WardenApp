@@ -169,7 +169,9 @@ class ChatGPTHandler: BaseAPIHandler {
         let shouldSendReasoningEffort = isReasoningModel || provider == .xai
         
         if shouldSendReasoningEffort {
-            jsonDict["reasoning_effort"] = settings.reasoningEffort.openAIReasoningEffortValue
+            jsonDict["reasoning_effort"] = provider == .requesty
+                ? settings.reasoningEffort.requestyReasoningEffortValue
+                : settings.reasoningEffort.openAIReasoningEffortValue
         }
         
         if let tools = tools, !tools.isEmpty {

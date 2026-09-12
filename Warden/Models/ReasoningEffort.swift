@@ -37,6 +37,18 @@ enum ReasoningEffort: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Requesty normalizes effort levels per upstream vendor. `max` is the portable
+    /// top level; `xhigh` is forwarded verbatim and rejected by OpenAI models that lack it.
+    var requestyReasoningEffortValue: String {
+        switch self {
+        case .off: "none"
+        case .low: "low"
+        case .medium: "medium"
+        case .high: "high"
+        case .extraHigh: "max"
+        }
+    }
+
     var anthropicThinkingBudgetTokens: Int? {
         switch self {
         case .off:

@@ -28,6 +28,8 @@ class ModelMetadataFetcherFactory {
             return LiteLLMBackedFetcher(provider: "groq")
         case .openrouter:
             return OpenRouterMetadataFetcher()
+        case .requesty:
+            return RequestyMetadataFetcher()
         case .mistral:
             return LiteLLMBackedFetcher(provider: "mistral")
         case .xai:
@@ -430,6 +432,120 @@ class LocalModelMetadataFetcher: ModelMetadataFetcher {
     }
 }
 
+// MARK: - Requesty Fetcher
+
+/// Requesty exposes its full catalog with pricing and capability flags through the
+/// authenticated `/v1/models` endpoint, using the same `provider/model` ids Warden sends.
+class RequestyMetadataFetcher: ModelMetadataFetcher {
+    private let baseURL = "https://router.requesty.ai/v1/models"
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    func fetchAllMetadata(apiKey: String) async throws -> [String: ModelMetadata] {
+        guard let url = URL(string: baseURL) else {
+            throw NSError(domain: "RequestyFetcher", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw NSError(domain: "RequestyFetcher", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+        }
+
+        let result = try JSONDecoder().decode(RequestyModelsResponse.self, from: data)
+
+        var metadata: [String: ModelMetadata] = [:]
+
+        for model in result.data where model.api == nil || model.api == "chat" {
+            // Requesty returns USD per token, convert to per-1M-tokens
+            let pricing = PricingInfo(
+                inputPer1M: model.input_price.map { $0 * 1_000_000 },
+                outputPer1M: model.output_price.map { $0 * 1_000_000 },
+                source: "requesty-api"
+            )
+
+            metadata[model.id] = ModelMetadata(
+                modelId: model.id,
+                provider: "requesty",
+                pricing: pricing,
+                maxContextTokens: model.context_window,
+                capabilities: parseCapabilities(from: model),
+                latency: estimateLatency(from: model),
+                costLevel: getCostLevel(for: pricing),
+                lastUpdated: Date(),
+                source: .apiResponse
+            )
+        }
+
+        return metadata
+    }
+
+    func fetchMetadata(for modelId: String, apiKey: String) async throws -> ModelMetadata {
+        let allMetadata = try await fetchAllMetadata(apiKey: apiKey)
+
+        if let metadata = allMetadata[modelId] {
+            return metadata
+        }
+
+        return ModelMetadata(
+            modelId: modelId,
+            provider: "requesty",
+            pricing: nil,
+            maxContextTokens: nil,
+            capabilities: [],
+            latency: nil,
+            costLevel: nil,
+            lastUpdated: Date(),
+            source: .unknown
+        )
+    }
+
+    private func parseCapabilities(from model: RequestyModel) -> [String] {
+        var capabilities: [String] = []
+
+        if model.supports_vision == true {
+            capabilities.append("vision")
+        }
+
+        if model.supports_reasoning == true {
+            capabilities.append("reasoning")
+        }
+
+        if model.supports_tool_calling == true {
+            capabilities.append("function-calling")
+        }
+
+        return capabilities
+    }
+
+    private func estimateLatency(from model: RequestyModel) -> LatencyLevel? {
+        if model.id.contains("mini") || model.id.contains("small") || model.id.contains("haiku") || model.id.contains("flash") {
+            return .fast
+        } else if model.id.contains("large") || model.id.contains("opus") {
+            return .slow
+        }
+        return .medium
+    }
+
+    private func getCostLevel(for pricing: PricingInfo) -> CostLevel? {
+        guard let inputCost = pricing.inputPer1M else { return nil }
+        if inputCost < 1.0 {
+            return .cheap
+        } else if inputCost < 10.0 {
+            return .standard
+        } else {
+            return .expensive
+        }
+    }
+}
+
 // MARK: - Generic Fetcher
 
 class GenericMetadataFetcher: ModelMetadataFetcher {
@@ -483,4 +599,21 @@ struct OpenRouterArchitecture: Codable {
 struct OpenRouterPricing: Codable {
     let prompt: String
     let completion: String
+}
+
+struct RequestyModelsResponse: Codable {
+    let data: [RequestyModel]
+}
+
+struct RequestyModel: Codable {
+    let id: String
+    let api: String?
+    let context_window: Int?
+    let max_output_tokens: Int?
+    let input_price: Double?
+    let output_price: Double?
+    let supports_vision: Bool?
+    let supports_reasoning: Bool?
+    let supports_tool_calling: Bool?
+    let description: String?
 }

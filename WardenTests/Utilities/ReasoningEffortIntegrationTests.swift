@@ -24,6 +24,28 @@ final class ReasoningEffortIntegrationTests: XCTestCase {
         XCTAssertEqual(json["reasoning_effort"] as? String, "xhigh")
     }
 
+    func testRequestyHandlerMapsExtraHighToMax() throws {
+        let config = APIServiceConfig(
+            name: "requesty",
+            apiUrl: URL(string: "https://router.requesty.ai/v1/chat/completions")!,
+            apiKey: "test",
+            model: "openai/gpt-5"
+        )
+
+        let handler = ChatGPTHandler(config: config, session: .shared, streamingSession: .shared)
+        let request = try handler.prepareRequest(
+            requestMessages: [["role": "user", "content": "hi"]],
+            tools: nil,
+            model: config.model,
+            settings: GenerationSettings(temperature: 0.2, reasoningEffort: .extraHigh),
+            stream: false
+        )
+
+        let body = try XCTUnwrap(request.httpBody)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+        XCTAssertEqual(json["reasoning_effort"] as? String, "max")
+    }
+
     func testOpenRouterHandlerIncludesIncludeReasoningAndReasoningEffortWhenEnabled() throws {
         let config = APIServiceConfig(
             name: "openrouter",
