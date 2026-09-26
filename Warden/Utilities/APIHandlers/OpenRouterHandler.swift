@@ -6,13 +6,14 @@ class OpenRouterHandler: ChatGPTHandler {
     /// server-side web search (the `web` plugin) produced results.
     var onWebSearchSources: (([SearchSource]) -> Void)?
 
-    private var accumulatedWebSearchSources: [String: SearchSource] = [:]
+    private var accumulatedWebSearchSources: [SearchSource] = []
+    private var accumulatedWebSearchSourceURLs: Set<String> = []
 
-    /// Sources accumulated from the current request's annotations. Annotations are
-    /// parsed during generation, so this is fully populated by the time a response
-    /// completes — read it at message-persist time for deterministic ordering.
+    /// Sources accumulated from the current request's annotations, in citation
+    /// order. Annotations are parsed during generation, so this is fully
+    /// populated by the time a response completes — read it at persist time.
     var currentWebSearchSources: [SearchSource] {
-        Array(accumulatedWebSearchSources.values)
+        accumulatedWebSearchSources
     }
 
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
@@ -158,9 +159,10 @@ class OpenRouterHandler: ChatGPTHandler {
             }
 
             if settings.serverWebSearch == true {
-                // Start each request with a clean source set so callbacks
+                // Start each search request with a clean source set so callbacks
                 // only reflect annotations from the current response.
-                accumulatedWebSearchSources = [:]
+                accumulatedWebSearchSources = []
+                accumulatedWebSearchSourceURLs = []
                 json["plugins"] = [buildWebSearchPlugin(maxResults: webSearchMaxResults(from: settings))]
             }
 
@@ -285,12 +287,19 @@ class OpenRouterHandler: ChatGPTHandler {
                 continue
             }
 
+            // Preserve citation order; skip duplicates by URL.
+            guard accumulatedWebSearchSourceURLs.insert(url).inserted else {
+                continue
+            }
+
             let title = citation["title"] as? String ?? url
-            accumulatedWebSearchSources[url] = SearchSource(
-                title: title,
-                url: url,
-                score: 0,
-                publishedDate: nil
+            accumulatedWebSearchSources.append(
+                SearchSource(
+                    title: title,
+                    url: url,
+                    score: 0,
+                    publishedDate: nil
+                )
             )
         }
 
@@ -300,7 +309,7 @@ class OpenRouterHandler: ChatGPTHandler {
                 "[WebSearch] OpenRouter annotations received: \(self.accumulatedWebSearchSources.count, privacy: .public)"
             )
             #endif
-            onWebSearchSources?(Array(accumulatedWebSearchSources.values))
+            onWebSearchSources?(accumulatedWebSearchSources)
         }
     }
 }

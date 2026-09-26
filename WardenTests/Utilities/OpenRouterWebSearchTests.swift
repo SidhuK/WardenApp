@@ -154,7 +154,11 @@ final class OpenRouterWebSearchTests: XCTestCase {
         XCTAssertEqual(updates.count, 3)
         let finalSources = try XCTUnwrap(updates.last)
         XCTAssertEqual(finalSources.count, 2)
-        XCTAssertEqual(Set(finalSources.map { $0.url }), ["https://example.com/a", "https://example.com/b"])
+        XCTAssertEqual(
+            finalSources.map { $0.url },
+            ["https://example.com/a", "https://example.com/b"],
+            "sources must keep citation order"
+        )
     }
 
     func testParseDeltaJSONResponseWithoutAnnotationsDoesNotReportSources() {
