@@ -51,6 +51,7 @@ struct TabWebSearchView: View {
                             Toggle("", isOn: $preferProviderWebSearch)
                                 .toggleStyle(.switch)
                                 .labelsHidden()
+                                .accessibilityLabel("Use OpenRouter built-in search")
                         }
                     }
                 }

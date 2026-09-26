@@ -607,6 +607,7 @@ struct APIServiceDetailContent: View {
                                     Toggle("", isOn: $viewModel.useOpenRouterWebSearch)
                                         .toggleStyle(.switch)
                                         .labelsHidden()
+                                        .accessibilityLabel("Use OpenRouter built-in web search")
                                 }
                             }
 
