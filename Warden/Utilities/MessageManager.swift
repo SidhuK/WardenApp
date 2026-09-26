@@ -115,19 +115,20 @@ final class MessageManager: ObservableObject {
         }
 
         let openRouterHandler = apiService as? OpenRouterHandler
+
+        // Live status only. Persisted sources are read from the handler at
+        // message-persist time (annotations are parsed strictly before the
+        // response completes), avoiding callback/persistence ordering races.
         openRouterHandler?.onWebSearchSources = { [weak self] sources in
             guard let self else { return }
             Task { @MainActor in
-                self.lastSearchSources = sources
-                self.lastSearchQuery = query
                 self.searchStatus = .completed(sources: sources)
             }
         }
 
-        // Stale metadata from a previous search must not attach to this message
-        // if the provider returns no annotations.
+        // The query is known up front; sources must not leak in from a previous search.
+        lastSearchQuery = query
         lastSearchSources = nil
-        lastSearchQuery = nil
 
         let onFinished: (Result<Void, Error>) -> Void = { [weak self] result in
             if case .success = result {
@@ -996,8 +997,15 @@ final class MessageManager: ObservableObject {
             newMessage.toolCalls = toolCalls
         }
         
-        // Store search metadata if we have search results
-        if let sources = lastSearchSources, let query = lastSearchQuery, !sources.isEmpty {
+        // Store search metadata if we have search results. Provider-side search
+        // sources are read from the handler so annotations that arrive with the
+        // final response chunk are still persisted.
+        var sourcesToPersist = lastSearchSources
+        if let handler = apiService as? OpenRouterHandler, !handler.currentWebSearchSources.isEmpty {
+            sourcesToPersist = handler.currentWebSearchSources
+            lastSearchSources = sourcesToPersist
+        }
+        if let sources = sourcesToPersist, let query = lastSearchQuery, !sources.isEmpty {
             newMessage.searchMetadata = MessageSearchMetadata(
                 query: query,
                 sources: sources,

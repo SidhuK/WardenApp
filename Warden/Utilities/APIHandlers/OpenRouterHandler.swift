@@ -8,6 +8,13 @@ class OpenRouterHandler: ChatGPTHandler {
 
     private var accumulatedWebSearchSources: [String: SearchSource] = [:]
 
+    /// Sources accumulated from the current request's annotations. Annotations are
+    /// parsed during generation, so this is fully populated by the time a response
+    /// completes — read it at message-persist time for deterministic ordering.
+    var currentWebSearchSources: [SearchSource] {
+        Array(accumulatedWebSearchSources.values)
+    }
+
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
