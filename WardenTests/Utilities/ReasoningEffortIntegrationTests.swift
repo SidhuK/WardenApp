@@ -33,6 +33,18 @@ final class ReasoningEffortIntegrationTests: XCTestCase {
             model: "openai/o1"
         )
 
+        // Pin the persisted metadata cache so buildReasoningConfig deterministically
+        // takes the effort-based branch (mirrors the Gemini tests below).
+        let existingMetadata = ModelMetadataStorage.getMetadata(provider: "openrouter", modelId: config.model)
+        defer {
+            if let existingMetadata {
+                ModelMetadataStorage.store(metadata: existingMetadata, provider: "openrouter")
+            } else {
+                ModelMetadataStorage.removeMetadata(provider: "openrouter", modelId: config.model)
+            }
+        }
+        ModelMetadataStorage.removeMetadata(provider: "openrouter", modelId: config.model)
+
         let handler = OpenRouterHandler(config: config, session: .shared, streamingSession: .shared)
         let request = try await handler.prepareRequest(
             requestMessages: [["role": "user", "content": "hi"]],

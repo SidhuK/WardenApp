@@ -2,6 +2,18 @@ import XCTest
 @testable import Warden
 
 final class OpenRouterWebSearchTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey)
+        UserDefaults.standard.removeObject(forKey: AppConstants.webSearchMaxResultsKey)
+    }
+
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey)
+        UserDefaults.standard.removeObject(forKey: AppConstants.webSearchMaxResultsKey)
+        super.tearDown()
+    }
+
     private func makeHandler(model: String = "openai/gpt-4o") -> (handler: OpenRouterHandler, model: String) {
         let config = APIServiceConfig(
             name: "openrouter",
@@ -73,7 +85,6 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
     func testPrepareRequestUsesStoredMaxResultsPreferenceAsFallback() async throws {
         UserDefaults.standard.set(7, forKey: AppConstants.webSearchMaxResultsKey)
-        defer { UserDefaults.standard.removeObject(forKey: AppConstants.webSearchMaxResultsKey) }
 
         let (handler, model) = makeHandler()
         let request = try await handler.prepareRequest(
@@ -193,7 +204,6 @@ final class OpenRouterWebSearchTests: XCTestCase {
         } else {
             UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey)
         }
-        defer { UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey) }
         body()
     }
 
