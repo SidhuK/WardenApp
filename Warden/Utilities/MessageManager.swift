@@ -137,16 +137,20 @@ final class MessageManager: ObservableObject {
             completion(result)
         }
 
+        // For /search commands, send the parsed query: the slash command is a
+        // client-side convention, not model input (matches the external-search path).
+        let messageToSend = searchCheck.isSearch ? query : message
+
         if useStreaming {
             sendMessageStream(
-                message,
+                messageToSend,
                 in: chat,
                 contextSize: contextSize,
                 serverWebSearch: true,
                 completion: onFinished
             )
         } else {
-            sendMessage(message, in: chat, contextSize: contextSize, serverWebSearch: true, completion: onFinished)
+            sendMessage(messageToSend, in: chat, contextSize: contextSize, serverWebSearch: true, completion: onFinished)
         }
     }
 
