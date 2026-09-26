@@ -130,8 +130,6 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
     func testParseJSONResponseReportsAnnotationSources() throws {
         let (handler, _) = makeHandler()
-        var reportedSources: [SearchSource]?
-        handler.onWebSearchSources = { reportedSources = $0 }
 
         let payload: [String: Any] = [
             "choices": [
@@ -161,7 +159,7 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
         XCTAssertEqual(content, "Here is what I found.")
         XCTAssertEqual(role, "assistant")
-        let sources = try XCTUnwrap(reportedSources)
+        let sources = handler.currentWebSearchSources
         XCTAssertEqual(sources.count, 1)
         XCTAssertEqual(sources.first?.url, "https://example.com/a")
         XCTAssertEqual(sources.first?.title, "Example A")
@@ -169,18 +167,15 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
     func testParseDeltaJSONResponseAccumulatesAndDeduplicatesSources() throws {
         let (handler, _) = makeHandler()
-        var updates: [[SearchSource]] = []
-        handler.onWebSearchSources = { updates.append($0) }
 
         _ = handler.parseDeltaJSONResponse(data: annotationChunk(url: "https://example.com/a", title: "A"))
         _ = handler.parseDeltaJSONResponse(data: annotationChunk(url: "https://example.com/a", title: "A"))
         _ = handler.parseDeltaJSONResponse(data: annotationChunk(url: "https://example.com/b", title: "B"))
 
-        XCTAssertEqual(updates.count, 3)
-        let finalSources = try XCTUnwrap(updates.last)
-        XCTAssertEqual(finalSources.count, 2)
+        let sources = handler.currentWebSearchSources
+        XCTAssertEqual(sources.count, 2)
         XCTAssertEqual(
-            finalSources.map { $0.url },
+            sources.map { $0.url },
             ["https://example.com/a", "https://example.com/b"],
             "sources must keep citation order"
         )
@@ -188,8 +183,6 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
     func testParseDeltaJSONResponseWithoutAnnotationsDoesNotReportSources() {
         let (handler, _) = makeHandler()
-        var reportedSources: [SearchSource]?
-        handler.onWebSearchSources = { reportedSources = $0 }
 
         let payload: [String: Any] = [
             "choices": [["delta": ["content": "plain answer"]]]
@@ -198,13 +191,11 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
         _ = handler.parseDeltaJSONResponse(data: data)
 
-        XCTAssertNil(reportedSources)
+        XCTAssertTrue(handler.currentWebSearchSources.isEmpty)
     }
 
     func testAnnotationParsingIgnoresMalformedCitations() {
         let (handler, _) = makeHandler()
-        var reportedSources: [SearchSource]?
-        handler.onWebSearchSources = { reportedSources = $0 }
 
         let payload: [String: Any] = [
             "choices": [
@@ -222,7 +213,7 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
         _ = handler.parseDeltaJSONResponse(data: data)
 
-        XCTAssertNil(reportedSources)
+        XCTAssertTrue(handler.currentWebSearchSources.isEmpty)
     }
 
     // MARK: - Provider-side search preference routing

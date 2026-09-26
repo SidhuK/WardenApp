@@ -114,19 +114,9 @@ final class MessageManager: ObservableObject {
             query = message
         }
 
-        let openRouterHandler = apiService as? OpenRouterHandler
-
-        // Live status only. Persisted sources are read from the handler at
-        // message-persist time (annotations are parsed strictly before the
-        // response completes), avoiding callback/persistence ordering races.
-        openRouterHandler?.onWebSearchSources = { [weak self] sources in
-            guard let self else { return }
-            Task { @MainActor in
-                self.searchStatus = .completed(sources: sources)
-            }
-        }
-
-        // The query is known up front; sources must not leak in from a previous search.
+        // Sources are read from the handler at message-persist time (annotations
+        // are parsed strictly before the response completes), so no callback
+        // sequencing is needed and ordinary sends cannot inherit stale sources.
         lastSearchQuery = query
         lastSearchSources = nil
 

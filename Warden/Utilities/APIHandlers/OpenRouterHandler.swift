@@ -2,10 +2,6 @@ import Foundation
 import os
 
 class OpenRouterHandler: ChatGPTHandler {
-    /// Invoked with web sources parsed from `url_citation` annotations when
-    /// server-side web search (the `web` plugin) produced results.
-    var onWebSearchSources: (([SearchSource]) -> Void)?
-
     private var accumulatedWebSearchSources: [SearchSource] = []
     private var accumulatedWebSearchSourceURLs: Set<String> = []
 
@@ -280,8 +276,8 @@ class OpenRouterHandler: ChatGPTHandler {
         return stored > 0 ? stored : AppConstants.webSearchDefaultMaxResults
     }
 
-    /// Collects `url_citation` annotations from a (possibly partial) response payload and
-    /// reports the accumulated, de-duplicated sources through `onWebSearchSources`.
+    /// Collects `url_citation` annotations from a (possibly partial) response payload into
+    /// `currentWebSearchSources`, de-duplicated by URL and kept in citation order.
     private func extractSearchSources(from dict: [String: Any]) {
         guard let annotations = dict["annotations"] as? [[String: Any]], !annotations.isEmpty else {
             return
@@ -311,13 +307,12 @@ class OpenRouterHandler: ChatGPTHandler {
             )
         }
 
+        #if DEBUG
         if !accumulatedWebSearchSources.isEmpty {
-            #if DEBUG
             WardenLog.app.debug(
                 "[WebSearch] OpenRouter annotations received: \(self.accumulatedWebSearchSources.count, privacy: .public)"
             )
-            #endif
-            onWebSearchSources?(accumulatedWebSearchSources)
         }
+        #endif
     }
 }
