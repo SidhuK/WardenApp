@@ -251,8 +251,12 @@ final class APIServiceDetailViewModel: ObservableObject {
         serviceToSave.imageUploadsAllowed = imageUploadsAllowed
         serviceToSave.defaultPersona = defaultAiPersona
 
-        // Global preference shared with Settings → Tools → Web Search.
-        UserDefaults.standard.set(useOpenRouterWebSearch, forKey: AppConstants.preferProviderWebSearchKey)
+        // Global preference shared with Settings → Tools → Web Search. Only
+        // OpenRouter editors surface this toggle, so only they may persist it —
+        // saving an unrelated service must not touch the preference.
+        if type == "openrouter" {
+            UserDefaults.standard.set(useOpenRouterWebSearch, forKey: AppConstants.preferProviderWebSearchKey)
+        }
 
         if apiService == nil {
             serviceToSave.addedDate = Date()
