@@ -178,6 +178,7 @@
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F1D0A22F5D123400ABCDE1 /* ReasoningEffortMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F1D0A12F5D123400ABCDE0 /* ReasoningEffortMenu.swift */; };
 		C4F1D0A42F5D123400ABCDE3 /* ReasoningEffortIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F1D0A32F5D123400ABCDE2 /* ReasoningEffortIntegrationTests.swift */; };
+		C4D1E2F62F0652E300B80004 /* OpenRouterWebSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 		C4FF23862EED66E300C17D8B /* WardenLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23852EED66E300C17D8B /* WardenLog.swift */; };
 		C4FF23882EED7A4100C17D8B /* StreamingAttributedTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */; };
@@ -390,6 +391,7 @@
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F1D0A12F5D123400ABCDE0 /* ReasoningEffortMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffortMenu.swift; sourceTree = "<group>"; };
 		C4F1D0A32F5D123400ABCDE2 /* ReasoningEffortIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffortIntegrationTests.swift; sourceTree = "<group>"; };
+		C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouterWebSearchTests.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 		C4FF23852EED66E300C17D8B /* WardenLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenLog.swift; sourceTree = "<group>"; };
 		C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAttributedTextView.swift; sourceTree = "<group>"; };
@@ -768,6 +770,7 @@
 				4ABDBE6A29F86E8D00661B2D /* MessageParserTests.swift */,
 				4ABDBE6C29F86F5500661B2D /* ModelMetadataFormattingTests.swift */,
 				C4F1D0A32F5D123400ABCDE2 /* ReasoningEffortIntegrationTests.swift */,
+				C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */,
 				C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */,
 			);
 			path = Utilities;
@@ -1142,6 +1145,7 @@
 				4ABDBE6B29F86E8D00661B2D /* MessageParserTests.swift in Sources */,
 				4ABDBE6D29F86F5500661B2D /* ModelMetadataFormattingTests.swift in Sources */,
 				C4F1D0A42F5D123400ABCDE3 /* ReasoningEffortIntegrationTests.swift in Sources */,
+				C4D1E2F62F0652E300B80004 /* OpenRouterWebSearchTests.swift in Sources */,
 				C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */,
 			);
 		};
