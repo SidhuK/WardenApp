@@ -20,6 +20,7 @@ final class APIServiceDetailViewModel: ObservableObject {
     @Published var useStreamResponse: Bool = true
     @Published var generateChatNames: Bool = true
     @Published var imageUploadsAllowed: Bool = false
+    @Published var useOpenRouterWebSearch: Bool = true
     @Published var defaultAiPersona: PersonaEntity?
     @Published var apiKey: String = ""
     @Published var isCustomModel: Bool = false
@@ -75,6 +76,13 @@ final class APIServiceDetailViewModel: ObservableObject {
     }
 
     private func setupInitialValues() {
+        // Global preference shared with Settings → Tools → Web Search (enabled by default).
+        if UserDefaults.standard.object(forKey: AppConstants.preferProviderWebSearchKey) == nil {
+            useOpenRouterWebSearch = true
+        } else {
+            useOpenRouterWebSearch = UserDefaults.standard.bool(forKey: AppConstants.preferProviderWebSearchKey)
+        }
+
         if let service = apiService {
             name = service.name ?? defaultApiConfiguration?.name ?? "Untitled Service"
             type = service.type ?? AppConstants.defaultApiType
@@ -242,6 +250,9 @@ final class APIServiceDetailViewModel: ObservableObject {
         serviceToSave.generateChatNames = generateChatNames
         serviceToSave.imageUploadsAllowed = imageUploadsAllowed
         serviceToSave.defaultPersona = defaultAiPersona
+
+        // Global preference shared with Settings → Tools → Web Search.
+        UserDefaults.standard.set(useOpenRouterWebSearch, forKey: AppConstants.preferProviderWebSearchKey)
 
         if apiService == nil {
             serviceToSave.addedDate = Date()
