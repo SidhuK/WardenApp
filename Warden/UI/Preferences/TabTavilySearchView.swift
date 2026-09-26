@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TabWebSearchView: View {
     @State private var selectedProvider: WebSearchProvider = .tavily
+    @State private var preferProviderWebSearch: Bool = true
     @State private var tavilyApiKey: String = ""
     @State private var exaApiKey: String = ""
     @State private var searchDepth: String = AppConstants.tavilyDefaultSearchDepth
@@ -37,6 +38,23 @@ struct TabWebSearchView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsSectionHeader(title: "OpenRouter Web Search")
+
+                        SettingsRow(
+                            title: "Use OpenRouter built-in search",
+                            subtitle: "When chatting through OpenRouter, use its built-in web search instead of "
+                                + "the provider selected below. Disable to always use Tavily/Exa. "
+                                + "Plugin searches are billed via OpenRouter credits."
+                        ) {
+                            Toggle("", isOn: $preferProviderWebSearch)
+                                .toggleStyle(.switch)
+                                .labelsHidden()
+                        }
+                    }
+                }
+
                 GlassCard {
                     VStack(alignment: .leading, spacing: 14) {
                         SettingsSectionHeader(title: "Web Search Provider")
@@ -252,6 +270,13 @@ struct TabWebSearchView: View {
         maxResults = UserDefaults.standard.integer(forKey: AppConstants.webSearchMaxResultsKey)
         if maxResults == 0 { maxResults = AppConstants.webSearchDefaultMaxResults }
 
+        if UserDefaults.standard.object(forKey: AppConstants.preferProviderWebSearchKey) == nil {
+            preferProviderWebSearch = true
+            UserDefaults.standard.set(true, forKey: AppConstants.preferProviderWebSearchKey)
+        } else {
+            preferProviderWebSearch = UserDefaults.standard.bool(forKey: AppConstants.preferProviderWebSearchKey)
+        }
+
         if UserDefaults.standard.object(forKey: AppConstants.tavilyIncludeAnswerKey) == nil {
             includeAnswer = true
             UserDefaults.standard.set(true, forKey: AppConstants.tavilyIncludeAnswerKey)
@@ -267,6 +292,7 @@ struct TabWebSearchView: View {
         UserDefaults.standard.set(searchDepth, forKey: AppConstants.tavilySearchDepthKey)
         UserDefaults.standard.set(exaSearchType, forKey: AppConstants.exaSearchTypeKey)
         UserDefaults.standard.set(maxResults, forKey: AppConstants.webSearchMaxResultsKey)
+        UserDefaults.standard.set(preferProviderWebSearch, forKey: AppConstants.preferProviderWebSearchKey)
         UserDefaults.standard.set(includeAnswer, forKey: AppConstants.tavilyIncludeAnswerKey)
         showingSaveSuccess = true
     }
