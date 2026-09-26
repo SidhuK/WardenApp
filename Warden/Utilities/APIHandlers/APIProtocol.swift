@@ -189,7 +189,12 @@ extension APIService {
                 if !didRetryWithoutReasoning,
                    ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: error) {
                     didRetryWithoutReasoning = true
-                    attemptSettings = GenerationSettings(temperature: attemptSettings.temperature, reasoningEffort: .off)
+                    attemptSettings = GenerationSettings(
+                        temperature: attemptSettings.temperature,
+                        reasoningEffort: .off,
+                        serverWebSearch: attemptSettings.serverWebSearch,
+                        webSearchMaxResults: attemptSettings.webSearchMaxResults
+                    )
                     WardenLog.app.notice(
                         "Retrying request without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
                     )

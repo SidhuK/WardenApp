@@ -109,7 +109,12 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                             if !didRetryWithoutReasoning,
                                ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: detailedError) {
                                 didRetryWithoutReasoning = true
-                                attemptSettings = GenerationSettings(temperature: attemptSettings.temperature, reasoningEffort: .off)
+                                attemptSettings = GenerationSettings(
+                                    temperature: attemptSettings.temperature,
+                                    reasoningEffort: .off,
+                                    serverWebSearch: attemptSettings.serverWebSearch,
+                                    webSearchMaxResults: attemptSettings.webSearchMaxResults
+                                )
                                 WardenLog.app.notice(
                                     "Retrying stream without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
                                 )
