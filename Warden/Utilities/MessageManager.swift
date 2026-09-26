@@ -86,10 +86,10 @@ final class MessageManager: ObservableObject {
         return (context, urls)
     }
 
-    /// Whether the active provider offers built-in server-side web search (OpenRouter's `web` plugin),
-    /// which removes the need for a separate Tavily/Exa API key.
+    /// Whether the active provider offers built-in server-side web search (OpenRouter's `web` plugin)
+    /// and the user hasn't disabled it in web search settings.
     private var providerSupportsServerWebSearch: Bool {
-        ProviderID(normalizing: apiService.name) == .openrouter
+        ServerWebSearch.preferred(providerName: apiService.name)
     }
 
     /// Sends the raw user message with provider-side web search enabled.
