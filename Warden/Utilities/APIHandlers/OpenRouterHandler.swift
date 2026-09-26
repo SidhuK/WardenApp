@@ -9,6 +9,11 @@ class OpenRouterHandler: ChatGPTHandler {
     private var accumulatedWebSearchSources: [SearchSource] = []
     private var accumulatedWebSearchSourceURLs: Set<String> = []
 
+    /// Whether the most recent request enabled provider-side web search. Lets
+    /// callers distinguish search responses from ordinary ones so sources from
+    /// an earlier request cannot leak into a later message.
+    private(set) var isServerWebSearchRequest = false
+
     /// Sources accumulated from the current request's annotations, in citation
     /// order. Annotations are parsed during generation, so this is fully
     /// populated by the time a response completes — read it at persist time.
@@ -158,11 +163,14 @@ class OpenRouterHandler: ChatGPTHandler {
                 json["reasoning"] = reasoningConfig
             }
 
+            // Reset per-request source state so callbacks and persistence only
+            // ever reflect this request — including ordinary sends, which must
+            // not reuse sources from an earlier search.
+            accumulatedWebSearchSources = []
+            accumulatedWebSearchSourceURLs = []
+            isServerWebSearchRequest = settings.serverWebSearch == true
+
             if settings.serverWebSearch == true {
-                // Start each search request with a clean source set so callbacks
-                // only reflect annotations from the current response.
-                accumulatedWebSearchSources = []
-                accumulatedWebSearchSourceURLs = []
                 json["plugins"] = [buildWebSearchPlugin(maxResults: webSearchMaxResults(from: settings))]
             }
 

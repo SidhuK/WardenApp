@@ -66,6 +66,7 @@ final class OpenRouterWebSearchTests: XCTestCase {
         XCTAssertEqual(plugins.count, 1)
         XCTAssertEqual(plugins.first?["id"] as? String, "web")
         XCTAssertEqual(plugins.first?["max_results"] as? Int, 3)
+        XCTAssertTrue(handler.isServerWebSearchRequest)
     }
 
     func testPrepareRequestOmitsWebPluginByDefault() async throws {
@@ -81,6 +82,30 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
         let json = try bodyJSON(of: request)
         XCTAssertNil(json["plugins"])
+        XCTAssertFalse(handler.isServerWebSearchRequest)
+    }
+
+    func testOrdinaryRequestResetsAccumulatedSources() async throws {
+        let (handler, model) = makeHandler()
+
+        // Simulate annotations parsed from a search response.
+        _ = handler.parseDeltaJSONResponse(data: annotationChunk(url: "https://example.com/a", title: "A"))
+        XCTAssertEqual(handler.currentWebSearchSources.count, 1)
+
+        // A later ordinary request must clear those sources and report that it
+        // did not enable provider-side search, so they cannot leak into a
+        // non-search message.
+        _ = try await handler.prepareRequest(
+            requestMessages: [["role": "user", "content": "hi"]],
+            tools: nil,
+            model: model,
+            settings: GenerationSettings(temperature: 0.2),
+            attachmentPolicy: .preferProviderAttachments,
+            stream: false
+        )
+
+        XCTAssertFalse(handler.isServerWebSearchRequest)
+        XCTAssertTrue(handler.currentWebSearchSources.isEmpty)
     }
 
     func testPrepareRequestUsesStoredMaxResultsPreferenceAsFallback() async throws {

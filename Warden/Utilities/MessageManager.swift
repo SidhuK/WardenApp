@@ -227,6 +227,11 @@ final class MessageManager: ObservableObject {
             }
         }
         
+        // Ordinary send (no toggle, no /search): clear any search state from an
+        // earlier message so it cannot be attached to this response.
+        lastSearchSources = nil
+        lastSearchQuery = nil
+
         sendMessageStream(finalMessage, in: chat, contextSize: contextSize) { result in
             completion(result)
         }
@@ -305,6 +310,11 @@ final class MessageManager: ObservableObject {
             }
         }
         
+        // Ordinary send (no toggle, no /search): clear any search state from an
+        // earlier message so it cannot be attached to this response.
+        lastSearchSources = nil
+        lastSearchQuery = nil
+
         sendMessage(finalMessage, in: chat, contextSize: contextSize) { result in
             completion(result)
         }
@@ -1001,11 +1011,13 @@ final class MessageManager: ObservableObject {
             newMessage.toolCalls = toolCalls
         }
         
-        // Store search metadata if we have search results. Provider-side search
-        // sources are read from the handler so annotations that arrive with the
-        // final response chunk are still persisted.
+        // Store search metadata if we have search results. Provider-side sources
+        // are read from the handler only when the current request enabled
+        // server-side search, so ordinary sends cannot inherit stale sources.
         var sourcesToPersist = lastSearchSources
-        if let handler = apiService as? OpenRouterHandler, !handler.currentWebSearchSources.isEmpty {
+        if let handler = apiService as? OpenRouterHandler,
+           handler.isServerWebSearchRequest,
+           !handler.currentWebSearchSources.isEmpty {
             sourcesToPersist = handler.currentWebSearchSources
             lastSearchSources = sourcesToPersist
         }
