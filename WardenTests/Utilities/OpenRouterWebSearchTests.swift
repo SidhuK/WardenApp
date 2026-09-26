@@ -184,4 +184,46 @@ final class OpenRouterWebSearchTests: XCTestCase {
 
         XCTAssertNil(reportedSources)
     }
+
+    // MARK: - Provider-side search preference routing
+
+    private func withPreference(_ value: Bool?, _ body: () -> Void) {
+        if let value {
+            UserDefaults.standard.set(value, forKey: AppConstants.preferProviderWebSearchKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey)
+        }
+        defer { UserDefaults.standard.removeObject(forKey: AppConstants.preferProviderWebSearchKey) }
+        body()
+    }
+
+    func testProviderSearchPreferenceDefaultsToEnabledForOpenRouter() {
+        withPreference(nil) {
+            XCTAssertTrue(ServerWebSearch.preferred(providerName: "openrouter"))
+            XCTAssertTrue(ServerWebSearch.preferred(providerName: "OpenRouter"))
+            XCTAssertTrue(ServerWebSearch.preferred(providerName: "Open Router"))
+        }
+    }
+
+    func testProviderSearchPreferenceNeverAppliesToOtherProviders() {
+        withPreference(nil) {
+            XCTAssertFalse(ServerWebSearch.preferred(providerName: "chatgpt"))
+            XCTAssertFalse(ServerWebSearch.preferred(providerName: "claude"))
+        }
+        withPreference(true) {
+            XCTAssertFalse(ServerWebSearch.preferred(providerName: "chatgpt"))
+        }
+    }
+
+    func testDisablingProviderSearchPreferenceFallsBackToExternalProviders() {
+        withPreference(false) {
+            XCTAssertFalse(ServerWebSearch.preferred(providerName: "openrouter"))
+        }
+    }
+
+    func testExplicitlyEnabledProviderSearchPreferenceStaysEnabled() {
+        withPreference(true) {
+            XCTAssertTrue(ServerWebSearch.preferred(providerName: "openrouter"))
+        }
+    }
 }
