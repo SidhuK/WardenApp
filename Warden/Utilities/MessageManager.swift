@@ -117,6 +117,8 @@ final class MessageManager: ObservableObject {
         // Sources are read from the handler at message-persist time (annotations
         // are parsed strictly before the response completes), so no callback
         // sequencing is needed and ordinary sends cannot inherit stale sources.
+        // Clear any previous search status so stale search UI cannot persist.
+        searchStatus = nil
         lastSearchQuery = query
         lastSearchSources = nil
 
@@ -1008,8 +1010,11 @@ final class MessageManager: ObservableObject {
         if let handler = apiService as? OpenRouterHandler,
            handler.isServerWebSearchRequest,
            !handler.currentWebSearchSources.isEmpty {
-            sourcesToPersist = handler.currentWebSearchSources
-            lastSearchSources = sourcesToPersist
+            let handlerSources = handler.currentWebSearchSources
+            sourcesToPersist = handlerSources
+            lastSearchSources = handlerSources
+            // Mark the provider-side search complete now that its sources are known.
+            searchStatus = .completed(sources: handlerSources)
         }
         if let sources = sourcesToPersist, let query = lastSearchQuery, !sources.isEmpty {
             newMessage.searchMetadata = MessageSearchMetadata(
