@@ -595,7 +595,22 @@ struct APIServiceDetailContent: View {
                                     .toggleStyle(.switch)
                                     .labelsHidden()
                             }
-                            
+
+                            if viewModel.type == "openrouter" {
+                                SettingsDivider()
+
+                                SettingsRow(
+                                    title: "OpenRouter Web Search",
+                                    subtitle: "Use OpenRouter's built-in web search for the globe toggle and /search "
+                                        + "instead of Tavily/Exa. Billed via OpenRouter credits."
+                                ) {
+                                    Toggle("", isOn: $viewModel.useOpenRouterWebSearch)
+                                        .toggleStyle(.switch)
+                                        .labelsHidden()
+                                        .accessibilityLabel("Use OpenRouter built-in web search")
+                                }
+                            }
+
                             if viewModel.supportsImageUploads {
                                 SettingsDivider()
                                 

@@ -32,6 +32,26 @@ enum WebSearchProvider: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+// MARK: - Server-Side Web Search Preference
+
+/// Decides whether web search for a chat should run provider-side (e.g. OpenRouter's `web`
+/// plugin) instead of the external Tavily/Exa providers.
+enum ServerWebSearch {
+    /// Provider-side search is only supported for OpenRouter today. Enabled by default;
+    /// disabling the preference routes OpenRouter back to the external Tavily/Exa flow.
+    static func preferred(providerName: String) -> Bool {
+        guard ProviderID(normalizing: providerName) == .openrouter else {
+            return false
+        }
+
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: AppConstants.preferProviderWebSearchKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: AppConstants.preferProviderWebSearchKey)
+    }
+}
+
 // MARK: - Tool Call Status
 
 public enum WardenToolCallStatus: Equatable, Identifiable, Codable {

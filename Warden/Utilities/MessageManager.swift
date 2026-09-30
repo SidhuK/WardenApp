@@ -72,7 +72,7 @@ final class MessageManager: ObservableObject {
     }
     
     // MARK: - Web Search Support
-    
+
     func executeSearch(_ query: String) async throws -> (formattedResults: String, urls: [String]) {
         let (context, urls, sources) = try await webSearchService.performSearch(query: query) { [weak self] status in
             self?.searchStatus = status
@@ -85,7 +85,67 @@ final class MessageManager: ObservableObject {
         }
         return (context, urls)
     }
-    
+
+    /// Whether the active provider offers built-in server-side web search (OpenRouter's `web` plugin)
+    /// and the user hasn't disabled it in web search settings.
+    private var providerSupportsServerWebSearch: Bool {
+        ServerWebSearch.preferred(providerName: apiService.name)
+    }
+
+    /// Sends the raw user message with provider-side web search enabled.
+    /// Search happens during generation; citations arrive as `annotations` on the response
+    /// and are surfaced through the same sources UI used by Tavily/Exa.
+    private func sendWithServerWebSearch(
+        _ message: String,
+        in chat: ChatEntity,
+        contextSize: Int,
+        useStreaming: Bool,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        #if DEBUG
+        WardenLog.app.debug("[WebSearch] Using provider-side search (\(self.apiService.name, privacy: .public))")
+        #endif
+
+        let searchCheck = webSearchService.isSearchCommand(message)
+        let query: String
+        if searchCheck.isSearch, let commandQuery = searchCheck.query {
+            query = commandQuery
+        } else {
+            query = message
+        }
+
+        // Sources are read from the handler at message-persist time (annotations
+        // are parsed strictly before the response completes), so no callback
+        // sequencing is needed and ordinary sends cannot inherit stale sources.
+        // Clear any previous search status so stale search UI cannot persist.
+        searchStatus = nil
+        lastSearchQuery = query
+        lastSearchSources = nil
+
+        let onFinished: (Result<Void, Error>) -> Void = { [weak self] result in
+            if case .success = result {
+                self?.generateChatNameIfNeeded(chat: chat)
+            }
+            completion(result)
+        }
+
+        // For /search commands, send the parsed query: the slash command is a
+        // client-side convention, not model input (matches the external-search path).
+        let messageToSend = searchCheck.isSearch ? query : message
+
+        if useStreaming {
+            sendMessageStream(
+                messageToSend,
+                in: chat,
+                contextSize: contextSize,
+                serverWebSearch: true,
+                completion: onFinished
+            )
+        } else {
+            sendMessage(messageToSend, in: chat, contextSize: contextSize, serverWebSearch: true, completion: onFinished)
+        }
+    }
+
     @MainActor
     func sendMessageStreamWithSearch(
         _ message: String,
@@ -97,14 +157,25 @@ final class MessageManager: ObservableObject {
         #if DEBUG
         WardenLog.app.debug("[WebSearch] sendMessageStreamWithSearch called")
         #endif
-        
+
         var finalMessage = message
-         
+
          // Check if web search is enabled (either by toggle or by command)
         let searchCheck = webSearchService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
-        
+
         if shouldSearch {
+            if providerSupportsServerWebSearch {
+                sendWithServerWebSearch(
+                    message,
+                    in: chat,
+                    contextSize: contextSize,
+                    useStreaming: true,
+                    completion: completion
+                )
+                return
+            }
+
             let query: String
             if searchCheck.isSearch, let commandQuery = searchCheck.query {
                 query = commandQuery
@@ -148,6 +219,11 @@ final class MessageManager: ObservableObject {
             }
         }
         
+        // Ordinary send (no toggle, no /search): clear any search state from an
+        // earlier message so it cannot be attached to this response.
+        lastSearchSources = nil
+        lastSearchQuery = nil
+
         sendMessageStream(finalMessage, in: chat, contextSize: contextSize) { result in
             completion(result)
         }
@@ -170,8 +246,19 @@ final class MessageManager: ObservableObject {
          // Check if web search is enabled (either by toggle or by command)
         let searchCheck = webSearchService.isSearchCommand(message)
         let shouldSearch = useWebSearch || searchCheck.isSearch
-        
+
         if shouldSearch {
+            if providerSupportsServerWebSearch {
+                sendWithServerWebSearch(
+                    message,
+                    in: chat,
+                    contextSize: contextSize,
+                    useStreaming: false,
+                    completion: completion
+                )
+                return
+            }
+
             let query: String
             if searchCheck.isSearch, let commandQuery = searchCheck.query {
                 query = commandQuery
@@ -215,6 +302,11 @@ final class MessageManager: ObservableObject {
             }
         }
         
+        // Ordinary send (no toggle, no /search): clear any search state from an
+        // earlier message so it cannot be attached to this response.
+        lastSearchSources = nil
+        lastSearchQuery = nil
+
         sendMessage(finalMessage, in: chat, contextSize: contextSize) { result in
             completion(result)
         }
@@ -239,6 +331,7 @@ final class MessageManager: ObservableObject {
         in chat: ChatEntity,
         contextSize: Int,
         searchUrls: [String]? = nil,
+        serverWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let requestMessages = prepareRequestMessages(userMessage: message, chat: chat, contextSize: contextSize)
@@ -289,7 +382,11 @@ final class MessageManager: ObservableObject {
                 apiService: apiService,
                 messages: requestMessages,
                 tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+                settings: GenerationSettings(
+                    temperature: temperature,
+                    reasoningEffort: chat.reasoningEffort,
+                    serverWebSearch: serverWebSearch ? true : nil
+                )
             ) { [weak self] result in
                 guard let self = self else { return }
 
@@ -335,6 +432,7 @@ final class MessageManager: ObservableObject {
         in chat: ChatEntity,
         contextSize: Int,
         searchUrls: [String]? = nil,
+        serverWebSearch: Bool = false,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         // Cancel any existing streaming task first
@@ -457,7 +555,11 @@ final class MessageManager: ObservableObject {
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
-                    settings: GenerationSettings(temperature: temperature, reasoningEffort: chat.reasoningEffort)
+                    settings: GenerationSettings(
+                        temperature: temperature,
+                        reasoningEffort: chat.reasoningEffort,
+                        serverWebSearch: serverWebSearch ? true : nil
+                    )
                 ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }
@@ -901,8 +1003,20 @@ final class MessageManager: ObservableObject {
             newMessage.toolCalls = toolCalls
         }
         
-        // Store search metadata if we have search results
-        if let sources = lastSearchSources, let query = lastSearchQuery, !sources.isEmpty {
+        // Store search metadata if we have search results. Provider-side sources
+        // are read from the handler only when the current request enabled
+        // server-side search, so ordinary sends cannot inherit stale sources.
+        var sourcesToPersist = lastSearchSources
+        if let handler = apiService as? OpenRouterHandler,
+           handler.isServerWebSearchRequest,
+           !handler.currentWebSearchSources.isEmpty {
+            let handlerSources = handler.currentWebSearchSources
+            sourcesToPersist = handlerSources
+            lastSearchSources = handlerSources
+            // Mark the provider-side search complete now that its sources are known.
+            searchStatus = .completed(sources: handlerSources)
+        }
+        if let sources = sourcesToPersist, let query = lastSearchQuery, !sources.isEmpty {
             newMessage.searchMetadata = MessageSearchMetadata(
                 query: query,
                 sources: sources,

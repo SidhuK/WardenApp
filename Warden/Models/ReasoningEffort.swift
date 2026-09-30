@@ -89,8 +89,22 @@ struct GenerationSettings: Codable, Sendable, Equatable {
     var temperature: Float
     var reasoningEffort: ReasoningEffort
 
-    init(temperature: Float, reasoningEffort: ReasoningEffort = .off) {
+    /// Enables provider-native server-side web search (e.g. OpenRouter's `web` plugin).
+    /// `nil` keeps the request unchanged; only providers that support it act on this flag.
+    var serverWebSearch: Bool?
+
+    /// Overrides the configured maximum number of web search results when supported.
+    var webSearchMaxResults: Int?
+
+    init(
+        temperature: Float,
+        reasoningEffort: ReasoningEffort = .off,
+        serverWebSearch: Bool? = nil,
+        webSearchMaxResults: Int? = nil
+    ) {
         self.temperature = temperature
         self.reasoningEffort = reasoningEffort
+        self.serverWebSearch = serverWebSearch
+        self.webSearchMaxResults = webSearchMaxResults
     }
 }

@@ -2,12 +2,27 @@ import Foundation
 import os
 
 class OpenRouterHandler: ChatGPTHandler {
+    private var accumulatedWebSearchSources: [SearchSource] = []
+    private var accumulatedWebSearchSourceURLs: Set<String> = []
+
+    /// Whether the most recent request enabled provider-side web search. Lets
+    /// callers distinguish search responses from ordinary ones so sources from
+    /// an earlier request cannot leak into a later message.
+    private(set) var isServerWebSearchRequest = false
+
+    /// Sources accumulated from the current request's annotations, in citation
+    /// order. Annotations are parsed during generation, so this is fully
+    /// populated by the time a response completes — read it at persist time.
+    var currentWebSearchSources: [SearchSource] {
+        accumulatedWebSearchSources
+    }
+
     override func parseJSONResponse(data: Data) -> (String?, String?, [ToolCall]?)? {
         if let responseString = String(data: data, encoding: .utf8) {
             #if DEBUG
             WardenLog.app.debug("OpenRouter response received: \(responseString.count, privacy: .public) char(s)")
             #endif
-            
+
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
                 if let dict = json as? [String: Any],
@@ -16,6 +31,8 @@ class OpenRouterHandler: ChatGPTHandler {
                    let message = choices[lastIndex]["message"] as? [String: Any],
                    let messageRole = message["role"] as? String
                 {
+                    extractSearchSources(from: message)
+
                     let messageContent = message["content"] as? String
                     var finalContent = messageContent ?? ""
                     
@@ -77,11 +94,13 @@ class OpenRouterHandler: ChatGPTHandler {
             {
                 var content: String?
                 var reasoningContent: String?
-                
+
                 if let contentPart = delta["content"] as? String {
                     content = contentPart
                 }
-                
+
+                extractSearchSources(from: delta)
+
                 reasoningContent = extractStreamingReasoningContent(from: delta)
                 
                 let finished = firstChoice["finish_reason"] as? String == "stop"
@@ -132,14 +151,25 @@ class OpenRouterHandler: ChatGPTHandler {
 
         if let body = request.httpBody,
            var json = try? JSONSerialization.jsonObject(with: body, options: []) as? [String: Any] {
-            
+
             json.removeValue(forKey: "reasoning_effort")
-            
+
             if settings.reasoningEffort != .off {
                 let reasoningConfig = buildReasoningConfig(for: self.model, effort: settings.reasoningEffort)
                 json["reasoning"] = reasoningConfig
             }
-            
+
+            // Reset per-request source state so callbacks and persistence only
+            // ever reflect this request — including ordinary sends, which must
+            // not reuse sources from an earlier search.
+            accumulatedWebSearchSources = []
+            accumulatedWebSearchSourceURLs = []
+            isServerWebSearchRequest = settings.serverWebSearch == true
+
+            if settings.serverWebSearch == true {
+                json["plugins"] = [buildWebSearchPlugin(maxResults: webSearchMaxResults(from: settings))]
+            }
+
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: json, options: [])
             } catch {
@@ -224,7 +254,65 @@ class OpenRouterHandler: ChatGPTHandler {
         if let reasoningContent = dict["reasoning_content"] as? String {
             return reasoningContent
         }
-        
+
         return nil
+    }
+
+    // MARK: - Server-Side Web Search (web plugin)
+
+    private func buildWebSearchPlugin(maxResults: Int) -> [String: Any] {
+        [
+            "id": "web",
+            "max_results": maxResults,
+        ]
+    }
+
+    private func webSearchMaxResults(from settings: GenerationSettings) -> Int {
+        if let configured = settings.webSearchMaxResults, configured > 0 {
+            return configured
+        }
+
+        let stored = UserDefaults.standard.integer(forKey: AppConstants.webSearchMaxResultsKey)
+        return stored > 0 ? stored : AppConstants.webSearchDefaultMaxResults
+    }
+
+    /// Collects `url_citation` annotations from a (possibly partial) response payload into
+    /// `currentWebSearchSources`, de-duplicated by URL and kept in citation order.
+    private func extractSearchSources(from dict: [String: Any]) {
+        guard let annotations = dict["annotations"] as? [[String: Any]], !annotations.isEmpty else {
+            return
+        }
+
+        for annotation in annotations {
+            guard let citation = annotation["url_citation"] as? [String: Any],
+                  let url = citation["url"] as? String,
+                  !url.isEmpty
+            else {
+                continue
+            }
+
+            // Preserve citation order; skip duplicates by URL.
+            guard accumulatedWebSearchSourceURLs.insert(url).inserted else {
+                continue
+            }
+
+            let title = citation["title"] as? String ?? url
+            accumulatedWebSearchSources.append(
+                SearchSource(
+                    title: title,
+                    url: url,
+                    score: 0,
+                    publishedDate: nil
+                )
+            )
+        }
+
+        #if DEBUG
+        if !accumulatedWebSearchSources.isEmpty {
+            WardenLog.app.debug(
+                "[WebSearch] OpenRouter annotations received: \(self.accumulatedWebSearchSources.count, privacy: .public)"
+            )
+        }
+        #endif
     }
 }

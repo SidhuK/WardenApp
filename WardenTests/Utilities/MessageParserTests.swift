@@ -260,7 +260,7 @@ class MessageParserTests: XCTestCase {
     }
 }
 
-final class SSEStreamParserTests: XCTestCase {
+final class SSEStreamParserEdgeCaseTests: XCTestCase {
     func testParsesSingleSSEDataLineWithoutTrailingNewline() async throws {
         let input = "data: {\"a\":1}"
         let data = Data(input.utf8)

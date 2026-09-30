@@ -684,6 +684,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     struct WebSearchConfig {
         static let providerKey = "webSearchProvider"
         static let maxResultsKey = "tavilyMaxResults"
+        static let preferProviderWebSearchKey = "preferProviderWebSearch"
         static let defaultMaxResults = 5
         static let maxResultsLimit = 10
         static let searchCommandPrefix = "/search"
@@ -709,6 +710,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
     // Maintain backward compatibility
     static let webSearchProviderKey = WebSearchConfig.providerKey
     static let webSearchMaxResultsKey = WebSearchConfig.maxResultsKey
+    static let preferProviderWebSearchKey = WebSearchConfig.preferProviderWebSearchKey
     static let webSearchDefaultMaxResults = WebSearchConfig.defaultMaxResults
     static let webSearchMaxResultsLimit = WebSearchConfig.maxResultsLimit
     static let tavilyBaseURL = TavilyConfig.baseURL
