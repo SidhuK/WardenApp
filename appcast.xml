@@ -7,6 +7,25 @@
 	        <language>en</language>
 
 	        <item>
+	            <title>Version 1.10</title>
+	            <description><![CDATA[
+	                <h3>New</h3>
+	                <ul>
+	                <li>Added support for OpenRouter's built-in web search. Thanks to @amanongithub7!</li>
+	                </ul>
+	            ]]></description>
+	            <pubDate>Mon, 05 Oct 2026 05:04:57 +0000</pubDate>
+	            <sparkle:version>33</sparkle:version>
+	            <sparkle:shortVersionString>1.10</sparkle:shortVersionString>
+	            <enclosure url="https://github.com/SidhuK/WardenApp/releases/download/v1.10/Warden.zip"
+	                       sparkle:version="33"
+	                       sparkle:shortVersionString="1.10"
+	                       type="application/zip"
+	                       length="16706159"
+	                       sparkle:edSignature="SIGNATURE_PENDING" />
+	        </item>
+
+	        <item>
 	            <title>Version 1.09</title>
 	            <description><![CDATA[
 	                <h3>New</h3>
