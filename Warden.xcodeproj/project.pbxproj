@@ -169,6 +169,7 @@
 		C4A734502F1F40D100E060E6 /* ReasoningEffort.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4A7344F2F1F40D100E060E6 /* ReasoningEffort.swift */; };
 		C4ADCE482F10D48F00325241 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4ADCE472F10D48F00325241 /* MenuBarManager.swift */; };
 		C4D1E2F42F0652E300B80002 /* SSEStreamParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */; };
+		C4D1E2F62F0652E300B80004 /* OpenRouterWebSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */; };
 		C4E5A0012F40000100E5A001 /* ExaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0022F40000100E5A002 /* ExaModels.swift */; };
 		C4E5A0032F40000100E5A003 /* WebSearchError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0042F40000100E5A004 /* WebSearchError.swift */; };
 		C4E5A0052F40000100E5A005 /* ExaSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5A0062F40000100E5A006 /* ExaSearchService.swift */; };
@@ -178,7 +179,6 @@
 		C4EB88DA2ECC4EF900AA0829 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */; };
 		C4F1D0A22F5D123400ABCDE1 /* ReasoningEffortMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F1D0A12F5D123400ABCDE0 /* ReasoningEffortMenu.swift */; };
 		C4F1D0A42F5D123400ABCDE3 /* ReasoningEffortIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F1D0A32F5D123400ABCDE2 /* ReasoningEffortIntegrationTests.swift */; };
-		C4D1E2F62F0652E300B80004 /* OpenRouterWebSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */; };
 		C4F8E62C2EB32B730035C83D /* BackgroundDataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */; };
 		C4FF23862EED66E300C17D8B /* WardenLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23852EED66E300C17D8B /* WardenLog.swift */; };
 		C4FF23882EED7A4100C17D8B /* StreamingAttributedTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */; };
@@ -382,6 +382,7 @@
 		C4A7344F2F1F40D100E060E6 /* ReasoningEffort.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffort.swift; sourceTree = "<group>"; };
 		C4ADCE472F10D48F00325241 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		C4D1E2F32F0652E300B80001 /* SSEStreamParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEStreamParserTests.swift; sourceTree = "<group>"; };
+		C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouterWebSearchTests.swift; sourceTree = "<group>"; };
 		C4E5A0022F40000100E5A002 /* ExaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaModels.swift; sourceTree = "<group>"; };
 		C4E5A0042F40000100E5A004 /* WebSearchError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchError.swift; sourceTree = "<group>"; };
 		C4E5A0062F40000100E5A006 /* ExaSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExaSearchService.swift; sourceTree = "<group>"; };
@@ -391,7 +392,6 @@
 		C4EB88D92ECC4EF900AA0829 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
 		C4F1D0A12F5D123400ABCDE0 /* ReasoningEffortMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffortMenu.swift; sourceTree = "<group>"; };
 		C4F1D0A32F5D123400ABCDE2 /* ReasoningEffortIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEffortIntegrationTests.swift; sourceTree = "<group>"; };
-		C4D1E2F52F0652E300B80003 /* OpenRouterWebSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouterWebSearchTests.swift; sourceTree = "<group>"; };
 		C4F8E62B2EB32B730035C83D /* BackgroundDataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDataLoader.swift; sourceTree = "<group>"; };
 		C4FF23852EED66E300C17D8B /* WardenLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WardenLog.swift; sourceTree = "<group>"; };
 		C4FF23872EED7A4100C17D8B /* StreamingAttributedTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAttributedTextView.swift; sourceTree = "<group>"; };
@@ -1305,7 +1305,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 33;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1331,7 +1331,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.09;
+				MARKETING_VERSION = 1.10;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1355,7 +1355,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 33;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8S4248F6RV;
 				ENABLE_APP_SANDBOX = NO;
@@ -1381,7 +1381,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.09;
+				MARKETING_VERSION = 1.10;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = karatsidhu.WardenAI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
