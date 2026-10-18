@@ -8,6 +8,8 @@ struct CodeView: View {
     let code: String
     let lang: String
     var isStreaming: Bool
+    /// Filename named in the surrounding reply (e.g. `solve.py`), used as the Save… default.
+    var suggestedFilename: String?
     @StateObject private var viewModel: CodeViewModel
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject private var previewStateManager: PreviewStateManager
@@ -49,10 +51,11 @@ struct CodeView: View {
         }
     }
     
-    init(code: String, lang: String, isStreaming: Bool = false) {
+    init(code: String, lang: String, isStreaming: Bool = false, suggestedFilename: String? = nil) {
         self.code = code
         self.lang = lang
         self.isStreaming = isStreaming
+        self.suggestedFilename = suggestedFilename
         _viewModel = StateObject(
             wrappedValue: CodeViewModel(
                 code: code,

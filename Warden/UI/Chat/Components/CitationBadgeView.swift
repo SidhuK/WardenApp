@@ -111,6 +111,51 @@ struct InlineCitationView: View {
     }
 }
 
+// MARK: - Source Hover Card
+
+/// Preview card for a web search source, shared by the source chips under a reply and
+/// inline citations in the reply text so both show the same title, domain and number.
+struct SourceHoverCard: View {
+    let number: Int
+    let source: SearchSource
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("\(number)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.accentColor.opacity(0.15)))
+                Text(Self.domain(for: source.url))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                if let date = source.publishedDate, !date.isEmpty {
+                    Text("· \(date)")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Text(source.title.isEmpty ? source.url : source.title)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Click to open in browser")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+        }
+        .padding(10)
+        .frame(width: 280, alignment: .leading)
+    }
+
+    static func domain(for url: String) -> String {
+        guard let host = URL(string: url)?.host else { return url }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+}
+
 // MARK: - View Extension for Cursor
 
 extension View {
