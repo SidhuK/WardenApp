@@ -55,8 +55,8 @@ struct ContentView: View {
                         Image(systemName: "square.and.pencil")
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .help("New Thread")
-                    .accessibilityLabel("New Thread")
+                    .help("New chat (⌘N)")
+                    .accessibilityLabel("New chat")
                 }
             }
         }

@@ -27,6 +27,8 @@ struct ChatBubbleView: View {
     var message: MessageEntity?
     var color: String?
     var onEdit: (() -> Void)?
+    /// Chat of the in-flight streaming response, which has no `MessageEntity` yet.
+    var streamingChatID: UUID?
 
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.managedObjectContext) private var viewContext
@@ -364,7 +366,7 @@ struct ChatBubbleView: View {
             VStack(alignment: .leading, spacing: 6) {
                 messageBody
                     .foregroundColor(.primary)
-                if content.waitingForResponse ?? false {
+                if content.waitingForResponse ?? false, !isReasoningLive {
                     thinkingView
                 }
             }
@@ -406,9 +408,26 @@ struct ChatBubbleView: View {
             isStreaming: content.isStreaming,
             own: content.own,
             effectiveFontSize: effectiveFontSize,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            reasoningKey: reasoningKey
         )
         .multilineTextAlignment(.leading)
+    }
+
+    private var reasoningKey: ReasoningKey? {
+        if let message, let chatID = message.chat?.id {
+            return ReasoningKey(chatID: chatID, messageID: message.id)
+        }
+        return streamingChatID.map { ReasoningKey.live(chatID: $0) }
+    }
+
+    /// The reasoning header shows its own live status, so the generic indicator would be redundant.
+    private var isReasoningLive: Bool {
+        // Until reasoning text arrives there is no reasoning header yet, so keep the generic indicator.
+        guard content.isStreaming,
+              let openRange = content.message.range(of: "<think>"),
+              !content.message.contains("</think>") else { return false }
+        return content.message[openRange.upperBound...].contains { !$0.isWhitespace }
     }
 
     private var thinkingView: some View {

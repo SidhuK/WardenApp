@@ -20,7 +20,7 @@ enum FileAttachmentType {
 
 @MainActor
 final class FileAttachment: Identifiable, ObservableObject {
-    private static let maxExtractedTextCharacters: Int = 200_000
+    nonisolated static let maxExtractedTextCharacters: Int = 200_000
 
     enum BlobCopyStatus: String, Sendable {
         case idle
@@ -42,7 +42,10 @@ final class FileAttachment: Identifiable, ObservableObject {
     @Published private(set) var blobCopyErrorDescription: String?
     
     @Published var image: NSImage?
-    
+
+    /// Set when the attachment was created from a long paste in the composer; drives the chip label.
+    var pastedLineCount: Int?
+
     private var managedObjectContext: NSManagedObjectContext?
     private var fileEntityID: NSManagedObjectID?
     private var loadTask: Task<Void, Never>?

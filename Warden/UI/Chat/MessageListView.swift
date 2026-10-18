@@ -9,6 +9,8 @@ private struct MessageRowView: View {
     let topPadding: CGFloat
     let messageToolCalls: [Int64: [WardenToolCallStatus]]
     let onEditMessage: (MessageEntity) -> Void
+    /// Receives the bubble's bottom edge while this is the latest message (`.infinity` once off screen).
+    var onLatestBottomEdgeChange: ((CGFloat) -> Void)? = nil
     
     var body: some View {
         let bubbleContent = ChatBubbleContent(
@@ -36,6 +38,14 @@ private struct MessageRowView: View {
             onEdit: message.own ? { onEditMessage(message) } : nil
         )
         .id(message.id)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.frame(in: .named(MessageListView.scrollContentSpace)).maxY
+        } action: { maxY in
+            if isLatestMessage { onLatestBottomEdgeChange?(maxY) }
+        }
+        .onDisappear {
+            if isLatestMessage { onLatestBottomEdgeChange?(.infinity) }
+        }
         .padding(.top, (!displayToolCalls.isEmpty && !message.own) ? 8 : topPadding)
         .frame(maxWidth: viewWidth, alignment: message.own ? .trailing : .leading)
         .frame(maxWidth: .infinity, alignment: message.own ? .trailing : .leading)
@@ -63,6 +73,13 @@ struct MessageListView: View {
 
     // State and coordination passed from ChatView
     @Binding var userIsScrolling: Bool
+    /// Y of the end of the content in `scrollContentSpace`; drives "Jump to latest".
+    @Binding var contentEndY: CGFloat
+
+    /// Scroll target at the very end of the list, used by "Jump to latest".
+    static let bottomAnchorID = "message_list_bottom"
+    /// Coordinate space of the scroll view's content, set by ChatView.
+    static let scrollContentSpace = "message_list_scroll_content"
 
     // Callbacks
     let onRetryMessage: () -> Void
@@ -75,6 +92,10 @@ struct MessageListView: View {
     let viewWidth: CGFloat
 
     @State private var pendingCodeBlocks: Int = 0
+    /// Position of the end-of-content marker; `.infinity` while the lazy stack has it off screen.
+    @State private var markerEndY: CGFloat = .infinity
+    /// Bottom of the latest message; stays known while any part of that message is on screen.
+    @State private var latestMessageEndY: CGFloat = .infinity
     @State private var codeBlocksRendered: Bool = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
     
@@ -89,6 +110,7 @@ struct MessageListView: View {
         activeToolCalls: [WardenToolCallStatus],
         messageToolCalls: [Int64: [WardenToolCallStatus]],
         userIsScrolling: Binding<Bool>,
+        contentEndY: Binding<CGFloat>,
         onRetryMessage: @escaping () -> Void,
         onIgnoreError: @escaping () -> Void,
         onEditMessage: @escaping (MessageEntity) -> Void,
@@ -106,6 +128,7 @@ struct MessageListView: View {
         self.activeToolCalls = activeToolCalls
         self.messageToolCalls = messageToolCalls
         self._userIsScrolling = userIsScrolling
+        self._contentEndY = contentEndY
         self.onRetryMessage = onRetryMessage
         self.onIgnoreError = onIgnoreError
         self.onEditMessage = onEditMessage
@@ -118,6 +141,24 @@ struct MessageListView: View {
             predicate: NSPredicate(format: "chat == %@", chat),
             animation: .default
         )
+    }
+
+    /// Content rendered below the latest persisted message, so that message's bottom is not the end of the list.
+    private var hasTransientTail: Bool {
+        (isStreaming && !streamingAssistantText.isEmpty)
+            || !activeToolCalls.isEmpty
+            || chat.waitingForResponse
+            || currentError != nil
+            || (enableMultiAgentMode && isMultiAgentMode
+                && (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing))
+    }
+
+    private func updateContentEnd() {
+        if markerEndY.isFinite {
+            contentEndY = markerEndY
+        } else {
+            contentEndY = hasTransientTail ? .infinity : latestMessageEndY
+        }
     }
 
     var body: some View {
@@ -157,7 +198,8 @@ struct MessageListView: View {
                         viewWidth: viewWidth,
                         topPadding: topPadding,
                         messageToolCalls: messageToolCalls,
-                        onEditMessage: onEditMessage
+                        onEditMessage: onEditMessage,
+                        onLatestBottomEdgeChange: { latestMessageEndY = $0 }
                     )
                 }
             }
@@ -173,7 +215,7 @@ struct MessageListView: View {
                     isLatestMessage: true
                 )
                 
-                ChatBubbleView(content: bubbleContent)
+                ChatBubbleView(content: bubbleContent, streamingChatID: chat.id)
                     .id("streaming_message")
                     .frame(maxWidth: viewWidth, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -234,10 +276,26 @@ struct MessageListView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            // Reports where the content actually ends. The scroll view's content size only estimates the lazy
+            // stack (and includes the padding below), so it can't tell whether the last message is on screen.
+            // Off screen the lazy stack stops updating the marker, so it falls back to the latest message.
+            Color.clear
+                .frame(height: 0)
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.frame(in: .named(Self.scrollContentSpace)).minY
+                } action: { endY in
+                    markerEndY = endY
+                }
+                .onDisappear { markerEndY = .infinity }
+
             // Extra bottom padding so bubbles do not collide with input
             Spacer()
                 .frame(height: 24)
+                .id(Self.bottomAnchorID)
         }
+        .onChange(of: markerEndY) { _, _ in updateContentEnd() }
+        .onChange(of: latestMessageEndY) { _, _ in updateContentEnd() }
+        .onChange(of: hasTransientTail) { _, _ in updateContentEnd() }
         .onAppear {
             // Optimize: Only check the last message for pending code blocks since that's what affects scroll-to-bottom
             if let lastMessage = sortedMessages.last {

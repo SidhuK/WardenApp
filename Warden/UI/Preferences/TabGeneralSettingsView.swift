@@ -4,12 +4,14 @@ import os
 
 struct TabGeneralSettingsView: View {
     @AppStorage("chatFontSize") var chatFontSize: Double = 14.0
+    @AppStorage("expandReasoningByDefault") private var expandReasoningByDefault: Bool = false
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
     @AppStorage("groupChatsByDateInSidebar") private var groupChatsByDateInSidebar: Bool = true
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon: Bool = true
     @AppStorage("quickChatUsesClipboardContext") private var quickChatUsesClipboardContext: Bool = true
+    @AppStorage("longPasteLineThreshold") private var longPasteLineThreshold: Int = 40
     @Environment(\.colorScheme) private var systemColorScheme
     @EnvironmentObject private var store: ChatStore
     @State private var selectedColorSchemeRaw: Int = 0
@@ -17,6 +19,7 @@ struct TabGeneralSettingsView: View {
     @State private var showExportError = false
 
     private let fontSizeOptions: [Double] = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    private let longPasteThresholdOptions: [Int] = [20, 40, 80, 150]
 
     private var preferredColorScheme: Binding<ColorScheme?> {
         Binding(
@@ -87,6 +90,17 @@ struct TabGeneralSettingsView: View {
                                 .pickerStyle(.menu)
                                 .frame(width: 100)
                                 .labelsHidden()
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Expand reasoning by default",
+                                subtitle: "Show a model's full thought process instead of a summary line"
+                            ) {
+                                Toggle("", isOn: $expandReasoningByDefault)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
                             }
                             
                             SettingsDivider()
@@ -166,6 +180,23 @@ struct TabGeneralSettingsView: View {
                                 Toggle("", isOn: $quickChatUsesClipboardContext)
                                     .toggleStyle(.switch)
                                     .labelsHidden()
+                            }
+
+                            SettingsDivider()
+
+                            SettingsRow(
+                                title: "Long Paste as Attachment",
+                                subtitle: "Attach pasted text as a file when it exceeds this many lines"
+                            ) {
+                                Picker("", selection: $longPasteLineThreshold) {
+                                    Text("Off").tag(0)
+                                    ForEach(longPasteThresholdOptions, id: \.self) { lines in
+                                        Text("\(lines) lines").tag(lines)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 110)
+                                .labelsHidden()
                             }
                         }
                     }

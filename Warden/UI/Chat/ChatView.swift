@@ -29,6 +29,12 @@ struct ChatView: View {
     @State private var pendingCodeBlocks = 0
     @State private var userIsScrolling = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
+    @State private var isNearBottom = true
+    /// Where the message content ends, in the scroll content's coordinates (reported by MessageListView).
+    @State private var contentEndY: CGFloat = .infinity
+    /// Latest scroll metrics, kept in a reference so scrolling itself doesn't re-render the chat.
+    @State private var scrollEdge = ScrollEdgeTracker()
+    @State private var jumpToLatestRequest = 0
     
     @State private var messageBeingEdited: MessageEntity?
     @State private var editMessageDraft: String = ""
@@ -68,6 +74,7 @@ struct ChatView: View {
             } else {
                 VStack(spacing: 0) {
                     mainChatContent
+                        .overlay(alignment: .bottom) { jumpToLatestOverlay }
                     searchResultsPreview
                     chatComposer
                 }
@@ -251,6 +258,36 @@ struct ChatView: View {
         }
     }
 
+    private func updateNearBottom() {
+        // Measured against the end of the messages, not the content size: the lazy stack only
+        // estimates its height, and the list's bottom padding sits below the last message.
+        let metrics = scrollEdge.metrics
+        let end = min(contentEndY, metrics.contentHeight)
+        let nearBottom = metrics.visibleMaxY >= end - 100
+        if nearBottom != isNearBottom {
+            isNearBottom = nearBottom
+        }
+    }
+
+    // Hidden while auto-scroll is following the stream so it doesn't flicker as content grows.
+    private var showJumpToLatest: Bool {
+        !isNearBottom && (!isStreaming || userIsScrolling)
+    }
+
+    private var jumpToLatestOverlay: some View {
+        ZStack {
+            if showJumpToLatest {
+                JumpToLatestButton {
+                    userIsScrolling = false
+                    jumpToLatestRequest += 1
+                }
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: showJumpToLatest)
+    }
+
     private var mainChatContent: some View {
         GeometryReader { geometry in
             ZStack {
@@ -272,6 +309,7 @@ struct ChatView: View {
                             activeToolCalls: chatViewModel.messageManager?.activeToolCalls ?? [],
                             messageToolCalls: chatViewModel.messageManager?.messageToolCalls ?? [:],
                             userIsScrolling: $userIsScrolling,
+                            contentEndY: $contentEndY,
                             onRetryMessage: {
                                 // Retry logic: Find the last user message and re-send it
                                 let messages = chat.messagesArray.sorted { $0.id < $1.id }
@@ -308,6 +346,11 @@ struct ChatView: View {
 
                             if pendingCodeBlocks == 0 {
                                 codeBlocksRendered = true
+                            }
+                        }
+                        .onChange(of: jumpToLatestRequest) { _, _ in
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                scrollView.scrollTo(MessageListView.bottomAnchorID, anchor: .bottom)
                             }
                         }
                         .onSwipe { event in
@@ -384,11 +427,69 @@ struct ChatView: View {
                         }
                     }
                     .id("chatContainer")
+                    .coordinateSpace(.named(MessageListView.scrollContentSpace))
+                }
+                .onScrollGeometryChange(for: ScrollEdgeTracker.Metrics.self) { geometry in
+                    ScrollEdgeTracker.Metrics(
+                        visibleMaxY: geometry.visibleRect.maxY,
+                        contentHeight: geometry.contentSize.height
+                    )
+                } action: { _, metrics in
+                    scrollEdge.metrics = metrics
+                    updateNearBottom()
+                }
+                // The end of the messages can move without the scroll position changing (e.g. when a
+                // finished response replaces the streaming bubble), so re-check when it does.
+                .onChange(of: contentEndY) { _, _ in
+                    updateNearBottom()
                 }
             }
         }
         .padding(.bottom, 0) // Remove extra padding as we handle it in ScrollView
         .background(.clear)
+    }
+}
+
+/// Holds the last scroll metrics without being observed, so storing them doesn't trigger a re-render.
+private final class ScrollEdgeTracker {
+    struct Metrics: Equatable {
+        var visibleMaxY: CGFloat = 0
+        var contentHeight: CGFloat = 0
+    }
+
+    var metrics = Metrics()
+}
+
+private struct JumpToLatestButton: View {
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Jump to latest")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(isHovered ? .primary : .secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(.regularMaterial))
+            .overlay(Capsule().stroke(Color.primary.opacity(isHovered ? 0.15 : 0.1), lineWidth: 0.5))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.1), radius: 8, x: 0, y: 3)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .help("Scroll to the latest message")
+        .accessibilityLabel("Jump to latest message")
     }
 }
 
@@ -528,11 +629,13 @@ extension ChatView {
         }
     }
 
-    private func prepareMessageBody(clearInput: Bool) -> String {
+    /// `textSnapshot` overrides the composer text when the caller already captured (and cleared) it.
+    private func prepareMessageBody(clearInput: Bool, textSnapshot: String? = nil) -> String {
+        let text = textSnapshot ?? composerState.text
         var messageContents: [MessageContent] = []
-        
-        if !composerState.text.isEmpty {
-            messageContents.append(MessageContent(text: composerState.text))
+
+        if !text.isEmpty {
+            messageContents.append(MessageContent(text: text))
         }
 
         for attachment in composerState.attachedImages {
@@ -549,11 +652,14 @@ extension ChatView {
         if !composerState.attachedImages.isEmpty || !composerState.attachedFiles.isEmpty {
             messageBody = messageContents.toString()
         } else {
-            messageBody = composerState.text
+            messageBody = text
         }
         
         if clearInput {
-            composerState.text = ""
+            // With a snapshot the text was already cleared; keep anything typed since.
+            if textSnapshot == nil {
+                composerState.text = ""
+            }
             composerState.attachedImages = []
             composerState.attachedFiles = []
         }
@@ -567,6 +673,13 @@ extension ChatView {
             ?? chat.apiService?.type.flatMap(ProviderID.init(normalizing:))
         let capabilities = providerID.map { ProviderAttachmentCapabilities.forProvider($0) }
 
+        // Clear the text before waiting on attachments, so a chat switch during the wait cannot flush the
+        // already-sent text back as this chat's draft.
+        let text = composerState.text
+        if clearInput {
+            composerState.text = ""
+        }
+
         for attachment in composerState.attachedImages {
             await attachment.waitForLoad()
         }
@@ -578,7 +691,7 @@ extension ChatView {
                 await attachment.waitForLoad()
             }
         }
-        return prepareMessageBody(clearInput: clearInput)
+        return prepareMessageBody(clearInput: clearInput, textSnapshot: text)
     }
 
     private func saveNewMessageInStore(with messageBody: String) {

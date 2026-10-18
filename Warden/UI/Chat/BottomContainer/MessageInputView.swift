@@ -11,6 +11,174 @@ struct ComposerState {
     var isMultiAgentMode: Bool = false
     var selectedMultiAgentServices: [APIServiceEntity] = []
     var showServiceSelector: Bool = false
+    /// ID of the chat whose `draftMessage` the `text` belongs to (see `persistsComposerDraft`).
+    var draftChatID: UUID?
+}
+
+// MARK: - Draft Persistence
+
+/// Keeps the composer text in `ChatEntity.draftMessage` so a half-written prompt survives chat switches and relaunches.
+/// Saves are debounced while typing and flushed on disappear, send (text cleared) and quit.
+///
+/// During a chat switch the parent can briefly render the outgoing composer state with the incoming chat
+/// before replacing the view. The text therefore stays owned by `state.draftChatID`, and the composer state
+/// is only written when a fresh composer appears or, on the next run loop turn, if this view is still attached.
+private struct ComposerDraftPersistence: ViewModifier {
+    let chat: ChatEntity
+    @Binding var state: ComposerState
+
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var lifetime = DraftViewLifetime()
+
+    private static let debounceInterval: Duration = .milliseconds(500)
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                lifetime.isAttached = true
+                if state.draftChatID == nil {
+                    load(chat)
+                }
+            }
+            .onDisappear {
+                lifetime.isAttached = false
+                flush(deferred: true)
+            }
+            .onChange(of: chat.objectID) { _, _ in
+                let lifetime = lifetime
+                DispatchQueue.main.async {
+                    guard lifetime.isAttached else { return }
+                    rebindIfNeeded()
+                }
+            }
+            .onChange(of: state.text) { _, newValue in
+                // Sending clears the composer; persist that right away so a stale draft never comes back.
+                if newValue.isEmpty { flush(deferred: true) }
+            }
+            .task(id: state.text) {
+                try? await Task.sleep(for: Self.debounceInterval)
+                guard !Task.isCancelled else { return }
+                flush(deferred: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                flush(deferred: false)
+            }
+    }
+
+    private func load(_ chat: ChatEntity) {
+        guard !chat.isDeleted, chat.managedObjectContext != nil else { return }
+        state.draftChatID = chat.id
+        let draft = chat.draftMessage
+        if state.text.isEmpty, !draft.isEmpty {
+            state.text = draft
+        }
+    }
+
+    /// Only reached when the same view stays on screen with a different chat.
+    private func rebindIfNeeded() {
+        guard !chat.isDeleted, chat.managedObjectContext != nil, state.draftChatID != chat.id else { return }
+        flush(deferred: false)
+        state.text = ""
+        load(chat)
+    }
+
+    /// Writes the current text to the owning chat. Deferred saves run after the current SwiftUI update so
+    /// Core Data notifications never fire while views are being inserted or torn down.
+    private func flush(deferred: Bool) {
+        guard let ownerID = state.draftChatID else { return }
+        let text = state.text
+        let context = viewContext
+        if deferred {
+            DispatchQueue.main.async {
+                Self.saveDraft(text, toChatWithID: ownerID, in: context)
+            }
+        } else {
+            Self.saveDraft(text, toChatWithID: ownerID, in: context)
+        }
+    }
+
+    private static func saveDraft(_ text: String, toChatWithID id: UUID, in context: NSManagedObjectContext) {
+        let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
+        do {
+            guard let owner = try context.fetch(request).first, owner.draftMessage != text else { return }
+            owner.draftMessage = text
+            if owner.waitingForResponse {
+                // Saving the whole context mid-stream would persist transient state (`waitingForResponse`, the
+                // unsent user message), so write only the draft through a separate context.
+                try saveDraftOnly(text, toChatWithID: id, coordinator: context.persistentStoreCoordinator)
+            } else {
+                try context.save()
+            }
+        } catch {
+            WardenLog.coreData.error("Failed to save composer draft: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private static func saveDraftOnly(
+        _ text: String,
+        toChatWithID id: UUID,
+        coordinator: NSPersistentStoreCoordinator?
+    ) throws {
+        guard let coordinator else { return }
+        let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        try context.performAndWait {
+            let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            request.fetchLimit = 1
+            guard let owner = try context.fetch(request).first else { return }
+            owner.draftMessage = text
+            try context.save()
+        }
+    }
+}
+
+/// Reference box so deferred work can check whether the draft modifier is still on screen.
+private final class DraftViewLifetime {
+    var isAttached = false
+}
+
+/// Temporary files backing long-paste attachments. Their bytes are copied into the blob store on attach,
+/// so files from earlier sessions are never needed again.
+enum PastedTextFiles {
+    static let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("PastedText", isDirectory: true)
+
+    /// Best-effort removal of pasted-text files from earlier sessions; runs off the main thread.
+    /// Only entries created before the call are removed, so a paste made right after launch is kept.
+    static func removeLeftovers() {
+        let cutoff = Date()
+        Task.detached(priority: .utility) {
+            let fileManager = FileManager.default
+            guard let entries = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.creationDateKey]
+            ) else { return }
+
+            for entry in entries {
+                let created = (try? entry.resourceValues(forKeys: [.creationDateKey]))?.creationDate
+                guard let created, created < cutoff else { continue }
+                do {
+                    try fileManager.removeItem(at: entry)
+                } catch {
+                    WardenLog.app.error(
+                        "Failed to remove pasted text file: \(error.localizedDescription, privacy: .public)"
+                    )
+                }
+            }
+        }
+    }
+}
+
+extension View {
+    /// Restores and persists the composer draft for `chat`. Attachments are intentionally not persisted.
+    func persistsComposerDraft(for chat: ChatEntity, state: Binding<ComposerState>) -> some View {
+        modifier(ComposerDraftPersistence(chat: chat, state: state))
+    }
 }
 
 struct MessageInputView: View {
@@ -57,6 +225,7 @@ struct MessageInputView: View {
     private let lineColorOnBlur = AppConstants.borderSubtle
     private let lineColorOnFocus = Color.accentColor.opacity(0.4)
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
+    @AppStorage("longPasteLineThreshold") private var longPasteLineThreshold: Int = 40
 
     private var effectiveFontSize: Double {
         chatFontSize
@@ -283,6 +452,11 @@ struct MessageInputView: View {
         }
     }
 
+    /// Image tiles are 80pt; file chips add a name line and a size or line-count line below the tile.
+    private var attachmentRowHeight: CGFloat {
+        state.attachedFiles.isEmpty ? 80 : 122
+    }
+
     private var attachmentPreviewsSection: some View {
         let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
         let providerSummary: String? = {
@@ -330,7 +504,7 @@ struct MessageInputView: View {
                 .padding(.bottom, 8)
             }
         }
-        .frame(height: hasAttachments ? (providerSummary == nil ? 80 : 100) : 0)
+        .frame(height: hasAttachments ? attachmentRowHeight + (providerSummary == nil ? 0 : 20) : 0)
     }
     
     @ViewBuilder
@@ -490,6 +664,31 @@ struct MessageInputView: View {
         return validExtensions.contains(url.pathExtension.lowercased())
     }
 
+    /// Writes a long paste to a temporary `.txt` file and attaches it like any other text file.
+    /// Returns `false` (falling back to a normal paste) if the file can't be written.
+    private func attachPastedText(_ text: String) -> Bool {
+        let directory = PastedTextFiles.directory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directory.appendingPathComponent("Pasted text.txt")
+
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            WardenLog.app.error(
+                "Failed to create pasted text attachment: \(error.localizedDescription, privacy: .public)"
+            )
+            return false
+        }
+
+        let attachment = FileAttachment(url: fileURL)
+        attachment.pastedLineCount = text.lineCount
+        withAnimation {
+            state.attachedFiles.append(attachment)
+        }
+        return true
+    }
+
     private func calculateDynamicHeight(using textHeight: CGFloat) -> CGFloat {
         let calculatedHeight = max(textHeight + inputPadding * 2, initialInputSize)
         return min(calculatedHeight, maxInputHeight)
@@ -513,7 +712,10 @@ struct MessageInputView: View {
                     onEnter()
                 },
                 font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize)),
-                maxHeight: maxInputHeight
+                maxHeight: maxInputHeight,
+                // The persona editor reuses this view without a chat and can't take attachments.
+                longPasteLineThreshold: chat == nil ? 0 : longPasteLineThreshold,
+                onLongPaste: attachPastedText
             )
             .frame(height: dynamicHeight)
         }
@@ -591,13 +793,23 @@ struct BetterCompactModelSelector: View {
         chat.apiService?.type ?? AppConstants.defaultApiType
     }
     
+    /// Model name only; the provider is already conveyed by the logo and the tooltip.
     private var shortModelLabel: String {
         let modelId = chat.gptModel
         if modelId.isEmpty { return "Select Model" }
-        let label = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
-        return label.components(separatedBy: "/").first ?? label
+        return ModelMetadata.formatModelComponents(modelId: modelId, provider: currentProviderType).displayName
     }
-    
+
+    private var modelTooltip: String {
+        let modelId = chat.gptModel
+        if modelId.isEmpty { return "Select Model" }
+        let label = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
+        // Namespaced IDs (e.g. OpenRouter) name the model vendor, so also show the service the request goes through.
+        guard ModelMetadata.modelNamespaceID(from: modelId) != nil else { return label }
+        let serviceName = AppConstants.defaultApiConfigurations[currentProviderType]?.name ?? currentProviderType
+        return "\(label) via \(serviceName)"
+    }
+
     @MainActor
     private func selectModel(provider: String, modelId: String) {
         if let service = apiServices.first(where: { $0.type == provider }) {
@@ -658,7 +870,7 @@ struct BetterCompactModelSelector: View {
         }
         .fixedSize()
         .onHover { isHovered = $0 }
-        .help(shortModelLabel)
+        .help(modelTooltip)
     }
 }
 

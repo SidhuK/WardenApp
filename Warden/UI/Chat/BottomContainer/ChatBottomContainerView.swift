@@ -66,6 +66,7 @@ struct ChatBottomContainerView: View {
                   onStopStreaming: onStopStreaming,
                   focusToken: focusToken
               )
+              .persistsComposerDraft(for: chat, state: $composerState)
               .frame(maxWidth: 1000) // Slightly wider, about 90% of typical window
               .padding(.horizontal, 24)
               .padding(.bottom, 20) // Bottom padding for floating effect

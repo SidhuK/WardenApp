@@ -455,6 +455,7 @@ final class MessageManager: ObservableObject {
             
             self.streamingAssistantText = ""
             chat.waitingForResponse = true
+            let reasoningStreamToken = ReasoningTimingStore.shared.beginStream(chatID: chat.id)
             
             defer {
                 Task {
@@ -487,6 +488,7 @@ final class MessageManager: ObservableObject {
                 if !chunkToApply.isEmpty {
                     chat.waitingForResponse = true
                     self.streamingAssistantText.append(contentsOf: chunkToApply)
+                    ReasoningTimingStore.shared.streamDidUpdate(chatID: chat.id, text: self.streamingAssistantText)
                     lastUpdateTime = now
                 }
             }
@@ -605,14 +607,18 @@ final class MessageManager: ObservableObject {
 
                 let finalResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
                 // Normal completion path - stream finished successfully
+                var completedMessageID: Int64?
                 if !finalResponse.isEmpty {
                     if deferImageResponse {
-                        addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
+                        completedMessageID =
+                            addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls).id
                     } else {
-                        addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls)
+                        completedMessageID =
+                            addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls).id
                     }
                     addNewMessageToRequestMessages(chat: chat, content: finalResponse, role: AppConstants.defaultRole)
                 }
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: completedMessageID)
                 
                 // Handle tool calls if any
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
@@ -639,11 +645,14 @@ final class MessageManager: ObservableObject {
                 // Save partial response even when cancelled via exception
                 flushChunkBuffer(force: true)
                 let partialResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
+                var partialMessageID: Int64?
                 if !partialResponse.isEmpty {
                     if deferImageResponse {
-                        addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
+                        partialMessageID =
+                            addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls).id
                     } else {
-                        addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls)
+                        partialMessageID =
+                            addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls).id
                     }
                     addNewMessageToRequestMessages(
                         chat: chat,
@@ -654,6 +663,7 @@ final class MessageManager: ObservableObject {
                     WardenLog.streaming.debug("Partial response saved after cancellation")
                     #endif
                 }
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: partialMessageID)
                 
                 chat.waitingForResponse = false
                 self.streamingAssistantText = ""
@@ -661,6 +671,7 @@ final class MessageManager: ObservableObject {
             }
             catch {
                 WardenLog.streaming.error("Streaming error: \(error.localizedDescription, privacy: .public)")
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: nil)
                 chat.waitingForResponse = false
                 self.streamingAssistantText = ""
                 completion(.failure(error))
@@ -965,7 +976,8 @@ final class MessageManager: ObservableObject {
         return chat.constructRequestMessages(forUserMessage: userMessage, contextSize: contextSize)
     }
 
-    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil, isStreaming: Bool = false) {
+    @discardableResult
+    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil, isStreaming: Bool = false) -> MessageEntity {
         #if DEBUG
         WardenLog.app.debug("AI response received: \(message.count, privacy: .public) char(s)")
         #endif
@@ -1035,6 +1047,7 @@ final class MessageManager: ObservableObject {
             chat.waitingForResponse = true
         }
         chat.objectWillChange.send()
+        return newMessage
     }
     
     private func addNewMessageToRequestMessages(chat: ChatEntity, content: String, role: String) {

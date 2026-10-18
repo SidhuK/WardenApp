@@ -87,13 +87,17 @@ struct FilePreviewView: View {
             
             // File name and info
             VStack(spacing: 2) {
-                Text(attachment.fileName)
+                Text(attachment.pastedLineCount == nil ? attachment.fileName : "Pasted text")
                     .font(.caption2)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.primary)
-                
-                if attachment.fileSize > 0 {
+
+                if let pastedLineCount = attachment.pastedLineCount {
+                    Text("\(pastedLineCount) lines")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                } else if attachment.fileSize > 0 {
                     Text(ByteCountFormatter.string(fromByteCount: attachment.fileSize, countStyle: .file))
                         .font(.caption2)
                         .foregroundColor(.secondary)
