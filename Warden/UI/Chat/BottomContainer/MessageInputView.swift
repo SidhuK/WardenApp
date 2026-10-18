@@ -11,6 +11,72 @@ struct ComposerState {
     var isMultiAgentMode: Bool = false
     var selectedMultiAgentServices: [APIServiceEntity] = []
     var showServiceSelector: Bool = false
+    /// Chat whose `newMessage` draft `text` is persisted to (see `persistsComposerDraft`).
+    var draftChat: ChatEntity?
+}
+
+// MARK: - Draft Persistence
+
+/// Keeps the composer text in `ChatEntity.newMessage` so a half-written prompt survives chat switches and relaunches.
+/// Saves are debounced while typing and flushed immediately on disappear, chat change, send (text cleared) and quit.
+private struct ComposerDraftPersistence: ViewModifier {
+    let chat: ChatEntity
+    @Binding var state: ComposerState
+
+    private static let debounceInterval: Duration = .milliseconds(500)
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { bindToChat() }
+            .onChange(of: chat.id) { _, _ in bindToChat() }
+            .onChange(of: state.text) { _, newValue in
+                // Sending clears the composer; persist that right away so a stale draft never comes back.
+                if newValue.isEmpty { flush() }
+            }
+            .task(id: state.text) {
+                try? await Task.sleep(for: Self.debounceInterval)
+                guard !Task.isCancelled else { return }
+                flush()
+            }
+            .onDisappear { flush() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                flush()
+            }
+    }
+
+    /// The text is owned by `state.draftChat`, not by whichever chat this view currently shows: during a
+    /// chat switch the parent can briefly render the old composer state with the new chat.
+    private func bindToChat() {
+        guard state.draftChat != chat else { return }
+        let isFreshState = state.draftChat == nil
+        flush()
+        state.draftChat = chat
+        if !isFreshState || state.text.isEmpty {
+            state.text = chat.newMessage ?? ""
+        }
+    }
+
+    private func flush() {
+        guard let owner = state.draftChat,
+              !owner.isDeleted,
+              let context = owner.managedObjectContext,
+              (owner.newMessage ?? "") != state.text
+        else { return }
+
+        owner.newMessage = state.text
+        do {
+            try context.save()
+        } catch {
+            WardenLog.coreData.error("Failed to save composer draft: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+}
+
+extension View {
+    /// Restores and persists the composer draft for `chat`. Attachments are intentionally not persisted.
+    func persistsComposerDraft(for chat: ChatEntity, state: Binding<ComposerState>) -> some View {
+        modifier(ComposerDraftPersistence(chat: chat, state: state))
+    }
 }
 
 struct MessageInputView: View {
@@ -57,6 +123,7 @@ struct MessageInputView: View {
     private let lineColorOnBlur = AppConstants.borderSubtle
     private let lineColorOnFocus = Color.accentColor.opacity(0.4)
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
+    @AppStorage("longPasteLineThreshold") private var longPasteLineThreshold: Int = 40
 
     private var effectiveFontSize: Double {
         chatFontSize
@@ -490,6 +557,32 @@ struct MessageInputView: View {
         return validExtensions.contains(url.pathExtension.lowercased())
     }
 
+    /// Writes a long paste to a temporary `.txt` file and attaches it like any other text file.
+    /// Returns `false` (falling back to a normal paste) if the file can't be written.
+    private func attachPastedText(_ text: String) -> Bool {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PastedText", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directory.appendingPathComponent("Pasted text.txt")
+
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            WardenLog.app.error(
+                "Failed to create pasted text attachment: \(error.localizedDescription, privacy: .public)"
+            )
+            return false
+        }
+
+        let attachment = FileAttachment(url: fileURL)
+        attachment.pastedLineCount = text.lineCount
+        withAnimation {
+            state.attachedFiles.append(attachment)
+        }
+        return true
+    }
+
     private func calculateDynamicHeight(using textHeight: CGFloat) -> CGFloat {
         let calculatedHeight = max(textHeight + inputPadding * 2, initialInputSize)
         return min(calculatedHeight, maxInputHeight)
@@ -513,7 +606,10 @@ struct MessageInputView: View {
                     onEnter()
                 },
                 font: NSFont.systemFont(ofSize: CGFloat(effectiveFontSize)),
-                maxHeight: maxInputHeight
+                maxHeight: maxInputHeight,
+                // The persona editor reuses this view without a chat and can't take attachments.
+                longPasteLineThreshold: chat == nil ? 0 : longPasteLineThreshold,
+                onLongPaste: attachPastedText
             )
             .frame(height: dynamicHeight)
         }
@@ -591,13 +687,23 @@ struct BetterCompactModelSelector: View {
         chat.apiService?.type ?? AppConstants.defaultApiType
     }
     
+    /// Model name only; the provider is already conveyed by the logo and the tooltip.
     private var shortModelLabel: String {
         let modelId = chat.gptModel
         if modelId.isEmpty { return "Select Model" }
-        let label = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
-        return label.components(separatedBy: "/").first ?? label
+        return ModelMetadata.formatModelComponents(modelId: modelId, provider: currentProviderType).displayName
     }
-    
+
+    private var modelTooltip: String {
+        let modelId = chat.gptModel
+        if modelId.isEmpty { return "Select Model" }
+        let label = ModelMetadata.formatModelDisplayName(modelId: modelId, provider: currentProviderType)
+        // Namespaced IDs (e.g. OpenRouter) name the model vendor, so also show the service the request goes through.
+        guard ModelMetadata.modelNamespaceID(from: modelId) != nil else { return label }
+        let serviceName = AppConstants.defaultApiConfigurations[currentProviderType]?.name ?? currentProviderType
+        return "\(label) via \(serviceName)"
+    }
+
     @MainActor
     private func selectModel(provider: String, modelId: String) {
         if let service = apiServices.first(where: { $0.type == provider }) {
@@ -658,7 +764,7 @@ struct BetterCompactModelSelector: View {
         }
         .fixedSize()
         .onHover { isHovered = $0 }
-        .help(shortModelLabel)
+        .help(modelTooltip)
     }
 }
 

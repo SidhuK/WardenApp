@@ -42,7 +42,10 @@ final class FileAttachment: Identifiable, ObservableObject {
     @Published private(set) var blobCopyErrorDescription: String?
     
     @Published var image: NSImage?
-    
+
+    /// Set when the attachment was created from a long paste in the composer; drives the chip label.
+    var pastedLineCount: Int?
+
     private var managedObjectContext: NSManagedObjectContext?
     private var fileEntityID: NSManagedObjectID?
     private var loadTask: Task<Void, Never>?

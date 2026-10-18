@@ -59,6 +59,7 @@ struct CenteredInputView: View {
                                     cornerRadius: 18.0,
                                     focusToken: focusToken
                                 )
+                                .persistsComposerDraft(for: chat, state: $composerState)
                                 .frame(maxWidth: 1000)
                                 .padding(6)
                                 .scaleEffect(isInputFocused ? 1.01 : 1.0)
