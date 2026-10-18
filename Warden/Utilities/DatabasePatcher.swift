@@ -9,6 +9,7 @@ class DatabasePatcher {
         patchPersonaOrdering(context: context)
         patchImageUploadsForAPIServices(context: context)
         migratePersonaColorsToSymbols(context: context)
+        resetStaleWaitingForResponse(context: context)
         //resetPersonaOrdering(context: context)
     }
 
@@ -67,6 +68,30 @@ class DatabasePatcher {
 	            WardenLog.coreData.error("Error patching persona ordering: \(error.localizedDescription, privacy: .public)")
 	        }
 	    }
+
+    /// A quit mid-stream can leave `waitingForResponse` persisted, which would show a permanent waiting bubble.
+    /// No request survives a relaunch, so clear the flag on every chat at startup.
+    static func resetStaleWaitingForResponse(context: NSManagedObjectContext) {
+        let fetchRequest = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+        fetchRequest.predicate = NSPredicate(format: "waitingForResponse == YES")
+
+        do {
+            let chats = try context.fetch(fetchRequest)
+            guard !chats.isEmpty else { return }
+            for chat in chats {
+                chat.waitingForResponse = false
+            }
+            try context.save()
+            #if DEBUG
+            WardenLog.coreData.debug("Reset waitingForResponse on \(chats.count, privacy: .public) chat(s)")
+            #endif
+        }
+        catch {
+            WardenLog.coreData.error(
+                "Error resetting waitingForResponse: \(error.localizedDescription, privacy: .public)"
+            )
+        }
+    }
 
     static func resetPersonaOrdering(context: NSManagedObjectContext) {
         let fetchRequest = NSFetchRequest<PersonaEntity>(entityName: "PersonaEntity")

@@ -104,6 +104,9 @@ private struct ComposerDraftPersistence: ViewModifier {
         do {
             guard let owner = try context.fetch(request).first, (owner.newMessage ?? "") != text else { return }
             owner.newMessage = text
+            // Saving the whole context mid-stream would persist transient state (`waitingForResponse`, the
+            // unsent user message). MessageManager saves when the response finishes, which includes the draft.
+            guard !owner.waitingForResponse else { return }
             try context.save()
         } catch {
             WardenLog.coreData.error("Failed to save composer draft: \(error.localizedDescription, privacy: .public)")
@@ -114,6 +117,38 @@ private struct ComposerDraftPersistence: ViewModifier {
 /// Reference box so deferred work can check whether the draft modifier is still on screen.
 private final class DraftViewLifetime {
     var isAttached = false
+}
+
+/// Temporary files backing long-paste attachments. Their bytes are copied into the blob store on attach,
+/// so files from earlier sessions are never needed again.
+enum PastedTextFiles {
+    static let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("PastedText", isDirectory: true)
+
+    /// Best-effort removal of pasted-text files from earlier sessions; runs off the main thread.
+    /// Only entries created before the call are removed, so a paste made right after launch is kept.
+    static func removeLeftovers() {
+        let cutoff = Date()
+        Task.detached(priority: .utility) {
+            let fileManager = FileManager.default
+            guard let entries = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.creationDateKey]
+            ) else { return }
+
+            for entry in entries {
+                let created = (try? entry.resourceValues(forKeys: [.creationDateKey]))?.creationDate
+                guard let created, created < cutoff else { continue }
+                do {
+                    try fileManager.removeItem(at: entry)
+                } catch {
+                    WardenLog.app.error(
+                        "Failed to remove pasted text file: \(error.localizedDescription, privacy: .public)"
+                    )
+                }
+            }
+        }
+    }
 }
 
 extension View {
@@ -604,8 +639,7 @@ struct MessageInputView: View {
     /// Writes a long paste to a temporary `.txt` file and attaches it like any other text file.
     /// Returns `false` (falling back to a normal paste) if the file can't be written.
     private func attachPastedText(_ text: String) -> Bool {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PastedText", isDirectory: true)
+        let directory = PastedTextFiles.directory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let fileURL = directory.appendingPathComponent("Pasted text.txt")
 

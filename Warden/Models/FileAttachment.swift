@@ -20,7 +20,7 @@ enum FileAttachmentType {
 
 @MainActor
 final class FileAttachment: Identifiable, ObservableObject {
-    private static let maxExtractedTextCharacters: Int = 200_000
+    nonisolated static let maxExtractedTextCharacters: Int = 200_000
 
     enum BlobCopyStatus: String, Sendable {
         case idle
