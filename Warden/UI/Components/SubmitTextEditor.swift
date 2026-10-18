@@ -8,6 +8,10 @@ struct SubmitTextEditor: NSViewRepresentable {
     var onSubmit: () -> Void
     var font: NSFont = .systemFont(ofSize: 14)
     var maxHeight: CGFloat = 160
+    /// Plain-text pastes with more lines than this are offered to `onLongPaste` instead of being inserted;
+    /// the handler returns `false` to fall back to a normal paste. 0 disables the behaviour.
+    var longPasteLineThreshold: Int = 0
+    var onLongPaste: ((String) -> Bool)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -31,7 +35,7 @@ struct SubmitTextEditor: NSViewRepresentable {
         textView.onSubmit = { [weak coordinator = context.coordinator] in
             coordinator?.handleSubmit()
         }
-        
+
         // Transparent background
         textView.backgroundColor = .clear
         
@@ -52,6 +56,11 @@ struct SubmitTextEditor: NSViewRepresentable {
         
         if textView.font != font {
             textView.font = font
+        }
+
+        if let submitAwareTextView = textView as? SubmitAwareTextView {
+            submitAwareTextView.longPasteLineThreshold = longPasteLineThreshold
+            submitAwareTextView.onLongPaste = onLongPaste
         }
         
         context.coordinator.updateHeight(for: textView)
@@ -126,6 +135,34 @@ struct SubmitTextEditor: NSViewRepresentable {
 
 private final class SubmitAwareTextView: NSTextView {
     var onSubmit: (() -> Void)?
+    var longPasteLineThreshold: Int = 0
+    var onLongPaste: ((String) -> Bool)?
+
+    override func paste(_ sender: Any?) {
+        if divertLongPasteIfNeeded() { return }
+        super.paste(sender)
+    }
+
+    override func pasteAsPlainText(_ sender: Any?) {
+        if divertLongPasteIfNeeded() { return }
+        super.pasteAsPlainText(sender)
+    }
+
+    /// Hands long plain-text pastes to `onLongPaste` (which turns them into an attachment) instead of
+    /// inserting them. Pasteboards carrying images or files keep the default behaviour.
+    private func divertLongPasteIfNeeded() -> Bool {
+        guard longPasteLineThreshold > 0, let onLongPaste else { return false }
+
+        let pasteboard = NSPasteboard.general
+        let nonTextTypes: [NSPasteboard.PasteboardType] = [.fileURL, .tiff, .png, .pdf]
+        if pasteboard.availableType(from: nonTextTypes) != nil { return false }
+
+        guard let string = pasteboard.string(forType: .string),
+              string.lineCount > longPasteLineThreshold
+        else { return false }
+
+        return onLongPaste(string)
+    }
 
     override func keyDown(with event: NSEvent) {
         if shouldSubmit(for: event) {
@@ -153,5 +190,14 @@ private final class SubmitAwareTextView: NSTextView {
         }
 
         return true
+    }
+}
+
+extension String {
+    /// Number of lines as displayed in an editor; a single trailing newline does not start a new line.
+    var lineCount: Int {
+        guard !isEmpty else { return 0 }
+        let newlines = reduce(0) { $1.isNewline ? $0 + 1 : $0 }
+        return last?.isNewline == true ? newlines : newlines + 1
     }
 }
