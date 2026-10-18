@@ -64,6 +64,9 @@ struct MessageListView: View {
     // State and coordination passed from ChatView
     @Binding var userIsScrolling: Bool
 
+    /// Scroll target at the very end of the list, used by "Jump to latest".
+    static let bottomAnchorID = "message_list_bottom"
+
     // Callbacks
     let onRetryMessage: () -> Void
     let onIgnoreError: () -> Void
@@ -237,6 +240,7 @@ struct MessageListView: View {
             // Extra bottom padding so bubbles do not collide with input
             Spacer()
                 .frame(height: 24)
+                .id(Self.bottomAnchorID)
         }
         .onAppear {
             // Optimize: Only check the last message for pending code blocks since that's what affects scroll-to-bottom

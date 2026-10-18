@@ -29,6 +29,8 @@ struct ChatView: View {
     @State private var pendingCodeBlocks = 0
     @State private var userIsScrolling = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
+    @State private var isNearBottom = true
+    @State private var jumpToLatestRequest = 0
     
     @State private var messageBeingEdited: MessageEntity?
     @State private var editMessageDraft: String = ""
@@ -68,6 +70,7 @@ struct ChatView: View {
             } else {
                 VStack(spacing: 0) {
                     mainChatContent
+                        .overlay(alignment: .bottom) { jumpToLatestOverlay }
                     searchResultsPreview
                     chatComposer
                 }
@@ -251,6 +254,25 @@ struct ChatView: View {
         }
     }
 
+    // Hidden while auto-scroll is following the stream so it doesn't flicker as content grows.
+    private var showJumpToLatest: Bool {
+        !isNearBottom && (!isStreaming || userIsScrolling)
+    }
+
+    private var jumpToLatestOverlay: some View {
+        ZStack {
+            if showJumpToLatest {
+                JumpToLatestButton {
+                    userIsScrolling = false
+                    jumpToLatestRequest += 1
+                }
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: showJumpToLatest)
+    }
+
     private var mainChatContent: some View {
         GeometryReader { geometry in
             ZStack {
@@ -308,6 +330,11 @@ struct ChatView: View {
 
                             if pendingCodeBlocks == 0 {
                                 codeBlocksRendered = true
+                            }
+                        }
+                        .onChange(of: jumpToLatestRequest) { _, _ in
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                scrollView.scrollTo(MessageListView.bottomAnchorID, anchor: .bottom)
                             }
                         }
                         .onSwipe { event in
@@ -385,10 +412,49 @@ struct ChatView: View {
                     }
                     .id("chatContainer")
                 }
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    // Generous threshold: scrolling to the last message leaves the list's bottom padding offscreen.
+                    geometry.visibleRect.maxY >= geometry.contentSize.height - 100
+                } action: { _, isAtBottom in
+                    isNearBottom = isAtBottom
+                }
             }
         }
         .padding(.bottom, 0) // Remove extra padding as we handle it in ScrollView
         .background(.clear)
+    }
+}
+
+private struct JumpToLatestButton: View {
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Jump to latest")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(isHovered ? .primary : .secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(.regularMaterial))
+            .overlay(Capsule().stroke(Color.primary.opacity(isHovered ? 0.15 : 0.1), lineWidth: 0.5))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.1), radius: 8, x: 0, y: 3)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .help("Scroll to the latest message")
+        .accessibilityLabel("Jump to latest message")
     }
 }
 
