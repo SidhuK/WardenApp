@@ -48,8 +48,14 @@ final class ReasoningTimingStore: ObservableObject {
         expansion[key] = expanded
     }
 
-    /// Clears any leftover live state before a new response starts streaming in the chat.
-    func beginStream(chatID: UUID) {
+    /// Stream currently owning each chat's live state. A cancelled stream can finish after its replacement began.
+    private var activeStreams: [UUID: UUID] = [:]
+
+    /// Clears any leftover live state before a new response starts streaming in the chat. Returns a token that
+    /// `finishStream` must present, so a superseded stream cannot finish its replacement's state.
+    func beginStream(chatID: UUID) -> UUID {
+        let token = UUID()
+        activeStreams[chatID] = token
         closeTagScanOffsets[chatID] = nil
         let key = ReasoningKey.live(chatID: chatID)
         if timings[key] != nil {
@@ -58,6 +64,7 @@ final class ReasoningTimingStore: ObservableObject {
         if expansion[key] != nil {
             expansion[key] = nil
         }
+        return token
     }
 
     /// Records the first reasoning token and the first answer token as the accumulated stream text grows.
@@ -85,7 +92,9 @@ final class ReasoningTimingStore: ObservableObject {
     }
 
     /// Ends the live reasoning phase and hands its timing and expansion state to the persisted message.
-    func finishStream(chatID: UUID, messageID: Int64?) {
+    func finishStream(chatID: UUID, token: UUID, messageID: Int64?) {
+        guard activeStreams[chatID] == token else { return }
+        activeStreams[chatID] = nil
         closeTagScanOffsets[chatID] = nil
         let liveKey = ReasoningKey.live(chatID: chatID)
         let liveTiming = timings.removeValue(forKey: liveKey)
@@ -131,7 +140,7 @@ struct ThinkingProcessView: View {
         if let localExpanded {
             return localExpanded
         }
-        return isThinking ? false : expandReasoningByDefault
+        return expandReasoningByDefault
     }
 
     var body: some View {

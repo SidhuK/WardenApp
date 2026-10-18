@@ -303,24 +303,12 @@ class IncrementalMessageParser {
     private func handleThinkingLine(line: String) {
         if line.contains("</think>") {
             // Closing or single-line thinking
-            if case .thinking(var lines) = pendingBlock {
-                let lastLine = line.replacingOccurrences(of: "</think>", with: "")
-                if !lastLine.isEmpty {
-                    lines.append(lastLine)
-                }
-                let combined = lines.joined(separator: "\n")
-                    .replacingOccurrences(of: "<think>", with: "")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                completedElements.append(.thinking(combined, isExpanded: false))
-                pendingBlock = nil
+            if case .thinking(let lines) = pendingBlock {
+                closeThinking(lines, at: line)
             } else if line.contains("<think>") {
                 // Single line: <think>...</think>
                 finalizePendingBlock()
-                let content = line
-                    .replacingOccurrences(of: "<think>", with: "")
-                    .replacingOccurrences(of: "</think>", with: "")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                completedElements.append(.thinking(content, isExpanded: false))
+                closeThinking([], at: line)
             }
         } else if line.contains("<think>") {
             // Opening thinking block
@@ -335,14 +323,7 @@ class IncrementalMessageParser {
         switch pendingBlock {
         case .thinking(var lines):
             if line.contains("</think>") {
-                let lastLine = line.replacingOccurrences(of: "</think>", with: "")
-                if !lastLine.isEmpty {
-                    lines.append(lastLine)
-                }
-                let combined = lines.joined(separator: "\n")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                completedElements.append(.thinking(combined, isExpanded: false))
-                pendingBlock = nil
+                closeThinking(lines, at: line)
             } else {
                 lines.append(line)
                 pendingBlock = .thinking(lines)
@@ -375,6 +356,23 @@ class IncrementalMessageParser {
         }
     }
     
+    /// Closes the thinking block at `</think>`. Text after the tag on the same line is answer text, matching
+    /// how `elementsWithOpenThinkingTail` shows it before the line is complete.
+    private func closeThinking(_ lines: [String], at line: String) {
+        guard let closeRange = line.range(of: "</think>") else { return }
+        var lines = lines
+        let before = String(line[..<closeRange.lowerBound])
+        let after = String(line[closeRange.upperBound...])
+        if !before.isEmpty {
+            lines.append(before)
+        }
+        let combined = lines.joined(separator: "\n")
+            .replacingOccurrences(of: "<think>", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        completedElements.append(.thinking(combined, isExpanded: false))
+        pendingBlock = after.trimmingCharacters(in: .whitespaces).isEmpty ? nil : .text([after])
+    }
+
     private func appendTextLine(_ line: String) {
         if case .text(var lines) = pendingBlock {
             lines.append(line)

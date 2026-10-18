@@ -143,8 +143,22 @@ struct MessageListView: View {
         )
     }
 
+    /// Content rendered below the latest persisted message, so that message's bottom is not the end of the list.
+    private var hasTransientTail: Bool {
+        (isStreaming && !streamingAssistantText.isEmpty)
+            || !activeToolCalls.isEmpty
+            || chat.waitingForResponse
+            || currentError != nil
+            || (enableMultiAgentMode && isMultiAgentMode
+                && (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing))
+    }
+
     private func updateContentEnd() {
-        contentEndY = markerEndY.isFinite ? markerEndY : latestMessageEndY
+        if markerEndY.isFinite {
+            contentEndY = markerEndY
+        } else {
+            contentEndY = hasTransientTail ? .infinity : latestMessageEndY
+        }
     }
 
     var body: some View {
@@ -281,6 +295,7 @@ struct MessageListView: View {
         }
         .onChange(of: markerEndY) { _, _ in updateContentEnd() }
         .onChange(of: latestMessageEndY) { _, _ in updateContentEnd() }
+        .onChange(of: hasTransientTail) { _, _ in updateContentEnd() }
         .onAppear {
             // Optimize: Only check the last message for pending code blocks since that's what affects scroll-to-bottom
             if let lastMessage = sortedMessages.last {

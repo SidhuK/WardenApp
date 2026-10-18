@@ -423,7 +423,11 @@ struct ChatBubbleView: View {
 
     /// The reasoning header shows its own live status, so the generic indicator would be redundant.
     private var isReasoningLive: Bool {
-        content.isStreaming && content.message.contains("<think>") && !content.message.contains("</think>")
+        // Until reasoning text arrives there is no reasoning header yet, so keep the generic indicator.
+        guard content.isStreaming,
+              let openRange = content.message.range(of: "<think>"),
+              !content.message.contains("</think>") else { return false }
+        return content.message[openRange.upperBound...].contains { !$0.isWhitespace }
     }
 
     private var thinkingView: some View {

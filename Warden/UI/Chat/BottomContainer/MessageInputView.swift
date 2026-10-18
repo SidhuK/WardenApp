@@ -105,12 +105,34 @@ private struct ComposerDraftPersistence: ViewModifier {
         do {
             guard let owner = try context.fetch(request).first, owner.draftMessage != text else { return }
             owner.draftMessage = text
-            // Saving the whole context mid-stream would persist transient state (`waitingForResponse`, the
-            // unsent user message). MessageManager saves when the response finishes, which includes the draft.
-            guard !owner.waitingForResponse else { return }
-            try context.save()
+            if owner.waitingForResponse {
+                // Saving the whole context mid-stream would persist transient state (`waitingForResponse`, the
+                // unsent user message), so write only the draft through a separate context.
+                try saveDraftOnly(text, toChatWithID: id, coordinator: context.persistentStoreCoordinator)
+            } else {
+                try context.save()
+            }
         } catch {
             WardenLog.coreData.error("Failed to save composer draft: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private static func saveDraftOnly(
+        _ text: String,
+        toChatWithID id: UUID,
+        coordinator: NSPersistentStoreCoordinator?
+    ) throws {
+        guard let coordinator else { return }
+        let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        try context.performAndWait {
+            let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+            request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            request.fetchLimit = 1
+            guard let owner = try context.fetch(request).first else { return }
+            owner.draftMessage = text
+            try context.save()
         }
     }
 }

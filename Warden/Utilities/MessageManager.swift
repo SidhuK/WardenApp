@@ -455,7 +455,7 @@ final class MessageManager: ObservableObject {
             
             self.streamingAssistantText = ""
             chat.waitingForResponse = true
-            ReasoningTimingStore.shared.beginStream(chatID: chat.id)
+            let reasoningStreamToken = ReasoningTimingStore.shared.beginStream(chatID: chat.id)
             
             defer {
                 Task {
@@ -618,7 +618,7 @@ final class MessageManager: ObservableObject {
                     }
                     addNewMessageToRequestMessages(chat: chat, content: finalResponse, role: AppConstants.defaultRole)
                 }
-                ReasoningTimingStore.shared.finishStream(chatID: chat.id, messageID: completedMessageID)
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: completedMessageID)
                 
                 // Handle tool calls if any
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
@@ -663,7 +663,7 @@ final class MessageManager: ObservableObject {
                     WardenLog.streaming.debug("Partial response saved after cancellation")
                     #endif
                 }
-                ReasoningTimingStore.shared.finishStream(chatID: chat.id, messageID: partialMessageID)
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: partialMessageID)
                 
                 chat.waitingForResponse = false
                 self.streamingAssistantText = ""
@@ -671,7 +671,7 @@ final class MessageManager: ObservableObject {
             }
             catch {
                 WardenLog.streaming.error("Streaming error: \(error.localizedDescription, privacy: .public)")
-                ReasoningTimingStore.shared.finishStream(chatID: chat.id, messageID: nil)
+                ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: nil)
                 chat.waitingForResponse = false
                 self.streamingAssistantText = ""
                 completion(.failure(error))
