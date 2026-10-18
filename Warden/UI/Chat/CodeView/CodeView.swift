@@ -1,5 +1,4 @@
 
-import AttributedText
 import Highlightr
 import SwiftUI
 import os
@@ -20,6 +19,15 @@ struct CodeView: View {
     @State private var refreshTrigger = 0
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     @AppStorage("codeFont") private var codeFont: String = AppConstants.firaCode
+    @AppStorage("codeBlockShowLineNumbers") private var showLineNumbers = false
+    @AppStorage("codeBlockWrapLines") private var wrapLines = true
+    /// `nil` until the block is first shown finished: streaming blocks stay fully expanded until then.
+    @State private var isExpanded: Bool?
+    @State private var headerHeight: CGFloat = 0
+    @State private var stickyHeaderOffset: CGFloat = 0
+
+    /// Blocks with more lines than this start collapsed to this many lines of height.
+    static let collapsedLineLimit = 25
     
     enum DeviceType: String, CaseIterable {
         case desktop = "Desktop"
@@ -56,6 +64,7 @@ struct CodeView: View {
         self.lang = lang
         self.isStreaming = isStreaming
         self.suggestedFilename = suggestedFilename
+        _isExpanded = State(initialValue: isStreaming ? nil : false)
         _viewModel = StateObject(
             wrappedValue: CodeViewModel(
                 code: code,
@@ -78,24 +87,56 @@ struct CodeView: View {
         .animation(nil, value: code)
     }
     
+    private var lineCount: Int {
+        CodeBlockLines.count(in: code)
+    }
+
+    private var isCollapsible: Bool {
+        lineCount > Self.collapsedLineLimit
+    }
+
+    private var isCollapsed: Bool {
+        isCollapsible && isExpanded == false
+    }
+
+    private var displayedCode: NSAttributedString {
+        if let highlighted = viewModel.highlightedCode {
+            return highlighted
+        }
+        let font = NSFont(name: codeFont, size: chatFontSize - 1)
+            ?? NSFont.monospacedSystemFont(ofSize: chatFontSize - 1, weight: .regular)
+        return NSAttributedString(string: code, attributes: [.font: font, .foregroundColor: NSColor.textColor])
+    }
+
     private var codeBlockView: some View {
-        VStack(spacing: 0) {
+        // The header is overlaid rather than stacked so it can be pushed down to stay visible while the top
+        // of a tall block is scrolled out of view.
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: headerHeight)
+                codeTextView
+            }
+
             headerView
-            
-            if let highlighted = viewModel.highlightedCode {
-                AttributedText(highlighted)
-                    .textSelection(.enabled)
-                    .padding([.horizontal, .bottom], 16)
-                    .padding(.top, 12)
-            }
-            else {
-                Text(code)
-                    .textSelection(.enabled)
-                    .padding([.horizontal, .bottom], 16)
-                    .padding(.top, 12)
-                    .font(.custom(codeFont, size: chatFontSize - 1))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.height
+                } action: { height in
+                    headerHeight = height
+                }
+                .overlay(alignment: .bottom) {
+                    if stickyHeaderOffset > 0 {
+                        Divider()
+                    }
+                }
+                .offset(y: stickyHeaderOffset)
+        }
+        .onGeometryChange(for: CGFloat.self) { [headerHeight] proxy in
+            let frame = proxy.frame(in: .scrollView)
+            // Only stick for blocks that are tall enough that the header would otherwise be lost.
+            guard headerHeight > 0, frame.height > headerHeight * 4 else { return 0 }
+            return max(0, min(-frame.minY, frame.height - headerHeight * 2))
+        } action: { offset in
+            stickyHeaderOffset = offset
         }
         .background(codeBackground)
         .clipShape(RoundedRectangle(cornerRadius: showInlinePreview ? 12 : 12, style: .continuous))
@@ -128,6 +169,13 @@ struct CodeView: View {
         }
         .onAppear {
             updateHighlightedCode(colorScheme: colorScheme)
+        }
+        .onChange(of: isStreaming) { streaming in
+            // Collapse only once the reply has finished so streaming and auto-scroll are not disturbed,
+            // and never override an explicit expand.
+            if !streaming && isExpanded == nil {
+                isExpanded = false
+            }
         }
         .onChange(of: chatFontSize) { _ in
             Task { await HighlighterManager.shared.invalidateCache() }
@@ -324,8 +372,73 @@ struct CodeView: View {
         .padding(20)
     }
 
+    private var codeTextView: some View {
+        // Extra room for the "Show all" button that overlays the bottom of a collapsed block.
+        let collapsedTextHeight = CodeBlockTextView.lineHeight(for: displayedCode)
+            * CGFloat(Self.collapsedLineLimit) + 28
+
+        return VStack(spacing: 0) {
+            CodeBlockTextView(
+                attributedText: displayedCode,
+                showLineNumbers: showLineNumbers,
+                wrapLines: wrapLines,
+                maxTextHeight: isCollapsed ? collapsedTextHeight : nil
+            )
+            .overlay(alignment: .bottom) {
+                if isCollapsed {
+                    collapsedFooter
+                }
+            }
+
+            if isCollapsible && !isCollapsed && !isStreaming {
+                expandedFooter
+            }
+        }
+    }
+
+    private var collapsedFooter: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                colors: [codeBackground.opacity(0), codeBackground],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 56)
+            .allowsHitTesting(false)
+
+            Button(action: { setExpanded(true) }) {
+                Label("Show all \(lineCount) lines", systemImage: "chevron.down")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 10)
+            .background(codeBackground)
+        }
+    }
+
+    private var expandedFooter: some View {
+        Button(action: { setExpanded(false) }) {
+            Label("Show less", systemImage: "chevron.up")
+                .font(.system(size: 11, weight: .medium))
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.secondary)
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 10)
+    }
+
+    private func setExpanded(_ expanded: Bool) {
+        isExpanded = expanded
+    }
+
+    private var lineCountLabel: String {
+        lineCount == 1 ? "1 line" : "\(lineCount) lines"
+    }
+
     private var headerView: some View {
-        HStack {
+        HStack(spacing: 8) {
             if lang != "" {
                 HStack(spacing: 6) {
                     // Language icon/badge
@@ -348,8 +461,42 @@ struct CodeView: View {
                         .stroke(Color.blue.opacity(0.2), lineWidth: 0.5)
                 )
             }
+
+            Text(lineCountLabel)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .monospacedDigit()
             
             Spacer()
+
+            HStack(spacing: 4) {
+                headerIconButton(
+                    systemImage: "list.number",
+                    label: showLineNumbers ? "Hide line numbers" : "Show line numbers",
+                    isActive: showLineNumbers
+                ) {
+                    showLineNumbers.toggle()
+                }
+                headerIconButton(
+                    systemImage: "arrow.turn.down.left",
+                    label: wrapLines ? "Don't wrap long lines" : "Wrap long lines",
+                    isActive: wrapLines
+                ) {
+                    wrapLines.toggle()
+                }
+                if isCollapsible && !isStreaming {
+                    headerIconButton(
+                        systemImage: isCollapsed ? "rectangle.expand.vertical" : "rectangle.compress.vertical",
+                        label: isCollapsed ? "Show all \(lineCount) lines" : "Collapse code block",
+                        isActive: false
+                    ) {
+                        setExpanded(isCollapsed)
+                    }
+                }
+                headerIconButton(systemImage: "square.and.arrow.down", label: "Save to file…", isActive: false) {
+                    saveToFile()
+                }
+            }
 
             HStack(spacing: 8) {
                 if lang.lowercased() == "html" {
@@ -432,6 +579,53 @@ struct CodeView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .animation(.easeInOut(duration: 0.2), value: viewModel.isCopied)
+    }
+
+    private func headerIconButton(
+        systemImage: String,
+        label: String,
+        isActive: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(isActive ? .accentColor : .secondary)
+                .frame(width: 22, height: 20)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(isActive ? Color.accentColor.opacity(0.12) : Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
+    private func saveToFile() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = CodeBlockFile.suggestedName(suggestedFilename, language: lang)
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        let contents = CodeBlockFile.contents(of: code)
+
+        let completion: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try Data(contents.utf8).write(to: url, options: .atomic)
+            } catch {
+                WardenLog.app.error("Failed to save code block: \(error.localizedDescription, privacy: .public)")
+                let alert = NSAlert(error: error)
+                alert.runModal()
+            }
+        }
+
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            panel.begin(completionHandler: completion)
+        }
     }
 
     private var runButton: some View {
@@ -559,6 +753,322 @@ struct CodeView: View {
     private func zoomOut() {
         if zoomLevel > 0.5 {
             zoomLevel -= 0.25
+        }
+    }
+}
+
+// MARK: - Line counting
+
+enum CodeBlockLines {
+    /// Number of lines shown for `code`. A single trailing newline does not start a new line.
+    static func count(in code: String) -> Int {
+        lineStarts(in: code as NSString).count
+    }
+
+    /// UTF-16 offsets where each line of `string` begins.
+    static func lineStarts(in string: NSString) -> [Int] {
+        var starts = [0]
+        let length = string.length
+        var index = 0
+        while index < length {
+            let lineRange = string.lineRange(for: NSRange(location: index, length: 0))
+            let next = NSMaxRange(lineRange)
+            guard next > index, next < length else { break }
+            starts.append(next)
+            index = next
+        }
+        return starts
+    }
+}
+
+// MARK: - Saving
+
+enum CodeBlockFile {
+    private static let extensions: [String: String] = [
+        "python": "py", "py": "py",
+        "javascript": "js", "js": "js", "jsx": "jsx", "mjs": "mjs",
+        "typescript": "ts", "ts": "ts", "tsx": "tsx",
+        "swift": "swift",
+        "html": "html", "xml": "xml", "svg": "svg",
+        "css": "css", "scss": "scss", "sass": "sass", "less": "less",
+        "json": "json", "jsonc": "json", "yaml": "yaml", "yml": "yml", "toml": "toml", "ini": "ini",
+        "bash": "sh", "sh": "sh", "shell": "sh", "zsh": "zsh", "fish": "fish",
+        "powershell": "ps1", "ps1": "ps1", "bat": "bat", "cmd": "bat",
+        "markdown": "md", "md": "md",
+        "c": "c", "h": "h", "cpp": "cpp", "c++": "cpp", "cc": "cpp", "hpp": "hpp",
+        "objective-c": "m", "objc": "m", "objectivec": "m", "csharp": "cs", "c#": "cs", "cs": "cs",
+        "java": "java", "kotlin": "kt", "kt": "kt", "scala": "scala", "groovy": "groovy",
+        "go": "go", "golang": "go", "rust": "rs", "rs": "rs", "zig": "zig",
+        "ruby": "rb", "rb": "rb", "php": "php", "perl": "pl", "lua": "lua", "r": "r",
+        "dart": "dart", "elixir": "ex", "erlang": "erl", "haskell": "hs", "clojure": "clj",
+        "sql": "sql", "graphql": "graphql", "dockerfile": "Dockerfile", "makefile": "mk",
+        "vue": "vue", "svelte": "svelte", "tex": "tex", "latex": "tex", "diff": "diff", "csv": "csv",
+        "text": "txt", "plaintext": "txt", "txt": "txt",
+    ]
+
+    static func suggestedName(_ suggestedFilename: String?, language: String) -> String {
+        if let suggestedFilename {
+            let name = (suggestedFilename.trimmingCharacters(in: .whitespacesAndNewlines) as NSString)
+                .lastPathComponent
+            if !name.isEmpty {
+                return name
+            }
+        }
+        let ext = extensions[language.trimmingCharacters(in: .whitespaces).lowercased()] ?? "txt"
+        return "snippet.\(ext)"
+    }
+
+    /// The parser drops the newline that ends a fenced block's last line, so restore it to save the block's
+    /// exact content.
+    static func contents(of code: String) -> String {
+        code.isEmpty || code.hasSuffix("\n") ? code : code + "\n"
+    }
+}
+
+// MARK: - Code text view
+
+/// Selectable code text with an optional line-number gutter. The gutter is a separate view, so selecting
+/// and copying text never includes line numbers. When wrapping is off, long lines scroll horizontally.
+struct CodeBlockTextView: NSViewRepresentable {
+    static let contentInsets = NSEdgeInsets(top: 12, left: 16, bottom: 16, right: 16)
+
+    let attributedText: NSAttributedString
+    let showLineNumbers: Bool
+    let wrapLines: Bool
+    /// Clips the text to this height when set (used for collapsed blocks).
+    let maxTextHeight: CGFloat?
+
+    static func lineHeight(for attributedText: NSAttributedString) -> CGFloat {
+        let font = CodeBlockTextContainerView.font(of: attributedText)
+        return ceil(NSLayoutManager().defaultLineHeight(for: font))
+    }
+
+    func makeNSView(context: Context) -> CodeBlockTextContainerView {
+        CodeBlockTextContainerView()
+    }
+
+    func updateNSView(_ nsView: CodeBlockTextContainerView, context: Context) {
+        nsView.update(
+            attributedText: attributedText,
+            showLineNumbers: showLineNumbers,
+            wrapLines: wrapLines,
+            maxTextHeight: maxTextHeight
+        )
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: CodeBlockTextContainerView, context: Context) -> CGSize? {
+        let width = proposal.width ?? (nsView.bounds.width > 0 ? nsView.bounds.width : 400)
+        return CGSize(width: width, height: nsView.fittingHeight(forWidth: width))
+    }
+}
+
+final class CodeBlockTextContainerView: NSView {
+    private let textView = NSTextView(frame: .zero)
+    private let scrollView = CodeBlockHorizontalScrollView(frame: .zero)
+    private let gutterView = CodeBlockLineNumberGutterView(frame: .zero)
+
+    private var attributedText = NSAttributedString()
+    private var showLineNumbers = false
+    private var wrapLines = true
+    private var maxTextHeight: CGFloat?
+
+    private static let gutterSpacing: CGFloat = 12
+
+    override var isFlipped: Bool { true }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        clipsToBounds = true
+
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isRichText = true
+        textView.drawsBackground = false
+        textView.textContainerInset = .zero
+        textView.isVerticallyResizable = false
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = false
+        textView.textContainer?.heightTracksTextView = false
+
+        scrollView.documentView = textView
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.scrollerStyle = .overlay
+        scrollView.verticalScrollElasticity = .none
+
+        gutterView.textView = textView
+
+        addSubview(gutterView)
+        addSubview(scrollView)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    static func font(of attributedText: NSAttributedString) -> NSFont {
+        if attributedText.length > 0,
+           let font = attributedText.attribute(.font, at: 0, effectiveRange: nil) as? NSFont {
+            return font
+        }
+        return NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+    }
+
+    func update(attributedText: NSAttributedString, showLineNumbers: Bool, wrapLines: Bool, maxTextHeight: CGFloat?) {
+        if attributedText !== self.attributedText && !attributedText.isEqual(to: self.attributedText) {
+            self.attributedText = attributedText
+            textView.textStorage?.setAttributedString(attributedText)
+            gutterView.update(lineStarts: CodeBlockLines.lineStarts(in: attributedText.string as NSString),
+                              font: Self.font(of: attributedText))
+        }
+        if wrapLines != self.wrapLines {
+            self.wrapLines = wrapLines
+            scrollView.contentView.scroll(to: .zero)
+        }
+        self.showLineNumbers = showLineNumbers
+        self.maxTextHeight = maxTextHeight
+        gutterView.isHidden = !showLineNumbers
+        scrollView.hasHorizontalScroller = !wrapLines
+        scrollView.allowsHorizontalScrolling = !wrapLines
+        needsLayout = true
+        gutterView.needsDisplay = true
+    }
+
+    private struct Metrics {
+        var gutterWidth: CGFloat
+        var textX: CGFloat
+        var textWidth: CGFloat
+        var documentWidth: CGFloat
+        var textHeight: CGFloat
+        var visibleTextHeight: CGFloat
+    }
+
+    private func metrics(forWidth width: CGFloat) -> Metrics {
+        let insets = Self.contentInsetsValue
+        let gutterWidth = showLineNumbers ? gutterView.requiredWidth : 0
+        let textX = insets.left + (showLineNumbers ? gutterWidth + Self.gutterSpacing : 0)
+        let textWidth = max(width - textX - insets.right, 20)
+
+        guard let layoutManager = textView.layoutManager, let container = textView.textContainer else {
+            return Metrics(gutterWidth: gutterWidth, textX: textX, textWidth: textWidth, documentWidth: textWidth,
+                           textHeight: 0, visibleTextHeight: 0)
+        }
+
+        let containerWidth = wrapLines ? textWidth : CGFloat.greatestFiniteMagnitude
+        if container.size.width != containerWidth {
+            container.size = NSSize(width: containerWidth, height: CGFloat.greatestFiniteMagnitude)
+        }
+        layoutManager.ensureLayout(for: container)
+        let used = layoutManager.usedRect(for: container)
+        let textHeight = max(ceil(used.height), CodeBlockTextView.lineHeight(for: attributedText))
+        let documentWidth = wrapLines ? textWidth : max(textWidth, ceil(used.width))
+        let visibleTextHeight = maxTextHeight.map { min(textHeight, $0) } ?? textHeight
+
+        return Metrics(gutterWidth: gutterWidth, textX: textX, textWidth: textWidth, documentWidth: documentWidth,
+                       textHeight: textHeight, visibleTextHeight: visibleTextHeight)
+    }
+
+    private static var contentInsetsValue: NSEdgeInsets { CodeBlockTextView.contentInsets }
+
+    func fittingHeight(forWidth width: CGFloat) -> CGFloat {
+        let insets = Self.contentInsetsValue
+        let metrics = metrics(forWidth: width)
+        // A collapsed block ends at the clip edge; its footer overlay supplies the bottom spacing.
+        let bottom = maxTextHeight != nil && metrics.visibleTextHeight < metrics.textHeight ? 0 : insets.bottom
+        return ceil(insets.top + metrics.visibleTextHeight + bottom)
+    }
+
+    override func layout() {
+        super.layout()
+        let insets = Self.contentInsetsValue
+        let metrics = metrics(forWidth: bounds.width)
+
+        // The scroll view is given the full text height and clipped by this view, so it never scrolls
+        // vertically; vertical scrolling always belongs to the chat list.
+        scrollView.frame = NSRect(x: metrics.textX, y: insets.top, width: metrics.textWidth,
+                                  height: metrics.textHeight)
+        textView.frame = NSRect(x: 0, y: 0, width: metrics.documentWidth, height: metrics.textHeight)
+        gutterView.frame = NSRect(x: insets.left, y: insets.top, width: metrics.gutterWidth,
+                                  height: metrics.textHeight)
+        gutterView.needsDisplay = true
+    }
+}
+
+/// Draws a line number beside the first line fragment of each logical line, so numbers stay aligned
+/// when long lines wrap.
+final class CodeBlockLineNumberGutterView: NSView {
+    weak var textView: NSTextView?
+    private var lineStarts: [Int] = [0]
+    private var font = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+
+    override var isFlipped: Bool { true }
+
+    private var attributes: [NSAttributedString.Key: Any] {
+        [.font: font, .foregroundColor: NSColor.tertiaryLabelColor]
+    }
+
+    var requiredWidth: CGFloat {
+        let digits = max(String(lineStarts.count).count, 2)
+        return ceil((String(repeating: "8", count: digits) as NSString).size(withAttributes: attributes).width)
+    }
+
+    func update(lineStarts: [Int], font: NSFont) {
+        self.lineStarts = lineStarts
+        self.font = font
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let textView, let layoutManager = textView.layoutManager,
+              let textContainer = textView.textContainer else { return }
+        let length = textView.textStorage?.length ?? 0
+        let attributes = attributes
+        layoutManager.ensureLayout(for: textContainer)
+
+        for (index, start) in lineStarts.enumerated() {
+            let fragment: NSRect
+            if start < length {
+                let glyphIndex = layoutManager.glyphIndexForCharacter(at: start)
+                fragment = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil)
+            } else {
+                fragment = layoutManager.extraLineFragmentRect
+            }
+            if fragment.minY > dirtyRect.maxY { break }
+            guard fragment.maxY >= dirtyRect.minY else { continue }
+
+            let number = String(index + 1) as NSString
+            let size = number.size(withAttributes: attributes)
+            number.draw(at: NSPoint(x: bounds.width - size.width, y: fragment.minY), withAttributes: attributes)
+        }
+    }
+}
+
+/// Scrolls horizontally only, handing vertical scroll gestures to the enclosing chat list.
+final class CodeBlockHorizontalScrollView: NSScrollView {
+    var allowsHorizontalScrolling = false
+    private var forwardsCurrentGesture = true
+    private var gestureAxisKnown = false
+
+    override func scrollWheel(with event: NSEvent) {
+        if event.phase.contains(.began) || event.phase.contains(.mayBegin) {
+            gestureAxisKnown = false
+            forwardsCurrentGesture = true
+        }
+        let isDiscrete = event.phase.isEmpty && event.momentumPhase.isEmpty
+        // Latch the axis on the first movement so a gesture (and its momentum) stays with one scroll view.
+        if (isDiscrete || !gestureAxisKnown) && (event.scrollingDeltaX != 0 || event.scrollingDeltaY != 0) {
+            forwardsCurrentGesture = !allowsHorizontalScrolling
+                || abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX)
+            gestureAxisKnown = !isDiscrete
+        }
+        if forwardsCurrentGesture {
+            nextResponder?.scrollWheel(with: event)
+        } else {
+            super.scrollWheel(with: event)
         }
     }
 }
