@@ -30,6 +30,10 @@ struct ChatView: View {
     @State private var userIsScrolling = false
     @State private var scrollDebounceWorkItem: DispatchWorkItem?
     @State private var isNearBottom = true
+    /// Where the message content ends, in the scroll content's coordinates (reported by MessageListView).
+    @State private var contentEndY: CGFloat = .infinity
+    /// Latest scroll metrics, kept in a reference so scrolling itself doesn't re-render the chat.
+    @State private var scrollEdge = ScrollEdgeTracker()
     @State private var jumpToLatestRequest = 0
     
     @State private var messageBeingEdited: MessageEntity?
@@ -254,6 +258,17 @@ struct ChatView: View {
         }
     }
 
+    private func updateNearBottom() {
+        // Measured against the end of the messages, not the content size: the lazy stack only
+        // estimates its height, and the list's bottom padding sits below the last message.
+        let metrics = scrollEdge.metrics
+        let end = min(contentEndY, metrics.contentHeight)
+        let nearBottom = metrics.visibleMaxY >= end - 100
+        if nearBottom != isNearBottom {
+            isNearBottom = nearBottom
+        }
+    }
+
     // Hidden while auto-scroll is following the stream so it doesn't flicker as content grows.
     private var showJumpToLatest: Bool {
         !isNearBottom && (!isStreaming || userIsScrolling)
@@ -294,6 +309,7 @@ struct ChatView: View {
                             activeToolCalls: chatViewModel.messageManager?.activeToolCalls ?? [],
                             messageToolCalls: chatViewModel.messageManager?.messageToolCalls ?? [:],
                             userIsScrolling: $userIsScrolling,
+                            contentEndY: $contentEndY,
                             onRetryMessage: {
                                 // Retry logic: Find the last user message and re-send it
                                 let messages = chat.messagesArray.sorted { $0.id < $1.id }
@@ -411,18 +427,37 @@ struct ChatView: View {
                         }
                     }
                     .id("chatContainer")
+                    .coordinateSpace(.named(MessageListView.scrollContentSpace))
                 }
-                .onScrollGeometryChange(for: Bool.self) { geometry in
-                    // Generous threshold: scrolling to the last message leaves the list's bottom padding offscreen.
-                    geometry.visibleRect.maxY >= geometry.contentSize.height - 100
-                } action: { _, isAtBottom in
-                    isNearBottom = isAtBottom
+                .onScrollGeometryChange(for: ScrollEdgeTracker.Metrics.self) { geometry in
+                    ScrollEdgeTracker.Metrics(
+                        visibleMaxY: geometry.visibleRect.maxY,
+                        contentHeight: geometry.contentSize.height
+                    )
+                } action: { _, metrics in
+                    scrollEdge.metrics = metrics
+                    updateNearBottom()
+                }
+                // The end of the messages can move without the scroll position changing (e.g. when a
+                // finished response replaces the streaming bubble), so re-check when it does.
+                .onChange(of: contentEndY) { _, _ in
+                    updateNearBottom()
                 }
             }
         }
         .padding(.bottom, 0) // Remove extra padding as we handle it in ScrollView
         .background(.clear)
     }
+}
+
+/// Holds the last scroll metrics without being observed, so storing them doesn't trigger a re-render.
+private final class ScrollEdgeTracker {
+    struct Metrics: Equatable {
+        var visibleMaxY: CGFloat = 0
+        var contentHeight: CGFloat = 0
+    }
+
+    var metrics = Metrics()
 }
 
 private struct JumpToLatestButton: View {
