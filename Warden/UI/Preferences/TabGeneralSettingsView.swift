@@ -4,6 +4,7 @@ import os
 
 struct TabGeneralSettingsView: View {
     @AppStorage("chatFontSize") var chatFontSize: Double = 14.0
+    @AppStorage("expandReasoningByDefault") private var expandReasoningByDefault: Bool = false
     @AppStorage("preferredColorScheme") private var preferredColorSchemeRaw: Int = 0
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @AppStorage("showSidebarAIIcons") private var showSidebarAIIcons: Bool = true
@@ -87,6 +88,17 @@ struct TabGeneralSettingsView: View {
                                 .pickerStyle(.menu)
                                 .frame(width: 100)
                                 .labelsHidden()
+                            }
+                            
+                            SettingsDivider()
+                            
+                            SettingsRow(
+                                title: "Expand reasoning by default",
+                                subtitle: "Show a model's full thought process instead of a summary line"
+                            ) {
+                                Toggle("", isOn: $expandReasoningByDefault)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
                             }
                             
                             SettingsDivider()

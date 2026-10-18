@@ -173,7 +173,7 @@ struct MessageListView: View {
                     isLatestMessage: true
                 )
                 
-                ChatBubbleView(content: bubbleContent)
+                ChatBubbleView(content: bubbleContent, streamingChatID: chat.id)
                     .id("streaming_message")
                     .frame(maxWidth: viewWidth, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)

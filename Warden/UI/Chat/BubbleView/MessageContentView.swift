@@ -52,6 +52,7 @@ struct MessageContentView: View {
     let own: Bool
     let effectiveFontSize: Double
     let colorScheme: ColorScheme
+    let reasoningKey: ReasoningKey?
 
     @State private var showFullMessage = false
     @State private var isParsingFullMessage = false
@@ -70,12 +71,20 @@ struct MessageContentView: View {
 
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
 
-    init(message: String, isStreaming: Bool, own: Bool, effectiveFontSize: Double, colorScheme: ColorScheme) {
+    init(
+        message: String,
+        isStreaming: Bool,
+        own: Bool,
+        effectiveFontSize: Double,
+        colorScheme: ColorScheme,
+        reasoningKey: ReasoningKey? = nil
+    ) {
         self.message = message
         self.isStreaming = isStreaming
         self.own = own
         self.effectiveFontSize = effectiveFontSize
         self.colorScheme = colorScheme
+        self.reasoningKey = reasoningKey
 
         let shouldRenderPartial = message.count > AppConstants.largeMessageSymbolsThreshold && !message.containsAttachment
         if shouldRenderPartial {
@@ -279,8 +288,12 @@ struct MessageContentView: View {
     private func renderElement(_ element: MessageElements) -> some View {
         switch element {
         case .thinking(let content, _):
-            ThinkingProcessView(content: content)
-                .padding(.vertical, 4)
+            ThinkingProcessView(
+                content: content,
+                isThinking: isStreaming && !message.contains("</think>"),
+                timingKey: reasoningKey
+            )
+            .padding(.vertical, 4)
 
         case .text(let text):
             renderText(text)
