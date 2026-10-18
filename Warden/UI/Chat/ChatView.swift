@@ -75,7 +75,6 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     mainChatContent
                         .overlay(alignment: .bottom) { jumpToLatestOverlay }
-                    searchResultsPreview
                     chatComposer
                 }
                 .background(.clear)
@@ -198,17 +197,6 @@ struct ChatView: View {
             focusToken: composerFocusToken
         )
         .background(.clear)
-    }
-
-    @ViewBuilder
-    private var searchResultsPreview: some View {
-        if let sources = chatViewModel.messageManager?.lastSearchSources,
-           let query = chatViewModel.messageManager?.lastSearchQuery,
-           !sources.isEmpty {
-            SearchResultsPreviewView(sources: sources, query: query)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-        }
     }
 
     private var chatComposer: some View {
