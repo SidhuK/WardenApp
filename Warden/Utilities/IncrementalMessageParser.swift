@@ -86,8 +86,12 @@ class IncrementalMessageParser {
     /// Get all elements including pending block rendered as temporary.
     /// Use this for UI display during streaming.
     func getAllElements() -> [MessageElements] {
+        if let elements = elementsWithOpenThinkingTail() {
+            return elements
+        }
+
         var result = completedElements
-        
+
         // Add pending block as a temporary element
         if let pending = pendingBlock {
             if let element = renderPendingBlock(pending) {
@@ -109,6 +113,46 @@ class IncrementalMessageParser {
         return result
     }
     
+    /// While a `<think>` block is open, the partial line still streaming in belongs to the reasoning, so it must
+    /// not surface as answer text. Returns nil when no thinking block is open.
+    private func elementsWithOpenThinkingTail() -> [MessageElements]? {
+        guard !unparsedTail.isEmpty else { return nil }
+
+        var result = completedElements
+        var thinkingLines: [String]
+        var tail = unparsedTail
+        if case .thinking(let lines) = pendingBlock {
+            thinkingLines = lines
+        }
+        else if tail.trimmingCharacters(in: .whitespaces).hasPrefix("<think>") {
+            // The opening tag itself hasn't been terminated by a newline yet.
+            if let pending = pendingBlock, let element = renderPendingBlock(pending) {
+                result.append(element)
+            }
+            thinkingLines = []
+            tail = tail.replacingOccurrences(of: "<think>", with: "")
+        }
+        else {
+            return nil
+        }
+
+        var answerTail = ""
+        if let closeRange = tail.range(of: "</think>") {
+            answerTail = String(tail[closeRange.upperBound...])
+            tail = String(tail[..<closeRange.lowerBound])
+        }
+        thinkingLines.append(tail)
+
+        let combined = thinkingLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !combined.isEmpty {
+            result.append(.thinking(combined, isExpanded: false))
+        }
+        if !answerTail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            result.append(.text(answerTail))
+        }
+        return result
+    }
+
     /// Reset parser state for a new streaming session
     func reset() {
         completedElements = []
