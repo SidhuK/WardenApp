@@ -43,9 +43,16 @@ struct AgentResponseColumn: View {
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
     @State private var isExpanded = true
     @State private var isHovered = false
-    
+    @Environment(\.colorScheme) private var colorScheme
+
     private var serviceLogoName: String {
         "logo_\(response.serviceType)"
+    }
+
+    /// Human-readable model name, e.g. "anthropic/claude-sonnet-4.5" -> "Claude Sonnet 4.5".
+    private var modelDisplayName: String {
+        let displayName = ModelMetadata.formatModelComponents(modelId: response.model).displayName
+        return displayName.isEmpty ? response.model : displayName
     }
     
     var body: some View {
@@ -62,15 +69,19 @@ struct AgentResponseColumn: View {
                         .foregroundColor(.primary)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(response.serviceName)
-                            .font(.system(size: chatFontSize - 1, weight: .medium))
+                        Text(modelDisplayName)
+                            .font(.system(size: chatFontSize - 1, weight: .semibold))
                             .foregroundColor(.primary)
-                        
-                        Text(response.model)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+
+                        Text(response.serviceName)
                             .font(.system(size: chatFontSize - 3))
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
                 }
+                .help("\(response.model) via \(response.serviceName)")
                 
                 Spacer()
                 
@@ -108,11 +119,13 @@ struct AgentResponseColumn: View {
                         }
                         .padding(.vertical, 4)
                     } else if !response.response.isEmpty {
-                        Text(response.response)
-                            .font(.system(size: chatFontSize))
-                            .foregroundColor(.primary)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        AgentResponseMarkdownContent(
+                            text: response.response,
+                            isStreaming: !response.isComplete,
+                            fontSize: chatFontSize,
+                            colorScheme: colorScheme
+                        )
+                        .equatable()
                     } else if !response.isComplete {
                         Text("Waiting for response...")
                             .font(.system(size: chatFontSize))
@@ -169,7 +182,7 @@ struct AgentResponseColumn: View {
     }
     
     private var statusColor: Color {
-        if let error = response.error {
+        if response.error != nil {
             return .red
         } else if response.isComplete {
             return .green
@@ -183,7 +196,7 @@ struct AgentResponseColumn: View {
     }
     
     private var borderColor: Color {
-        if let _ = response.error {
+        if response.error != nil {
             return .red.opacity(0.3)
         } else if response.isComplete {
             return .green.opacity(0.3)
@@ -221,6 +234,28 @@ struct AgentResponseColumn: View {
     }
 }
 
+/// Renders a compare column's response through the same parsing/Markdown pipeline as normal assistant replies.
+/// Equatable so columns whose text hasn't changed skip re-parsing when a sibling column streams a new chunk.
+private struct AgentResponseMarkdownContent: View, Equatable {
+    let text: String
+    let isStreaming: Bool
+    let fontSize: Double
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        MessageContentView(
+            message: text,
+            isStreaming: isStreaming,
+            own: false,
+            effectiveFontSize: fontSize,
+            colorScheme: colorScheme
+        )
+        .foregroundColor(.primary)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 #Preview {
     MultiAgentResponseView(
         responses: [
@@ -236,8 +271,19 @@ struct AgentResponseColumn: View {
             MultiAgentMessageManager.AgentResponse(
                 serviceName: "Anthropic",
                 serviceType: "claude",
-                model: "claude-3-sonnet",
-                response: "Here's Claude's perspective on the question...",
+                model: "anthropic/claude-sonnet-4.5",
+                response: """
+                    ## Summary
+
+                    Here's **Claude's** perspective:
+
+                    - Point one
+                    - Uses `inline code`
+
+                    ```swift
+                    print("hi")
+                    ```
+                    """,
                 isComplete: false,
                 error: nil,
                 timestamp: Date()
