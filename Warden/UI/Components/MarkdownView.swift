@@ -11,6 +11,9 @@ struct MarkdownView: View {
     let effectiveFontSize: Double
     let own: Bool
     let colorScheme: ColorScheme
+    /// Web search sources of the message. Citation links to one of these render as numbered
+    /// superscripts with a hover card; without sources they stay plain links.
+    var searchSources: [SearchSource] = []
     
     private var textColor: Color {
         own ? .white : .primary
@@ -103,8 +106,39 @@ struct MarkdownView: View {
         let fullRange = NSRange(location: 0, length: mutableString.length)
         mutableString.addAttribute(.font, value: NSFont.systemFont(ofSize: effectiveFontSize), range: fullRange)
         mutableString.addAttribute(.foregroundColor, value: own ? NSColor.white : NSColor.textColor, range: fullRange)
+        // The base font/color above overwrite inline styling, so citations are re-styled afterwards.
+        mutableString.enumerateAttribute(.wardenCitationSourceIndex, in: fullRange) { value, range, _ in
+            if value != nil {
+                applyCitationStyle(to: mutableString, range: range)
+            }
+        }
         
         return mutableString
+    }
+
+    private func citationAttributedString(number: Int, sourceIndex: Int) -> NSAttributedString {
+        // Hair spaces pad the tinted background so the number reads as a small chip.
+        let citation = NSMutableAttributedString(string: "\u{200A}\(number)\u{200A}")
+        let range = NSRange(location: 0, length: citation.length)
+        citation.addAttribute(.wardenCitationSourceIndex, value: sourceIndex, range: range)
+        applyCitationStyle(to: citation, range: range)
+        return citation
+    }
+
+    private func applyCitationStyle(to string: NSMutableAttributedString, range: NSRange) {
+        let size = effectiveFontSize * 0.72
+        let baseFont = NSFont.systemFont(ofSize: size, weight: .semibold)
+        let font = baseFont.fontDescriptor.withDesign(.rounded).flatMap { NSFont(descriptor: $0, size: size) }
+            ?? baseFont
+        string.addAttributes(
+            [
+                .font: font,
+                .foregroundColor: NSColor.controlAccentColor,
+                .backgroundColor: NSColor.controlAccentColor.withAlphaComponent(0.14),
+                .baselineOffset: effectiveFontSize * 0.3,
+            ],
+            range: range
+        )
     }
     
     private func createAttributedTextForInline(_ markup: Markup) -> NSAttributedString {
@@ -137,6 +171,15 @@ struct MarkdownView: View {
         case let link as MarkdownLink:
             let text = extractPlainText(from: link.children)
             
+            if let destination = link.destination,
+               let sourceIndex = InlineCitations.sourceIndex(
+                   linkText: text,
+                   destination: destination,
+                   sources: searchSources
+               ) {
+                return citationAttributedString(number: sourceIndex + 1, sourceIndex: sourceIndex)
+            }
+
             if let destination = link.destination {
                 // Check if this is a citation link (numeric text with URL)
                 if let citationNumber = Int(text.trimmingCharacters(in: .whitespaces)) {
@@ -253,7 +296,7 @@ struct MarkdownView: View {
         case .paragraph(let attributedText):
             // Use AttributedText for proper link handling (clickable links)
             VStack(alignment: .leading) {
-                AttributedText(attributedText)
+                richText(attributedText)
             }
             .padding(.bottom, 4)
             
@@ -273,7 +316,7 @@ struct MarkdownView: View {
                         Text("•")
                             .foregroundColor(textColor)
                             .font(.system(size: effectiveFontSize))
-                        AttributedText(item)
+                        richText(item)
                             .textSelection(.enabled)
                         Spacer()
                     }
@@ -289,7 +332,7 @@ struct MarkdownView: View {
                         Text("\(index + 1).")
                             .foregroundColor(textColor)
                             .font(.system(size: effectiveFontSize))
-                        AttributedText(item)
+                        richText(item)
                             .textSelection(.enabled)
                         Spacer()
                     }
@@ -321,6 +364,16 @@ struct MarkdownView: View {
         }
     }
     
+    /// Text with resolved citations needs hover tracking, so only those blocks leave `AttributedText`.
+    @ViewBuilder
+    private func richText(_ attributedText: NSAttributedString) -> some View {
+        if attributedText.containsCitation {
+            CitationAttributedText(attributedText: attributedText, sources: searchSources)
+        } else {
+            AttributedText(attributedText)
+        }
+    }
+
     private func headingFontSize(for level: Int) -> Double {
         switch level {
         case 1: return effectiveFontSize + 8
@@ -376,3 +429,253 @@ private enum MarkdownElementType {
     case blockQuote(String)
     case thematicBreak
 } 
+
+// MARK: - Inline Citations
+
+extension NSAttributedString.Key {
+    /// Index into the message's web search sources for an inline citation number.
+    fileprivate static let wardenCitationSourceIndex = NSAttributedString.Key("WardenCitationSourceIndex")
+}
+
+extension NSAttributedString {
+    fileprivate var containsCitation: Bool {
+        var found = false
+        enumerateAttribute(.wardenCitationSourceIndex, in: NSRange(location: 0, length: length)) { value, _, stop in
+            if value != nil {
+                found = true
+                stop.pointee = true
+            }
+        }
+        return found
+    }
+}
+
+/// `AttributedText` replacement for blocks with inline citations: hovering a citation shows
+/// `SourceHoverCard` and clicking it opens the source. Sizing mirrors `AttributedText`.
+private struct CitationAttributedText: View {
+    let attributedText: NSAttributedString
+    let sources: [SearchSource]
+
+    @State private var textSize: CGSize?
+
+    var body: some View {
+        GeometryReader { geometry in
+            CitationTextRepresentable(
+                attributedText: attributedText,
+                sources: sources,
+                maxLayoutWidth: geometry.size.width - geometry.safeAreaInsets.leading
+                    - geometry.safeAreaInsets.trailing,
+                onSizeChange: { size in
+                    if textSize != size {
+                        textSize = size
+                    }
+                }
+            )
+        }
+        .frame(idealWidth: textSize?.width, idealHeight: textSize?.height)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct CitationTextRepresentable: NSViewRepresentable {
+    let attributedText: NSAttributedString
+    let sources: [SearchSource]
+    let maxLayoutWidth: CGFloat
+    let onSizeChange: (CGSize) -> Void
+
+    func makeNSView(context: Context) -> CitationTextView {
+        let textView = CitationTextView(frame: .zero)
+        textView.drawsBackground = false
+        textView.textContainerInset = .zero
+        textView.isEditable = false
+        textView.isRichText = false
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = false
+        textView.delegate = context.coordinator
+        return textView
+    }
+
+    func updateNSView(_ textView: CitationTextView, context: Context) {
+        if let storage = textView.textStorage, !storage.isEqual(to: attributedText) {
+            textView.closeHoverCard()
+            storage.setAttributedString(attributedText)
+        }
+        textView.sources = sources
+        textView.maxLayoutWidth = maxLayoutWidth
+        context.coordinator.openURL = context.environment.openURL
+
+        let size = textView.intrinsicContentSize
+        DispatchQueue.main.async {
+            onSizeChange(size)
+        }
+    }
+
+    static func dismantleNSView(_ textView: CitationTextView, coordinator: Coordinator) {
+        textView.closeHoverCard()
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var openURL: OpenURLAction?
+
+        func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+            guard let openURL,
+                  let url = (link as? URL) ?? (link as? String).flatMap(URL.init(string:))
+            else {
+                return false
+            }
+            openURL(url)
+            return true
+        }
+    }
+}
+
+private final class CitationTextView: NSTextView {
+    var sources: [SearchSource] = []
+
+    private var hoverTrackingArea: NSTrackingArea?
+    private var hoverCard: NSPopover?
+    private var hoveredRange: NSRange?
+    private var pendingHover: DispatchWorkItem?
+
+    var maxLayoutWidth: CGFloat {
+        get { textContainer?.containerSize.width ?? 0 }
+        set {
+            guard textContainer?.containerSize.width != newValue else { return }
+            textContainer?.containerSize.width = newValue
+            invalidateIntrinsicContentSize()
+        }
+    }
+
+    override var intrinsicContentSize: NSSize {
+        guard maxLayoutWidth > 0, let textContainer, let layoutManager else {
+            return super.intrinsicContentSize
+        }
+        layoutManager.ensureLayout(for: textContainer)
+        return layoutManager.usedRect(for: textContainer).size
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverTrackingArea {
+            removeTrackingArea(hoverTrackingArea)
+        }
+        let area = NSTrackingArea(
+            rect: .zero,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        hoverTrackingArea = area
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        let point = convert(event.locationInWindow, from: nil)
+        guard let hit = citation(at: point) else {
+            closeHoverCard()
+            return
+        }
+        NSCursor.pointingHand.set()
+        scheduleHoverCard(sourceIndex: hit.sourceIndex, range: hit.range)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        closeHoverCard()
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        closeHoverCard()
+        super.scrollWheel(with: event)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        if let hit = citation(at: point), let url = URL(string: sources[hit.sourceIndex].url) {
+            closeHoverCard()
+            NSWorkspace.shared.open(url)
+            return
+        }
+        super.mouseDown(with: event)
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        if newWindow == nil {
+            closeHoverCard()
+        }
+        super.viewWillMove(toWindow: newWindow)
+    }
+
+    func closeHoverCard() {
+        pendingHover?.cancel()
+        pendingHover = nil
+        hoveredRange = nil
+        hoverCard?.close()
+        hoverCard = nil
+    }
+
+    private func citation(at point: NSPoint) -> (sourceIndex: Int, range: NSRange)? {
+        guard let layoutManager, let textContainer, let textStorage, textStorage.length > 0 else {
+            return nil
+        }
+        let containerPoint = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+        let glyphIndex = layoutManager.glyphIndex(for: containerPoint, in: textContainer)
+        let glyphRect = layoutManager.boundingRect(
+            forGlyphRange: NSRange(location: glyphIndex, length: 1),
+            in: textContainer
+        )
+        guard glyphRect.insetBy(dx: -1, dy: -2).contains(containerPoint) else { return nil }
+
+        let characterIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+        guard characterIndex < textStorage.length else { return nil }
+        var range = NSRange()
+        guard let sourceIndex = textStorage.attribute(
+            .wardenCitationSourceIndex,
+            at: characterIndex,
+            longestEffectiveRange: &range,
+            in: NSRange(location: 0, length: textStorage.length)
+        ) as? Int,
+            sources.indices.contains(sourceIndex)
+        else {
+            return nil
+        }
+        return (sourceIndex, range)
+    }
+
+    private func scheduleHoverCard(sourceIndex: Int, range: NSRange) {
+        guard hoveredRange != range else { return }
+        closeHoverCard()
+        hoveredRange = range
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.showHoverCard(sourceIndex: sourceIndex, range: range)
+        }
+        pendingHover = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+    }
+
+    private func showHoverCard(sourceIndex: Int, range: NSRange) {
+        guard window != nil, hoveredRange == range, sources.indices.contains(sourceIndex),
+              let layoutManager, let textContainer
+        else {
+            return
+        }
+        let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+        let anchor = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            .offsetBy(dx: textContainerOrigin.x, dy: textContainerOrigin.y)
+
+        let popover = NSPopover()
+        popover.behavior = .applicationDefined
+        popover.animates = false
+        popover.contentViewController = NSHostingController(
+            rootView: SourceHoverCard(number: sourceIndex + 1, source: sources[sourceIndex])
+        )
+        popover.show(relativeTo: anchor, of: self, preferredEdge: .minY)
+        hoverCard = popover
+    }
+}

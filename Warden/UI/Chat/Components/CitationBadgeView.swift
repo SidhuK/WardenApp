@@ -52,65 +52,6 @@ struct CitationBadgeView: View {
     }
 }
 
-// MARK: - Inline Citation Link (for use in markdown text)
-
-struct InlineCitationView: View {
-    let number: Int
-    let url: String
-    let isOwn: Bool
-    
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: {
-            if let url = URL(string: url) {
-                NSWorkspace.shared.open(url)
-            }
-        }) {
-            Text("\(number)")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundColor(textColor)
-                .frame(width: 16, height: 16)
-                .background(
-                    Circle()
-                        .fill(backgroundColor)
-                )
-                .overlay(
-                    Circle()
-                        .stroke(borderColor, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-        .cursor(.pointingHand)
-    }
-    
-    private var textColor: Color {
-        if isOwn {
-            return isHovered ? .white : .white.opacity(0.9)
-        }
-        return isHovered ? .white : .accentColor
-    }
-    
-    private var backgroundColor: Color {
-        if isOwn {
-            return isHovered ? Color.white.opacity(0.4) : Color.white.opacity(0.25)
-        }
-        return isHovered ? Color.accentColor : Color.accentColor.opacity(0.12)
-    }
-    
-    private var borderColor: Color {
-        if isOwn {
-            return Color.white.opacity(isHovered ? 0.5 : 0.3)
-        }
-        return Color.accentColor.opacity(isHovered ? 0 : 0.25)
-    }
-}
-
 // MARK: - Source Hover Card
 
 /// Preview card for a web search source, shared by the source chips under a reply and
@@ -194,15 +135,6 @@ struct CitationBadgeView_Previews: PreviewProvider {
                     sourceTitle: "A Very Long Article Title"
                 )
             }
-            
-            // Inline versions
-            HStack(spacing: 4) {
-                Text("According to recent studies")
-                InlineCitationView(number: 1, url: "https://example.com", isOwn: false)
-                Text("AI has advanced significantly")
-                InlineCitationView(number: 2, url: "https://example.com", isOwn: false)
-            }
-            .font(.system(size: 14))
         }
         .padding()
     }
