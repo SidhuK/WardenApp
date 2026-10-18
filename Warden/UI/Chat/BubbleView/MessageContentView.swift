@@ -1,5 +1,6 @@
 import Foundation
 import AttributedText
+import CoreData
 import SwiftUI
 import os
 
@@ -68,6 +69,9 @@ struct MessageContentView: View {
     @State private var fullParseTask: Task<Void, Never>?
     @State private var truncatedParseTask: Task<Void, Never>?
     @State private var parsingActor = MessageParsingActor()
+    @State private var searchSources: [SearchSource] = []
+
+    @Environment(\.managedObjectContext) private var viewContext
 
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
 
@@ -130,6 +134,39 @@ struct MessageContentView: View {
             truncatedParseTask?.cancel()
             fullParseTask?.cancel()
         }
+        .task(id: SearchSourcesLookup(reasoningKey: reasoningKey, isStreaming: isStreaming)) {
+            resolveSearchSources()
+        }
+    }
+
+    /// Loads the web search sources of the persisted message so inline citations can match the source chips.
+    /// Citations are only linked once a reply is final, so streaming and unsaved replies are skipped.
+    private func resolveSearchSources() {
+        guard !own, !isStreaming,
+              let reasoningKey, let messageID = reasoningKey.messageID,
+              message.contains("](")
+        else {
+            if !searchSources.isEmpty { searchSources = [] }
+            return
+        }
+
+        let request = NSFetchRequest<MessageEntity>(entityName: "MessageEntity")
+        request.predicate = NSPredicate(
+            format: "chat.id == %@ AND id == %lld",
+            reasoningKey.chatID as CVarArg,
+            messageID
+        )
+        request.fetchLimit = 1
+        do {
+            let sources = try viewContext.fetch(request).first?.searchMetadata?.sources ?? []
+            if sources != searchSources {
+                searchSources = sources
+            }
+        } catch {
+            WardenLog.coreData.error(
+                "Failed to load search sources: \(error.localizedDescription, privacy: .public)"
+            )
+        }
     }
 
     private func containsImageData(_ message: String) -> Bool {
@@ -140,7 +177,10 @@ struct MessageContentView: View {
     private func renderPartialContent() -> some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(truncatedParsedElements.indices, id: \.self) { index in
-                renderElement(truncatedParsedElements[index])
+                renderElement(
+                    truncatedParsedElements[index],
+                    previous: previousElement(in: truncatedParsedElements, before: index)
+                )
             }
 
             HStack(spacing: 8) {
@@ -181,8 +221,15 @@ struct MessageContentView: View {
     @ViewBuilder
     private func renderFullContent() -> some View {
         ForEach(fullParsedElements.indices, id: \.self) { index in
-            renderElement(fullParsedElements[index])
+            renderElement(
+                fullParsedElements[index],
+                previous: previousElement(in: fullParsedElements, before: index)
+            )
         }
+    }
+
+    private func previousElement(in elements: [MessageElements], before index: Int) -> MessageElements? {
+        index > 0 && index - 1 < elements.count ? elements[index - 1] : nil
     }
 
     private func refreshParsedElements(force: Bool = false) {
@@ -285,7 +332,7 @@ struct MessageContentView: View {
     }
     
     @ViewBuilder
-    private func renderElement(_ element: MessageElements) -> some View {
+    private func renderElement(_ element: MessageElements, previous: MessageElements?) -> some View {
         switch element {
         case .thinking(let content, _):
             ThinkingProcessView(
@@ -303,7 +350,17 @@ struct MessageContentView: View {
                 .padding()
 
         case .code(let code, let lang, let indent):
-            renderCode(code: code, lang: lang, indent: indent, isStreaming: isStreaming)
+            let precedingText: String? = {
+                if case .text(let text) = previous { return text }
+                return nil
+            }()
+            renderCode(
+                code: code,
+                lang: lang,
+                indent: indent,
+                isStreaming: isStreaming,
+                suggestedFilename: CodeBlockFilename.infer(code: code, precedingText: precedingText)
+            )
 
         case .formula(let formula):
             if isStreaming {
@@ -382,7 +439,8 @@ struct MessageContentView: View {
                 markdownText: text,
                 effectiveFontSize: effectiveFontSize,
                 own: own,
-                colorScheme: colorScheme
+                colorScheme: colorScheme,
+                searchSources: searchSources
             )
         } else {
             // Fallback to the original method for simple text
@@ -521,8 +579,14 @@ struct MessageContentView: View {
     }
 
     @ViewBuilder
-    private func renderCode(code: String, lang: String, indent: Int, isStreaming: Bool) -> some View {
-        CodeView(code: code, lang: lang, isStreaming: isStreaming)
+    private func renderCode(
+        code: String,
+        lang: String,
+        indent: Int,
+        isStreaming: Bool,
+        suggestedFilename: String?
+    ) -> some View {
+        CodeView(code: code, lang: lang, isStreaming: isStreaming, suggestedFilename: suggestedFilename)
             .padding(.bottom, 8)
             .padding(.leading, CGFloat(indent) * 4)
             .onAppear {
@@ -608,4 +672,138 @@ struct MessageContentView: View {
         .padding(.bottom, 4)
     }
 
+}
+
+private struct SearchSourcesLookup: Equatable {
+    let reasoningKey: ReasoningKey?
+    let isStreaming: Bool
+}
+
+// MARK: - Code Block Filename
+
+/// Infers the filename a reply gives a code block, for the code block's Save… suggestion.
+enum CodeBlockFilename {
+    private static let knownExtensions: Set<String> = [
+        "asm", "bash", "bat", "c", "cc", "cfg", "cjs", "clj", "cmake", "conf", "cpp", "cs", "css", "csv", "cxx",
+        "dart", "diff", "env", "erl", "ex", "exs", "fish", "fs", "gd", "go", "gradle", "graphql", "h", "hh",
+        "hpp", "hs", "htm", "html", "ini", "ipynb", "java", "jl", "js", "json", "jsonc", "jsx", "kt", "kts",
+        "less", "lua", "m", "md", "mjs", "mm", "nim", "nix", "patch", "php", "pl", "plist", "pm", "proto", "ps1",
+        "py", "r", "rb", "rs", "sass", "scala", "scss", "sh", "sol", "sql", "svelte", "svg", "swift", "tex",
+        "tf", "toml", "ts", "tsv", "tsx", "txt", "vb", "vue", "xml", "yaml", "yml", "zig", "zsh",
+    ]
+
+    private static let knownBareNames: Set<String> = [
+        ".bashrc", ".editorconfig", ".env", ".gitignore", ".zshrc", "Brewfile", "Dockerfile", "Gemfile",
+        "Makefile", "Procfile", "Rakefile", "Vagrantfile",
+    ]
+
+    /// Library names that look like filenames in prose ("built with `next.js`").
+    private static let libraryNames: Set<String> = [
+        "alpine.js", "angular.js", "backbone.js", "chart.js", "d3.js", "ember.js", "express.js", "next.js",
+        "node.js", "nuxt.js", "p5.js", "react.js", "socket.io", "three.js", "vue.js",
+    ]
+
+    private static let commentPrefixes = ["<!--", "//", "/*", "--", "#", ";", "%"]
+    private static let labelPrefixes = ["filename:", "file name:", "file:", "path:"]
+    private static let markupRegex = try? NSRegularExpression(pattern: "`([^`]+)`|\\*\\*([^*]+)\\*\\*|__([^_]+)__")
+
+    /// A filename named in the first-line comment of `code` (`# solve.py`, `// File: main.swift`), or else
+    /// in the last line of text before the block (`**main.swift**`, `### solve.py`, ``Save as `solve.py`:``).
+    /// Returns nil unless exactly one plausible filename is found.
+    static func infer(code: String, precedingText: String?) -> String? {
+        if let filename = filenameInFirstLineComment(of: code) {
+            return filename
+        }
+        guard let precedingText else { return nil }
+        return filenameInLastLine(of: precedingText)
+    }
+
+    /// The last path component of `candidate` if it looks like a real filename, otherwise nil.
+    static func validatedFilename(_ candidate: String) -> String? {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, trimmed.count <= 120,
+              !trimmed.contains(where: { $0.isWhitespace }),
+              !trimmed.contains("://"), !trimmed.lowercased().hasPrefix("www."),
+              !trimmed.contains("\\")
+        else {
+            return nil
+        }
+
+        let components = trimmed.split(separator: "/", omittingEmptySubsequences: false)
+        guard let last = components.last.map(String.init), !last.isEmpty,
+              !components.contains(where: { $0 == ".." })
+        else {
+            return nil
+        }
+
+        if knownBareNames.contains(last) {
+            return last
+        }
+
+        let nameCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-.+"))
+        guard last.unicodeScalars.allSatisfy({ nameCharacters.contains($0) }),
+              let dotIndex = last.lastIndex(of: "."),
+              dotIndex != last.startIndex
+        else {
+            return nil
+        }
+        let ext = last[last.index(after: dotIndex)...].lowercased()
+        guard knownExtensions.contains(ext), !libraryNames.contains(last.lowercased()) else { return nil }
+        return last
+    }
+
+    private static func filenameInFirstLineComment(of code: String) -> String? {
+        guard let firstLine = code.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first
+        else {
+            return nil
+        }
+        var line = firstLine.trimmingCharacters(in: .whitespaces)
+        guard !line.hasPrefix("#!"),
+              let prefix = commentPrefixes.first(where: { line.hasPrefix($0) })
+        else {
+            return nil
+        }
+        line = String(line.dropFirst(prefix.count))
+        for suffix in ["-->", "*/"] where line.hasSuffix(suffix) {
+            line = String(line.dropLast(suffix.count))
+        }
+        return validatedFilename(strippingLabel(from: line))
+    }
+
+    private static func filenameInLastLine(of text: String) -> String? {
+        guard let lastLine = text.split(separator: "\n").last(where: {
+            !$0.trimmingCharacters(in: .whitespaces).isEmpty
+        })
+        else {
+            return nil
+        }
+        let line = String(lastLine)
+        var candidates: [String] = []
+
+        if let regex = markupRegex {
+            let nsLine = line as NSString
+            for match in regex.matches(in: line, range: NSRange(location: 0, length: nsLine.length)) {
+                for group in 1..<match.numberOfRanges where match.range(at: group).location != NSNotFound {
+                    candidates.append(nsLine.substring(with: match.range(at: group)))
+                }
+            }
+        }
+
+        // A line that is only the filename, e.g. a heading `### solve.py` or `solve.py:`.
+        var bare = line.trimmingCharacters(in: .whitespaces)
+        while bare.hasPrefix("#") { bare.removeFirst() }
+        bare = bare.trimmingCharacters(in: CharacterSet(charactersIn: " *_`:"))
+        candidates.append(strippingLabel(from: bare))
+
+        let filenames = Set(candidates.compactMap { validatedFilename(strippingLabel(from: $0)) })
+        return filenames.count == 1 ? filenames.first : nil
+    }
+
+    private static func strippingLabel(from text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        for label in labelPrefixes where trimmed.lowercased().hasPrefix(label) {
+            return String(trimmed.dropFirst(label.count)).trimmingCharacters(in: .whitespaces)
+        }
+        return trimmed
+    }
 }

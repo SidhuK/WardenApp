@@ -299,3 +299,56 @@ final class SSEStreamParserEdgeCaseTests: XCTestCase {
         XCTAssertEqual(events, ["{\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}", "[DONE]"])
     }
 }
+
+final class CodeBlockFilenameTests: XCTestCase {
+    func testFirstLineCommentNamesFile() {
+        XCTAssertEqual(CodeBlockFilename.infer(code: "# solve.py\nprint(1)", precedingText: nil), "solve.py")
+        XCTAssertEqual(CodeBlockFilename.infer(code: "// main.swift\nlet x = 1", precedingText: nil), "main.swift")
+        XCTAssertEqual(CodeBlockFilename.infer(code: "// File: App.tsx\n", precedingText: nil), "App.tsx")
+        XCTAssertEqual(CodeBlockFilename.infer(code: "<!-- index.html -->\n<p></p>", precedingText: nil), "index.html")
+        XCTAssertEqual(CodeBlockFilename.infer(code: "/* styles.css */\nbody {}", precedingText: nil), "styles.css")
+        XCTAssertEqual(CodeBlockFilename.infer(code: "-- schema.sql\nSELECT 1;", precedingText: nil), "schema.sql")
+    }
+
+    func testFirstLineCommentWithoutFilenameIsIgnored() {
+        XCTAssertNil(CodeBlockFilename.infer(code: "# Install dependencies\npip install x", precedingText: nil))
+        XCTAssertNil(CodeBlockFilename.infer(code: "#!/usr/bin/env python3\nprint(1)", precedingText: nil))
+        XCTAssertNil(CodeBlockFilename.infer(code: "print(1)", precedingText: nil))
+    }
+
+    func testCodeCommentWinsOverPrecedingText() {
+        XCTAssertEqual(
+            CodeBlockFilename.infer(code: "# solve.py\nprint(1)", precedingText: "**other.py**"),
+            "solve.py"
+        )
+    }
+
+    func testPrecedingTextNamesFile() {
+        let code = "let x = 1"
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "**main.swift**"), "main.swift")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "### solve.py"), "solve.py")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "### `solve.py`"), "solve.py")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "Save this as `solve.py`:"), "solve.py")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "Intro.\n\nsolve.py:\n"), "solve.py")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "Create `src/app/main.rs`:"), "main.rs")
+        XCTAssertEqual(CodeBlockFilename.infer(code: code, precedingText: "**Dockerfile**"), "Dockerfile")
+    }
+
+    func testOnlyLastLineOfPrecedingTextCounts() {
+        XCTAssertNil(CodeBlockFilename.infer(code: "x", precedingText: "**main.swift**\n\nHere is the code:"))
+    }
+
+    func testRejectsImplausibleNames() {
+        let code = "x"
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "Here is the code for solve.py:"))
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "See `https://example.com/a.py`"))
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "Built with `node.js`:"))
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "**Example 1.2**"))
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "Use `foo.bar` here"))
+        XCTAssertNil(CodeBlockFilename.infer(code: code, precedingText: "Compare `a.py` and `b.py`:"))
+        XCTAssertNil(CodeBlockFilename.validatedFilename("../etc/passwd.txt"))
+        XCTAssertNil(CodeBlockFilename.validatedFilename("my file.py"))
+        XCTAssertNil(CodeBlockFilename.validatedFilename(".py"))
+        XCTAssertEqual(CodeBlockFilename.validatedFilename("docker-compose.yml"), "docker-compose.yml")
+    }
+}
