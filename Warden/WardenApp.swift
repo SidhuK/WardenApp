@@ -116,6 +116,8 @@ struct WardenApp: App {
         DatabasePatcher.applyPatches(context: persistenceController.container.viewContext)
         DatabasePatcher.migrateExistingConfiguration(context: persistenceController.container.viewContext)
 
+        PastedTextFiles.removeLeftovers()
+
         // Initialize automatic updates
         _ = UpdaterManager.shared
     }

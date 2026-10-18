@@ -28,6 +28,8 @@ final class ReasoningTimingStore: ObservableObject {
 
     @Published private var timings: [ReasoningKey: Timing] = [:]
     @Published private var expansion: [ReasoningKey: Bool] = [:]
+    /// UTF-8 length of the live stream already searched for the closing tag, per chat. Not published.
+    private var closeTagScanOffsets: [UUID: Int] = [:]
 
     private static let openTag = "<think>"
     private static let closeTag = "</think>"
@@ -48,6 +50,7 @@ final class ReasoningTimingStore: ObservableObject {
 
     /// Clears any leftover live state before a new response starts streaming in the chat.
     func beginStream(chatID: UUID) {
+        closeTagScanOffsets[chatID] = nil
         let key = ReasoningKey.live(chatID: chatID)
         if timings[key] != nil {
             timings[key] = nil
@@ -61,17 +64,29 @@ final class ReasoningTimingStore: ObservableObject {
     func streamDidUpdate(chatID: UUID, text: String) {
         let key = ReasoningKey.live(chatID: chatID)
         if let timing = timings[key] {
-            guard timing.end == nil, text.contains(Self.closeTag) else { return }
+            guard timing.end == nil, streamContainsCloseTag(chatID: chatID, text: text) else { return }
             timings[key]?.end = Date()
         }
         else if text.prefix(Self.openTagSearchWindow).contains(Self.openTag) {
             let now = Date()
-            timings[key] = Timing(start: now, end: text.contains(Self.closeTag) ? now : nil)
+            timings[key] = Timing(start: now, end: streamContainsCloseTag(chatID: chatID, text: text) ? now : nil)
         }
+    }
+
+    /// Searches only the text appended since the last call, backing up by one tag length so a closing tag
+    /// split across chunks is still found. Falls back to a full scan if the text shrank.
+    private func streamContainsCloseTag(chatID: UUID, text: String) -> Bool {
+        let utf8 = text.utf8
+        let scanned = closeTagScanOffsets[chatID] ?? 0
+        let start = scanned <= utf8.count ? max(0, scanned - (Self.closeTag.utf8.count - 1)) : 0
+        closeTagScanOffsets[chatID] = utf8.count
+        let tail = utf8[utf8.index(utf8.startIndex, offsetBy: start)...]
+        return tail.firstRange(of: Self.closeTag.utf8) != nil
     }
 
     /// Ends the live reasoning phase and hands its timing and expansion state to the persisted message.
     func finishStream(chatID: UUID, messageID: Int64?) {
+        closeTagScanOffsets[chatID] = nil
         let liveKey = ReasoningKey.live(chatID: chatID)
         let liveTiming = timings.removeValue(forKey: liveKey)
         let liveExpansion = expansion.removeValue(forKey: liveKey)

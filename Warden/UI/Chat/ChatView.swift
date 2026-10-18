@@ -594,11 +594,13 @@ extension ChatView {
         }
     }
 
-    private func prepareMessageBody(clearInput: Bool) -> String {
+    /// `textSnapshot` overrides the composer text when the caller already captured (and cleared) it.
+    private func prepareMessageBody(clearInput: Bool, textSnapshot: String? = nil) -> String {
+        let text = textSnapshot ?? composerState.text
         var messageContents: [MessageContent] = []
-        
-        if !composerState.text.isEmpty {
-            messageContents.append(MessageContent(text: composerState.text))
+
+        if !text.isEmpty {
+            messageContents.append(MessageContent(text: text))
         }
 
         for attachment in composerState.attachedImages {
@@ -615,11 +617,14 @@ extension ChatView {
         if !composerState.attachedImages.isEmpty || !composerState.attachedFiles.isEmpty {
             messageBody = messageContents.toString()
         } else {
-            messageBody = composerState.text
+            messageBody = text
         }
         
         if clearInput {
-            composerState.text = ""
+            // With a snapshot the text was already cleared; keep anything typed since.
+            if textSnapshot == nil {
+                composerState.text = ""
+            }
             composerState.attachedImages = []
             composerState.attachedFiles = []
         }
@@ -633,6 +638,13 @@ extension ChatView {
             ?? chat.apiService?.type.flatMap(ProviderID.init(normalizing:))
         let capabilities = providerID.map { ProviderAttachmentCapabilities.forProvider($0) }
 
+        // Clear the text before waiting on attachments, so a chat switch during the wait cannot flush the
+        // already-sent text back as this chat's draft.
+        let text = composerState.text
+        if clearInput {
+            composerState.text = ""
+        }
+
         for attachment in composerState.attachedImages {
             await attachment.waitForLoad()
         }
@@ -644,7 +656,7 @@ extension ChatView {
                 await attachment.waitForLoad()
             }
         }
-        return prepareMessageBody(clearInput: clearInput)
+        return prepareMessageBody(clearInput: clearInput, textSnapshot: text)
     }
 
     private func saveNewMessageInStore(with messageBody: String) {

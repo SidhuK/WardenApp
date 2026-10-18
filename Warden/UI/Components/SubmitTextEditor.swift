@@ -157,7 +157,9 @@ private final class SubmitAwareTextView: NSTextView {
         let nonTextTypes: [NSPasteboard.PasteboardType] = [.fileURL, .tiff, .png, .pdf]
         if pasteboard.availableType(from: nonTextTypes) != nil { return false }
 
+        // Attachments truncate their text past the extraction cap, so oversized pastes go in as plain text.
         guard let string = pasteboard.string(forType: .string),
+              string.count <= FileAttachment.maxExtractedTextCharacters,
               string.lineCount > longPasteLineThreshold
         else { return false }
 
