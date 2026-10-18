@@ -11,65 +11,109 @@ struct ComposerState {
     var isMultiAgentMode: Bool = false
     var selectedMultiAgentServices: [APIServiceEntity] = []
     var showServiceSelector: Bool = false
-    /// Chat whose `newMessage` draft `text` is persisted to (see `persistsComposerDraft`).
-    var draftChat: ChatEntity?
+    /// ID of the chat whose `newMessage` draft `text` belongs to (see `persistsComposerDraft`).
+    var draftChatID: UUID?
 }
 
 // MARK: - Draft Persistence
 
 /// Keeps the composer text in `ChatEntity.newMessage` so a half-written prompt survives chat switches and relaunches.
-/// Saves are debounced while typing and flushed immediately on disappear, chat change, send (text cleared) and quit.
+/// Saves are debounced while typing and flushed on disappear, send (text cleared) and quit.
+///
+/// During a chat switch the parent can briefly render the outgoing composer state with the incoming chat
+/// before replacing the view. The text therefore stays owned by `state.draftChatID`, and the composer state
+/// is only written when a fresh composer appears or, on the next run loop turn, if this view is still attached.
 private struct ComposerDraftPersistence: ViewModifier {
     let chat: ChatEntity
     @Binding var state: ComposerState
+
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var lifetime = DraftViewLifetime()
 
     private static let debounceInterval: Duration = .milliseconds(500)
 
     func body(content: Content) -> some View {
         content
-            .onAppear { bindToChat() }
-            .onChange(of: chat.id) { _, _ in bindToChat() }
+            .onAppear {
+                lifetime.isAttached = true
+                if state.draftChatID == nil {
+                    load(chat)
+                }
+            }
+            .onDisappear {
+                lifetime.isAttached = false
+                flush(deferred: true)
+            }
+            .onChange(of: chat.objectID) { _, _ in
+                let lifetime = lifetime
+                DispatchQueue.main.async {
+                    guard lifetime.isAttached else { return }
+                    rebindIfNeeded()
+                }
+            }
             .onChange(of: state.text) { _, newValue in
                 // Sending clears the composer; persist that right away so a stale draft never comes back.
-                if newValue.isEmpty { flush() }
+                if newValue.isEmpty { flush(deferred: true) }
             }
             .task(id: state.text) {
                 try? await Task.sleep(for: Self.debounceInterval)
                 guard !Task.isCancelled else { return }
-                flush()
+                flush(deferred: false)
             }
-            .onDisappear { flush() }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-                flush()
+                flush(deferred: false)
             }
     }
 
-    /// The text is owned by `state.draftChat`, not by whichever chat this view currently shows: during a
-    /// chat switch the parent can briefly render the old composer state with the new chat.
-    private func bindToChat() {
-        guard state.draftChat != chat else { return }
-        let isFreshState = state.draftChat == nil
-        flush()
-        state.draftChat = chat
-        if !isFreshState || state.text.isEmpty {
-            state.text = chat.newMessage ?? ""
+    private func load(_ chat: ChatEntity) {
+        guard !chat.isDeleted, chat.managedObjectContext != nil else { return }
+        state.draftChatID = chat.id
+        if state.text.isEmpty, let draft = chat.newMessage, !draft.isEmpty {
+            state.text = draft
         }
     }
 
-    private func flush() {
-        guard let owner = state.draftChat,
-              !owner.isDeleted,
-              let context = owner.managedObjectContext,
-              (owner.newMessage ?? "") != state.text
-        else { return }
+    /// Only reached when the same view stays on screen with a different chat.
+    private func rebindIfNeeded() {
+        guard !chat.isDeleted, chat.managedObjectContext != nil, state.draftChatID != chat.id else { return }
+        flush(deferred: false)
+        state.text = ""
+        load(chat)
+    }
 
-        owner.newMessage = state.text
+    /// Writes the current text to the owning chat. Deferred saves run after the current SwiftUI update so
+    /// Core Data notifications never fire while views are being inserted or torn down.
+    private func flush(deferred: Bool) {
+        guard let ownerID = state.draftChatID else { return }
+        let text = state.text
+        let context = viewContext
+        if deferred {
+            DispatchQueue.main.async {
+                Self.saveDraft(text, toChatWithID: ownerID, in: context)
+            }
+        } else {
+            Self.saveDraft(text, toChatWithID: ownerID, in: context)
+        }
+    }
+
+    private static func saveDraft(_ text: String, toChatWithID id: UUID, in context: NSManagedObjectContext) {
+        let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
         do {
+            guard let owner = try context.fetch(request).first, (owner.newMessage ?? "") != text else { return }
+            owner.newMessage = text
             try context.save()
         } catch {
             WardenLog.coreData.error("Failed to save composer draft: \(error.localizedDescription, privacy: .public)")
         }
     }
+}
+
+/// Reference box so deferred work can check whether the draft modifier is still on screen.
+private final class DraftViewLifetime {
+    var isAttached = false
 }
 
 extension View {
