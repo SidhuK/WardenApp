@@ -430,6 +430,11 @@ struct MessageInputView: View {
         }
     }
 
+    /// Image tiles are 80pt; file chips add a name line and a size or line-count line below the tile.
+    private var attachmentRowHeight: CGFloat {
+        state.attachedFiles.isEmpty ? 80 : 122
+    }
+
     private var attachmentPreviewsSection: some View {
         let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
         let providerSummary: String? = {
@@ -477,7 +482,7 @@ struct MessageInputView: View {
                 .padding(.bottom, 8)
             }
         }
-        .frame(height: hasAttachments ? (providerSummary == nil ? 80 : 100) : 0)
+        .frame(height: hasAttachments ? attachmentRowHeight + (providerSummary == nil ? 0 : 20) : 0)
     }
     
     @ViewBuilder
