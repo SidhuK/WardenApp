@@ -1,6 +1,5 @@
 import Foundation
 import AttributedText
-import CoreData
 import SwiftUI
 import os
 
@@ -54,6 +53,8 @@ struct MessageContentView: View {
     let effectiveFontSize: Double
     let colorScheme: ColorScheme
     let reasoningKey: ReasoningKey?
+    /// Web search sources saved on the message, so inline citations can match the source chips.
+    let searchSources: [SearchSource]
 
     @State private var showFullMessage = false
     @State private var isParsingFullMessage = false
@@ -69,9 +70,6 @@ struct MessageContentView: View {
     @State private var fullParseTask: Task<Void, Never>?
     @State private var truncatedParseTask: Task<Void, Never>?
     @State private var parsingActor = MessageParsingActor()
-    @State private var searchSources: [SearchSource] = []
-
-    @Environment(\.managedObjectContext) private var viewContext
 
     private let largeMessageSymbolsThreshold = AppConstants.largeMessageSymbolsThreshold
 
@@ -81,7 +79,8 @@ struct MessageContentView: View {
         own: Bool,
         effectiveFontSize: Double,
         colorScheme: ColorScheme,
-        reasoningKey: ReasoningKey? = nil
+        reasoningKey: ReasoningKey? = nil,
+        searchSources: [SearchSource] = []
     ) {
         self.message = message
         self.isStreaming = isStreaming
@@ -89,6 +88,7 @@ struct MessageContentView: View {
         self.effectiveFontSize = effectiveFontSize
         self.colorScheme = colorScheme
         self.reasoningKey = reasoningKey
+        self.searchSources = searchSources
 
         let shouldRenderPartial = message.count > AppConstants.largeMessageSymbolsThreshold && !message.containsAttachment
         if shouldRenderPartial {
@@ -134,39 +134,11 @@ struct MessageContentView: View {
             truncatedParseTask?.cancel()
             fullParseTask?.cancel()
         }
-        .task(id: SearchSourcesLookup(reasoningKey: reasoningKey, isStreaming: isStreaming)) {
-            resolveSearchSources()
-        }
     }
 
-    /// Loads the web search sources of the persisted message so inline citations can match the source chips.
-    /// Citations are only linked once a reply is final, so streaming and unsaved replies are skipped.
-    private func resolveSearchSources() {
-        guard !own, !isStreaming,
-              let reasoningKey, let messageID = reasoningKey.messageID,
-              message.contains("](")
-        else {
-            if !searchSources.isEmpty { searchSources = [] }
-            return
-        }
-
-        let request = NSFetchRequest<MessageEntity>(entityName: "MessageEntity")
-        request.predicate = NSPredicate(
-            format: "chat.id == %@ AND id == %lld",
-            reasoningKey.chatID as CVarArg,
-            messageID
-        )
-        request.fetchLimit = 1
-        do {
-            let sources = try viewContext.fetch(request).first?.searchMetadata?.sources ?? []
-            if sources != searchSources {
-                searchSources = sources
-            }
-        } catch {
-            WardenLog.coreData.error(
-                "Failed to load search sources: \(error.localizedDescription, privacy: .public)"
-            )
-        }
+    /// Citations are only linked once a reply is final, so streaming replies render plain links.
+    private var citationSources: [SearchSource] {
+        own || isStreaming ? [] : searchSources
     }
 
     private func containsImageData(_ message: String) -> Bool {
@@ -440,7 +412,7 @@ struct MessageContentView: View {
                 effectiveFontSize: effectiveFontSize,
                 own: own,
                 colorScheme: colorScheme,
-                searchSources: searchSources
+                searchSources: citationSources
             )
         } else {
             // Fallback to the original method for simple text
@@ -672,11 +644,6 @@ struct MessageContentView: View {
         .padding(.bottom, 4)
     }
 
-}
-
-private struct SearchSourcesLookup: Equatable {
-    let reasoningKey: ReasoningKey?
-    let isStreaming: Bool
 }
 
 // MARK: - Code Block Filename

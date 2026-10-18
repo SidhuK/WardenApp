@@ -412,7 +412,8 @@ struct ChatBubbleView: View {
             own: content.own,
             effectiveFontSize: effectiveFontSize,
             colorScheme: colorScheme,
-            reasoningKey: reasoningKey
+            reasoningKey: reasoningKey,
+            searchSources: message?.searchMetadata?.sources ?? []
         )
         .multilineTextAlignment(.leading)
     }
