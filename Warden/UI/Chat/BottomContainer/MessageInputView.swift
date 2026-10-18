@@ -11,13 +11,13 @@ struct ComposerState {
     var isMultiAgentMode: Bool = false
     var selectedMultiAgentServices: [APIServiceEntity] = []
     var showServiceSelector: Bool = false
-    /// ID of the chat whose `newMessage` draft `text` belongs to (see `persistsComposerDraft`).
+    /// ID of the chat whose `draftMessage` the `text` belongs to (see `persistsComposerDraft`).
     var draftChatID: UUID?
 }
 
 // MARK: - Draft Persistence
 
-/// Keeps the composer text in `ChatEntity.newMessage` so a half-written prompt survives chat switches and relaunches.
+/// Keeps the composer text in `ChatEntity.draftMessage` so a half-written prompt survives chat switches and relaunches.
 /// Saves are debounced while typing and flushed on disappear, send (text cleared) and quit.
 ///
 /// During a chat switch the parent can briefly render the outgoing composer state with the incoming chat
@@ -68,7 +68,8 @@ private struct ComposerDraftPersistence: ViewModifier {
     private func load(_ chat: ChatEntity) {
         guard !chat.isDeleted, chat.managedObjectContext != nil else { return }
         state.draftChatID = chat.id
-        if state.text.isEmpty, let draft = chat.newMessage, !draft.isEmpty {
+        let draft = chat.draftMessage
+        if state.text.isEmpty, !draft.isEmpty {
             state.text = draft
         }
     }
@@ -102,8 +103,8 @@ private struct ComposerDraftPersistence: ViewModifier {
         request.fetchLimit = 1
 
         do {
-            guard let owner = try context.fetch(request).first, (owner.newMessage ?? "") != text else { return }
-            owner.newMessage = text
+            guard let owner = try context.fetch(request).first, owner.draftMessage != text else { return }
+            owner.draftMessage = text
             // Saving the whole context mid-stream would persist transient state (`waitingForResponse`, the
             // unsent user message). MessageManager saves when the response finishes, which includes the draft.
             guard !owner.waitingForResponse else { return }

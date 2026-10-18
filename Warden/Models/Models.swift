@@ -72,7 +72,6 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var temperature: Double
     @NSManaged public var top_p: Double
     @NSManaged public var behavior: String?
-    @NSManaged public var newMessage: String?
     @NSManaged public var reasoningEffortRaw: String?
     @NSManaged public var createdDate: Date
     @NSManaged public var updatedDate: Date
@@ -93,6 +92,14 @@ public class ChatEntity: NSManagedObject, Identifiable {
     @NSManaged public var branchSourceRole: String?
     @NSManaged public var branchRootID: UUID?
     @NSManaged public var codexThreadId: String?
+
+    /// Composer draft, stored in the `newMessage` attribute. Not exposed via `@NSManaged`: under ARC naming
+    /// conventions a getter whose name starts with "new" returns +1, but Core Data's accessor returns +0, so Swift
+    /// would over-release the string on every read. KVC goes through `value(forKey:)`, which has normal +0 semantics.
+    public var draftMessage: String {
+        get { value(forKey: "newMessage") as? String ?? "" }
+        set { setValue(newValue, forKey: "newMessage") }
+    }
 
     public var messagesArray: [MessageEntity] {
         messages.array as? [MessageEntity] ?? []
@@ -320,7 +327,7 @@ struct ChatBackup: Codable {
         self.temperature = chatEntity.temperature
         self.top_p = chatEntity.top_p
         self.behavior = chatEntity.behavior
-        self.newMessage = chatEntity.newMessage
+        self.newMessage = chatEntity.draftMessage
         self.reasoningEffortRaw = chatEntity.reasoningEffortRaw
         self.requestMessages = chatEntity.requestMessages
         self.gptModel = chatEntity.gptModel

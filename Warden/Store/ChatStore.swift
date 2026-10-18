@@ -138,7 +138,7 @@ final class ChatStore: ObservableObject {
                             chatEntity.temperature = oldChat.temperature ?? 0.0
                             chatEntity.top_p = oldChat.top_p ?? 0.0
                             chatEntity.behavior = oldChat.behavior
-                            chatEntity.newMessage = oldChat.newMessage ?? ""
+                            chatEntity.draftMessage = oldChat.newMessage ?? ""
                             chatEntity.reasoningEffortRaw = oldChat.reasoningEffortRaw
                             chatEntity.createdDate = Date()
                             chatEntity.updatedDate = Date()
@@ -234,7 +234,7 @@ final class ChatStore: ObservableObject {
         chat.temperature = 0.8
         chat.top_p = 1.0
         chat.behavior = "default"
-        chat.newMessage = ""
+        chat.draftMessage = ""
         chat.reasoningEffort = .off
         chat.createdDate = Date()
         chat.updatedDate = Date()
@@ -666,7 +666,7 @@ final class ChatStore: ObservableObject {
         newChat.newChat = true
         newChat.createdDate = Date()
         newChat.updatedDate = Date()
-        newChat.newMessage = ""
+        newChat.draftMessage = ""
         newChat.name = "New Chat"
         newChat.reasoningEffort = .off
         
