@@ -65,8 +65,11 @@ struct ChatBubbleView: View {
                let metadata = messageEntity.searchMetadata {
                 HStack {
                     Spacer().frame(width: 32) // Align with bubble
-                    MessageSourcesView(metadata: metadata)
-                        .frame(maxWidth: 500) // Limit width to match bubble
+                    MessageSourcesView(
+                        metadata: metadata,
+                        persistenceID: messageEntity.objectID.uriRepresentation().absoluteString
+                    )
+                    .frame(maxWidth: 500, alignment: .leading) // Limit width to match bubble
                     Spacer(minLength: 40)
                 }
             }
