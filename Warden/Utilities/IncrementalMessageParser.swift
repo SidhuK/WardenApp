@@ -370,7 +370,7 @@ class IncrementalMessageParser {
             .replacingOccurrences(of: "<think>", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         completedElements.append(.thinking(combined, isExpanded: false))
-        pendingBlock = after.trimmingCharacters(in: .whitespaces).isEmpty ? nil : .text([after])
+        pendingBlock = after.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : .text([after])
     }
 
     private func appendTextLine(_ line: String) {
