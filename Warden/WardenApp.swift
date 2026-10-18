@@ -330,7 +330,7 @@ struct WardenApp: App {
                         with: nil
                     )
                 }
-                .keyboardShortcut("s", modifiers: [.command])
+                .keyboardShortcut("s", modifiers: [.command, .control])
             }
         }
     }
