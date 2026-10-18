@@ -257,3 +257,82 @@ final class OpenRouterWebSearchTests: XCTestCase {
         }
     }
 }
+
+final class InlineCitationsTests: XCTestCase {
+    private let sources = [
+        SearchSource(title: "One", url: "https://www.one.com/a", score: 0, publishedDate: nil),
+        SearchSource(title: "Two", url: "https://two.org/b/", score: 0, publishedDate: nil),
+        SearchSource(title: "Three", url: "https://three.net/c?x=1", score: 0, publishedDate: nil),
+    ]
+
+    func testConvertMapsNumberToURLAtSameIndex() {
+        let urls = sources.map(\.url)
+        let converted = InlineCitations.convertToLinks("Fact [1]. Other [3], end [2]", urls: urls)
+        XCTAssertEqual(
+            converted,
+            "Fact [1](https://www.one.com/a). Other [3](https://three.net/c?x=1), end [2](https://two.org/b/)"
+        )
+    }
+
+    func testConvertLeavesOutOfRangeAndEmbeddedMarkersAlone() {
+        let urls = sources.map(\.url)
+        XCTAssertEqual(InlineCitations.convertToLinks("See [0] and [4]", urls: urls), "See [0] and [4]")
+        XCTAssertEqual(InlineCitations.convertToLinks("arr[1] = 2", urls: urls), "arr[1] = 2")
+        XCTAssertEqual(InlineCitations.convertToLinks("[1](https://x.com)", urls: urls), "[1](https://x.com)")
+        XCTAssertEqual(InlineCitations.convertToLinks("Text [1]", urls: []), "Text [1]")
+    }
+
+    func testConvertSkipsCode() {
+        let urls = sources.map(\.url)
+        let text = "Claim [1]\n```python\nx = y [1]\n```\nUse `a [2]` and [2]"
+        XCTAssertEqual(
+            InlineCitations.convertToLinks(text, urls: urls),
+            "Claim [1](https://www.one.com/a)\n```python\nx = y [1]\n```\nUse `a [2]` and [2](https://two.org/b/)"
+        )
+    }
+
+    func testConvertHandlesNonBMPCharacters() {
+        let converted = InlineCitations.convertToLinks("🚀🚀 launch [1] 🎉 [2]", urls: sources.map(\.url))
+        XCTAssertEqual(converted, "🚀🚀 launch [1](https://www.one.com/a) 🎉 [2](https://two.org/b/)")
+    }
+
+    func testNumberedCitationMapsToSameSourceIndex() {
+        for (index, source) in sources.enumerated() {
+            XCTAssertEqual(
+                InlineCitations.sourceIndex(linkText: "\(index + 1)", destination: source.url, sources: sources),
+                index
+            )
+        }
+    }
+
+    func testCitationNumberFollowsSourcesWhenModelNumberDisagrees() {
+        XCTAssertEqual(
+            InlineCitations.sourceIndex(linkText: "1", destination: "https://two.org/b", sources: sources),
+            1
+        )
+        XCTAssertEqual(
+            InlineCitations.sourceIndex(linkText: "[3]", destination: "https://three.net/c?x=1", sources: sources),
+            2
+        )
+    }
+
+    func testDomainLabelledLinkIsCitation() {
+        XCTAssertEqual(
+            InlineCitations.sourceIndex(linkText: "one.com", destination: "https://one.com/a", sources: sources),
+            0
+        )
+    }
+
+    func testNonCitationLinksFallBack() {
+        XCTAssertNil(
+            InlineCitations.sourceIndex(linkText: "this article", destination: "https://two.org/b/", sources: sources)
+        )
+        XCTAssertNil(
+            InlineCitations.sourceIndex(linkText: "1", destination: "https://unknown.com", sources: sources)
+        )
+        XCTAssertNil(InlineCitations.sourceIndex(linkText: "1", destination: "https://www.one.com/a", sources: []))
+        XCTAssertNil(
+            InlineCitations.sourceIndex(linkText: "9", destination: "https://elsewhere.com", sources: sources)
+        )
+    }
+}
