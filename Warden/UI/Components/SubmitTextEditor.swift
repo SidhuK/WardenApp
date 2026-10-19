@@ -12,6 +12,8 @@ struct SubmitTextEditor: NSViewRepresentable {
     /// the handler returns `false` to fall back to a normal paste. 0 disables the behaviour.
     var longPasteLineThreshold: Int = 0
     var onLongPaste: ((String) -> Bool)?
+    /// While its menu is visible, arrow keys, Return, Tab and Esc drive the "/" prompt menu instead of the editor.
+    var completionState: PromptCompletionState?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -35,6 +37,10 @@ struct SubmitTextEditor: NSViewRepresentable {
         textView.onSubmit = { [weak coordinator = context.coordinator] in
             coordinator?.handleSubmit()
         }
+        textView.onCompletionReturn = { [weak coordinator = context.coordinator, weak textView] in
+            guard let coordinator, let textView else { return false }
+            return coordinator.handleCompletionCommand(#selector(NSResponder.insertNewline(_:)), in: textView)
+        }
 
         // Transparent background
         textView.backgroundColor = .clear
@@ -52,6 +58,7 @@ struct SubmitTextEditor: NSViewRepresentable {
         
         if textView.string != text {
             textView.string = text
+            textView.setSelectedRange(NSRange(location: (text as NSString).length, length: 0))
         }
         
         if textView.font != font {
@@ -64,6 +71,7 @@ struct SubmitTextEditor: NSViewRepresentable {
         }
         
         context.coordinator.updateHeight(for: textView)
+        context.coordinator.completionState = completionState
         context.coordinator.requestFocusIfNeeded(on: textView, focusToken: focusToken)
     }
     
@@ -71,18 +79,52 @@ struct SubmitTextEditor: NSViewRepresentable {
         Coordinator(self)
     }
     
+    @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SubmitTextEditor
+        var completionState: PromptCompletionState?
         private var lastFocusToken: Int?
         
         init(_ parent: SubmitTextEditor) {
             self.parent = parent
+            self.completionState = parent.completionState
         }
         
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+            // Updated synchronously so the very next key press already sees the menu state.
+            completionState?.update(for: textView.string)
             updateHeight(for: textView)
+        }
+
+        /// Handles a key command for the "/" prompt menu. Returns true when the command was consumed.
+        func handleCompletionCommand(_ commandSelector: Selector, in textView: NSTextView) -> Bool {
+            guard let completionState, completionState.isVisible, !textView.hasMarkedText() else { return false }
+
+            switch commandSelector {
+            case #selector(NSResponder.moveUp(_:)):
+                completionState.moveSelection(by: -1)
+            case #selector(NSResponder.moveDown(_:)):
+                completionState.moveSelection(by: 1)
+            case #selector(NSResponder.cancelOperation(_:)):
+                completionState.dismiss(currentText: textView.string)
+            case #selector(NSResponder.insertTab(_:)),
+                #selector(NSResponder.insertNewline(_:)),
+                #selector(NSResponder.insertLineBreak(_:)),
+                #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)):
+                if commandSelector != #selector(NSResponder.insertTab(_:)),
+                   NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+                    return false
+                }
+                guard let content = completionState.accept() else { return false }
+                let fullRange = NSRange(location: 0, length: (textView.string as NSString).length)
+                // insertText keeps the replacement undoable and reports it through textDidChange.
+                textView.insertText(content, replacementRange: fullRange)
+            default:
+                return false
+            }
+            return true
         }
         
         func updateHeight(for textView: NSTextView) {
@@ -114,6 +156,10 @@ struct SubmitTextEditor: NSViewRepresentable {
         }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if handleCompletionCommand(commandSelector, in: textView) {
+                return true
+            }
+
             let submitCommands: [Selector] = [
                 #selector(NSResponder.insertNewline(_:)),
                 #selector(NSResponder.insertLineBreak(_:)),
@@ -135,6 +181,7 @@ struct SubmitTextEditor: NSViewRepresentable {
 
 private final class SubmitAwareTextView: NSTextView {
     var onSubmit: (() -> Void)?
+    var onCompletionReturn: (() -> Bool)?
     var longPasteLineThreshold: Int = 0
     var onLongPaste: ((String) -> Bool)?
 
@@ -167,6 +214,11 @@ private final class SubmitAwareTextView: NSTextView {
     }
 
     override func keyDown(with event: NSEvent) {
+        // Return is normally turned into a submit here, before doCommandBy runs, so the prompt menu gets it first.
+        if shouldSubmit(for: event), onCompletionReturn?() == true {
+            return
+        }
+
         if shouldSubmit(for: event) {
             onSubmit?()
             return

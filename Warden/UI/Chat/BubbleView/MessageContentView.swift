@@ -53,6 +53,7 @@ struct MessageContentView: View {
     let effectiveFontSize: Double
     let colorScheme: ColorScheme
     let reasoningKey: ReasoningKey?
+    let reasoningDuration: TimeInterval?
     /// Web search sources saved on the message, so inline citations can match the source chips.
     let searchSources: [SearchSource]
 
@@ -80,6 +81,7 @@ struct MessageContentView: View {
         effectiveFontSize: Double,
         colorScheme: ColorScheme,
         reasoningKey: ReasoningKey? = nil,
+        reasoningDuration: TimeInterval? = nil,
         searchSources: [SearchSource] = []
     ) {
         self.message = message
@@ -88,6 +90,7 @@ struct MessageContentView: View {
         self.effectiveFontSize = effectiveFontSize
         self.colorScheme = colorScheme
         self.reasoningKey = reasoningKey
+        self.reasoningDuration = reasoningDuration
         self.searchSources = searchSources
 
         let shouldRenderPartial = message.count > AppConstants.largeMessageSymbolsThreshold && !message.containsAttachment
@@ -310,7 +313,8 @@ struct MessageContentView: View {
             ThinkingProcessView(
                 content: content,
                 isThinking: isStreaming && !message.contains("</think>"),
-                timingKey: reasoningKey
+                timingKey: reasoningKey,
+                persistedDuration: reasoningDuration
             )
             .padding(.vertical, 4)
 

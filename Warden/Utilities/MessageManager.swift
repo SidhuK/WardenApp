@@ -378,6 +378,7 @@ final class MessageManager: ObservableObject {
             }
             #endif
             
+            let requestStart = Date()
             ChatService.shared.sendMessage(
                 apiService: apiService,
                 messages: requestMessages,
@@ -391,7 +392,9 @@ final class MessageManager: ObservableObject {
                 guard let self = self else { return }
 
                 switch result {
-                case .success(let (messageBody, toolCalls)):
+                case .success(let response):
+                    let messageBody = response.text
+                    let toolCalls = response.toolCalls
                     chat.waitingForResponse = false
 
                     if let codexService = self.apiService as? CodexAppServerHandler,
@@ -402,14 +405,28 @@ final class MessageManager: ObservableObject {
                     }
                     
                     if let messageBody = messageBody {
-                        addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls)
+                        let metrics = self.makeMetrics(
+                            chat: chat,
+                            requestStart: requestStart,
+                            firstTokenAt: nil,
+                            usage: response.usage
+                        )
+                        addMessageToChat(chat: chat, message: messageBody, searchUrls: searchUrls, metrics: metrics)
                         addNewMessageToRequestMessages(chat: chat, content: messageBody, role: AppConstants.defaultRole)
                     }
                     
                     if let toolCalls = toolCalls, !toolCalls.isEmpty {
                         // Handle tool calls
+                        let savedOwnMessage = messageBody != nil
                         Task {
-                            await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                            await self.handleToolCalls(
+                                toolCalls,
+                                in: chat,
+                                contextSize: contextSize,
+                                priorUsage: savedOwnMessage ? nil : response.usage,
+                                turnStart: savedOwnMessage ? nil : requestStart,
+                                completion: completion
+                            )
                         }
                         return
                     }
@@ -420,7 +437,7 @@ final class MessageManager: ObservableObject {
                     completion(.success(()))
 
                 case .failure(let error):
-                    completion(.failure(error))
+                    completion(.failure(self.withChatContext(error, chat: chat)))
                 }
             }
         }
@@ -445,6 +462,8 @@ final class MessageManager: ObservableObject {
         let streamTask = Task { @MainActor in
             var chunkCount = 0
             let streamStart = Date()
+            var requestStart = streamStart
+            var firstChunkAt: Date?
             var deferImageResponse = false
             var lastUpdateTime = Date.distantPast
             var chunkBufferParts: [String] = []
@@ -552,8 +571,9 @@ final class MessageManager: ObservableObject {
             
             do {
                 chat.waitingForResponse = true
-                
-                let toolCalls = try await ChatService.shared.sendStream(
+
+                requestStart = Date()
+                let outcome = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     tools: toolDefinitions.isEmpty ? nil : toolDefinitions,
@@ -565,6 +585,9 @@ final class MessageManager: ObservableObject {
                 ) { chunk in
                     chunkCount += 1
                     guard !chunk.isEmpty else { return }
+                    if firstChunkAt == nil {
+                        firstChunkAt = Date()
+                    }
 
                     let containsDeferredAttachmentTag =
                         chunk.contains("<image-uuid>") || chunk.contains("<file-uuid>")
@@ -605,17 +628,24 @@ final class MessageManager: ObservableObject {
                 }
                 flushChunkBuffer(force: true)
 
+                let toolCalls = outcome.toolCalls
                 let finalResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
                 // Normal completion path - stream finished successfully
                 var completedMessageID: Int64?
                 if !finalResponse.isEmpty {
-                    if deferImageResponse {
-                        completedMessageID =
-                            addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls).id
-                    } else {
-                        completedMessageID =
-                            addMessageToChat(chat: chat, message: finalResponse, searchUrls: searchUrls).id
-                    }
+                    let metrics = self.makeMetrics(
+                        chat: chat,
+                        requestStart: requestStart,
+                        firstTokenAt: outcome.firstTokenAt ?? firstChunkAt,
+                        usage: outcome.usage,
+                        reasoningTiming: ReasoningTimingStore.shared.liveTiming(chatID: chat.id)
+                    )
+                    completedMessageID = addMessageToChat(
+                        chat: chat,
+                        message: finalResponse,
+                        searchUrls: searchUrls,
+                        metrics: metrics
+                    ).id
                     addNewMessageToRequestMessages(chat: chat, content: finalResponse, role: AppConstants.defaultRole)
                 }
                 ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: completedMessageID)
@@ -624,7 +654,15 @@ final class MessageManager: ObservableObject {
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
                     self.streamingAssistantText = ""
                     try Task.checkCancellation()
-                    await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                    let savedOwnMessage = completedMessageID != nil
+                    await self.handleToolCalls(
+                        toolCalls,
+                        in: chat,
+                        contextSize: contextSize,
+                        priorUsage: savedOwnMessage ? nil : outcome.usage,
+                        turnStart: savedOwnMessage ? nil : requestStart,
+                        completion: completion
+                    )
                     return
                 }
                 
@@ -647,13 +685,19 @@ final class MessageManager: ObservableObject {
                 let partialResponse = deferImageResponse ? drainDeferredResponse() : self.streamingAssistantText
                 var partialMessageID: Int64?
                 if !partialResponse.isEmpty {
-                    if deferImageResponse {
-                        partialMessageID =
-                            addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls).id
-                    } else {
-                        partialMessageID =
-                            addMessageToChat(chat: chat, message: partialResponse, searchUrls: searchUrls).id
-                    }
+                    let metrics = self.makeMetrics(
+                        chat: chat,
+                        requestStart: requestStart,
+                        firstTokenAt: firstChunkAt,
+                        usage: nil,
+                        reasoningTiming: ReasoningTimingStore.shared.liveTiming(chatID: chat.id)
+                    )
+                    partialMessageID = addMessageToChat(
+                        chat: chat,
+                        message: partialResponse,
+                        searchUrls: searchUrls,
+                        metrics: metrics
+                    ).id
                     addNewMessageToRequestMessages(
                         chat: chat,
                         content: partialResponse,
@@ -674,7 +718,7 @@ final class MessageManager: ObservableObject {
                 ReasoningTimingStore.shared.finishStream(chatID: chat.id, token: reasoningStreamToken, messageID: nil)
                 chat.waitingForResponse = false
                 self.streamingAssistantText = ""
-                completion(.failure(error))
+                completion(.failure(self.withChatContext(error, chat: chat)))
             }
         }
         
@@ -685,7 +729,16 @@ final class MessageManager: ObservableObject {
     
     // MARK: - Tool Execution
     
-    private func handleToolCalls(_ toolCalls: [ToolCall], in chat: ChatEntity, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) async {
+    /// `priorUsage` and `turnStart` come from the request that asked for the tools when it saved no message of its
+    /// own, so the follow-up reply's metrics cover the whole turn.
+    private func handleToolCalls(
+        _ toolCalls: [ToolCall],
+        in chat: ChatEntity,
+        contextSize: Int,
+        priorUsage: TokenUsage? = nil,
+        turnStart: Date? = nil,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) async {
         #if DEBUG
         WardenLog.app.debug("Handling \(toolCalls.count, privacy: .public) tool call(s)")
         #endif
@@ -809,7 +862,8 @@ final class MessageManager: ObservableObject {
         // Now send the conversation again to get the final response
         let requestMessages = Array(chat.requestMessages.suffix(contextSize))
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
-        
+        let requestStart = turnStart ?? Date()
+
         ChatService.shared.sendMessage(
             apiService: apiService,
             messages: requestMessages,
@@ -828,11 +882,23 @@ final class MessageManager: ObservableObject {
                 }
 
                 switch result {
-                case .success(let (fullMessage, _)):
-                    if let messageText = fullMessage {
+                case .success(let response):
+                    if let messageText = response.text {
                         // Store the tool calls with this message for persistence
                         let toolCallsToStore = self.activeToolCalls
-                        self.addMessageToChat(chat: chat, message: messageText, searchUrls: nil, toolCalls: toolCallsToStore)
+                        let metrics = self.makeMetrics(
+                            chat: chat,
+                            requestStart: requestStart,
+                            firstTokenAt: nil,
+                            usage: priorUsage.adding(response.usage)
+                        )
+                        self.addMessageToChat(
+                            chat: chat,
+                            message: messageText,
+                            searchUrls: nil,
+                            toolCalls: toolCallsToStore,
+                            metrics: metrics
+                        )
                         self.addNewMessageToRequestMessages(chat: chat, content: messageText, role: AppConstants.defaultRole)
                     }
                     self.debounceSave()
@@ -845,7 +911,7 @@ final class MessageManager: ObservableObject {
 
                 case .failure(let error):
                     // Keep tool calls visible on error for debugging
-                    completion(.failure(error))
+                    completion(.failure(self.withChatContext(error, chat: chat)))
                 }
             }
         }
@@ -977,7 +1043,14 @@ final class MessageManager: ObservableObject {
     }
 
     @discardableResult
-    private func addMessageToChat(chat: ChatEntity, message: String, searchUrls: [String]? = nil, toolCalls: [WardenToolCallStatus]? = nil, isStreaming: Bool = false) -> MessageEntity {
+    private func addMessageToChat(
+        chat: ChatEntity,
+        message: String,
+        searchUrls: [String]? = nil,
+        toolCalls: [WardenToolCallStatus]? = nil,
+        metrics: MessageMetrics? = nil,
+        isStreaming: Bool = false
+    ) -> MessageEntity {
         #if DEBUG
         WardenLog.app.debug("AI response received: \(message.count, privacy: .public) char(s)")
         #endif
@@ -1009,6 +1082,10 @@ final class MessageManager: ObservableObject {
             newMessage.agentModel = chat.gptModel
         }
         
+        if let metrics {
+            newMessage.metrics = metrics
+        }
+
         // Store tool calls associated with this message
         if let toolCalls = toolCalls, !toolCalls.isEmpty {
             messageToolCalls[newMessage.id] = toolCalls
@@ -1050,6 +1127,45 @@ final class MessageManager: ObservableObject {
         return newMessage
     }
     
+    private func makeMetrics(
+        chat: ChatEntity,
+        requestStart: Date,
+        firstTokenAt: Date?,
+        usage: TokenUsage?,
+        reasoningTiming: ReasoningTimingStore.Timing? = nil,
+        finishedAt: Date = Date()
+    ) -> MessageMetrics {
+        let providerType = chat.apiService?.type ?? apiService.name
+        let modelId = chat.gptModel.isEmpty ? apiService.model : chat.gptModel
+        let cost = usage.flatMap {
+            UsageCostCalculator.cost(for: $0, providerType: providerType, modelId: modelId)
+        }
+        return MessageMetrics(
+            providerType: providerType,
+            providerName: chat.apiService?.name,
+            modelId: modelId,
+            usage: usage,
+            costUSD: cost,
+            requestStart: requestStart,
+            firstTokenAt: firstTokenAt,
+            finishedAt: finishedAt,
+            reasoningStart: reasoningTiming?.start,
+            reasoningEnd: reasoningTiming.map { $0.end ?? finishedAt }
+        )
+    }
+
+    /// Adds the chat's provider and model to an API error so it survives to the error UI.
+    private func withChatContext(_ error: Error, chat: ChatEntity) -> Error {
+        guard let apiError = error as? APIError else { return error }
+        return apiError.adding(
+            ProviderErrorContext(
+                providerName: chat.apiService?.name,
+                providerType: chat.apiService?.type ?? apiService.name,
+                model: chat.gptModel.isEmpty ? apiService.model : chat.gptModel
+            )
+        )
+    }
+
     private func addNewMessageToRequestMessages(chat: ChatEntity, content: String, role: String) {
         let roleEnum = RequestMessageRole(rawValue: role) ?? .user
         chat.requestMessages.append(RequestMessage(role: roleEnum, content: content).dictionary)

@@ -178,11 +178,52 @@ public class MessageEntity: NSManagedObject, Identifiable {
     @NSManaged public var agentServiceType: String?
     @NSManaged public var agentModel: String?
     @NSManaged public var multiAgentGroupId: UUID?
+
+    @NSManaged public var metricsJson: String?
     
     private static var toolCallsCacheKey: UInt8 = 0
     private static var toolCallsCacheJsonKey: UInt8 = 1
     private static var searchMetadataCacheKey: UInt8 = 2
     private static var searchMetadataCacheJsonKey: UInt8 = 3
+    private static var metricsCacheKey: UInt8 = 4
+    private static var metricsCacheJsonKey: UInt8 = 5
+
+    public var metrics: MessageMetrics? {
+        get {
+            guard let json = metricsJson else {
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheJsonKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                return nil
+            }
+
+            if let cachedJson = objc_getAssociatedObject(self, &MessageEntity.metricsCacheJsonKey) as? String,
+               cachedJson == json,
+               let cached = objc_getAssociatedObject(self, &MessageEntity.metricsCacheKey) as? MessageMetrics {
+                return cached
+            }
+
+            guard let data = json.data(using: .utf8),
+                  let decoded = try? MessageMetrics.jsonDecoder.decode(MessageMetrics.self, from: data) else {
+                return nil
+            }
+            objc_setAssociatedObject(self, &MessageEntity.metricsCacheJsonKey, json, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &MessageEntity.metricsCacheKey, decoded, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            return decoded
+        }
+        set {
+            if let newValue,
+               let data = try? MessageMetrics.jsonEncoder.encode(newValue),
+               let json = String(data: data, encoding: .utf8) {
+                metricsJson = json
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheJsonKey, json, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            } else {
+                metricsJson = nil
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheJsonKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &MessageEntity.metricsCacheKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            }
+        }
+    }
 
     public var toolCalls: [WardenToolCallStatus] {
         get {
@@ -301,6 +342,22 @@ public class MessageEntity: NSManagedObject, Identifiable {
     }
 }
 
+public class PromptEntity: NSManagedObject, Identifiable {
+    @NSManaged public var id: UUID
+    @NSManaged public var name: String
+    @NSManaged public var content: String
+    @NSManaged public var shortcut: String?
+    @NSManaged public var usageCount: Int64
+    @NSManaged public var createdDate: Date
+    @NSManaged public var lastUsedDate: Date?
+}
+
+extension PromptEntity {
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<PromptEntity> {
+        NSFetchRequest<PromptEntity>(entityName: "PromptEntity")
+    }
+}
+
 /// Data Transfer Object for Chat backup and export/import
 struct ChatBackup: Codable {
     var id: UUID
@@ -354,6 +411,7 @@ struct MessageBackup: Codable, Equatable {
     var timestamp: Date
     var own: Bool
     var waitingForResponse: Bool?
+    var metrics: MessageMetrics?
 
     init(messageEntity: MessageEntity) {
         self.id = Int(messageEntity.id)
@@ -362,6 +420,7 @@ struct MessageBackup: Codable, Equatable {
         self.timestamp = messageEntity.timestamp ?? Date()
         self.own = messageEntity.own
         self.waitingForResponse = messageEntity.waitingForResponse
+        self.metrics = messageEntity.metrics
     }
 }
 

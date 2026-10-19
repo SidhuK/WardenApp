@@ -356,6 +356,31 @@ struct QuickChatView: View {
         }
         
         currentStreamingTask = Task { @MainActor in
+            let requestStart = Date()
+            var firstTokenAt: Date?
+            var usage: TokenUsage?
+            var reasoningTimer = ReasoningTagTimer()
+
+            func makeMetrics() -> MessageMetrics {
+                let providerType = apiService.type ?? handler.name
+                let finishedAt = Date()
+                let reasoning = reasoningTimer.interval(finishedAt: finishedAt)
+                return MessageMetrics(
+                    providerType: providerType,
+                    providerName: apiService.name,
+                    modelId: handler.model,
+                    usage: usage,
+                    costUSD: usage.flatMap {
+                        UsageCostCalculator.cost(for: $0, providerType: providerType, modelId: handler.model)
+                    },
+                    requestStart: requestStart,
+                    firstTokenAt: firstTokenAt,
+                    finishedAt: finishedAt,
+                    reasoningStart: reasoning.start,
+                    reasoningEnd: reasoning.end
+                )
+            }
+
             do {
                 let stream = try await handler.sendMessageStream(
                     messages,
@@ -368,12 +393,21 @@ struct QuickChatView: View {
                 var currentBody = ""
                 for try await chunk in stream {
                     try Task.checkCancellation()
-                    if let text = chunk.0 {
+                    if let chunkUsage = chunk.usage {
+                        usage = usage.map { $0.merged(with: chunkUsage) } ?? chunkUsage
+                    }
+                    if let text = chunk.text {
+                        if firstTokenAt == nil, !text.isEmpty {
+                            firstTokenAt = Date()
+                        }
+                        reasoningTimer.consume(text)
                         currentBody += text
                         aiMessage.body = currentBody
                         try? viewContext.save()
                     }
                 }
+
+                aiMessage.metrics = makeMetrics()
 
                 persistLatestCodexThreadID(from: handler, in: chat)
                 
@@ -383,6 +417,8 @@ struct QuickChatView: View {
                 generateChatNameIfNeeded(chat: chat, apiService: apiService)
             } catch is CancellationError {
                 persistLatestCodexThreadID(from: handler, in: chat)
+                aiMessage.waitingForResponse = false
+                aiMessage.metrics = makeMetrics()
                 isStreaming = false
                 currentStreamingTask = nil
                 try? viewContext.save()

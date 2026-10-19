@@ -193,6 +193,8 @@ struct MessageInputView: View {
     var showsRephraseButton: Bool = true
     var showsMCPTools: Bool = true
     var showsPersonas: Bool = true
+    /// Typing "/" at the start of the composer offers prompts from the prompt library (chats only).
+    var showsPromptCompletion: Bool = true
     
     var onEnter: () -> Void
     var onAddImage: () -> Void
@@ -210,13 +212,18 @@ struct MessageInputView: View {
     @State var dynamicHeight: CGFloat = 16
     @State private var isHoveringDropZone = false
     @State private var showingPersonaPopover = false
+    @State private var showingToolsPopover = false
+    @State private var compactToolbar = false
     @StateObject private var rephraseService = RephraseService()
+    @StateObject private var promptCompletion = PromptCompletionState()
 
     @State private var originalText = ""
 
     @State private var showingRephraseError = false
     @State private var rephraseErrorMessage = ""
     @State private var inputPulseAnimation = false
+    /// Below this toolbar width the chips drop their labels and show icons only.
+    private static let compactToolbarWidth: CGFloat = 700
     private let maxInputHeight = 160.0
     private let initialInputSize = 16.0
     private let inputPadding = 12.0
@@ -237,6 +244,10 @@ struct MessageInputView: View {
         return (hasText || hasAttachments) && !isStreaming
     }
     
+    private var promptCompletionEnabled: Bool {
+        showsPromptCompletion && chat != nil
+    }
+
     private var canRephrase: Bool {
         !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         chat?.apiService != nil && 
@@ -253,90 +264,28 @@ struct MessageInputView: View {
                 
                 // Bottom Toolbar
                 HStack(alignment: .center, spacing: 0) {
-                    HStack(spacing: 12) {
-                        // Attachments
+                    HStack(spacing: 8) {
                         attachmentMenu
-                        
-                        // Web Search
-                        if showsWebSearchToggle {
-                            Button(action: {
-                                state.webSearchEnabled.toggle()
-                            }) {
-                                Image(systemName: "globe")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(state.webSearchEnabled ? .accentColor : .secondary)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Web Search")
-                            .accessibilityLabel("Web Search")
-                        }
 
-                        // Multi-Agent Mode
-                        if enableMultiAgentMode {
-                            HStack(spacing: 8) {
-                                Button(action: {
-                                    state.isMultiAgentMode.toggle()
-                                }) {
-                                    Image(systemName: state.isMultiAgentMode ? "person.3.fill" : "person.3")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(state.isMultiAgentMode ? .accentColor : .secondary)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Multi-Agent Mode")
-                                
-                                if state.isMultiAgentMode {
-                                    Button(action: {
-                                        state.showServiceSelector = true
-                                    }) {
-                                        Text("\(state.selectedMultiAgentServices.count)/3")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.secondary)
-                                            .padding(.horizontal, 4)
-                                            .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .help("Select Multi-Agent Models")
-                                }
-                            }
-                        }
-                        
-                        // Personas (Persona icon)
-                        if showsPersonas {
-                            Button(action: {
-                                showingPersonaPopover.toggle()
-                            }) {
-                                Image(systemName: chat?.persona != nil ? "person.circle.fill" : "person.circle")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(chat?.persona != nil ? .accentColor : .secondary)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Assistant Personas")
-                            .accessibilityLabel("Assistant Personas")
-                            .popover(isPresented: $showingPersonaPopover, arrowEdge: .top) {
-                                if let chat = chat {
-                                    PersonaSelectorView(chat: chat)
-                                        .environment(\.managedObjectContext, viewContext)
-                                        .frame(width: 400, height: 80)
-                                        .background(Color(nsColor: .windowBackgroundColor))
-                                } else {
-                                    Text("Persona selection only available in active chats")
-                                        .padding()
-                                }
-                            }
-                        }
+                        toolbarChips(compact: compactToolbar)
                     }
-                    
-                    Spacer()
-                    
+
+                    Spacer(minLength: 8)
+
                     HStack(spacing: 12) {
-                        // Model Selector
                         if let chat = chat {
+                            ContextUsageRing(chat: chat, composerText: state.text)
                             BetterCompactModelSelector(chat: chat)
                             ReasoningEffortMenu(chat: chat)
                         }
                         
                         sendStopButton
                     }
+                }
+                .onGeometryChange(for: Bool.self) { proxy in
+                    proxy.size.width < Self.compactToolbarWidth
+                } action: { isCompact in
+                    compactToolbar = isCompact
                 }
             }
             .padding(.horizontal, 16)
@@ -356,6 +305,162 @@ struct MessageInputView: View {
             Button("OK") { }
         } message: {
             Text(rephraseErrorMessage)
+        }
+        .overlay(alignment: .topLeading) {
+            if promptCompletionEnabled && promptCompletion.isVisible {
+                PromptCompletionListView(state: promptCompletion) { prompt in
+                    if let content = promptCompletion.accept(prompt) {
+                        state.text = content
+                    }
+                }
+                .padding(.leading, 8)
+                .alignmentGuide(.top) { $0[.bottom] + 6 }
+                .transition(.opacity)
+            }
+        }
+        .onChange(of: state.text) { _, newValue in
+            if promptCompletionEnabled {
+                promptCompletion.update(for: newValue)
+            }
+        }
+    }
+
+    private func toolbarChips(compact: Bool) -> some View {
+        HStack(spacing: 6) {
+            if showsWebSearchToggle {
+                Button {
+                    state.webSearchEnabled.toggle()
+                } label: {
+                    ComposerChip(
+                        title: "Search",
+                        systemImage: "globe",
+                        isOn: state.webSearchEnabled,
+                        compact: compact
+                    )
+                }
+                .buttonStyle(.plain)
+                .help(state.webSearchEnabled ? "Web Search is on" : "Web Search")
+                .accessibilityLabel("Web Search")
+                .accessibilityValue(state.webSearchEnabled ? "On" : "Off")
+            }
+
+            if showsMCPTools {
+                toolsChip(compact: compact)
+            }
+
+            if enableMultiAgentMode {
+                multiAgentChip(compact: compact)
+            }
+
+            if showsPersonas {
+                personaChip(compact: compact)
+            }
+        }
+        .fixedSize()
+    }
+
+    private func toolsChip(compact: Bool) -> some View {
+        let count = state.selectedMCPAgents.count
+        return Button {
+            showingToolsPopover.toggle()
+        } label: {
+            ComposerChip(
+                title: count > 0 ? "Tools · \(count)" : "Tools",
+                systemImage: "wrench.and.screwdriver",
+                isOn: count > 0,
+                compact: compact,
+                badge: compact && count > 0 ? "\(count)" : nil
+            )
+        }
+        .buttonStyle(.plain)
+        .help(count > 0 ? "MCP Tools (\(count) enabled)" : "MCP Tools")
+        .accessibilityLabel("MCP Tools")
+        .accessibilityValue(count > 0 ? "\(count) enabled" : "None enabled")
+        .popover(isPresented: $showingToolsPopover, arrowEdge: .top) {
+            Group {
+                if mcpManager.configs.isEmpty {
+                    Text("No MCP Agents configured")
+                        .foregroundColor(.secondary)
+                        .padding()
+                } else {
+                    ScrollView {
+                        MCPAgentMenuSection(
+                            configs: mcpManager.configs,
+                            selectedAgents: $state.selectedMCPAgents,
+                            statuses: mcpManager.serverStatuses
+                        )
+                        .padding(.vertical, 8)
+                    }
+                    .frame(maxHeight: 320)
+                }
+            }
+            .frame(width: 260)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func multiAgentChip(compact: Bool) -> some View {
+        HStack(spacing: 4) {
+            Button {
+                state.isMultiAgentMode.toggle()
+            } label: {
+                ComposerChip(
+                    title: "Multi-Agent",
+                    systemImage: state.isMultiAgentMode ? "person.3.fill" : "person.3",
+                    isOn: state.isMultiAgentMode,
+                    compact: compact
+                )
+            }
+            .buttonStyle(.plain)
+            .help("Multi-Agent Mode")
+            .accessibilityLabel("Multi-Agent Mode")
+            .accessibilityValue(state.isMultiAgentMode ? "On" : "Off")
+
+            if state.isMultiAgentMode {
+                Button {
+                    state.showServiceSelector = true
+                } label: {
+                    Text("\(state.selectedMultiAgentServices.count)/3")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 4)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
+                }
+                .buttonStyle(.plain)
+                .help("Select Multi-Agent Models")
+            }
+        }
+    }
+
+    private func personaChip(compact: Bool) -> some View {
+        let trimmedName = chat?.persona?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let hasPersona = chat?.persona != nil
+        let title = hasPersona ? "Persona: \(trimmedName.isEmpty ? "Custom" : trimmedName)" : "Persona"
+
+        return Button {
+            showingPersonaPopover.toggle()
+        } label: {
+            ComposerChip(
+                title: title,
+                systemImage: hasPersona ? "person.circle.fill" : "person.circle",
+                isOn: hasPersona,
+                compact: compact
+            )
+        }
+        .buttonStyle(.plain)
+        .help(hasPersona ? title : "Assistant Personas")
+        .accessibilityLabel("Assistant Personas")
+        .accessibilityValue(hasPersona ? trimmedName : "None")
+        .popover(isPresented: $showingPersonaPopover, arrowEdge: .top) {
+            if let chat = chat {
+                PersonaSelectorView(chat: chat)
+                    .environment(\.managedObjectContext, viewContext)
+                    .frame(width: 400, height: 80)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            } else {
+                Text("Persona selection only available in active chats")
+                    .padding()
+            }
         }
     }
 
@@ -381,75 +486,16 @@ struct MessageInputView: View {
                 }
                 .disabled(!canRephrase || rephraseService.isRephrasing)
             }
-
-            if showsMCPTools {
-                Divider()
-                
-                if mcpManager.configs.isEmpty {
-                    Text("No MCP Agents configured")
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(mcpManager.configs) { config in
-                        mcpAgentButton(for: config)
-                    }
-                }
-            }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(state.selectedMCPAgents.isEmpty ? .secondary : .accentColor)
-                
-                if !state.selectedMCPAgents.isEmpty {
-                    Text("\(state.selectedMCPAgents.count)")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(Color.accentColor))
-                }
-            }
+            Image(systemName: "plus")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
         }
         .menuIndicator(.hidden)
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Add attachments & tools")
-        .accessibilityLabel("Add attachments and tools")
-    }
-    
-    @ViewBuilder
-    private func mcpAgentButton(for config: MCPServerConfig) -> some View {
-        let isSelected = state.selectedMCPAgents.contains(config.id)
-        let status = mcpManager.serverStatuses[config.id] ?? .disconnected
-        
-        Button(action: {
-            if isSelected {
-                state.selectedMCPAgents.remove(config.id)
-            } else {
-                state.selectedMCPAgents.insert(config.id)
-            }
-        }) {
-            HStack {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                
-                Circle()
-                    .fill(statusColor(for: status))
-                    .frame(width: 6, height: 6)
-                
-                Text(config.name)
-            }
-        }
-        .disabled(!config.enabled)
-    }
-    
-    private func statusColor(for status: MCPManager.ServerStatus) -> Color {
-        switch status {
-        case .connected: return .green
-        case .disconnected: return .gray
-        case .error: return .red
-        case .connecting: return .orange
-        }
+        .help("Add attachments")
+        .accessibilityLabel("Add attachments")
     }
 
     /// Image tiles are 80pt; file chips add a name line and a size or line-count line below the tile.
@@ -576,7 +622,7 @@ struct MessageInputView: View {
                 case .failure(let error):
                     var errorText = "Failed to rephrase text"
                     
-                    switch error {
+                    switch error.base {
                     case .unauthorized:
                         errorText = "Invalid API key. Please check your API settings."
                     case .rateLimited:
@@ -593,6 +639,10 @@ struct MessageInputView: View {
                         errorText = "Invalid response from AI service"
                     case .decodingFailed(let message):
                         errorText = "Response parsing failed: \(message)"
+                    case .overloaded:
+                        errorText = "Server error: \(error.context?.message ?? "Provider overloaded")"
+                    case .withContext:
+                        break
                     }
                     
                     showRephraseError(errorText)
@@ -715,7 +765,8 @@ struct MessageInputView: View {
                 maxHeight: maxInputHeight,
                 // The persona editor reuses this view without a chat and can't take attachments.
                 longPasteLineThreshold: chat == nil ? 0 : longPasteLineThreshold,
-                onLongPaste: attachPastedText
+                onLongPaste: attachPastedText,
+                completionState: promptCompletionEnabled ? promptCompletion : nil
             )
             .frame(height: dynamicHeight)
         }
@@ -774,7 +825,56 @@ struct ImagePreviewView: View {
     }
 }
 
-// MARK: - MCP Agent Menu Section
+// MARK: - Composer Chip
+
+/// Capsule toggle in the composer toolbar. "On" chips are accent tinted so active options read at a glance.
+struct ComposerChip: View {
+    let title: String
+    let systemImage: String
+    let isOn: Bool
+    var compact: Bool = false
+    /// Shown next to the icon in compact mode, e.g. the enabled tool count.
+    var badge: String?
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .medium))
+
+            if !compact {
+                Text(title)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 150, alignment: .leading)
+            } else if let badge {
+                Text(badge)
+                    .monospacedDigit()
+            }
+        }
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(isOn ? Color.accentColor : Color.secondary)
+        .padding(.horizontal, compact ? 6 : 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(backgroundColor)
+        )
+        .overlay(
+            Capsule()
+                .stroke(isOn ? Color.accentColor.opacity(0.25) : Color.clear, lineWidth: 0.5)
+        )
+        .contentShape(Capsule())
+        .onHover { isHovered = $0 }
+        .animation(.easeOut(duration: 0.15), value: isOn)
+    }
+
+    private var backgroundColor: Color {
+        if isOn { return Color.accentColor.opacity(isHovered ? 0.2 : 0.14) }
+        return Color.primary.opacity(isHovered ? 0.08 : 0.04)
+    }
+}
 
 // MARK: - Better Compact Model Selector
 
@@ -795,9 +895,7 @@ struct BetterCompactModelSelector: View {
     
     /// Model name only; the provider is already conveyed by the logo and the tooltip.
     private var shortModelLabel: String {
-        let modelId = chat.gptModel
-        if modelId.isEmpty { return "Select Model" }
-        return ModelMetadata.formatModelComponents(modelId: modelId, provider: currentProviderType).displayName
+        Self.shortModelName(for: chat) ?? "Select Model"
     }
 
     private var modelTooltip: String {
@@ -812,6 +910,24 @@ struct BetterCompactModelSelector: View {
 
     @MainActor
     private func selectModel(provider: String, modelId: String) {
+        Self.selectModel(provider: provider, modelId: modelId, for: chat, from: Array(apiServices))
+    }
+
+    /// Model name without the provider, or nil when the chat has no model yet.
+    static func shortModelName(for chat: ChatEntity) -> String? {
+        let modelId = chat.gptModel
+        guard !modelId.isEmpty else { return nil }
+        let provider = chat.apiService?.type ?? AppConstants.defaultApiType
+        return ModelMetadata.formatModelComponents(modelId: modelId, provider: provider).displayName
+    }
+
+    @MainActor
+    static func selectModel(
+        provider: String,
+        modelId: String,
+        for chat: ChatEntity,
+        from apiServices: [APIServiceEntity]
+    ) {
         if let service = apiServices.first(where: { $0.type == provider }) {
             chat.apiService = service
         }

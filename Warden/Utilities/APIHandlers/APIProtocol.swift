@@ -10,6 +10,31 @@ enum APIError: Error {
     case serverError(String)
     case unknown(String)
     case noApiService(String)
+    /// The provider is temporarily over capacity (HTTP 529 or an `overloaded_error` body).
+    case overloaded
+    /// Wraps another case with provider diagnostics. Use `base`/`context`/`adding(_:)` instead of matching directly.
+    indirect case withContext(APIError, ProviderErrorContext)
+}
+
+/// Result of consuming a whole response stream.
+struct StreamOutcome {
+    var toolCalls: [ToolCall]?
+    var usage: TokenUsage?
+    /// When the first non-empty text (content or reasoning) arrived from the provider.
+    var firstTokenAt: Date?
+}
+
+/// One element of a provider response stream. Usage is delivered once, in the final chunk.
+struct StreamChunk {
+    var text: String?
+    var toolCalls: [ToolCall]?
+    var usage: TokenUsage?
+
+    init(text: String? = nil, toolCalls: [ToolCall]? = nil, usage: TokenUsage? = nil) {
+        self.text = text
+        self.toolCalls = toolCalls
+        self.usage = usage
+    }
 }
 
 struct ToolCall: Codable {
@@ -42,12 +67,20 @@ protocol APIService {
         settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     )
+
+    /// Non-streaming request whose result also carries token usage when the provider reports it.
+    func sendMessageWithUsage(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]?,
+        settings: GenerationSettings,
+        completion: @escaping (Result<StreamChunk, APIError>) -> Void
+    )
     
     func sendMessageStream(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]?,
         settings: GenerationSettings
-    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error>
+    ) async throws -> AsyncThrowingStream<StreamChunk, Error>
     
     func fetchModels() async throws -> [AIModel]
     
@@ -99,22 +132,8 @@ extension APIService {
         }
 
         if !(200...299).contains(httpResponse.statusCode) {
-            if let data = data, let errorResponse = String(data: data, encoding: .utf8) {
-                switch httpResponse.statusCode {
-                case 401:
-                    return .failure(.unauthorized)
-                case 429:
-                    return .failure(.rateLimited)
-                case 400...499:
-                    return .failure(.serverError("Client Error: \(errorResponse)"))
-                case 500...599:
-                    return .failure(.serverError("Server Error: \(errorResponse)"))
-                default:
-                    return .failure(.unknown("Unknown error: \(errorResponse)"))
-                }
-            } else {
-                return .failure(.serverError("HTTP \(httpResponse.statusCode)"))
-            }
+            let apiError = ProviderErrorMapper.error(for: httpResponse, data: data)
+            return .failure(apiError.adding(ProviderErrorContext(providerType: name, model: model)))
         }
 
         return .success(data)
@@ -133,7 +152,17 @@ extension APIService {
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings
     ) async throws -> (String?, [ToolCall]?) {
-        func execute(settings: GenerationSettings, attachmentPolicy: AttachmentPolicy) async throws -> (String?, [ToolCall]?) {
+        let result = try await sendMessageReturningUsage(requestMessages, tools: tools, settings: settings)
+        return (result.text, result.toolCalls)
+    }
+
+    /// Non-streaming request that also reports token usage parsed from the response body.
+    func sendMessageReturningUsage(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
+        settings: GenerationSettings
+    ) async throws -> StreamChunk {
+        func execute(settings: GenerationSettings, attachmentPolicy: AttachmentPolicy) async throws -> StreamChunk {
             let request = try await prepareRequest(
                 requestMessages: requestMessages,
                 tools: tools,
@@ -157,7 +186,11 @@ extension APIService {
                         #endif
                         throw APIError.decodingFailed("Failed to parse response")
                     }
-                    return (messageContent, toolCalls)
+                    return StreamChunk(
+                        text: messageContent,
+                        toolCalls: toolCalls,
+                        usage: UsageExtractor.usage(from: responseData)
+                    )
                 } else {
                     throw APIError.invalidResponse
                 }
@@ -189,19 +222,14 @@ extension APIService {
                 if !didRetryWithoutReasoning,
                    ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: error) {
                     didRetryWithoutReasoning = true
-                    attemptSettings = GenerationSettings(
-                        temperature: attemptSettings.temperature,
-                        reasoningEffort: .off,
-                        serverWebSearch: attemptSettings.serverWebSearch,
-                        webSearchMaxResults: attemptSettings.webSearchMaxResults
-                    )
+                    attemptSettings.reasoningEffort = .off
                     WardenLog.app.notice(
                         "Retrying request without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
                     )
                     continue
                 }
 
-                throw error
+                throw error.adding(ProviderErrorContext(providerType: name, model: model))
             }
         }
     }
@@ -212,15 +240,13 @@ enum ReasoningCompatibility {
     static func shouldRetryWithoutReasoning(settings: GenerationSettings, error: APIError) -> Bool {
         guard settings.reasoningEffort != .off else { return false }
 
-        let errorText: String
-        switch error {
-        case .serverError(let message):
-            errorText = message
-        case .unknown(let message):
-            errorText = message
+        switch error.base {
+        case .serverError, .unknown:
+            break
         default:
             return false
         }
+        guard let errorText = error.compatibilityText else { return false }
 
         let lower = errorText.lowercased()
         let hasReasoningParam = lower.contains("reasoning_effort")
@@ -244,15 +270,13 @@ enum AttachmentCompatibility {
     static func shouldRetryWithoutFileAttachments(attachmentPolicy: AttachmentPolicy, error: APIError) -> Bool {
         guard attachmentPolicy != .inlineTextOnly else { return false }
 
-        let errorText: String
-        switch error {
-        case .serverError(let message):
-            errorText = message
-        case .unknown(let message):
-            errorText = message
+        switch error.base {
+        case .serverError, .unknown:
+            break
         default:
             return false
         }
+        guard let errorText = error.compatibilityText else { return false }
 
         let lower = errorText.lowercased()
         let mentionsAttachmentFields = lower.contains("document")
@@ -272,5 +296,20 @@ enum AttachmentCompatibility {
             || lower.contains("not allowed")
             || lower.contains("additional properties")
             || lower.contains("not supported")
+    }
+}
+
+enum StreamUsageCompatibility {
+    /// True when an OpenAI-compatible server rejected the `stream_options` field.
+    static func shouldRetryWithoutStreamUsage(settings: GenerationSettings, error: APIError) -> Bool {
+        guard settings.includeStreamUsage != false else { return false }
+        switch error.base {
+        case .serverError, .unknown:
+            break
+        default:
+            return false
+        }
+        guard let lower = error.compatibilityText?.lowercased() else { return false }
+        return lower.contains("stream_options") || lower.contains("include_usage")
     }
 }

@@ -5,8 +5,27 @@ struct MultiAgentResponseView: View {
     let responses: [MultiAgentMessageManager.AgentResponse]
     let isProcessing: Bool
     let onContinue: (MultiAgentMessageManager.AgentResponse) -> Void
+    let onAskAllFollowUp: () -> Void
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
-    
+    @AppStorage("compareSyncScroll") private var syncScroll: Bool = false
+
+    private var badges: [UUID: Set<CompareBadge>] {
+        CompareStats.badges(
+            for: responses.map { response in
+                CompareCandidate(
+                    id: response.id,
+                    isSuccessful: response.isSuccessful,
+                    totalDuration: response.metrics.totalDuration,
+                    costUSD: response.costUSD
+                )
+            }
+        )
+    }
+
+    private var allFinished: Bool {
+        !isProcessing && !responses.isEmpty && responses.allSatisfy(\.isComplete)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if isProcessing && responses.isEmpty {
@@ -20,13 +39,31 @@ struct MultiAgentResponseView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             } else {
-                // Column layout for responses
+                header
+
+                let columnBadges = badges
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(responses) { response in
-                        AgentResponseColumn(response: response, onContinue: {
-                            onContinue(response)
-                        })
-                            .frame(maxWidth: .infinity)
+                        AgentResponseColumn(
+                            response: response,
+                            badges: columnBadges[response.id] ?? [],
+                            syncScroll: syncScroll,
+                            onContinue: {
+                                onContinue(response)
+                            }
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+
+                if allFinished {
+                    HStack {
+                        Spacer()
+                        Button(action: onAskAllFollowUp) {
+                            Label("Ask All a Follow-up", systemImage: "arrowshape.turn.up.left.2")
+                        }
+                        .controlSize(.small)
+                        .help("Keep comparing these models and type a follow-up question")
                     }
                 }
             }
@@ -35,14 +72,31 @@ struct MultiAgentResponseView: View {
         .cornerRadius(12)
         .padding(.horizontal, 16)
     }
+
+    private var header: some View {
+        HStack {
+            Text("Comparing \(responses.count) \(responses.count == 1 ? "model" : "models")")
+                .font(.system(size: chatFontSize - 2, weight: .medium))
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Toggle("Sync scroll", isOn: $syncScroll)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .font(.system(size: chatFontSize - 3))
+                .foregroundColor(.secondary)
+                .help("Show answers at full height so they scroll together with the chat")
+        }
+    }
 }
 
 struct AgentResponseColumn: View {
     let response: MultiAgentMessageManager.AgentResponse
+    let badges: Set<CompareBadge>
+    let syncScroll: Bool
     let onContinue: () -> Void
     @AppStorage("chatFontSize") private var chatFontSize: Double = 14.0
-    @State private var isExpanded = true
-    @State private var isHovered = false
     @Environment(\.colorScheme) private var colorScheme
 
     private var serviceLogoName: String {
@@ -54,7 +108,11 @@ struct AgentResponseColumn: View {
         let displayName = ModelMetadata.formatModelComponents(modelId: response.model).displayName
         return displayName.isEmpty ? response.model : displayName
     }
-    
+
+    private var isRunning: Bool {
+        !response.isComplete && response.error == nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header with service logo and status
@@ -67,7 +125,7 @@ struct AgentResponseColumn: View {
                         .interpolation(.high)
                         .frame(width: 16, height: 16)
                         .foregroundColor(.primary)
-                    
+
                     VStack(alignment: .leading, spacing: 2) {
                         Text(modelDisplayName)
                             .font(.system(size: chatFontSize - 1, weight: .semibold))
@@ -82,17 +140,19 @@ struct AgentResponseColumn: View {
                     }
                 }
                 .help("\(response.model) via \(response.serviceName)")
-                
+
                 Spacer()
-                
+
                 // Status indicator
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
             }
-            
+
+            statsRow
+
             // Progress indicator for ongoing requests
-            if !response.isComplete && response.error == nil {
+            if isRunning {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.7)
@@ -102,71 +162,32 @@ struct AgentResponseColumn: View {
                         .italic()
                 }
             }
-            
+
             Divider()
                 .opacity(0.5)
-            
-            // Response content in scrollable area
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    if let error = response.error {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                            Text(errorMessage(for: error))
-                                .font(.system(size: chatFontSize - 1))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    } else if !response.response.isEmpty {
-                        AgentResponseMarkdownContent(
-                            text: response.response,
-                            isStreaming: !response.isComplete,
-                            fontSize: chatFontSize,
-                            colorScheme: colorScheme
-                        )
-                        .equatable()
-                    } else if !response.isComplete {
-                        Text("Waiting for response...")
-                            .font(.system(size: chatFontSize))
-                            .foregroundColor(.secondary)
-                            .italic()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+
+            if syncScroll {
+                responseContent
+            } else {
+                ScrollView {
+                    responseContent
                 }
+                .frame(maxHeight: 400)
             }
-            .frame(maxHeight: 400) // Limit height for better UX
-            
-            // Footer with Continue button and timestamp
+
+            // Footer with the pick action and timestamp
             HStack {
-                // Show Continue button only for completed successful responses
-                if response.isComplete && response.error == nil && !response.response.isEmpty {
-                    Button(action: {
-                        onContinue()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.right.circle.fill")
-                                .font(.system(size: 11))
-                            Text("Continue")
-                                .font(.system(size: chatFontSize - 3, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(isHovered ? Color.blue.opacity(0.9) : Color.blue)
-                        )
+                if response.isSuccessful {
+                    Button(action: onContinue) {
+                        Label("Use This Answer", systemImage: "checkmark.circle")
                     }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        isHovered = hovering
-                    }
-                    .help("Continue conversation with this model")
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .help("Continue the conversation with this model")
                 }
-                
+
                 Spacer()
-                
+
                 Text(timeString)
                     .font(.system(size: chatFontSize - 3))
                     .foregroundColor(.secondary)
@@ -180,7 +201,98 @@ struct AgentResponseColumn: View {
                 .stroke(borderColor, lineWidth: 1)
         )
     }
-    
+
+    private var responseContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let error = response.error {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                    Text(errorMessage(for: error))
+                        .font(.system(size: chatFontSize - 1))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+            } else if !response.response.isEmpty {
+                AgentResponseMarkdownContent(
+                    text: response.response,
+                    reasoningDuration: response.metrics.reasoningDuration,
+                    isStreaming: !response.isComplete,
+                    fontSize: chatFontSize,
+                    colorScheme: colorScheme
+                )
+                .equatable()
+            } else {
+                Text(response.isComplete ? "No response" : "Waiting for response...")
+                    .font(.system(size: chatFontSize))
+                    .foregroundColor(.secondary)
+                    .italic()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var statsRow: some View {
+        if response.requestStart != nil || !badges.isEmpty {
+            HStack(spacing: 6) {
+                if isRunning, let requestStart = response.requestStart {
+                    TimelineView(.periodic(from: .now, by: 0.1)) { context in
+                        statsText(elapsed: context.date.timeIntervalSince(requestStart))
+                    }
+                } else {
+                    statsText(elapsed: nil)
+                }
+
+                Spacer(minLength: 4)
+
+                ForEach(CompareBadge.allCases.filter { badges.contains($0) }, id: \.self) { badge in
+                    CompareBadgeView(badge: badge, fontSize: chatFontSize - 4)
+                }
+            }
+        }
+    }
+
+    /// While streaming `elapsed` is the live time since the request started; once complete the saved totals are used.
+    private func statsText(elapsed: TimeInterval?) -> some View {
+        let metrics = response.metrics
+        var parts: [String] = []
+        if let ttft = metrics.timeToFirstToken {
+            parts.append("TTFT \(CompareStats.formatDuration(ttft))")
+        }
+        if let total = elapsed ?? metrics.totalDuration {
+            parts.append(CompareStats.formatDuration(total))
+        }
+        if let cost = response.costUSD {
+            parts.append(CompareStats.formatCost(cost))
+        }
+
+        return Text(parts.joined(separator: " · "))
+            .font(.system(size: chatFontSize - 3).monospacedDigit())
+            .foregroundColor(.secondary)
+            .lineLimit(1)
+            .help(statsTooltip)
+    }
+
+    private var statsTooltip: String {
+        var lines: [String] = []
+        if let ttft = response.metrics.timeToFirstToken {
+            lines.append("Time to first token: \(CompareStats.formatDuration(ttft))")
+        }
+        if let total = response.metrics.totalDuration {
+            lines.append("Total time: \(CompareStats.formatDuration(total))")
+        }
+        if let usage = response.usage {
+            lines.append(CompareStats.formatTokens(usage))
+        }
+        if let cost = response.costUSD {
+            lines.append("Estimated cost: \(CompareStats.formatCost(cost))")
+        } else if response.usage != nil {
+            lines.append("Cost unknown for this model")
+        }
+        return lines.joined(separator: "\n")
+    }
+
     private var statusColor: Color {
         if response.error != nil {
             return .red
@@ -190,11 +302,11 @@ struct AgentResponseColumn: View {
             return .orange
         }
     }
-    
+
     private var cardBackgroundColor: Color {
         Color(NSColor.textBackgroundColor)
     }
-    
+
     private var borderColor: Color {
         if response.error != nil {
             return .red.opacity(0.3)
@@ -204,16 +316,16 @@ struct AgentResponseColumn: View {
             return .orange.opacity(0.3)
         }
     }
-    
+
     private var timeString: String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         return formatter.string(from: response.timestamp)
     }
-    
+
     private func errorMessage(for error: APIError) -> String {
-        switch error {
+        switch error.base {
         case .unauthorized:
             return "Authentication failed - check API key"
         case .rateLimited:
@@ -230,7 +342,34 @@ struct AgentResponseColumn: View {
             return "Invalid response from service"
         case .unknown(let message):
             return "Unknown error: \(message)"
+        case .overloaded:
+            return "Server error: \(error.context?.message ?? "Provider overloaded")"
+        case .withContext:
+            return "Unknown error"
         }
+    }
+}
+
+private struct CompareBadgeView: View {
+    let badge: CompareBadge
+    let fontSize: Double
+
+    private var tint: Color {
+        switch badge {
+        case .fastest: return .orange
+        case .cheapest: return .green
+        }
+    }
+
+    var body: some View {
+        Label(badge.title, systemImage: badge.systemImage)
+            .font(.system(size: fontSize, weight: .semibold))
+            .foregroundColor(tint)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(tint.opacity(0.15)))
     }
 }
 
@@ -238,6 +377,7 @@ struct AgentResponseColumn: View {
 /// Equatable so columns whose text hasn't changed skip re-parsing when a sibling column streams a new chunk.
 private struct AgentResponseMarkdownContent: View, Equatable {
     let text: String
+    let reasoningDuration: TimeInterval?
     let isStreaming: Bool
     let fontSize: Double
     let colorScheme: ColorScheme
@@ -248,7 +388,8 @@ private struct AgentResponseMarkdownContent: View, Equatable {
             isStreaming: isStreaming,
             own: false,
             effectiveFontSize: fontSize,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            reasoningDuration: reasoningDuration
         )
         .foregroundColor(.primary)
         .multilineTextAlignment(.leading)
@@ -257,6 +398,7 @@ private struct AgentResponseMarkdownContent: View, Equatable {
 }
 
 #Preview {
+    let start = Date().addingTimeInterval(-6)
     MultiAgentResponseView(
         responses: [
             MultiAgentMessageManager.AgentResponse(
@@ -266,7 +408,12 @@ private struct AgentResponseMarkdownContent: View, Equatable {
                 response: "This is a sample response from GPT-4. It's quite detailed and shows how the multi-agent system works.",
                 isComplete: true,
                 error: nil,
-                timestamp: Date()
+                timestamp: Date(),
+                usage: TokenUsage(inputTokens: 1200, outputTokens: 340),
+                requestStart: start,
+                firstTokenAt: start.addingTimeInterval(0.8),
+                finishedAt: start.addingTimeInterval(4.2),
+                costUSD: 0.0031
             ),
             MultiAgentMessageManager.AgentResponse(
                 serviceName: "Anthropic",
@@ -284,9 +431,14 @@ private struct AgentResponseMarkdownContent: View, Equatable {
                     print("hi")
                     ```
                     """,
-                isComplete: false,
+                isComplete: true,
                 error: nil,
-                timestamp: Date()
+                timestamp: Date(),
+                usage: TokenUsage(inputTokens: 1200, outputTokens: 410),
+                requestStart: start,
+                firstTokenAt: start.addingTimeInterval(1.1),
+                finishedAt: start.addingTimeInterval(5.6),
+                costUSD: 0.0098
             ),
             MultiAgentMessageManager.AgentResponse(
                 serviceName: "Google",
@@ -299,7 +451,8 @@ private struct AgentResponseMarkdownContent: View, Equatable {
             )
         ],
         isProcessing: false,
-        onContinue: { _ in }
+        onContinue: { _ in },
+        onAskAllFollowUp: {}
     )
     .frame(width: 800, height: 500)
-} 
+}

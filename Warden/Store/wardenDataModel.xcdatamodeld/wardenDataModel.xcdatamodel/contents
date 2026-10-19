@@ -69,6 +69,7 @@
         <attribute name="body" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="isMultiAgentResponse" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="metricsJson" optional="YES" attributeType="String"/>
         <attribute name="multiAgentGroupId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="own" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
@@ -88,6 +89,15 @@
         <attribute name="systemMessage" optional="YES" attributeType="String"/>
         <attribute name="temperature" optional="YES" attributeType="Float" minValueString="0" maxValueString="1" defaultValueString="0.7" usesScalarValueType="YES"/>
         <relationship name="defaultApiService" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="APIServiceEntity"/>
+    </entity>
+    <entity name="PromptEntity" representedClassName=".PromptEntity" syncable="YES">
+        <attribute name="content" attributeType="String" defaultValueString=""/>
+        <attribute name="createdDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="lastUsedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="shortcut" optional="YES" attributeType="String"/>
+        <attribute name="usageCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
     <entity name="ProjectEntity" representedClassName="ProjectEntity" syncable="YES" codeGenerationType="class">
         <attribute name="aiGeneratedSummary" optional="YES" attributeType="String"/>

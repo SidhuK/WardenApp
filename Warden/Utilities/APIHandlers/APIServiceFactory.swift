@@ -858,17 +858,17 @@ final class CodexAppServerHandler: BaseAPIHandler {
         }
     }
 
-    override func sendMessage(
+    override func sendMessageWithUsage(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings,
-        completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
+        completion: @escaping (Result<StreamChunk, APIError>) -> Void
     ) {
         Task(priority: .userInitiated) {
             do {
                 let response = try await sendMessageSync(requestMessages, settings: settings)
                 await MainActor.run {
-                    completion(.success((response, nil)))
+                    completion(.success(StreamChunk(text: response)))
                 }
             } catch let apiError as APIError {
                 await MainActor.run {
@@ -886,7 +886,7 @@ final class CodexAppServerHandler: BaseAPIHandler {
         _ requestMessages: [[String: String]],
         tools _: [[String: Any]]? = nil,
         settings: GenerationSettings
-    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
+    ) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         let (inputText, baseInstructions, includeHistory) = buildInputPayload(from: requestMessages)
 
         return AsyncThrowingStream { continuation in
@@ -942,7 +942,7 @@ final class CodexAppServerHandler: BaseAPIHandler {
                                    payload.threadId == threadID,
                                    payload.turnId == turnID
                                 {
-                                    continuation.yield((payload.delta, nil))
+                                    continuation.yield(StreamChunk(text: payload.delta))
                                 }
 
                             case "error":
@@ -1009,9 +1009,9 @@ final class CodexAppServerHandler: BaseAPIHandler {
     private func sendMessageSync(_ requestMessages: [[String: String]], settings: GenerationSettings) async throws -> String {
         let stream = try await sendMessageStream(requestMessages, tools: nil, settings: settings)
         var output = ""
-        for try await (chunk, _) in stream {
-            if let chunk {
-                output.append(chunk)
+        for try await chunk in stream {
+            if let text = chunk.text {
+                output.append(text)
             }
         }
         return output

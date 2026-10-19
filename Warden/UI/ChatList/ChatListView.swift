@@ -181,9 +181,12 @@ struct ChatListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search bar at the top
+            SidebarNewChatRow(action: onNewChat)
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+
             searchBarSection
-                .padding(.top, 12)
                 .padding(.bottom, 8)
 
             List(selection: $selectedChatID) {
@@ -513,5 +516,41 @@ struct ChatListView: View {
                 }
             }
         }
+    }
+}
+
+/// Lightweight sidebar row that mirrors the toolbar's new-chat button.
+private struct SidebarNewChatRow: View {
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 13, weight: .regular))
+                    .frame(width: 16)
+                Text("New chat")
+                    .font(.body)
+                Spacer(minLength: 4)
+                Text("⌘N")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(isHovered ? 0.08 : 0))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help("New chat (⌘N)")
+        .accessibilityLabel("New chat")
+        .accessibilityHint("Keyboard shortcut Command N")
     }
 }

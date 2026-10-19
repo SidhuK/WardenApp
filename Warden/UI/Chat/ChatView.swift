@@ -23,6 +23,7 @@ struct ChatView: View {
     @AppStorage("enableMultiAgentMode") private var enableMultiAgentMode: Bool = false
     @StateObject private var chatViewModel: ChatViewModel
     @State private var currentError: ErrorMessage?
+    @StateObject private var errorCardState = ErrorCardState()
     @Environment(\.colorScheme) private var colorScheme
     @State private var isBottomContainerExpanded = false
     @State private var codeBlocksRendered = false
@@ -114,6 +115,9 @@ struct ChatView: View {
             composerState.selectedMCPAgents = chatViewModel.selectedMCPAgents
             requestComposerFocus()
         })
+        .onDisappear {
+            errorCardState.cancelCountdown()
+        }
         .onChange(of: composerState.selectedMCPAgents) { _, newValue in
             if chatViewModel.selectedMCPAgents != newValue {
                 chatViewModel.selectedMCPAgents = newValue
@@ -299,14 +303,10 @@ struct ChatView: View {
                             userIsScrolling: $userIsScrolling,
                             contentEndY: $contentEndY,
                             onRetryMessage: {
-                                // Retry logic: Find the last user message and re-send it
-                                let messages = chat.messagesArray.sorted { $0.id < $1.id }
-                                if let lastUserMessage = messages.last(where: { $0.own }) {
-                                    sendMessage(retryContent: lastUserMessage.body)
-                                }
+                                retryLastUserMessage()
                             },
                             onIgnoreError: {
-                                currentError = nil
+                                resetError()
                             },
                             onEditMessage: { message in
                                 beginEditing(message)
@@ -314,8 +314,12 @@ struct ChatView: View {
                             onContinueWithAgent: { response in
                                 continueWithSelectedAgent(response)
                             },
+                            onAskAllFollowUp: {
+                                askAllFollowUp()
+                            },
                             scrollView: scrollView,
-                            viewWidth: min(geometry.size.width, 1000) // Match input box width exactly
+                            viewWidth: min(geometry.size.width, 1000), // Match input box width exactly
+                            errorActions: errorCardActions
                         )
                         .id(messageListRefreshToken)
                         .frame(maxWidth: 1000) // Match input box width exactly
@@ -542,6 +546,7 @@ extension ChatView {
             // Retry mode: Use provided text, do not save new user message
             messageBody = retryText
         } else {
+            errorCardState.resetAttempts()
             // Normal send: ensure attachment bytes are persisted before saving message + sending
             messageBody = await prepareMessageBodyAsync(clearInput: true)
             saveNewMessageInStore(with: messageBody)
@@ -611,7 +616,7 @@ extension ChatView {
                 }
             case .failure(let error):
                 WardenLog.app.error("Error sending message: \(error.localizedDescription, privacy: .public)")
-                self.currentError = ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date())
+                self.showError(ErrorMessage(apiError: self.convertToAPIError(error), timestamp: Date()))
                 self.handleResponseFinished()
             }
         }
@@ -781,6 +786,138 @@ extension ChatView {
 
     private func resetError() {
         currentError = nil
+        errorCardState.errorChanged()
+    }
+
+    /// Shows an error card and, for rate limits and overload, schedules an automatic retry.
+    private func showError(_ error: ErrorMessage) {
+        errorCardState.errorChanged()
+        currentError = error
+        let presentation = error.presentation
+        guard presentation.retriesAutomatically, errorCardState.canRetryAutomatically else { return }
+        let errorID = error.id
+        errorCardState.startCountdown(seconds: presentation.retryDelay) {
+            guard currentError?.id == errorID else { return }
+            retryLastUserMessage()
+        }
+    }
+
+    /// Re-sends the last user message without saving it again.
+    private func retryLastUserMessage() {
+        errorCardState.cancelCountdown()
+        let messages = chat.messagesArray.sorted { $0.id < $1.id }
+        if let lastUserMessage = messages.last(where: { $0.own }) {
+            sendMessage(retryContent: lastUserMessage.body)
+        }
+    }
+
+    private var errorCardActions: ErrorCardActions {
+        let presentation = currentError?.presentation
+        let offersModelSwitch = presentation?.actions.contains(.switchModel) ?? false
+        return ErrorCardActions(
+            state: errorCardState,
+            retry: { retryLastUserMessage() },
+            openSettings: { openSettingsForCurrentError() },
+            testKey: { testCurrentAPIKey() },
+            modelChoices: offersModelSwitch ? alternativeModelChoices() : [],
+            switchModel: { choice in switchModelAndRetry(choice) }
+        )
+    }
+
+    private func openSettingsForCurrentError() {
+        let isProviderAccountError: Bool
+        if case .apiError(let apiError) = currentError?.type {
+            if case .unauthorized = apiError.base {
+                isProviderAccountError = true
+            } else {
+                isProviderAccountError = ErrorPresentation.indicatesQuotaExhausted(apiError)
+            }
+        } else {
+            isProviderAccountError = false
+        }
+        if isProviderAccountError {
+            SettingsWindowManager.shared.openSettingsWindow(
+                tab: .apiServices,
+                apiServiceID: chat.apiService?.objectID
+            )
+        } else {
+            SettingsWindowManager.shared.openSettingsWindow(tab: .apiServices)
+        }
+    }
+
+    private func testCurrentAPIKey() {
+        guard let service = chat.apiService,
+            let config = APIServiceManager.createAPIConfiguration(
+                for: service,
+                modelOverride: chat.gptModel.isEmpty ? nil : chat.gptModel
+            )
+        else {
+            errorCardState.keyTest = .failed("This chat has no API service configured.")
+            return
+        }
+
+        let state = errorCardState
+        let context = ProviderErrorContext(providerName: service.name, providerType: service.type, model: config.model)
+        let tester = MessageManager(apiService: APIServiceFactory.createAPIService(config: config), viewContext: viewContext)
+        let testID = state.beginKeyTest(retaining: tester)
+        tester.testAPI(model: config.model) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    // The cached manager was built with the old key; "Send now" must use the one just tested.
+                    chatViewModel.recreateMessageManager()
+                    state.finishKeyTest(id: testID, result: .succeeded)
+                case .failure(let error):
+                    let apiError = convertToBaseAPIError(error).adding(context)
+                    state.finishKeyTest(
+                        id: testID,
+                        result: .failed("Test failed: \(ErrorPresentation(apiError: apiError).title).")
+                    )
+                }
+            }
+        }
+    }
+
+    private func alternativeModelChoices() -> [ErrorModelChoice] {
+        ErrorPresentation.alternativeModels(
+            favorites: FavoriteModelsManager.shared.getAllFavorites(),
+            services: apiServices.compactMap { service in
+                guard let type = service.type else { return nil }
+                return (type: type, name: service.name ?? type, model: service.model, id: service.objectID)
+            },
+            currentProviderType: chat.apiService?.type,
+            currentModel: chat.gptModel
+        )
+    }
+
+    /// Switches the chat to another model the same way the model picker does, then retries.
+    private func switchModelAndRetry(_ choice: ErrorModelChoice) {
+        let service: APIServiceEntity?
+        if let serviceID = choice.serviceID {
+            service = apiServices.first(where: { $0.objectID == serviceID })
+        } else if let current = chat.apiService, current.type == choice.providerType {
+            service = current
+        } else {
+            service = apiServices.first(where: { $0.type == choice.providerType })
+        }
+        guard let service else { return }
+        chat.apiService = service
+        chat.gptModel = choice.modelId
+        if chat.reasoningEffort == .off {
+            let defaultEffort = AppConstants.defaultReasoningEffort(provider: choice.providerType, modelId: choice.modelId)
+            if defaultEffort != .off {
+                chat.reasoningEffort = defaultEffort
+            }
+        }
+        chat.updatedDate = Date()
+        chat.objectWillChange.send()
+        do {
+            try viewContext.save()
+        } catch {
+            WardenLog.coreData.error("Failed to save model switch: \(error.localizedDescription, privacy: .public)")
+        }
+        chatViewModel.recreateMessageManager()
+        retryLastUserMessage()
     }
     
     private func beginEditing(_ message: MessageEntity) {
@@ -794,6 +931,7 @@ extension ChatView {
         guard !editedBody.isEmpty else { return }
         
         resetError()
+        errorCardState.resetAttempts()
         stopStreaming()
 
         Task { @MainActor in
@@ -819,6 +957,16 @@ extension ChatView {
     }
     
     private func convertToAPIError(_ error: Error) -> APIError {
+        convertToBaseAPIError(error).adding(
+            ProviderErrorContext(
+                providerName: chat.apiService?.name,
+                providerType: chat.apiService?.type,
+                model: chat.gptModel.isEmpty ? nil : chat.gptModel
+            )
+        )
+    }
+
+    private func convertToBaseAPIError(_ error: Error) -> APIError {
         // If it's already an APIError, return it as-is
         if let apiError = error as? APIError {
             return apiError
@@ -909,7 +1057,8 @@ extension ChatView {
                             assistantMessage.agentServiceType = response.serviceType
                             assistantMessage.agentModel = response.model
                             assistantMessage.multiAgentGroupId = groupId
-                            
+                            assistantMessage.metrics = response.metrics
+
                             self.chat.addToMessages(assistantMessage)
                         }
                     }
@@ -977,6 +1126,12 @@ extension ChatView {
             }
         }
     }
+
+    /// Keeps the current comparison (same services and models) for the next message.
+    private func askAllFollowUp() {
+        composerState.isMultiAgentMode = true
+        requestComposerFocus()
+    }
     
     /// Switch to the selected agent's service and continue the conversation
     private func continueWithSelectedAgent(_ agentResponse: MultiAgentMessageManager.AgentResponse) {
@@ -990,17 +1145,15 @@ extension ChatView {
             return
         }
         
-        // Switch the chat's active service to the selected one
+        // Switch the chat to the picked service and model the same way the model picker does,
+        // passing only the picked service so another service of the same type can't be chosen instead.
         chat.apiService = selectedService
-        if chat.reasoningEffort == .off {
-            let defaultEffort = AppConstants.defaultReasoningEffort(
-                provider: selectedService.type ?? "",
-                modelId: selectedService.model ?? chat.gptModel
-            )
-            if defaultEffort != .off {
-                chat.reasoningEffort = defaultEffort
-            }
-        }
+        BetterCompactModelSelector.selectModel(
+            provider: selectedService.type ?? agentResponse.serviceType,
+            modelId: selectedService.model ?? agentResponse.model,
+            for: chat,
+            from: [selectedService]
+        )
         
         // Exit multi-agent mode
         composerState.isMultiAgentMode = false

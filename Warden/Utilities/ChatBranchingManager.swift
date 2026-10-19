@@ -171,6 +171,7 @@ final class ChatBranchingManager {
             
             // Tool calls
             newMessage.toolCallsJson = sourceMessage.toolCallsJson
+            newMessage.metricsJson = sourceMessage.metricsJson
             
             // Provider snapshot (preserves historical accuracy)
             newMessage.agentServiceName = sourceMessage.agentServiceName
