@@ -9,7 +9,29 @@ struct ReasoningStep: Equatable {
 enum ReasoningStepParser {
     static let maxDerivedTitleLength = 60
 
+    private final class StepsBox {
+        let steps: [ReasoningStep]
+        init(_ steps: [ReasoningStep]) { self.steps = steps }
+    }
+
+    /// Views re-render often with unchanged reasoning, so parsed results are cached by content.
+    private static let cache: NSCache<NSString, StepsBox> = {
+        let cache = NSCache<NSString, StepsBox>()
+        cache.countLimit = 64
+        return cache
+    }()
+
     static func parse(_ text: String) -> [ReasoningStep] {
+        let key = text as NSString
+        if let cached = cache.object(forKey: key) {
+            return cached.steps
+        }
+        let steps = parseUncached(text)
+        cache.setObject(StepsBox(steps), forKey: key)
+        return steps
+    }
+
+    private static func parseUncached(_ text: String) -> [ReasoningStep] {
         let normalized =
             text
             .replacingOccurrences(of: "\r\n", with: "\n")
@@ -66,6 +88,14 @@ enum ReasoningStepParser {
     /// Title of a line that is a whole-line bold heading (`**Title**`, `**Title:**`, `**Title**:`) or a
     /// Markdown heading of level 1-3; nil for anything else.
     static func headingTitle(_ line: String) -> String? {
+        // Four or more columns of indentation make the line an indented code block, as in CommonMark.
+        var indentation = 0
+        for character in line {
+            if character == " " { indentation += 1 }
+            else if character == "\t" { indentation += 4 }
+            else { break }
+        }
+        guard indentation <= 3 else { return nil }
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         if trimmed.hasPrefix("#") {
@@ -74,8 +104,10 @@ enum ReasoningStepParser {
             let rest = trimmed.dropFirst(hashes)
             guard rest.first == " " else { return nil }
             var title = rest.trimmingCharacters(in: .whitespaces)
-            while title.hasSuffix("#") {
-                title.removeLast()
+            // A closing run of hashes only counts when separated by whitespace, so "C#" keeps its hash.
+            let withoutClosing = String(title.reversed().drop { $0 == "#" }.reversed())
+            if withoutClosing.count < title.count, withoutClosing.isEmpty || withoutClosing.last?.isWhitespace == true {
+                title = withoutClosing.trimmingCharacters(in: .whitespaces)
             }
             return cleanedTitle(title)
         }

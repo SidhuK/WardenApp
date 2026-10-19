@@ -235,14 +235,14 @@ enum ProviderHTTPHeaders {
     /// Parses `retry-after-ms` (milliseconds) or `Retry-After` (delta seconds or an HTTP date).
     static func retryAfter(retryAfterMs: String?, retryAfter: String?, now: Date = Date()) -> TimeInterval? {
         if let msString = retryAfterMs?.trimmingCharacters(in: .whitespaces),
-           let ms = Double(msString), ms >= 0 {
+           let ms = Double(msString), ms.isFinite, ms >= 0 {
             return ms / 1000
         }
 
         guard let raw = retryAfter?.trimmingCharacters(in: .whitespaces), !raw.isEmpty else { return nil }
 
         if let seconds = Double(raw) {
-            return seconds >= 0 ? seconds : nil
+            return seconds.isFinite && seconds >= 0 ? seconds : nil
         }
 
         if let date = httpDateFormatter.date(from: raw) {

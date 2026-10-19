@@ -171,6 +171,36 @@ final class ErrorPresentationTests: XCTestCase {
         XCTAssertEqual(ErrorPresentation.clampedRetryDelay(600), 60)
         XCTAssertEqual(ErrorPresentation.clampedRetryDelay(-5), 1)
         XCTAssertEqual(ErrorPresentation.clampedRetryDelay(.infinity), 10)
+        XCTAssertEqual(ErrorPresentation.clampedRetryDelay(1e20), 60)
+        XCTAssertEqual(ErrorPresentation.clampedRetryDelay(.nan), 10)
+    }
+
+    func testHugeRetryAfterDoesNotCrashDetails() {
+        let huge = ErrorPresentation(apiError: APIError.rateLimited.adding(anthropic(status: 429, retryAfter: 1e20)))
+        XCTAssertEqual(huge.retryDelay, 60)
+        XCTAssertTrue(huge.detailRows.contains { $0.label == "Retry after" })
+        let infinite = ErrorPresentation(apiError: APIError.rateLimited.adding(anthropic(status: 429, retryAfter: .infinity)))
+        XCTAssertEqual(infinite.retryDelay, ErrorPresentation.defaultRetryDelay)
+        XCTAssertFalse(infinite.detailRows.contains { $0.label == "Retry after" })
+        XCTAssertNil(ProviderHTTPHeaders.retryAfter(retryAfterMs: nil, retryAfter: "inf"))
+        XCTAssertNil(ProviderHTTPHeaders.retryAfter(retryAfterMs: "nan", retryAfter: nil))
+    }
+
+    func testOpenAIRequestsPerMinuteStaysRateLimited() {
+        let context = ProviderErrorContext(
+            providerName: "OpenAI",
+            providerType: "chatgpt",
+            model: "gpt-4o",
+            statusCode: 429,
+            errorType: "requests",
+            message: "Rate limit reached for gpt-4o in organization org-abc on requests per min (RPM): Limit 3, "
+                + "Used 3, Requested 1. Please try again in 20s. Visit https://platform.openai.com/account/rate-limits "
+                + "to learn more. You can increase your rate limit by adding a payment method to your account at "
+                + "https://platform.openai.com/account/billing."
+        )
+        let p = ErrorPresentation(apiError: APIError.rateLimited.adding(context))
+        XCTAssertEqual(p.severity, .transient)
+        XCTAssertTrue(p.retriesAutomatically)
     }
 
     // MARK: - No raw JSON
@@ -238,8 +268,8 @@ final class ErrorPresentationTests: XCTestCase {
                 (provider: "groq", model: "llama"),  // no configured service
             ],
             services: [
-                (type: "claude", name: "Claude", model: "claude-sonnet-4"),
-                (type: "chatgpt", name: "OpenAI", model: "gpt-4o-mini"),
+                (type: "claude", name: "Claude", model: "claude-sonnet-4", id: nil),
+                (type: "chatgpt", name: "OpenAI", model: "gpt-4o-mini", id: nil),
             ],
             currentProviderType: "claude",
             currentModel: "claude-sonnet-4"
@@ -252,9 +282,9 @@ final class ErrorPresentationTests: XCTestCase {
         let choices = ErrorPresentation.alternativeModels(
             favorites: [],
             services: [
-                (type: "claude", name: "Claude", model: "claude-sonnet-4"),
-                (type: "chatgpt", name: "OpenAI", model: "gpt-4o-mini"),
-                (type: "ollama", name: "Ollama", model: nil),
+                (type: "claude", name: "Claude", model: "claude-sonnet-4", id: nil),
+                (type: "chatgpt", name: "OpenAI", model: "gpt-4o-mini", id: nil),
+                (type: "ollama", name: "Ollama", model: nil, id: nil),
             ],
             currentProviderType: "claude",
             currentModel: "claude-sonnet-4"
@@ -265,7 +295,7 @@ final class ErrorPresentationTests: XCTestCase {
     func testAlternativeModelsEmptyWhenNothingElse() {
         let choices = ErrorPresentation.alternativeModels(
             favorites: [],
-            services: [(type: "claude", name: "Claude", model: "claude-sonnet-4")],
+            services: [(type: "claude", name: "Claude", model: "claude-sonnet-4", id: nil)],
             currentProviderType: "claude",
             currentModel: "claude-sonnet-4"
         )

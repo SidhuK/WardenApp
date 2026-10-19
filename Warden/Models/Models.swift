@@ -411,6 +411,7 @@ struct MessageBackup: Codable, Equatable {
     var timestamp: Date
     var own: Bool
     var waitingForResponse: Bool?
+    var metrics: MessageMetrics?
 
     init(messageEntity: MessageEntity) {
         self.id = Int(messageEntity.id)
@@ -419,6 +420,7 @@ struct MessageBackup: Codable, Equatable {
         self.timestamp = messageEntity.timestamp ?? Date()
         self.own = messageEntity.own
         self.waitingForResponse = messageEntity.waitingForResponse
+        self.metrics = messageEntity.metrics
     }
 }
 

@@ -207,6 +207,7 @@ final class ChatStore: ObservableObject {
             messageEntity.timestamp = oldMessage.timestamp
             messageEntity.own = oldMessage.own
             messageEntity.waitingForResponse = oldMessage.waitingForResponse ?? false
+            messageEntity.metrics = oldMessage.metrics
             messageEntity.chat = chat
             chat.addToMessages(messageEntity)
         }

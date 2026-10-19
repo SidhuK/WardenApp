@@ -123,6 +123,39 @@ final class ReasoningTimingStore: ObservableObject {
     }
 }
 
+/// Records when `<think>` and `</think>` first appear in a stream fed chunk by chunk, for streams that don't go
+/// through `ReasoningTimingStore` (compare columns, Quick Chat).
+struct ReasoningTagTimer {
+    private(set) var start: Date?
+    private(set) var end: Date?
+    private var tail = ""
+    private var consumedLength = 0
+
+    private static let openTag = "<think>"
+    private static let closeTag = "</think>"
+    private static let openTagSearchWindow = 256
+
+    mutating func consume(_ chunk: String, at date: Date = Date()) {
+        guard end == nil, !chunk.isEmpty else { return }
+        // Keeping the previous chunk's tail finds tags split across chunks.
+        let window = tail + chunk
+        if start == nil, consumedLength < Self.openTagSearchWindow, window.contains(Self.openTag) {
+            start = date
+        }
+        if start != nil, window.contains(Self.closeTag) {
+            end = date
+        }
+        consumedLength += chunk.count
+        tail = String(window.suffix(Self.closeTag.count - 1))
+    }
+
+    /// Reasoning that never closed ends when the response finished.
+    func interval(finishedAt: Date) -> (start: Date?, end: Date?) {
+        guard let start else { return (nil, nil) }
+        return (start, end ?? finishedAt)
+    }
+}
+
 struct ThinkingProcessView: View {
     let content: String
     /// True while the reasoning is still streaming and no answer text has arrived yet.

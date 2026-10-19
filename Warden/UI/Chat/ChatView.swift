@@ -864,6 +864,8 @@ extension ChatView {
             DispatchQueue.main.async {
                 switch result {
                 case .success:
+                    // The cached manager was built with the old key; "Send now" must use the one just tested.
+                    chatViewModel.recreateMessageManager()
                     state.finishKeyTest(id: testID, result: .succeeded)
                 case .failure(let error):
                     let apiError = convertToBaseAPIError(error).adding(context)
@@ -881,7 +883,7 @@ extension ChatView {
             favorites: FavoriteModelsManager.shared.getAllFavorites(),
             services: apiServices.compactMap { service in
                 guard let type = service.type else { return nil }
-                return (type: type, name: service.name ?? type, model: service.model)
+                return (type: type, name: service.name ?? type, model: service.model, id: service.objectID)
             },
             currentProviderType: chat.apiService?.type,
             currentModel: chat.gptModel
@@ -890,7 +892,15 @@ extension ChatView {
 
     /// Switches the chat to another model the same way the model picker does, then retries.
     private func switchModelAndRetry(_ choice: ErrorModelChoice) {
-        guard let service = apiServices.first(where: { $0.type == choice.providerType }) else { return }
+        let service: APIServiceEntity?
+        if let serviceID = choice.serviceID {
+            service = apiServices.first(where: { $0.objectID == serviceID })
+        } else if let current = chat.apiService, current.type == choice.providerType {
+            service = current
+        } else {
+            service = apiServices.first(where: { $0.type == choice.providerType })
+        }
+        guard let service else { return }
         chat.apiService = service
         chat.gptModel = choice.modelId
         if chat.reasoningEffort == .off {

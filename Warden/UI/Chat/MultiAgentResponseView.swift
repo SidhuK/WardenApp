@@ -75,7 +75,7 @@ struct MultiAgentResponseView: View {
 
     private var header: some View {
         HStack {
-            Text("Comparing \(responses.count) models")
+            Text("Comparing \(responses.count) \(responses.count == 1 ? "model" : "models")")
                 .font(.system(size: chatFontSize - 2, weight: .medium))
                 .foregroundColor(.secondary)
 
@@ -216,13 +216,14 @@ struct AgentResponseColumn: View {
             } else if !response.response.isEmpty {
                 AgentResponseMarkdownContent(
                     text: response.response,
+                    reasoningDuration: response.metrics.reasoningDuration,
                     isStreaming: !response.isComplete,
                     fontSize: chatFontSize,
                     colorScheme: colorScheme
                 )
                 .equatable()
-            } else if !response.isComplete {
-                Text("Waiting for response...")
+            } else {
+                Text(response.isComplete ? "No response" : "Waiting for response...")
                     .font(.system(size: chatFontSize))
                     .foregroundColor(.secondary)
                     .italic()
@@ -376,6 +377,7 @@ private struct CompareBadgeView: View {
 /// Equatable so columns whose text hasn't changed skip re-parsing when a sibling column streams a new chunk.
 private struct AgentResponseMarkdownContent: View, Equatable {
     let text: String
+    let reasoningDuration: TimeInterval?
     let isStreaming: Bool
     let fontSize: Double
     let colorScheme: ColorScheme
@@ -386,7 +388,8 @@ private struct AgentResponseMarkdownContent: View, Equatable {
             isStreaming: isStreaming,
             own: false,
             effectiveFontSize: fontSize,
-            colorScheme: colorScheme
+            colorScheme: colorScheme,
+            reasoningDuration: reasoningDuration
         )
         .foregroundColor(.primary)
         .multilineTextAlignment(.leading)

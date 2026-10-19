@@ -27,14 +27,18 @@ enum ContextUsageEstimator {
     /// When the latest assistant reply reported usage, its input + output tokens already cover everything up to
     /// and including that reply, so only later messages are estimated from their length. Otherwise every message
     /// (and the system prompt) is estimated at ~4 characters per token. The composer text is always added.
+    /// Pass `useUsageAnchor: false` when the reported usage no longer matches the request, e.g. after the system
+    /// prompt changed.
     static func estimatedTokens(
         messages: [MessageSample],
         systemPromptCharacters: Int = 0,
-        composerCharacters: Int
+        composerCharacters: Int,
+        useUsageAnchor: Bool = true
     ) -> Int {
         let composerTokens = estimatedTokens(forCharacterCount: composerCharacters)
 
-        if let anchorIndex = messages.lastIndex(where: { $0.isAssistant && $0.usage != nil }),
+        if useUsageAnchor,
+           let anchorIndex = messages.lastIndex(where: { $0.isAssistant && $0.usage != nil }),
            let usage = messages[anchorIndex].usage {
             let laterTokens = messages[(anchorIndex + 1)...]
                 .reduce(0) { $0 + estimatedTokens(forCharacterCount: $1.characterCount) }
@@ -102,10 +106,14 @@ struct ContextUsageRing: View {
         var lastMessageID: NSManagedObjectID?
         var lastMessageLength: Int
         var lastMessageHasUsage: Bool
-        var systemPromptLength: Int
+        var systemPrompt: String
+        var contextSize: Int
     }
 
     @State private var cachedHistory: (key: HistoryKey, tokens: Int)?
+    /// System prompt in effect when the current usage anchor was first seen. Its usage no longer describes the
+    /// next request once the system prompt changes.
+    @State private var anchorSystemPrompt: (messageID: NSManagedObjectID, prompt: String)?
 
     private var historyKey: HistoryKey {
         let last = chat.lastMessage
@@ -115,15 +123,32 @@ struct ContextUsageRing: View {
             lastMessageID: last?.objectID,
             lastMessageLength: last?.body.utf16.count ?? 0,
             lastMessageHasUsage: last?.metricsJson != nil,
-            systemPromptLength: chat.systemMessage.utf16.count
+            systemPrompt: chat.systemMessage,
+            contextSize: Int(chat.apiService?.contextSize ?? Int16(AppConstants.chatGptContextSize))
         )
+    }
+
+    /// The stored messages included in the next request; see `ChatEntity.constructRequestMessages`.
+    private func sentMessages(for key: HistoryKey) -> [MessageEntity] {
+        guard key.contextSize > 0 else { return [] }
+        return Array(chat.messagesArray.suffix(key.contextSize))
+    }
+
+    private func usageAnchorID(in messages: [MessageEntity]) -> NSManagedObjectID? {
+        messages.last(where: { !$0.own && $0.metrics?.usage != nil })?.objectID
     }
 
     private func historyTokens(for key: HistoryKey) -> Int {
         if let cachedHistory, cachedHistory.key == key {
             return cachedHistory.tokens
         }
-        let samples = chat.messagesArray.map { message in
+        let messages = sentMessages(for: key)
+        var useUsageAnchor = true
+        if let anchorID = usageAnchorID(in: messages), let anchorSystemPrompt,
+           anchorSystemPrompt.messageID == anchorID, anchorSystemPrompt.prompt != key.systemPrompt {
+            useUsageAnchor = false
+        }
+        let samples = messages.map { message in
             ContextUsageEstimator.MessageSample(
                 // UTF-16 length is O(1) for bridged strings and close enough for a ~4 chars/token estimate.
                 characterCount: message.body.utf16.count,
@@ -134,8 +159,9 @@ struct ContextUsageRing: View {
         // The composer estimate is purely additive, so history can be computed once and reused per keystroke.
         return ContextUsageEstimator.estimatedTokens(
             messages: samples,
-            systemPromptCharacters: key.systemPromptLength,
-            composerCharacters: 0
+            systemPromptCharacters: key.systemPrompt.utf16.count,
+            composerCharacters: 0,
+            useUsageAnchor: useUsageAnchor
         )
     }
 
@@ -148,6 +174,10 @@ struct ContextUsageRing: View {
 
     private func cacheHistory(for key: HistoryKey) {
         guard cachedHistory?.key != key else { return }
+        let anchorID = usageAnchorID(in: sentMessages(for: key))
+        if anchorSystemPrompt?.messageID != anchorID {
+            anchorSystemPrompt = anchorID.map { ($0, key.systemPrompt) }
+        }
         cachedHistory = (key, historyTokens(for: key))
     }
 

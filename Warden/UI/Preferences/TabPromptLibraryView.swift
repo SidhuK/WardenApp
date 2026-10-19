@@ -187,6 +187,7 @@ private struct PromptEditorSheet: View {
     @State private var shortcut = ""
     @State private var content = ""
     @State private var didLoad = false
+    @State private var showingSaveError = false
 
     private var canSave: Bool {
         !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -237,12 +238,20 @@ private struct PromptEditorSheet: View {
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Save") {
-                    save()
-                    dismiss()
+                    if save() {
+                        dismiss()
+                    } else {
+                        showingSaveError = true
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canSave)
             }
+        }
+        .alert("Couldn't save the prompt", isPresented: $showingSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your text is still here. Please try again.")
         }
         .padding(20)
         .frame(width: 520)
@@ -257,12 +266,12 @@ private struct PromptEditorSheet: View {
         }
     }
 
-    private func save() {
+    private func save() -> Bool {
         let library = PromptLibraryManager.shared
         if let prompt {
-            library.updatePrompt(prompt, name: name, content: content, shortcut: shortcut)
+            return library.updatePrompt(prompt, name: name, content: content, shortcut: shortcut)
         } else {
-            library.addPrompt(name: name, content: content, shortcut: shortcut)
+            return library.addPrompt(name: name, content: content, shortcut: shortcut) != nil
         }
     }
 }

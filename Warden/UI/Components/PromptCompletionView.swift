@@ -8,7 +8,7 @@ import SwiftUI
 @MainActor
 final class PromptCompletionState: ObservableObject {
     @Published private(set) var query: String?
-    @Published private(set) var suggestions: [PromptEntity] = []
+    @Published private var storedSuggestions: [PromptEntity] = []
     @Published var selectedIndex = 0
 
     static let maxSuggestions = 8
@@ -21,11 +21,17 @@ final class PromptCompletionState: ObservableObject {
         self.library = library ?? .shared
     }
 
+    /// Prompts deleted from the library while the menu is open are dropped, since reading them would fault.
+    var suggestions: [PromptEntity] {
+        storedSuggestions.filter { !$0.isDeleted && $0.managedObjectContext != nil }
+    }
+
     var isVisible: Bool {
         query != nil && !suggestions.isEmpty
     }
 
     var selectedPrompt: PromptEntity? {
+        let suggestions = suggestions
         guard suggestions.indices.contains(selectedIndex) else { return suggestions.first }
         return suggestions[selectedIndex]
     }
@@ -48,11 +54,12 @@ final class PromptCompletionState: ObservableObject {
         guard newQuery != query || (newQuery != nil && suggestions.isEmpty) else { return }
 
         query = newQuery
-        suggestions = newQuery.map { library.prompts(matching: $0, limit: Self.maxSuggestions) } ?? []
+        storedSuggestions = newQuery.map { library.prompts(matching: $0, limit: Self.maxSuggestions) } ?? []
         selectedIndex = 0
     }
 
     func moveSelection(by delta: Int) {
+        let suggestions = suggestions
         guard !suggestions.isEmpty else { return }
         selectedIndex = (selectedIndex + delta + suggestions.count) % suggestions.count
     }
@@ -65,16 +72,20 @@ final class PromptCompletionState: ObservableObject {
 
     /// Records the use of `prompt` (or the highlighted one) and returns the text that replaces the `/query`.
     func accept(_ prompt: PromptEntity? = nil) -> String? {
-        guard let prompt = prompt ?? selectedPrompt else { return nil }
+        guard let prompt = prompt ?? selectedPrompt, !prompt.isDeleted, prompt.managedObjectContext != nil else {
+            return nil
+        }
         let content = prompt.content
         library.recordUse(prompt)
         close()
+        // Content that is itself a "/word" would otherwise reopen the menu as soon as it's inserted.
+        dismissedText = content
         return content
     }
 
     private func close() {
         query = nil
-        suggestions = []
+        storedSuggestions = []
         selectedIndex = 0
     }
 }
@@ -130,6 +141,12 @@ private struct PromptCompletionRow: View {
     }
 
     var body: some View {
+        if !prompt.isDeleted, prompt.managedObjectContext != nil {
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "text.bubble")
                 .font(.system(size: 11))

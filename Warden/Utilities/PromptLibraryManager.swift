@@ -124,9 +124,10 @@ final class PromptLibraryManager: ObservableObject {
         return save() ? prompt : nil
     }
 
-    func updatePrompt(_ prompt: PromptEntity, name: String, content: String, shortcut: String?) {
+    @discardableResult
+    func updatePrompt(_ prompt: PromptEntity, name: String, content: String, shortcut: String?) -> Bool {
         apply(name: name, content: content, shortcut: shortcut, to: prompt)
-        save()
+        return save()
     }
 
     func deletePrompt(_ prompt: PromptEntity) {
@@ -134,10 +135,34 @@ final class PromptLibraryManager: ObservableObject {
         save()
     }
 
+    /// Saves only the usage stats through a separate context. The shared view context can hold transient chat
+    /// state mid-stream (such as `waitingForResponse`), which a full save would persist.
     func recordUse(_ prompt: PromptEntity) {
-        prompt.usageCount += 1
-        prompt.lastUsedDate = Date()
-        save()
+        let objectID = prompt.objectID
+        guard !objectID.isTemporaryID, let coordinator = context.persistentStoreCoordinator else {
+            prompt.usageCount += 1
+            prompt.lastUsedDate = Date()
+            save()
+            return
+        }
+
+        let isolated = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        isolated.persistentStoreCoordinator = coordinator
+        isolated.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        let now = Date()
+        do {
+            try isolated.performAndWait {
+                guard let stored = try isolated.existingObject(with: objectID) as? PromptEntity else { return }
+                stored.usageCount += 1
+                stored.lastUsedDate = now
+                try isolated.save()
+            }
+        } catch {
+            WardenLog.coreData.error("Failed to record prompt use: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        objectWillChange.send()
+        context.refresh(prompt, mergeChanges: true)
     }
 
     /// Adds the starter prompts the first time the library is used on an empty store.

@@ -19,9 +19,13 @@ final class MultiAgentMessageManager: ObservableObject {
 
         isProcessing = false
 
+        let now = Date()
         for index in activeAgents.indices where !activeAgents[index].isComplete {
             activeAgents[index].isComplete = true
             activeAgents[index].error = APIError.unknown("Request cancelled by user")
+            if activeAgents[index].finishedAt == nil {
+                activeAgents[index].finishedAt = now
+            }
         }
     }
 
@@ -40,6 +44,8 @@ final class MultiAgentMessageManager: ObservableObject {
         var requestStart: Date?
         var firstTokenAt: Date?
         var finishedAt: Date?
+        var reasoningStart: Date?
+        var reasoningEnd: Date?
         /// Computed once on completion; the pricing lookup decodes the whole metadata cache, so it is too slow
         /// to run on every render.
         var costUSD: Double?
@@ -61,7 +67,9 @@ final class MultiAgentMessageManager: ObservableObject {
                 costUSD: costUSD,
                 requestStart: requestStart,
                 firstTokenAt: firstTokenAt,
-                finishedAt: finishedAt
+                finishedAt: finishedAt,
+                reasoningStart: reasoningStart,
+                reasoningEnd: reasoningEnd
             )
         }
     }
@@ -156,10 +164,13 @@ private extension MultiAgentMessageManager {
             agent.requestStart = requestStart
             agent.firstTokenAt = nil
             agent.finishedAt = nil
+            agent.reasoningStart = nil
+            agent.reasoningEnd = nil
         }
 
         var usage: TokenUsage?
         var firstTokenAt: Date?
+        var reasoningTimer = ReasoningTagTimer()
 
         do {
             if service.useStreamResponse {
@@ -202,6 +213,7 @@ private extension MultiAgentMessageManager {
                     messages: requestMessages,
                     settings: settings
                 ) { chunk in
+                    reasoningTimer.consume(chunk)
                     pendingParts.append(chunk)
                     pendingCharacterCount += chunk.count
                     await flushPendingParts(force: false)
@@ -217,15 +229,17 @@ private extension MultiAgentMessageManager {
                     settings: settings
                 )
                 usage = response.usage
+                reasoningTimer.consume(response.text ?? "")
 
                 await updateAgent { agent in
-                    agent.response = response.text ?? "No response"
+                    agent.response = response.text ?? ""
                     agent.timestamp = Date()
                 }
             }
 
             if !Task.isCancelled {
                 let finishedAt = Date()
+                let reasoning = reasoningTimer.interval(finishedAt: finishedAt)
                 let costUSD = usage.flatMap {
                     UsageCostCalculator.cost(
                         for: $0,
@@ -242,13 +256,22 @@ private extension MultiAgentMessageManager {
                         agent.firstTokenAt = firstTokenAt
                     }
                     agent.finishedAt = finishedAt
+                    agent.reasoningStart = reasoning.start
+                    agent.reasoningEnd = reasoning.end
                 }
             }
         } catch is CancellationError {
+            let finishedAt = Date()
+            let reasoning = reasoningTimer.interval(finishedAt: finishedAt)
             await updateAgent { agent in
                 agent.error = APIError.unknown("Request cancelled")
                 agent.isComplete = true
-                agent.timestamp = Date()
+                agent.timestamp = finishedAt
+                if agent.finishedAt == nil {
+                    agent.finishedAt = finishedAt
+                }
+                agent.reasoningStart = reasoning.start
+                agent.reasoningEnd = reasoning.end
             }
         } catch {
             let context = ProviderErrorContext(

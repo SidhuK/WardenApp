@@ -356,36 +356,16 @@ struct QuickChatView: View {
         }
         
         currentStreamingTask = Task { @MainActor in
-            do {
-                let requestStart = Date()
-                let stream = try await handler.sendMessageStream(
-                    messages,
-                    tools: nil,
-                    settings: GenerationSettings(temperature: 0.7, reasoningEffort: chat.reasoningEffort)
-                )
-                aiMessage.waitingForResponse = false
-                try? viewContext.save()
-                
-                var currentBody = ""
-                var firstTokenAt: Date?
-                var usage: TokenUsage?
-                for try await chunk in stream {
-                    try Task.checkCancellation()
-                    if let chunkUsage = chunk.usage {
-                        usage = usage.map { $0.merged(with: chunkUsage) } ?? chunkUsage
-                    }
-                    if let text = chunk.text {
-                        if firstTokenAt == nil, !text.isEmpty {
-                            firstTokenAt = Date()
-                        }
-                        currentBody += text
-                        aiMessage.body = currentBody
-                        try? viewContext.save()
-                    }
-                }
+            let requestStart = Date()
+            var firstTokenAt: Date?
+            var usage: TokenUsage?
+            var reasoningTimer = ReasoningTagTimer()
 
+            func makeMetrics() -> MessageMetrics {
                 let providerType = apiService.type ?? handler.name
-                aiMessage.metrics = MessageMetrics(
+                let finishedAt = Date()
+                let reasoning = reasoningTimer.interval(finishedAt: finishedAt)
+                return MessageMetrics(
                     providerType: providerType,
                     providerName: apiService.name,
                     modelId: handler.model,
@@ -395,8 +375,39 @@ struct QuickChatView: View {
                     },
                     requestStart: requestStart,
                     firstTokenAt: firstTokenAt,
-                    finishedAt: Date()
+                    finishedAt: finishedAt,
+                    reasoningStart: reasoning.start,
+                    reasoningEnd: reasoning.end
                 )
+            }
+
+            do {
+                let stream = try await handler.sendMessageStream(
+                    messages,
+                    tools: nil,
+                    settings: GenerationSettings(temperature: 0.7, reasoningEffort: chat.reasoningEffort)
+                )
+                aiMessage.waitingForResponse = false
+                try? viewContext.save()
+                
+                var currentBody = ""
+                for try await chunk in stream {
+                    try Task.checkCancellation()
+                    if let chunkUsage = chunk.usage {
+                        usage = usage.map { $0.merged(with: chunkUsage) } ?? chunkUsage
+                    }
+                    if let text = chunk.text {
+                        if firstTokenAt == nil, !text.isEmpty {
+                            firstTokenAt = Date()
+                        }
+                        reasoningTimer.consume(text)
+                        currentBody += text
+                        aiMessage.body = currentBody
+                        try? viewContext.save()
+                    }
+                }
+
+                aiMessage.metrics = makeMetrics()
 
                 persistLatestCodexThreadID(from: handler, in: chat)
                 
@@ -406,6 +417,8 @@ struct QuickChatView: View {
                 generateChatNameIfNeeded(chat: chat, apiService: apiService)
             } catch is CancellationError {
                 persistLatestCodexThreadID(from: handler, in: chat)
+                aiMessage.waitingForResponse = false
+                aiMessage.metrics = makeMetrics()
                 isStreaming = false
                 currentStreamingTask = nil
                 try? viewContext.save()

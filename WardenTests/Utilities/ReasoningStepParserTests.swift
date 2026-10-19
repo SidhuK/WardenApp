@@ -44,6 +44,19 @@ final class ReasoningStepParserTests: XCTestCase {
         XCTAssertNil(ReasoningStepParser.headingTitle("#hashtag"))
     }
 
+    func testClosingHashesNeedLeadingWhitespace() {
+        XCTAssertEqual(ReasoningStepParser.headingTitle("## Implement in C#"), "Implement in C#")
+        XCTAssertEqual(ReasoningStepParser.headingTitle("## Plan ##"), "Plan")
+        XCTAssertEqual(ReasoningStepParser.headingTitle("### F# and C# ###"), "F# and C#")
+    }
+
+    func testIndentedHeadingIsCode() {
+        XCTAssertEqual(ReasoningStepParser.headingTitle("   ## Three spaces"), "Three spaces")
+        XCTAssertNil(ReasoningStepParser.headingTitle("    ## Four spaces"))
+        XCTAssertNil(ReasoningStepParser.headingTitle("\t## Tab"))
+        XCTAssertNil(ReasoningStepParser.headingTitle("    **Bold**"))
+    }
+
     func testHeadingsWithTrailingColon() {
         XCTAssertEqual(ReasoningStepParser.headingTitle("**Plan:**"), "Plan")
         XCTAssertEqual(ReasoningStepParser.headingTitle("**Plan**:"), "Plan")

@@ -417,8 +417,16 @@ final class MessageManager: ObservableObject {
                     
                     if let toolCalls = toolCalls, !toolCalls.isEmpty {
                         // Handle tool calls
+                        let savedOwnMessage = messageBody != nil
                         Task {
-                            await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                            await self.handleToolCalls(
+                                toolCalls,
+                                in: chat,
+                                contextSize: contextSize,
+                                priorUsage: savedOwnMessage ? nil : response.usage,
+                                turnStart: savedOwnMessage ? nil : requestStart,
+                                completion: completion
+                            )
                         }
                         return
                     }
@@ -646,7 +654,15 @@ final class MessageManager: ObservableObject {
                 if let toolCalls = toolCalls, !toolCalls.isEmpty {
                     self.streamingAssistantText = ""
                     try Task.checkCancellation()
-                    await self.handleToolCalls(toolCalls, in: chat, contextSize: contextSize, completion: completion)
+                    let savedOwnMessage = completedMessageID != nil
+                    await self.handleToolCalls(
+                        toolCalls,
+                        in: chat,
+                        contextSize: contextSize,
+                        priorUsage: savedOwnMessage ? nil : outcome.usage,
+                        turnStart: savedOwnMessage ? nil : requestStart,
+                        completion: completion
+                    )
                     return
                 }
                 
@@ -713,7 +729,16 @@ final class MessageManager: ObservableObject {
     
     // MARK: - Tool Execution
     
-    private func handleToolCalls(_ toolCalls: [ToolCall], in chat: ChatEntity, contextSize: Int, completion: @escaping (Result<Void, Error>) -> Void) async {
+    /// `priorUsage` and `turnStart` come from the request that asked for the tools when it saved no message of its
+    /// own, so the follow-up reply's metrics cover the whole turn.
+    private func handleToolCalls(
+        _ toolCalls: [ToolCall],
+        in chat: ChatEntity,
+        contextSize: Int,
+        priorUsage: TokenUsage? = nil,
+        turnStart: Date? = nil,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) async {
         #if DEBUG
         WardenLog.app.debug("Handling \(toolCalls.count, privacy: .public) tool call(s)")
         #endif
@@ -837,7 +862,7 @@ final class MessageManager: ObservableObject {
         // Now send the conversation again to get the final response
         let requestMessages = Array(chat.requestMessages.suffix(contextSize))
         let temperature = (chat.persona?.temperature ?? AppConstants.defaultTemperatureForChat).roundedToOneDecimal()
-        let requestStart = Date()
+        let requestStart = turnStart ?? Date()
 
         ChatService.shared.sendMessage(
             apiService: apiService,
@@ -865,7 +890,7 @@ final class MessageManager: ObservableObject {
                             chat: chat,
                             requestStart: requestStart,
                             firstTokenAt: nil,
-                            usage: response.usage
+                            usage: priorUsage.adding(response.usage)
                         )
                         self.addMessageToChat(
                             chat: chat,

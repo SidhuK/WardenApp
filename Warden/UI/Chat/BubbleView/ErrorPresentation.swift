@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 /// How serious an error is, which drives the card's accent color and symbol.
@@ -24,6 +25,8 @@ struct ErrorModelChoice: Hashable, Identifiable {
     let providerType: String
     let providerName: String
     let modelId: String
+    /// The exact service to switch to. Nil for favorites, which are only keyed by provider type.
+    var serviceID: NSManagedObjectID? = nil
 
     var id: String { "\(providerType):\(modelId)" }
 }
@@ -340,8 +343,9 @@ struct ErrorPresentation: Equatable {
         if let requestID = context.requestID, !requestID.isEmpty {
             rows.append(DetailRow(label: "Request ID", value: requestID))
         }
-        if let retryAfter = context.retryAfter {
-            rows.append(DetailRow(label: "Retry after", value: "\(Int(retryAfter.rounded(.up)))s"))
+        if let retryAfter = context.retryAfter,
+           let seconds = roundedRetrySeconds(retryAfter, upperBound: Double(Int32.max)) {
+            rows.append(DetailRow(label: "Retry after", value: "\(seconds)s"))
         }
         if let message = sanitizedMessage(context.message) {
             rows.append(DetailRow(label: "Message", value: message))
@@ -380,12 +384,19 @@ struct ErrorPresentation: Equatable {
         return fallbackProviderName
     }
 
+    private static let quotaErrorTypes: Set<String> = [
+        "insufficient_quota",
+        "quota_exceeded",
+        "insufficient_balance",
+        "billing_hard_limit_reached",
+        "billing_not_active",
+    ]
+
     private static let quotaMarkers = [
         "insufficient_quota",
         "quota_exceeded",
         "quota exceeded",
         "exceeded your current quota",
-        "billing",
         "credit balance",
         "insufficient credits",
         "out of credits",
@@ -393,9 +404,16 @@ struct ErrorPresentation: Equatable {
         "insufficient balance",
     ]
 
+    /// Phrases used by temporary rate limits. OpenAI's RPM/TPM messages also link to the billing page,
+    /// so these win over message-based quota markers.
+    private static let rateLimitMarkers = ["per minute", "per min", "try again in"]
+
     /// True when the error type or message says the account is out of quota, billing or credits.
     /// Per-minute quota messages (e.g. Gemini's RESOURCE_EXHAUSTED) are ordinary rate limits.
     static func indicatesQuotaExhausted(_ error: APIError) -> Bool {
+        if let type = error.context?.errorType?.lowercased(), quotaErrorTypes.contains(type) {
+            return true
+        }
         var texts = [error.context?.errorType, error.context?.message]
         switch error.base {
         case .serverError(let message), .unknown(let message):
@@ -404,13 +422,22 @@ struct ErrorPresentation: Equatable {
             break
         }
         let lower = texts.compactMap { $0?.lowercased() }
-        guard !lower.contains(where: { $0.contains("per minute") }) else { return false }
+        guard !lower.contains(where: { text in rateLimitMarkers.contains { text.contains($0) } }) else {
+            return false
+        }
         return lower.contains { text in quotaMarkers.contains { text.contains($0) } }
     }
 
+    /// Whole seconds for a Retry-After value, clamped in floating point so huge values can't trap on `Int(_:)`.
+    static func roundedRetrySeconds(_ retryAfter: TimeInterval, upperBound: Double) -> Int? {
+        guard retryAfter.isFinite else { return nil }
+        return Int(min(max(retryAfter.rounded(.up), 0), upperBound))
+    }
+
     static func clampedRetryDelay(_ retryAfter: TimeInterval?) -> Int {
-        guard let retryAfter, retryAfter.isFinite else { return defaultRetryDelay }
-        let seconds = Int(retryAfter.rounded(.up))
+        guard let retryAfter,
+              let seconds = roundedRetrySeconds(retryAfter, upperBound: Double(retryDelayRange.upperBound))
+        else { return defaultRetryDelay }
         return min(max(seconds, retryDelayRange.lowerBound), retryDelayRange.upperBound)
     }
 
@@ -467,7 +494,7 @@ struct ErrorPresentation: Equatable {
     /// Falls back to the default model of every other configured service when there are no usable favorites.
     static func alternativeModels(
         favorites: [(provider: String, model: String)],
-        services: [(type: String, name: String, model: String?)],
+        services: [(type: String, name: String, model: String?, id: NSManagedObjectID?)],
         currentProviderType: String?,
         currentModel: String?
     ) -> [ErrorModelChoice] {
@@ -491,7 +518,12 @@ struct ErrorPresentation: Equatable {
             .filter { $0.type != currentProviderType }
             .compactMap { service -> ErrorModelChoice? in
                 guard let model = service.model, !model.isEmpty else { return nil }
-                return ErrorModelChoice(providerType: service.type, providerName: name(for: service.type), modelId: model)
+                return ErrorModelChoice(
+                    providerType: service.type,
+                    providerName: name(for: service.type),
+                    modelId: model,
+                    serviceID: service.id
+                )
             }
             .filter { seen.insert($0.id).inserted }
     }
