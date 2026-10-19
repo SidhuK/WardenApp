@@ -628,6 +628,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
             imageUploadsSupported: true
         ),
         "openrouter": defaultApiConfiguration(name: "OpenRouter", url: "https://openrouter.ai/api/v1/chat/completions", apiKeyRef: "https://openrouter.ai/docs/api-reference/authentication#using-an-api-key", apiModelRef: "https://openrouter.ai/docs/overview/models", defaultModel: "deepseek/deepseek-r1:free", models: ["openai/gpt-4o", "deepseek/deepseek-r1:free"], imageUploadsSupported: true),
+        "openpaths": defaultApiConfiguration(name: "OpenPaths", url: "https://openpaths.io/v1/chat/completions", apiKeyRef: "https://openpaths.io/account", apiModelRef: "https://openpaths.io/v1/models", defaultModel: "openpaths/auto", models: ["openpaths/auto", "openpaths/auto-code", "openpaths/auto-fast", "openpaths/auto-reasoning", "openpaths/auto-vision", "openpaths/auto-cheap"], inherits: "chatgpt", imageUploadsSupported: true),
         "groq": defaultApiConfiguration(name: "Groq", url: "https://api.groq.com/openai/v1/chat/completions", apiKeyRef: "https://console.groq.com/keys", apiModelRef: "https://console.groq.com/docs/models", defaultModel: "llama-3.3-70b-versatile", models: ["meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct", "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "deepseek-r1-distill-llama-70b", "qwen-qwq-32b", "mistral-saba-24b", "gemma2-9b-it", "mixtral-8x7b-32768", "llama-guard-3-8b", "meta-llama/Llama-Guard-4-12B"], inherits: "chatgpt"),
         "mistral": defaultApiConfiguration(name: "Mistral", url: "https://api.mistral.ai/v1/chat/completions", apiKeyRef: "https://console.mistral.ai/api-keys/", apiModelRef: "https://docs.mistral.ai/models/", defaultModel: "mistral-large-latest", models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "mistral-tiny-latest", "open-mixtral-8x22b", "open-mixtral-8x7b", "open-mistral-7b"], inherits: "chatgpt"),
         "lmstudio": defaultApiConfiguration(name: "LM Studio", url: "http://localhost:1234/v1/chat/completions", apiKeyRef: "https://lmstudio.ai/docs/api/openai-api", apiModelRef: "https://lmstudio.ai/docs/local-server", defaultModel: "local-model", models: ["local-model"], inherits: "chatgpt"),
@@ -636,7 +637,7 @@ Remember that true productivity serves your overall life satisfaction and well-b
 
     /// A list of available API types.
     static let apiTypes = [
-        "chatgpt", "codex", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "pollinations", "fireworks", "openrouter", "groq",
+        "chatgpt", "codex", "ollama", "claude", "xai", "gemini", "perplexity", "deepseek", "pollinations", "fireworks", "openrouter", "openpaths", "groq",
         "mistral", "lmstudio", "openai_custom",
     ]
 
