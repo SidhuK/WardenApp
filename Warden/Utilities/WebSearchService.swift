@@ -217,17 +217,23 @@ enum InlineCitations {
             label = String(label.dropFirst().dropLast())
         }
 
-        let target = normalizedURL(destination)
         let number = Int(label)
-        if let number, number >= 1, number <= sources.count,
-           normalizedURL(sources[number - 1].url) == target {
-            return number - 1
-        }
-
         let isCitationLabel = number != nil || label.lowercased() == domain(of: destination)
         guard isCitationLabel else { return nil }
-        return sources.firstIndex { $0.url == destination }
-            ?? sources.firstIndex { normalizedURL($0.url) == target }
+
+        // Exact destination first, so sources that only differ by fragment or `www.` stay distinct.
+        let validNumber = number.flatMap { (1...sources.count).contains($0) ? $0 : nil }
+        if let validNumber, sources[validNumber - 1].url == destination {
+            return validNumber - 1
+        }
+        if let exact = sources.firstIndex(where: { $0.url == destination }) {
+            return exact
+        }
+        let target = normalizedURL(destination)
+        if let validNumber, normalizedURL(sources[validNumber - 1].url) == target {
+            return validNumber - 1
+        }
+        return sources.firstIndex { normalizedURL($0.url) == target }
     }
 
     /// Fenced code blocks and inline code spans, in UTF-16 offsets.
