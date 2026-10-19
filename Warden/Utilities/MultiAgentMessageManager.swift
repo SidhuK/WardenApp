@@ -229,7 +229,6 @@ private extension MultiAgentMessageManager {
                     settings: settings
                 )
                 usage = response.usage
-                reasoningTimer.consume(response.text ?? "")
 
                 await updateAgent { agent in
                     agent.response = response.text ?? ""

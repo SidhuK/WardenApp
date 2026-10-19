@@ -139,8 +139,11 @@ struct ReasoningTagTimer {
         guard end == nil, !chunk.isEmpty else { return }
         // Keeping the previous chunk's tail finds tags split across chunks.
         let window = tail + chunk
-        if start == nil, consumedLength < Self.openTagSearchWindow, window.contains(Self.openTag) {
-            start = date
+        if start == nil, let range = window.range(of: Self.openTag) {
+            let offset = consumedLength - tail.count + window.distance(from: window.startIndex, to: range.lowerBound)
+            if offset < Self.openTagSearchWindow {
+                start = date
+            }
         }
         if start != nil, window.contains(Self.closeTag) {
             end = date
