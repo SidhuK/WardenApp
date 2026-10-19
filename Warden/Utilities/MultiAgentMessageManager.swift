@@ -35,9 +35,34 @@ final class MultiAgentMessageManager: ObservableObject {
         var isComplete: Bool = false
         var error: APIError?
         var timestamp: Date = Date()
+        /// Token usage reported by the provider, set when the response completes.
+        var usage: TokenUsage?
+        var requestStart: Date?
+        var firstTokenAt: Date?
+        var finishedAt: Date?
+        /// Computed once on completion; the pricing lookup decodes the whole metadata cache, so it is too slow
+        /// to run on every render.
+        var costUSD: Double?
 
         var displayName: String {
             "\(serviceName) (\(model))"
+        }
+
+        var isSuccessful: Bool {
+            isComplete && error == nil && !response.isEmpty
+        }
+
+        var metrics: MessageMetrics {
+            MessageMetrics(
+                providerType: serviceType,
+                providerName: serviceName,
+                modelId: model,
+                usage: usage,
+                costUSD: costUSD,
+                requestStart: requestStart,
+                firstTokenAt: firstTokenAt,
+                finishedAt: finishedAt
+            )
         }
     }
 
@@ -120,12 +145,21 @@ private extension MultiAgentMessageManager {
 
         let apiService = APIServiceFactory.createAPIService(config: config)
 
+        let requestStart = Date()
         await updateAgent { agent in
             agent.response = ""
             agent.isComplete = false
             agent.error = nil
             agent.timestamp = Date()
+            agent.usage = nil
+            agent.costUSD = nil
+            agent.requestStart = requestStart
+            agent.firstTokenAt = nil
+            agent.finishedAt = nil
         }
+
+        var usage: TokenUsage?
+        var firstTokenAt: Date?
 
         do {
             if service.useStreamResponse {
@@ -155,10 +189,15 @@ private extension MultiAgentMessageManager {
                     await updateAgent { agent in
                         agent.response.append(contentsOf: chunk)
                         agent.timestamp = Date()
+                        // Provisional so the column can show TTFT while streaming; replaced by the
+                        // stream outcome's exact value on completion.
+                        if agent.firstTokenAt == nil {
+                            agent.firstTokenAt = now
+                        }
                     }
                 }
 
-                _ = try await ChatService.shared.sendStream(
+                let outcome = try await ChatService.shared.sendStream(
                     apiService: apiService,
                     messages: requestMessages,
                     settings: settings
@@ -169,23 +208,40 @@ private extension MultiAgentMessageManager {
                 }
 
                 await flushPendingParts(force: true)
+                usage = outcome.usage
+                firstTokenAt = outcome.firstTokenAt
             } else {
-                let responseText = try await sendMessage(
+                let response = try await sendMessage(
                     apiService: apiService,
                     requestMessages: requestMessages,
                     settings: settings
                 )
+                usage = response.usage
 
                 await updateAgent { agent in
-                    agent.response = responseText ?? "No response"
+                    agent.response = response.text ?? "No response"
                     agent.timestamp = Date()
                 }
             }
 
             if !Task.isCancelled {
-                await updateAgent { agent in
+                let finishedAt = Date()
+                let costUSD = usage.flatMap {
+                    UsageCostCalculator.cost(
+                        for: $0,
+                        providerType: service.type ?? "",
+                        modelId: service.model ?? ""
+                    )
+                }
+                await updateAgent { [usage, firstTokenAt] agent in
                     agent.isComplete = true
-                    agent.timestamp = Date()
+                    agent.timestamp = finishedAt
+                    agent.usage = usage
+                    agent.costUSD = costUSD
+                    if let firstTokenAt {
+                        agent.firstTokenAt = firstTokenAt
+                    }
+                    agent.finishedAt = finishedAt
                 }
             }
         } catch is CancellationError {
@@ -195,8 +251,13 @@ private extension MultiAgentMessageManager {
                 agent.timestamp = Date()
             }
         } catch {
+            let context = ProviderErrorContext(
+                providerName: service.name,
+                providerType: service.type,
+                model: service.model
+            )
             await updateAgent { agent in
-                agent.error = error as? APIError ?? APIError.unknown(error.localizedDescription)
+                agent.error = (error as? APIError ?? APIError.unknown(error.localizedDescription)).adding(context)
                 agent.isComplete = true
                 agent.timestamp = Date()
             }
@@ -207,7 +268,7 @@ private extension MultiAgentMessageManager {
         apiService: APIService,
         requestMessages: [[String: String]],
         settings: GenerationSettings
-    ) async throws -> String? {
+    ) async throws -> StreamChunk {
         try await withCheckedThrowingContinuation { continuation in
             ChatService.shared.sendMessage(
                 apiService: apiService,
@@ -215,8 +276,8 @@ private extension MultiAgentMessageManager {
                 settings: settings
             ) { result in
                 switch result {
-                case .success(let (responseText, _)):
-                    continuation.resume(returning: responseText)
+                case .success(let response):
+                    continuation.resume(returning: response)
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }

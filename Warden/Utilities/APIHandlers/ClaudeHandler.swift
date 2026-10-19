@@ -317,6 +317,21 @@ class ClaudeHandler: BaseAPIHandler {
                 }
             case "message_stop":
                 isFinished = true
+            case "error":
+                let parsed = ProviderErrorBodyParser.parse(data)
+                let base: APIError
+                switch parsed.type {
+                case "overloaded_error":
+                    base = .overloaded
+                case "rate_limit_error":
+                    base = .rateLimited
+                case "authentication_error", "permission_error":
+                    base = .unauthorized
+                default:
+                    base = .serverError(parsed.message ?? "Stream error")
+                }
+                parseError = base.adding(ProviderErrorContext(errorType: parsed.type, message: parsed.message))
+                isFinished = true
             case "ping":
                 // Ignore ping events
                 break

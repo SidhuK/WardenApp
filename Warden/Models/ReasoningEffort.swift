@@ -96,6 +96,10 @@ struct GenerationSettings: Codable, Sendable, Equatable {
     /// Overrides the configured maximum number of web search results when supported.
     var webSearchMaxResults: Int?
 
+    /// Whether OpenAI-compatible streaming requests ask for a trailing usage chunk
+    /// (`stream_options.include_usage`). `nil` means yes; set to `false` after a server rejects it.
+    var includeStreamUsage: Bool?
+
     init(
         temperature: Float,
         reasoningEffort: ReasoningEffort = .off,

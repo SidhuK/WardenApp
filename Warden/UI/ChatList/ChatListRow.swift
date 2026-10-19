@@ -1,6 +1,37 @@
 import SwiftUI
 import os
 
+/// Short relative times for sidebar rows: "now", "5m", "2h", "Yesterday", "3d", then a short date.
+enum ChatRelativeTimeFormatting {
+    static func shortString(from date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
+        let seconds = now.timeIntervalSince(date)
+        if seconds < 60 {
+            return "now"
+        }
+        if seconds < 3600 {
+            return "\(Int(seconds / 60))m"
+        }
+        if calendar.isDate(date, inSameDayAs: now) {
+            return "\(Int(seconds / 3600))h"
+        }
+        let days = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: date),
+            to: calendar.startOfDay(for: now)
+        ).day ?? 0
+        if days == 1 {
+            return "Yesterday"
+        }
+        if days < 7 {
+            return "\(days)d"
+        }
+        if calendar.isDate(date, equalTo: now, toGranularity: .year) {
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        return date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+}
+
 struct ChatListRow: View {
     // Removed Equatable conformance - it was preventing proper re-renders when selection changed
     @ObservedObject var chat: ChatEntity
@@ -65,22 +96,33 @@ struct ChatListRow: View {
         )
         .overlay(alignment: .trailing) {
             if isHovered && !isSelectionMode {
-                Menu {
-                    chatActionsMenuContent
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color.primary.opacity(0.08))
+                HStack(spacing: 2) {
+                    Text(ChatRelativeTimeFormatting.shortString(from: chat.updatedDate))
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 8)
+                        .help(chat.updatedDate.formatted(date: .abbreviated, time: .shortened))
+                        .accessibilityLabel(
+                            "Updated \(chat.updatedDate.formatted(.relative(presentation: .named)))"
                         )
+
+                    Menu {
+                        chatActionsMenuContent
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                    }
+                    .menuIndicator(.hidden)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Chat actions")
                 }
-                .menuIndicator(.hidden)
-                .buttonStyle(.plain)
-                .accessibilityLabel("Chat actions")
+                // The material keeps the time legible over long chat names it overlaps.
+                .background(Capsule().fill(Color.primary.opacity(0.08)))
+                .background(Capsule().fill(.regularMaterial))
                 .padding(.trailing, 4)
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
             }

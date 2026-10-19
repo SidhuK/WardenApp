@@ -166,6 +166,10 @@ class ChatGPTHandler: BaseAPIHandler {
             "temperature": temperatureOverride,
         ]
 
+        if stream, settings.includeStreamUsage != false, Self.acceptsStreamOptions(provider: provider) {
+            jsonDict["stream_options"] = ["include_usage": true]
+        }
+
         let shouldSendReasoningEffort = isReasoningModel || provider == .xai
         
         if shouldSendReasoningEffort {
@@ -576,6 +580,17 @@ private extension ChatGPTHandler {
 }
 
 extension ChatGPTHandler {
+    /// Mistral and Perplexity report usage without `stream_options` and reject unknown request fields.
+    /// Ollama's native API does not use this field.
+    static func acceptsStreamOptions(provider: ProviderID?) -> Bool {
+        switch provider {
+        case .mistral, .perplexity, .ollama, .codex, .claude:
+            return false
+        default:
+            return true
+        }
+    }
+
     static func isReasoningModel(_ modelId: String, provider: String) -> Bool {
         if let metadata = ModelMetadataStorage.getMetadata(provider: provider, modelId: modelId),
            metadata.hasReasoning {

@@ -10,6 +10,11 @@ final class SettingsWindowManager: ObservableObject {
     private var settingsWindow: NSWindow?
     private var windowDelegate: SettingsWindowDelegate?
     private var chatStore: ChatStore?
+
+    /// Tab the settings window should show next; consumed by `SettingsView`.
+    @Published var requestedTab: PreferencesTabs?
+    /// API service to select in the API Services tab; consumed by `TabAPIServicesView`.
+    @Published var requestedAPIServiceID: NSManagedObjectID?
     
     private init() {
         // Observe UserDefaults changes for color scheme
@@ -114,6 +119,13 @@ final class SettingsWindowManager: ObservableObject {
         NSApp.activate(ignoringOtherApps: true)
     }
     
+    /// Opens Settings on the given tab, optionally selecting an API service there.
+    func openSettingsWindow(tab: PreferencesTabs, apiServiceID: NSManagedObjectID? = nil) {
+        requestedAPIServiceID = apiServiceID
+        requestedTab = tab
+        openSettingsWindow()
+    }
+
     func closeSettingsWindow() {
         settingsWindow?.close()
         settingsWindow = nil

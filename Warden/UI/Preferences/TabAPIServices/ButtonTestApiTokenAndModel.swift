@@ -47,7 +47,7 @@ struct ButtonTestApiTokenAndModel: View {
                     lampColor = .red
                     let apiError = convertToAPIError(error)
                     let errorMessage =
-                        switch apiError {
+                        switch apiError.base {
                         case .requestFailed(let error): error.localizedDescription
                         case .invalidResponse: "Response is invalid"
                         case .decodingFailed(let message): message
@@ -56,6 +56,8 @@ struct ButtonTestApiTokenAndModel: View {
                         case .serverError(let message): message
                         case .unknown(let message): message
                         case .noApiService(let message): message
+                        case .overloaded: apiError.context?.message ?? "Provider overloaded"
+                        case .withContext: "Unknown error"
                         }
                     showErrorAlert(error: errorMessage)
                 }

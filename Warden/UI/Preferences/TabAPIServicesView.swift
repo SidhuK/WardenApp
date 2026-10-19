@@ -14,6 +14,7 @@ struct TabAPIServicesView: View {
     @State private var selectedServiceID: NSManagedObjectID?
     @State private var refreshID = UUID()
     @AppStorage("defaultApiService") private var defaultApiServiceID: String?
+    @ObservedObject private var windowManager = SettingsWindowManager.shared
 
     private var isSelectedServiceDefault: Bool {
         guard let selectedServiceID = selectedServiceID else { return false }
@@ -104,10 +105,22 @@ struct TabAPIServicesView: View {
             }
         }
         .onAppear {
+            applyRequestedService()
             if selectedServiceID == nil && !apiServices.isEmpty {
                 selectedServiceID = apiServices.first?.objectID
             }
         }
+        .onChange(of: windowManager.requestedAPIServiceID) { _, _ in
+            applyRequestedService()
+        }
+    }
+
+    private func applyRequestedService() {
+        guard let requested = windowManager.requestedAPIServiceID else { return }
+        if apiServices.contains(where: { $0.objectID == requested }) {
+            selectedServiceID = requested
+        }
+        windowManager.requestedAPIServiceID = nil
     }
 
     private func addNewService() {

@@ -203,20 +203,22 @@ class APIServiceManager {
     ///   - tools: Optional list of tools to include in the request
     ///   - temperature: The temperature setting
     ///   - onChunk: Closure called with each new chunk (buffered by update interval)
-    /// - Returns: Any tool calls emitted during streaming
+    /// - Returns: Tool calls emitted during streaming, final token usage, and first-token time
     static func handleStream(
         apiService: APIService,
         messages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings,
         onChunk: @MainActor @escaping (String) async -> Void
-    ) async throws -> [ToolCall]? {
+    ) async throws -> StreamOutcome {
         let stream = try await apiService.sendMessageStream(messages, tools: tools, settings: settings)
         var pendingChunkParts: [String] = []
         var pendingChunkCharacterCount = 0
         let updateInterval = AppConstants.streamedResponseUpdateUIInterval
         var lastFlushTime = Date()
         var allToolCalls: [ToolCall]? = nil
+        var usage: TokenUsage?
+        var firstTokenAt: Date?
         
         #if DEBUG
         let streamSignpostID = OSSignpostID(log: WardenSignpost.streaming)
@@ -266,10 +268,17 @@ class APIServiceManager {
             await onChunk(chunkToSend)
         }
         
-        for try await (chunk, toolCalls) in stream {
+        for try await element in stream {
             try Task.checkCancellation()
-            
-            if let chunk = chunk, !chunk.isEmpty {
+
+            if let chunkUsage = element.usage {
+                usage = usage.map { $0.merged(with: chunkUsage) } ?? chunkUsage
+            }
+
+            if let chunk = element.text, !chunk.isEmpty {
+                if firstTokenAt == nil {
+                    firstTokenAt = Date()
+                }
                 let shouldFlushImmediately = chunk.contains("<image-uuid>") || chunk.contains("<file-uuid>")
 
                 if shouldFlushImmediately, !pendingChunkParts.isEmpty {
@@ -287,7 +296,7 @@ class APIServiceManager {
                 }
             }
             
-            if let calls = toolCalls {
+            if let calls = element.toolCalls {
                 if allToolCalls == nil {
                     allToolCalls = []
                 }
@@ -305,7 +314,7 @@ class APIServiceManager {
         os_signpost(.end, log: WardenSignpost.streaming, name: "Stream", signpostID: streamSignpostID)
         #endif
         
-        return allToolCalls
+        return StreamOutcome(toolCalls: allToolCalls, usage: usage, firstTokenAt: firstTokenAt)
     }
     
     /// Prepares messages specifically formatted for summarization requests

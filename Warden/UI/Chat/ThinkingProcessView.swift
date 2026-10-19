@@ -12,7 +12,7 @@ struct ReasoningKey: Hashable {
 }
 
 /// Session-only record of how long each response spent reasoning, plus per-message expand/collapse state.
-/// Nothing here is persisted: after relaunch, reasoning blocks fall back to an untimed label.
+/// Nothing here is persisted; saved messages carry their own reasoning duration in `MessageEntity.metrics`.
 @MainActor
 final class ReasoningTimingStore: ObservableObject {
     static let shared = ReasoningTimingStore()
@@ -38,6 +38,11 @@ final class ReasoningTimingStore: ObservableObject {
 
     func timing(for key: ReasoningKey) -> Timing? {
         timings[key]
+    }
+
+    /// Reasoning timing of the response currently streaming in `chatID`, if it has started reasoning.
+    func liveTiming(chatID: UUID) -> Timing? {
+        timings[ReasoningKey.live(chatID: chatID)]
     }
 
     func isExpanded(_ key: ReasoningKey) -> Bool? {
@@ -123,6 +128,8 @@ struct ThinkingProcessView: View {
     /// True while the reasoning is still streaming and no answer text has arrived yet.
     var isThinking: Bool = false
     var timingKey: ReasoningKey?
+    /// Reasoning duration saved with the message; preferred over the session-only timing store.
+    var persistedDuration: TimeInterval?
 
     @AppStorage("expandReasoningByDefault") private var expandReasoningByDefault: Bool = false
     @ObservedObject private var timingStore = ReasoningTimingStore.shared
@@ -131,6 +138,10 @@ struct ThinkingProcessView: View {
 
     private var timing: ReasoningTimingStore.Timing? {
         timingKey.flatMap { timingStore.timing(for: $0) }
+    }
+
+    private var completedDuration: TimeInterval? {
+        persistedDuration ?? timing?.duration
     }
 
     private var isExpanded: Bool {
@@ -144,26 +155,60 @@ struct ThinkingProcessView: View {
     }
 
     var body: some View {
+        // Steps are only needed once reasoning is done; skip parsing on every streamed chunk.
+        let steps = isThinking ? [] : ReasoningStepParser.parse(content)
+
         VStack(alignment: .leading, spacing: 8) {
             Button(action: toggleExpanded) {
                 if isThinking {
                     liveHeader
                 }
                 else {
-                    completedHeader
+                    completedHeader(stepCount: steps.count)
                 }
             }
             .buttonStyle(PlainButtonStyle())
             .help(isExpanded ? "Hide reasoning" : "Show reasoning")
 
             if isExpanded {
-                Text(content)
-                    .foregroundColor(.gray)
-                    .padding(.leading, 24)
+                expandedBody(steps: steps)
+                    .padding(.leading, 12)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.25))
+                            .frame(width: 1.5)
+                    }
+                    .padding(.leading, 12)
                     .textSelection(.enabled)
             }
         }
         .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private func expandedBody(steps: [ReasoningStep]) -> some View {
+        if isThinking || steps.isEmpty {
+            Text(content)
+                .foregroundColor(.gray)
+        }
+        else {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
+                    VStack(alignment: .leading, spacing: 3) {
+                        if let title = step.title {
+                            Text(title)
+                                .font(.callout.weight(.semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        if !step.body.isEmpty {
+                            Text(step.body)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
     }
 
     private var liveHeader: some View {
@@ -195,15 +240,15 @@ struct ThinkingProcessView: View {
         .contentShape(Rectangle())
     }
 
-    private var completedHeader: some View {
+    private func completedHeader(stepCount: Int) -> some View {
         HStack(spacing: 5) {
-            if let duration = timing?.duration {
+            if let duration = completedDuration {
                 Image(systemName: "checkmark")
                     .font(.system(size: 10, weight: .semibold))
-                Text("Thought for \(Self.formatDuration(max(duration, 1)))")
+                Text("Thought for \(Self.formatDuration(max(duration, 1)))" + Self.stepSuffix(stepCount))
             }
             else {
-                Text("Thought process")
+                Text("Thought process" + Self.stepSuffix(stepCount))
             }
 
             Image(systemName: "chevron.right")
@@ -227,6 +272,10 @@ struct ThinkingProcessView: View {
                 localExpanded = newValue
             }
         }
+    }
+
+    static func stepSuffix(_ stepCount: Int) -> String {
+        stepCount > 1 ? " · \(stepCount) steps" : ""
     }
 
     static func formatDuration(_ interval: TimeInterval) -> String {

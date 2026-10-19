@@ -99,7 +99,7 @@ struct RephraseButton: View {
                 case .failure(let error):
                     var errorText = "Failed to rephrase text"
                     
-                    switch error {
+                    switch error.base {
                     case .unauthorized:
                         errorText = "Invalid API key. Please check your API settings."
                     case .rateLimited:

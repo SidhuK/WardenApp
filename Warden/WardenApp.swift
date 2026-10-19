@@ -118,6 +118,8 @@ struct WardenApp: App {
 
         PastedTextFiles.removeLeftovers()
 
+        PromptLibraryManager.shared.seedDefaultsIfNeeded()
+
         // Initialize automatic updates
         _ = UpdaterManager.shared
     }

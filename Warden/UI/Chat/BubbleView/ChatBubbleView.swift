@@ -74,7 +74,11 @@ struct ChatBubbleView: View {
                 }
             }
             
-            toolbarRow
+            if showsReplyFooter, let messageEntity = message {
+                replyFooter(for: messageEntity)
+            } else {
+                toolbarRow
+            }
         }
         .animation(nil, value: content.message)
         .padding(.vertical, 8)
@@ -119,6 +123,7 @@ struct ChatBubbleView: View {
             }
 
             bubbleView
+                .frame(maxWidth: isAssistantReply ? Self.readingWidth : nil, alignment: .leading)
 
             if content.own && !content.systemMessage {
                 // No user avatar for iMessage style, just the bubble on the right
@@ -199,59 +204,55 @@ struct ChatBubbleView: View {
         return content.own ? .trailing : .leading
     }
 
+    /// Reading width cap for assistant replies, roughly 65 characters at the default font size.
+    static let readingWidth: CGFloat = 680
+
+    private var isAssistantReply: Bool {
+        !content.own && !content.systemMessage && content.errorMessage == nil
+    }
+
+    private var showsReplyFooter: Bool {
+        isAssistantReply && message != nil && !content.isStreaming && !(content.waitingForResponse ?? false)
+    }
+
+    /// Full model identifier for the reply, preferring the per-message snapshot so branches stay accurate.
+    private var replyModelID: String? {
+        guard let messageEntity = message else { return nil }
+        let candidates = [messageEntity.agentModel, messageEntity.metrics?.modelId, messageEntity.chat?.gptModel]
+        return candidates.compactMap { $0 }.first { !$0.isEmpty }
+    }
+
     private var modelDisplayName: String? {
-        guard let messageEntity = message,
-              let chat = messageEntity.chat else { return nil }
-        
-        // Prefer message snapshot for provider metadata (for branch awareness)
-        // Fall back to chat model if snapshot is missing (legacy messages)
-        let model: String
-        if !content.own, let snapshotModel = messageEntity.agentModel, !snapshotModel.isEmpty {
-            model = snapshotModel
-        } else {
-            model = chat.gptModel
-        }
-        
-        guard !model.isEmpty else { return nil }
-        
-        // Format the model name to be more readable
+        guard let model = replyModelID else { return nil }
         let parts = model.split(separator: "/")
         let modelPart = parts.count > 1 ? String(parts.last!) : model
-        // Truncate if too long
         if modelPart.count > 20 {
             return String(modelPart.prefix(17)) + "..."
         }
         return modelPart
     }
-    
+
+    private func replyFooter(for messageEntity: MessageEntity) -> some View {
+        HStack(spacing: 0) {
+            ReplyFooterView(
+                message: messageEntity,
+                modelName: modelDisplayName,
+                modelID: replyModelID,
+                timestamp: formattedTimestamp,
+                isLatestMessage: content.isLatestMessage,
+                isCopied: isCopied,
+                onCopy: { copyMessageToClipboard(content.message) },
+                onDelete: { showingDeleteConfirmation = true }
+            )
+            Spacer(minLength: 0)
+        }
+        // Avatar (24) + row spacing (8) + assistant bubble inset (4).
+        .padding(.leading, 36)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var toolbarContent: some View {
         HStack(spacing: 8) {
-            // For assistant messages: show model name and provider
-            if !content.own && !content.systemMessage, let modelName = modelDisplayName {
-                HStack(spacing: 4) {
-                    // Show provider icon from message snapshot if available
-                    if let messageEntity = message,
-                       let snapshotType = messageEntity.agentServiceType, !snapshotType.isEmpty {
-                        Image("logo_\(snapshotType)")
-                            .resizable()
-                            .renderingMode(.template)
-                            .interpolation(.high)
-                            .frame(width: 10, height: 10)
-                            .foregroundColor(AppConstants.textTertiary)
-                    }
-                    
-                    Text(modelName)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(AppConstants.textTertiary)
-                }
-            }
-            
-            if !content.own, let _ = message {
-                Text(formattedTimestamp)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(AppConstants.textTertiary)
-            }
-
             if content.systemMessage {
                 ToolbarButton(icon: "pencil", text: "") {
                     onEdit?()
@@ -413,6 +414,7 @@ struct ChatBubbleView: View {
             effectiveFontSize: effectiveFontSize,
             colorScheme: colorScheme,
             reasoningKey: reasoningKey,
+            reasoningDuration: message?.metrics?.reasoningDuration,
             searchSources: message?.searchMetadata?.sources ?? []
         )
         .multilineTextAlignment(.leading)

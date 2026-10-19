@@ -357,6 +357,7 @@ struct QuickChatView: View {
         
         currentStreamingTask = Task { @MainActor in
             do {
+                let requestStart = Date()
                 let stream = try await handler.sendMessageStream(
                     messages,
                     tools: nil,
@@ -366,14 +367,36 @@ struct QuickChatView: View {
                 try? viewContext.save()
                 
                 var currentBody = ""
+                var firstTokenAt: Date?
+                var usage: TokenUsage?
                 for try await chunk in stream {
                     try Task.checkCancellation()
-                    if let text = chunk.0 {
+                    if let chunkUsage = chunk.usage {
+                        usage = usage.map { $0.merged(with: chunkUsage) } ?? chunkUsage
+                    }
+                    if let text = chunk.text {
+                        if firstTokenAt == nil, !text.isEmpty {
+                            firstTokenAt = Date()
+                        }
                         currentBody += text
                         aiMessage.body = currentBody
                         try? viewContext.save()
                     }
                 }
+
+                let providerType = apiService.type ?? handler.name
+                aiMessage.metrics = MessageMetrics(
+                    providerType: providerType,
+                    providerName: apiService.name,
+                    modelId: handler.model,
+                    usage: usage,
+                    costUSD: usage.flatMap {
+                        UsageCostCalculator.cost(for: $0, providerType: providerType, modelId: handler.model)
+                    },
+                    requestStart: requestStart,
+                    firstTokenAt: firstTokenAt,
+                    finishedAt: Date()
+                )
 
                 persistLatestCodexThreadID(from: handler, in: chat)
                 

@@ -554,6 +554,49 @@ final class ChatStore: ObservableObject {
         fetchEntities(entityName: "ChatEntity", sortDescriptors: defaultChatSortDescriptors)
     }
     
+    /// Chats that have at least one message, most recently updated first (pinning is ignored).
+    /// With a project, only that project's chats are returned; without one, chats from every project are.
+    func recentChats(in project: ProjectEntity?, excluding excluded: ChatEntity?, limit: Int) -> [ChatEntity] {
+        Self.recentChats(in: project, excluding: excluded, limit: limit, context: viewContext)
+    }
+
+    func countNonEmptyChats() -> Int {
+        countEntities(entityName: "ChatEntity", predicate: Self.nonEmptyChatPredicate)
+    }
+
+    nonisolated private static var nonEmptyChatPredicate: NSPredicate {
+        NSPredicate(format: "messages.@count > 0")
+    }
+
+    nonisolated static func recentChats(
+        in project: ProjectEntity?,
+        excluding excluded: ChatEntity?,
+        limit: Int,
+        context: NSManagedObjectContext
+    ) -> [ChatEntity] {
+        guard limit > 0 else { return [] }
+
+        var predicates = [nonEmptyChatPredicate]
+        if let project {
+            predicates.append(NSPredicate(format: "project == %@", project))
+        }
+        if let excluded {
+            predicates.append(NSPredicate(format: "self != %@", excluded))
+        }
+
+        let request = NSFetchRequest<ChatEntity>(entityName: "ChatEntity")
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \ChatEntity.updatedDate, ascending: false)]
+        request.fetchLimit = limit
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            WardenLog.coreData.error("Error fetching recent chats: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
+    }
+
     func getChatsPaginated(limit: Int = 50, offset: Int = 0, projectId: UUID? = nil) -> [ChatEntity] {
         let predicate = projectId.map { NSPredicate(format: "project.id == %@", $0 as CVarArg) }
         return fetchEntities(

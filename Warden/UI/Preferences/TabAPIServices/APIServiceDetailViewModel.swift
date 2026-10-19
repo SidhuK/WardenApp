@@ -357,7 +357,7 @@ final class APIServiceDetailViewModel: ObservableObject {
     /// Converts API errors to user-friendly messages
     private func getUserFriendlyErrorMessage(_ error: Error) -> String {
         if let apiError = error as? APIError {
-            switch apiError {
+            switch apiError.base {
             case .unauthorized:
                 return "Invalid API key. Please check your credentials."
             case .serverError(let message):

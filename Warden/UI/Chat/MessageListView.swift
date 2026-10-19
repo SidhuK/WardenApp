@@ -86,10 +86,12 @@ struct MessageListView: View {
     let onIgnoreError: () -> Void
     let onEditMessage: (MessageEntity) -> Void
     let onContinueWithAgent: (MultiAgentMessageManager.AgentResponse) -> Void
+    let onAskAllFollowUp: () -> Void
 
     // We accept a ScrollViewProxy via closure-style usage in ChatView
     let scrollView: ScrollViewProxy
     let viewWidth: CGFloat
+    let errorActions: ErrorCardActions
 
     @State private var pendingCodeBlocks: Int = 0
     /// Position of the end-of-content marker; `.infinity` while the lazy stack has it off screen.
@@ -115,8 +117,10 @@ struct MessageListView: View {
         onIgnoreError: @escaping () -> Void,
         onEditMessage: @escaping (MessageEntity) -> Void,
         onContinueWithAgent: @escaping (MultiAgentMessageManager.AgentResponse) -> Void,
+        onAskAllFollowUp: @escaping () -> Void,
         scrollView: ScrollViewProxy,
-        viewWidth: CGFloat
+        viewWidth: CGFloat,
+        errorActions: ErrorCardActions = ErrorCardActions()
     ) {
         self._chat = ObservedObject(wrappedValue: chat)
         self.isStreaming = isStreaming
@@ -133,8 +137,10 @@ struct MessageListView: View {
         self.onIgnoreError = onIgnoreError
         self.onEditMessage = onEditMessage
         self.onContinueWithAgent = onContinueWithAgent
+        self.onAskAllFollowUp = onAskAllFollowUp
         self.scrollView = scrollView
         self.viewWidth = viewWidth
+        self.errorActions = errorActions
         
         self._fetchedMessages = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \MessageEntity.id, ascending: true)],
@@ -151,6 +157,14 @@ struct MessageListView: View {
             || currentError != nil
             || (enableMultiAgentMode && isMultiAgentMode
                 && (!multiAgentManager.activeAgents.isEmpty || multiAgentManager.isProcessing))
+    }
+
+    private var resolvedErrorActions: ErrorCardActions {
+        var actions = errorActions
+        if actions.retry == nil {
+            actions.retry = onRetryMessage
+        }
+        return actions
     }
 
     private func updateContentEnd() {
@@ -246,18 +260,9 @@ struct MessageListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 16) // Consistent padding
             } else if let error = currentError {
-                let bubbleContent = ChatBubbleContent(
-                    message: "",
-                    own: false,
-                    waitingForResponse: false,
-                    errorMessage: error,
-                    systemMessage: false,
-                    isStreaming: false,
-                    isLatestMessage: true
-                )
-
-                ChatBubbleView(content: bubbleContent)
+                ErrorBubbleView(error: error, actions: resolvedErrorActions)
                     .id(-2)
+                    .frame(maxWidth: min(viewWidth, 640), alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 16)
             }
@@ -269,7 +274,8 @@ struct MessageListView: View {
                 MultiAgentResponseView(
                     responses: multiAgentManager.activeAgents,
                     isProcessing: multiAgentManager.isProcessing,
-                    onContinue: onContinueWithAgent
+                    onContinue: onContinueWithAgent,
+                    onAskAllFollowUp: onAskAllFollowUp
                 )
                 .id("multi-agent-responses")
                 .padding(.top, 16)

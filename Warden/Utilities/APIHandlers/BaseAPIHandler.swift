@@ -31,26 +31,48 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
         settings: GenerationSettings,
         completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void
     ) {
+        sendMessageWithUsage(requestMessages, tools: tools, settings: settings) { result in
+            completion(result.map { ($0.text, $0.toolCalls) })
+        }
+    }
+
+    func sendMessageWithUsage(
+        _ requestMessages: [[String: String]],
+        tools: [[String: Any]]? = nil,
+        settings: GenerationSettings,
+        completion: @escaping (Result<StreamChunk, APIError>) -> Void
+    ) {
         let completionController = CompletionController(completion)
 
         Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             do {
-                let result = try await sendMessage(requestMessages, tools: tools, settings: settings)
+                let result = try await sendMessageReturningUsage(requestMessages, tools: tools, settings: settings)
                 await completionController.call(.success(result))
             } catch let error as APIError {
                 await completionController.call(.failure(error))
             } catch {
-                await completionController.call(.failure(.requestFailed(error)))
+                await completionController.call(
+                    .failure(APIError.requestFailed(error).adding(self.errorContext))
+                )
             }
         }
     }
-    
+
+    /// Provider details attached to errors raised by this handler.
+    var errorContext: ProviderErrorContext {
+        ProviderErrorContext(providerType: name, model: model)
+    }
+
+    /// Seconds to keep reading after a provider signals completion, waiting for a trailing usage
+    /// event or `[DONE]`. Bounds the wait for servers that never close the connection.
+    static let postFinishGracePeriod: TimeInterval = 2.5
+
     func sendMessageStream(
         _ requestMessages: [[String: String]],
         tools: [[String: Any]]? = nil,
         settings: GenerationSettings
-    ) async throws -> AsyncThrowingStream<(String?, [ToolCall]?), Error> {
+    ) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         // Canonical streaming implementation for all handlers.
         // Handlers should override only `prepareRequest` and `parseDeltaJSONResponse` as needed.
         return AsyncThrowingStream { continuation in
@@ -66,6 +88,7 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                     var didRetryWithoutReasoning = false
                     var attachmentPolicy: AttachmentPolicy = .preferProviderAttachments
                     var didRetryWithoutAttachments = false
+                    var didRetryWithoutStreamUsage = false
 
                     while true {
                         let request = try await self.prepareRequest(
@@ -106,36 +129,59 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                                 continue
                             }
 
+                            if !didRetryWithoutStreamUsage,
+                               StreamUsageCompatibility.shouldRetryWithoutStreamUsage(
+                                   settings: attemptSettings,
+                                   error: detailedError
+                               )
+                            {
+                                didRetryWithoutStreamUsage = true
+                                attemptSettings.includeStreamUsage = false
+                                WardenLog.app.notice(
+                                    "Retrying stream without stream_options due to unsupported parameter (provider: \(self.name, privacy: .public))"
+                                )
+                                continue
+                            }
+
                             if !didRetryWithoutReasoning,
                                ReasoningCompatibility.shouldRetryWithoutReasoning(settings: attemptSettings, error: detailedError) {
                                 didRetryWithoutReasoning = true
-                                attemptSettings = GenerationSettings(
-                                    temperature: attemptSettings.temperature,
-                                    reasoningEffort: .off,
-                                    serverWebSearch: attemptSettings.serverWebSearch,
-                                    webSearchMaxResults: attemptSettings.webSearchMaxResults
-                                )
+                                attemptSettings.reasoningEffort = .off
                                 WardenLog.app.notice(
                                     "Retrying stream without reasoning fields due to unsupported parameter (provider: \(self.name, privacy: .public))"
                                 )
                                 continue
                             }
 
-                            await controller.finish(throwing: detailedError)
+                            await controller.finish(throwing: detailedError.adding(self.errorContext))
                             return
                         case .success:
                             break
                         }
 
-                        var isStreamingReasoning = false
+                        let state = StreamParseState()
+                        let parseTask = Task { [weak self] in
+                            try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
+                                guard let self = self else { return }
 
-                        try await SSEStreamParser.parse(stream: stream) { [weak self] dataString in
-                            guard let self = self else { return }
+                                // Check if task was cancelled before yielding
+                                try Task.checkCancellation()
 
-                            // Check if task was cancelled before yielding
-                            try Task.checkCancellation()
+                                if dataString == "[DONE]" {
+                                    throw StreamEndSignal()
+                                }
 
-                            if let data = dataString.data(using: .utf8) {
+                                guard let data = dataString.data(using: .utf8) else { return }
+
+                                if let usage = self.extractUsage(fromStreamEvent: data) {
+                                    await state.record(usage: usage)
+                                }
+
+                                if await state.finished {
+                                    // Content after completion is ignored; only trailing usage matters.
+                                    return
+                                }
+
                                 let (finished, error, messageData, role, toolCalls) = self.parseDeltaJSONResponse(data: data)
 
                                 if let error = error {
@@ -146,38 +192,53 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
 
                                 if let messageData, !messageData.isEmpty {
                                     if role == "reasoning" {
-                                        if !isStreamingReasoning {
-                                            isStreamingReasoning = true
-                                            await controller.yield(("<think>\n", nil))
+                                        if await state.beginReasoning() {
+                                            await controller.yield(StreamChunk(text: "<think>\n"))
                                         }
-                                        await controller.yield((messageData, nil))
+                                        await controller.yield(StreamChunk(text: messageData))
                                     } else {
-                                        if isStreamingReasoning {
-                                            isStreamingReasoning = false
-                                            await controller.yield(("\n</think>\n\n", nil))
+                                        if await state.endReasoning() {
+                                            await controller.yield(StreamChunk(text: "\n</think>\n\n"))
                                         }
-                                        await controller.yield((messageData, pendingToolCalls))
+                                        await controller.yield(StreamChunk(text: messageData, toolCalls: pendingToolCalls))
                                         pendingToolCalls = nil
                                     }
                                 } else if let toolCallsOnly = pendingToolCalls {
-                                    await controller.yield((nil, toolCallsOnly))
+                                    await controller.yield(StreamChunk(toolCalls: toolCallsOnly))
                                     pendingToolCalls = nil
                                 }
 
                                 if finished {
-                                    if isStreamingReasoning {
-                                        isStreamingReasoning = false
-                                        await controller.yield(("\n</think>\n\n", nil))
+                                    if await state.endReasoning() {
+                                        await controller.yield(StreamChunk(text: "\n</think>\n\n"))
                                     }
-                                    await controller.finish()
-                                    return
+                                    await state.markFinished()
                                 }
                             }
                         }
 
-                        if isStreamingReasoning {
-                            isStreamingReasoning = false
-                            await controller.yield(("\n</think>\n\n", nil))
+                        do {
+                            try await withTaskCancellationHandler {
+                                try await Self.awaitParse(parseTask, state: state)
+                            } onCancel: {
+                                parseTask.cancel()
+                            }
+                        } catch is StreamEndSignal {
+                            // `[DONE]` received.
+                        } catch {
+                            // A provider that already signalled completion may drop or reset the
+                            // connection while we wait for trailing usage; that is not a failure.
+                            guard await state.finished, !Task.isCancelled else { throw error }
+                        }
+
+                        try Task.checkCancellation()
+
+                        if await state.endReasoning() {
+                            await controller.yield(StreamChunk(text: "\n</think>\n\n"))
+                        }
+
+                        if let usage = await state.usage {
+                            await controller.yield(StreamChunk(usage: usage))
                         }
 
                         await controller.finish()
@@ -186,8 +247,14 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
                 } catch is CancellationError {
                     // Silently finish on cancellation - don't throw
                     await controller.finish()
+                } catch let error as APIError {
+                    await controller.finish(throwing: error.adding(self.errorContext))
                 } catch {
-                    await controller.finish(throwing: error)
+                    if Task.isCancelled {
+                        await controller.finish()
+                    } else {
+                        await controller.finish(throwing: error)
+                    }
                 }
             }
 
@@ -196,7 +263,42 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
             }
         }
     }
-    
+
+    /// Parses token usage from one raw stream event. Handlers with unusual shapes can override.
+    func extractUsage(fromStreamEvent data: Data) -> TokenUsage? {
+        UsageExtractor.usage(from: data)
+    }
+
+    /// Waits for `parseTask` to end. After the provider signals completion, the parse task keeps
+    /// draining the connection for trailing usage, but only for `postFinishGracePeriod` seconds so a
+    /// server that never closes the stream cannot stall the response.
+    private static func awaitParse(_ parseTask: Task<Void, Error>, state: StreamParseState) async throws {
+        let grace = postFinishGracePeriod
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let resolver = OnceResolver(continuation)
+
+            Task {
+                do {
+                    try await parseTask.value
+                    await resolver.resolve(.success(()))
+                } catch {
+                    await resolver.resolve(.failure(error))
+                }
+            }
+
+            Task {
+                while await !resolver.isResolved {
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    if let finishedAt = await state.finishedAt, Date().timeIntervalSince(finishedAt) >= grace {
+                        parseTask.cancel()
+                        await resolver.resolve(.success(()))
+                        return
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Methods to be overridden by subclasses
     
     func prepareRequest(
@@ -223,9 +325,58 @@ class BaseAPIHandler: APIService, @unchecked Sendable {
     }
 }
 
+private struct StreamEndSignal: Error {}
+
 private extension BaseAPIHandler {
+    actor StreamParseState {
+        private(set) var usage: TokenUsage?
+        private(set) var finishedAt: Date?
+        private var isStreamingReasoning = false
+
+        var finished: Bool { finishedAt != nil }
+
+        func record(usage newUsage: TokenUsage) {
+            usage = usage.map { $0.merged(with: newUsage) } ?? newUsage
+        }
+
+        func markFinished() {
+            if finishedAt == nil {
+                finishedAt = Date()
+            }
+        }
+
+        /// Returns true when this call opened a reasoning block.
+        func beginReasoning() -> Bool {
+            guard !isStreamingReasoning else { return false }
+            isStreamingReasoning = true
+            return true
+        }
+
+        /// Returns true when this call closed an open reasoning block.
+        func endReasoning() -> Bool {
+            guard isStreamingReasoning else { return false }
+            isStreamingReasoning = false
+            return true
+        }
+    }
+
+    actor OnceResolver {
+        private var continuation: CheckedContinuation<Void, Error>?
+
+        init(_ continuation: CheckedContinuation<Void, Error>) {
+            self.continuation = continuation
+        }
+
+        var isResolved: Bool { continuation == nil }
+
+        func resolve(_ result: Result<Void, Error>) {
+            continuation?.resume(with: result)
+            continuation = nil
+        }
+    }
+
     actor StreamContinuationController {
-        typealias Element = (String?, [ToolCall]?)
+        typealias Element = StreamChunk
 
         private var continuation: AsyncThrowingStream<Element, Error>.Continuation?
 
@@ -249,13 +400,13 @@ private extension BaseAPIHandler {
     }
 
     actor CompletionController {
-        private let completion: (Result<(String?, [ToolCall]?), APIError>) -> Void
+        private let completion: (Result<StreamChunk, APIError>) -> Void
 
-        init(_ completion: @escaping (Result<(String?, [ToolCall]?), APIError>) -> Void) {
+        init(_ completion: @escaping (Result<StreamChunk, APIError>) -> Void) {
             self.completion = completion
         }
 
-        func call(_ result: Result<(String?, [ToolCall]?), APIError>) async {
+        func call(_ result: Result<StreamChunk, APIError>) async {
             await MainActor.run {
                 completion(result)
             }
