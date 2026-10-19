@@ -52,62 +52,48 @@ struct CitationBadgeView: View {
     }
 }
 
-// MARK: - Inline Citation Link (for use in markdown text)
+// MARK: - Source Hover Card
 
-struct InlineCitationView: View {
+/// Preview card for a web search source, shared by the source chips under a reply and
+/// inline citations in the reply text so both show the same title, domain and number.
+struct SourceHoverCard: View {
     let number: Int
-    let url: String
-    let isOwn: Bool
-    
-    @State private var isHovered = false
-    
+    let source: SearchSource
+
     var body: some View {
-        Button(action: {
-            if let url = URL(string: url) {
-                NSWorkspace.shared.open(url)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("\(number)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.accentColor.opacity(0.15)))
+                Text(Self.domain(for: source.url))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                if let date = source.publishedDate, !date.isEmpty {
+                    Text("· \(date)")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
-        }) {
-            Text("\(number)")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundColor(textColor)
-                .frame(width: 16, height: 16)
-                .background(
-                    Circle()
-                        .fill(backgroundColor)
-                )
-                .overlay(
-                    Circle()
-                        .stroke(borderColor, lineWidth: 1)
-                )
+            Text(source.title.isEmpty ? source.url : source.title)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Click to open in browser")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
         }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-        .cursor(.pointingHand)
+        .padding(10)
+        .frame(width: 280, alignment: .leading)
     }
-    
-    private var textColor: Color {
-        if isOwn {
-            return isHovered ? .white : .white.opacity(0.9)
-        }
-        return isHovered ? .white : .accentColor
-    }
-    
-    private var backgroundColor: Color {
-        if isOwn {
-            return isHovered ? Color.white.opacity(0.4) : Color.white.opacity(0.25)
-        }
-        return isHovered ? Color.accentColor : Color.accentColor.opacity(0.12)
-    }
-    
-    private var borderColor: Color {
-        if isOwn {
-            return Color.white.opacity(isHovered ? 0.5 : 0.3)
-        }
-        return Color.accentColor.opacity(isHovered ? 0 : 0.25)
+
+    static func domain(for url: String) -> String {
+        guard let host = URL(string: url)?.host else { return url }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 }
 
@@ -149,15 +135,6 @@ struct CitationBadgeView_Previews: PreviewProvider {
                     sourceTitle: "A Very Long Article Title"
                 )
             }
-            
-            // Inline versions
-            HStack(spacing: 4) {
-                Text("According to recent studies")
-                InlineCitationView(number: 1, url: "https://example.com", isOwn: false)
-                Text("AI has advanced significantly")
-                InlineCitationView(number: 2, url: "https://example.com", isOwn: false)
-            }
-            .font(.system(size: 14))
         }
         .padding()
     }
