@@ -291,6 +291,15 @@ final class InlineCitationsTests: XCTestCase {
         )
     }
 
+    func testConvertKeepsFenceOpenUntilMatchingFence() {
+        let urls = sources.map(\.url)
+        let text = "````md\n```\n~~~\nx [1]\n````\nSee [1]"
+        XCTAssertEqual(
+            InlineCitations.convertToLinks(text, urls: urls),
+            "````md\n```\n~~~\nx [1]\n````\nSee [1](https://www.one.com/a)"
+        )
+    }
+
     func testConvertHandlesNonBMPCharacters() {
         let converted = InlineCitations.convertToLinks("🚀🚀 launch [1] 🎉 [2]", urls: sources.map(\.url))
         XCTAssertEqual(converted, "🚀🚀 launch [1](https://www.one.com/a) 🎉 [2](https://two.org/b/)")

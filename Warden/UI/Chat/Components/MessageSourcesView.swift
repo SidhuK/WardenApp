@@ -175,6 +175,10 @@ private struct SourceToggleChip: View {
                 isHovered = hovering
             }
         }
+        // Clicking swaps this chip out while it's hovered, so the cursor push is never popped by onHover.
+        .onDisappear {
+            if isHovered { NSCursor.pop() }
+        }
         .help(help)
         .accessibilityLabel(help)
     }

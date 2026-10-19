@@ -64,6 +64,7 @@ struct CodeView: View {
         self.lang = lang
         self.isStreaming = isStreaming
         self.suggestedFilename = suggestedFilename
+        self.lineCount = CodeBlockLines.count(in: code)
         _isExpanded = State(initialValue: isStreaming ? nil : false)
         _viewModel = StateObject(
             wrappedValue: CodeViewModel(
@@ -87,9 +88,8 @@ struct CodeView: View {
         .animation(nil, value: code)
     }
     
-    private var lineCount: Int {
-        CodeBlockLines.count(in: code)
-    }
+    /// Counted once per `code` value, not on every body pass (the sticky header re-renders on each scroll frame).
+    private let lineCount: Int
 
     private var isCollapsible: Bool {
         lineCount > Self.collapsedLineLimit
@@ -815,13 +815,13 @@ enum CodeBlockFile {
             }
         }
         let ext = extensions[language.trimmingCharacters(in: .whitespaces).lowercased()] ?? "txt"
-        return "snippet.\(ext)"
+        return ext == "Dockerfile" ? ext : "snippet.\(ext)"
     }
 
     /// The parser drops the newline that ends a fenced block's last line, so restore it to save the block's
-    /// exact content.
+    /// exact content (including any trailing blank lines).
     static func contents(of code: String) -> String {
-        code.isEmpty || code.hasSuffix("\n") ? code : code + "\n"
+        code.isEmpty ? code : code + "\n"
     }
 }
 
@@ -900,6 +900,7 @@ final class CodeBlockTextContainerView: NSView {
         scrollView.verticalScrollElasticity = .none
 
         gutterView.textView = textView
+        gutterView.isHidden = true
 
         addSubview(gutterView)
         addSubview(scrollView)
@@ -919,7 +920,11 @@ final class CodeBlockTextContainerView: NSView {
     }
 
     func update(attributedText: NSAttributedString, showLineNumbers: Bool, wrapLines: Bool, maxTextHeight: CGFloat?) {
-        if attributedText !== self.attributedText && !attributedText.isEqual(to: self.attributedText) {
+        let textChanged = attributedText !== self.attributedText && !attributedText.isEqual(to: self.attributedText)
+        // SwiftUI calls this on every scroll frame while the sticky header moves; skip relayout when nothing changed.
+        guard textChanged || wrapLines != self.wrapLines || showLineNumbers != self.showLineNumbers
+            || maxTextHeight != self.maxTextHeight else { return }
+        if textChanged {
             self.attributedText = attributedText
             textView.textStorage?.setAttributedString(attributedText)
             gutterView.update(lineStarts: CodeBlockLines.lineStarts(in: attributedText.string as NSString),

@@ -193,6 +193,8 @@ enum InlineCitations {
                 : nil
             let next = swiftRange.upperBound < text.endIndex ? text[swiftRange.upperBound] : nil
             guard isBoundary(previous), isBoundary(next), next != "(" else { continue }
+            // Already the label of a Perplexity-style `[[n]](url)` link.
+            if previous == "[", text[swiftRange.upperBound...].hasPrefix("](") { continue }
 
             result.replaceCharacters(in: fullRange, with: "[\(number)](\(urls[number - 1]))")
         }
@@ -224,7 +226,8 @@ enum InlineCitations {
 
         let isCitationLabel = number != nil || label.lowercased() == domain(of: destination)
         guard isCitationLabel else { return nil }
-        return sources.firstIndex { normalizedURL($0.url) == target }
+        return sources.firstIndex { $0.url == destination }
+            ?? sources.firstIndex { normalizedURL($0.url) == target }
     }
 
     /// Fenced code blocks and inline code spans, in UTF-16 offsets.
@@ -232,17 +235,23 @@ enum InlineCitations {
         let nsText = text as NSString
         var ranges: [NSRange] = []
         var fenceStart: Int?
+        var openFence = ""
         var location = 0
 
         while location < nsText.length {
             let lineRange = nsText.lineRange(for: NSRange(location: location, length: 0))
             let line = nsText.substring(with: lineRange).trimmingCharacters(in: .whitespacesAndNewlines)
-            if line.hasPrefix("```") || line.hasPrefix("~~~") {
+            if let marker = line.first, marker == "`" || marker == "~" {
+                let fence = String(line.prefix { $0 == marker })
                 if let start = fenceStart {
-                    ranges.append(NSRange(location: start, length: NSMaxRange(lineRange) - start))
-                    fenceStart = nil
-                } else {
+                    // A fence closes only with the same character, at least as long, and no info string.
+                    if fence.first == openFence.first, fence.count >= openFence.count, fence.count == line.count {
+                        ranges.append(NSRange(location: start, length: NSMaxRange(lineRange) - start))
+                        fenceStart = nil
+                    }
+                } else if fence.count >= 3 {
                     fenceStart = lineRange.location
+                    openFence = fence
                 }
             }
             location = NSMaxRange(lineRange)
