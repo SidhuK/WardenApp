@@ -105,7 +105,12 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            temporaryChatContext?.discard(synchronously: true)
+        }
+        .onDisappear {
+            // Closing the window drops its temporary chat too.
             temporaryChatContext?.discard()
+            temporaryChatContext = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: AppConstants.createNewProjectNotification)) { _ in
             showingCreateProject = true

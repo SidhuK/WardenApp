@@ -39,9 +39,10 @@ struct SelectionActionMonitor: NSViewRepresentable {
             guard window != nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { [weak self] event in
                 if let self, event.window === self.window {
+                    let location = event.locationInWindow
                     // Let the text view finish updating its selection first.
                     DispatchQueue.main.async { [weak self] in
-                        self?.showActionsForCurrentSelection()
+                        self?.showActionsForCurrentSelection(mouseUpAt: location)
                     }
                 }
                 return event
@@ -57,7 +58,7 @@ struct SelectionActionMonitor: NSViewRepresentable {
             popover = nil
         }
 
-        private func showActionsForCurrentSelection() {
+        private func showActionsForCurrentSelection(mouseUpAt location: NSPoint) {
             guard let window,
                   let textView = window.firstResponder as? NSTextView,
                   !textView.isEditable,
@@ -74,6 +75,11 @@ struct SelectionActionMonitor: NSViewRepresentable {
             }
             let selection = string.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
             guard !selection.isEmpty else { return }
+
+            // A click elsewhere leaves the text view's selection (and first-responder status) intact, so only a
+            // mouse-up on the text itself (with some slack for drags past its edge) counts as a new selection.
+            let mouseUpPoint = textView.convert(location, from: nil)
+            guard textView.visibleRect.insetBy(dx: -16, dy: -16).contains(mouseUpPoint) else { return }
 
             // Only selections inside the transcript this monitor covers.
             let transcriptFrame = convert(bounds, to: nil)

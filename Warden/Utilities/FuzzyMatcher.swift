@@ -40,6 +40,6 @@ enum FuzzyMatcher {
     }
 
     private static func normalize(_ string: String) -> String {
-        string.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        string.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
     }
 }

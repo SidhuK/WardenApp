@@ -18,7 +18,7 @@ struct ComposerState {
 
     var hasContent: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !(quote ?? "").isEmpty
+            || !(quote ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || !attachedImages.isEmpty
             || !attachedFiles.isEmpty
     }
@@ -250,7 +250,7 @@ struct MessageInputView: View {
     private var canSend: Bool {
         let hasText = !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
-        let hasQuote = !(state.quote ?? "").isEmpty
+        let hasQuote = !(state.quote ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return (hasText || hasAttachments || hasQuote) && !isStreaming
     }
     

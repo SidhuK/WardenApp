@@ -111,6 +111,8 @@ struct ChatView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             if chat.isTemporary {
                 TemporaryChatBanner(canSave: !isStreaming && !chat.waitingForResponse) {
+                    // The draft is written on a delay; take the latest text so the saved chat restores it.
+                    chat.draftMessage = composerState.text
                     onSaveTemporaryChat?()
                 }
             }
@@ -645,9 +647,15 @@ extension ChatView {
         }
     }
 
-    /// `textSnapshot` overrides the composer text when the caller already captured (and cleared) it.
-    private func prepareMessageBody(clearInput: Bool, textSnapshot: String? = nil) -> String {
-        let text = QuoteFormatter.message(quote: composerState.quote, text: textSnapshot ?? composerState.text)
+    /// `textSnapshot` and `quoteSnapshot` override the composer contents when the caller already captured
+    /// (and cleared) them.
+    private func prepareMessageBody(
+        clearInput: Bool,
+        textSnapshot: String? = nil,
+        quoteSnapshot: String?? = nil
+    ) -> String {
+        let quote = quoteSnapshot ?? composerState.quote
+        let text = QuoteFormatter.message(quote: quote, text: textSnapshot ?? composerState.text)
         var messageContents: [MessageContent] = []
 
         if !text.isEmpty {
@@ -678,7 +686,9 @@ extension ChatView {
             }
             composerState.attachedImages = []
             composerState.attachedFiles = []
-            composerState.quote = nil
+            if quoteSnapshot == nil {
+                composerState.quote = nil
+            }
         }
         
         return messageBody
@@ -693,8 +703,10 @@ extension ChatView {
         // Clear the text before waiting on attachments, so a chat switch during the wait cannot flush the
         // already-sent text back as this chat's draft.
         let text = composerState.text
+        let quote = composerState.quote
         if clearInput {
             composerState.text = ""
+            composerState.quote = nil
         }
 
         for attachment in composerState.attachedImages {
@@ -708,7 +720,7 @@ extension ChatView {
                 await attachment.waitForLoad()
             }
         }
-        return prepareMessageBody(clearInput: clearInput, textSnapshot: text)
+        return prepareMessageBody(clearInput: clearInput, textSnapshot: text, quoteSnapshot: .some(quote))
     }
 
     private func saveNewMessageInStore(with messageBody: String) {

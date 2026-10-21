@@ -262,7 +262,6 @@ final class ChatStore: ObservableObject {
             try context.commit()
         } catch {
             WardenLog.coreData.error("Error saving temporary chat: \(error.localizedDescription, privacy: .public)")
-            viewContext.rollback()
             return nil
         }
         return try? viewContext.existingObject(with: chat.objectID) as? ChatEntity

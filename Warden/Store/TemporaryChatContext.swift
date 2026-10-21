@@ -42,12 +42,13 @@ final class TemporaryChatContext: NSManagedObjectContext, @unchecked Sendable {
     }
 
     /// Forgets cached attachment bytes and removes the copied attachment files of a chat that was never saved.
-    func discard() {
+    /// Pass `synchronously` when the process is about to exit, since a detached cleanup task may never run.
+    func discard(synchronously: Bool = false) {
         let ids = attachmentIDs
         attachmentIDs.removeAll()
         TemporaryAttachmentCache.shared.remove(ids)
         guard !ids.isEmpty else { return }
-        Task.detached(priority: .utility) {
+        let removeFiles: @Sendable () -> Void = {
             let root = AttachmentBlobStore.rootDirectoryURL()
             for id in ids {
                 let directory = root.appendingPathComponent(id.uuidString, isDirectory: true)
@@ -60,6 +61,11 @@ final class TemporaryChatContext: NSManagedObjectContext, @unchecked Sendable {
                     )
                 }
             }
+        }
+        if synchronously {
+            removeFiles()
+        } else {
+            Task.detached(priority: .utility, operation: removeFiles)
         }
     }
 }

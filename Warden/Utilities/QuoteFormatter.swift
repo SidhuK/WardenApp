@@ -3,7 +3,8 @@ import Foundation
 enum QuoteFormatter {
     /// The text as a Markdown blockquote, one "> " prefixed line per line.
     static func blockquote(_ text: String) -> String {
-        text.trimmingCharacters(in: .whitespacesAndNewlines)
+        text.replacingOccurrences(of: "\r\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
             .components(separatedBy: .newlines)
             .map { line in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)

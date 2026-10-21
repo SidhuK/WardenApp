@@ -216,7 +216,10 @@ final class ChatBranchingManager {
         }
         
         // Create API configuration
-        guard let config = APIServiceManager.createAPIConfiguration(for: service) else {
+        guard let config = APIServiceManager.createAPIConfiguration(
+            for: service,
+            modelOverride: chat.gptModel.isEmpty ? nil : chat.gptModel
+        ) else {
             throw BranchingError.apiConfigurationFailed
         }
         
