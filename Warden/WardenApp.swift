@@ -261,6 +261,37 @@ struct WardenApp: App {
 
                 Divider()
 
+                Button("Quick Switcher…") {
+                    postToKeyWindow(.showQuickSwitcher)
+                }
+                .keyboardShortcut("k", modifiers: .command)
+
+                Button("Switch Model…") {
+                    postToKeyWindow(.showModelSwitcher)
+                }
+                .keyboardShortcut("l", modifiers: .command)
+
+                Menu("Go to Chat") {
+                    ForEach(1...9, id: \.self) { number in
+                        Button("Chat \(number)") {
+                            postToKeyWindow(.selectChatAtIndex, userInfo: ["index": number - 1])
+                        }
+                        .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
+                    }
+                }
+
+                Button("Next Recent Chat") {
+                    postToKeyWindow(.cycleRecentChats, userInfo: ["offset": 1])
+                }
+                .keyboardShortcut(.tab, modifiers: .control)
+
+                Button("Previous Recent Chat") {
+                    postToKeyWindow(.cycleRecentChats, userInfo: ["offset": -1])
+                }
+                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+
+                Divider()
+
                 // Hotkey Actions
                 Button("Copy Last AI Response") {
                     NotificationCenter.default.post(
@@ -313,6 +344,11 @@ struct WardenApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
+                Button("New Temporary Chat") {
+                    postToKeyWindow(.newTemporaryChat)
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+
                 Button("New Project") {
                     NotificationCenter.default.post(
                         name: AppConstants.createNewProjectNotification,
@@ -337,6 +373,12 @@ struct WardenApp: App {
                 .keyboardShortcut("s", modifiers: [.command, .control])
             }
         }
+    }
+
+    private func postToKeyWindow(_ name: Notification.Name, userInfo: [String: Any] = [:]) {
+        var info = userInfo
+        info["windowId"] = NSApp.keyWindow?.windowNumber ?? 0
+        NotificationCenter.default.post(name: name, object: nil, userInfo: info)
     }
 
     // MARK: - Model Cache & Metadata Cache Initialization

@@ -219,6 +219,13 @@ final class ImageAttachment: Identifiable, ObservableObject {
             entity.image = imageData
             entity.thumbnail = thumbnailData
 
+            if let temporaryContext = contextToUse as? TemporaryChatContext {
+                temporaryContext.registerAttachment(id)
+                if let imageData {
+                    TemporaryAttachmentCache.shared.storeImage(imageData, for: id)
+                }
+            }
+
             do {
                 try contextToUse.save()
             } catch {

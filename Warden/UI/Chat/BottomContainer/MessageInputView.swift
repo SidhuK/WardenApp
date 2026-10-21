@@ -13,6 +13,15 @@ struct ComposerState {
     var showServiceSelector: Bool = false
     /// ID of the chat whose `draftMessage` the `text` belongs to (see `persistsComposerDraft`).
     var draftChatID: UUID?
+    /// Text quoted from a reply; sent as a Markdown blockquote above `text`.
+    var quote: String?
+
+    var hasContent: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !(quote ?? "").isEmpty
+            || !attachedImages.isEmpty
+            || !attachedFiles.isEmpty
+    }
 }
 
 // MARK: - Draft Persistence
@@ -241,7 +250,8 @@ struct MessageInputView: View {
     private var canSend: Bool {
         let hasText = !state.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasAttachments = !state.attachedImages.isEmpty || !state.attachedFiles.isEmpty
-        return (hasText || hasAttachments) && !isStreaming
+        let hasQuote = !(state.quote ?? "").isEmpty
+        return (hasText || hasAttachments || hasQuote) && !isStreaming
     }
     
     private var promptCompletionEnabled: Bool {
@@ -259,6 +269,14 @@ struct MessageInputView: View {
             attachmentPreviewsSection
             
             VStack(alignment: .leading, spacing: 10) {
+                if let quote = state.quote, !quote.isEmpty {
+                    QuotedSelectionCard(text: quote) {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            state.quote = nil
+                        }
+                    }
+                }
+
                 // Text Input Area
                 textInputArea
                 
@@ -775,6 +793,43 @@ struct MessageInputView: View {
     }
 }
 
+/// The reply excerpt that will be sent as a blockquote, shown above the composer text.
+struct QuotedSelectionCard: View {
+    let text: String
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(Color.accentColor.opacity(0.7))
+                .frame(width: 3)
+
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Remove quote")
+            .accessibilityLabel("Remove quote")
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.04)))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Quoted text: \(text)")
+    }
+}
+
 struct ImagePreviewView: View {
     @ObservedObject var attachment: ImageAttachment
     var onRemove: (Int) -> Void
@@ -940,6 +995,7 @@ struct BetterCompactModelSelector: View {
         }
         chat.updatedDate = Date()
         chat.objectWillChange.send()
+        RecentModelsStore.record(provider: provider, model: modelId)
         
         NotificationCenter.default.post(
             name: .recreateMessageManager,

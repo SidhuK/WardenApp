@@ -48,6 +48,9 @@ struct ChatView: View {
     
     // Multi-agent UI state is stored in `composerState`.
     @StateObject private var multiAgentManager: MultiAgentMessageManager
+
+    /// Adds a temporary chat to the history; only set for temporary chats.
+    private let onSaveTemporaryChat: (() -> Void)?
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \APIServiceEntity.addedDate, ascending: false)],
@@ -55,9 +58,10 @@ struct ChatView: View {
     )
     private var apiServices: FetchedResults<APIServiceEntity>
 
-    init(viewContext: NSManagedObjectContext, chat: ChatEntity) {
+    init(viewContext: NSManagedObjectContext, chat: ChatEntity, onSaveTemporaryChat: (() -> Void)? = nil) {
         self.viewContext = viewContext
         self._chat = ObservedObject(wrappedValue: chat)
+        self.onSaveTemporaryChat = onSaveTemporaryChat
 
         self._chatViewModel = StateObject(
             wrappedValue: ChatViewModel(chat: chat, viewContext: viewContext)
@@ -104,6 +108,13 @@ struct ChatView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if chat.isTemporary {
+                TemporaryChatBanner(canSave: !isStreaming && !chat.waitingForResponse) {
+                    onSaveTemporaryChat?()
+                }
+            }
+        }
         .navigationTitle("")
         .toolbarBackground(.clear, for: .automatic)
         .toolbarBackground(.visible, for: .windowToolbar)
@@ -111,7 +122,9 @@ struct ChatView: View {
         
         // Common modifiers and event handlers
         .onAppear(perform: {
-            self.lastOpenedChatId = chat.id.uuidString
+            if !chat.isTemporary {
+                self.lastOpenedChatId = chat.id.uuidString
+            }
             composerState.selectedMCPAgents = chatViewModel.selectedMCPAgents
             requestComposerFocus()
         })
@@ -218,9 +231,7 @@ struct ChatView: View {
                     composerState.text = ""
                     editSystemMessage = false
                     store.saveInCoreData()
-                } else if !composerState.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    || !composerState.attachedImages.isEmpty
-                    || !composerState.attachedFiles.isEmpty {
+                } else if composerState.hasContent {
                     if enableMultiAgentMode && composerState.isMultiAgentMode {
                         sendMultiAgentMessage()
                     } else {
@@ -421,6 +432,12 @@ struct ChatView: View {
                     .id("chatContainer")
                     .coordinateSpace(.named(MessageListView.scrollContentSpace))
                 }
+                .background(
+                    SelectionActionMonitor(
+                        onQuote: { quoteInReply($0) },
+                        onExplain: { explainSelection($0) }
+                    )
+                )
                 .onScrollGeometryChange(for: ScrollEdgeTracker.Metrics.self) { geometry in
                     ScrollEdgeTracker.Metrics(
                         visibleMaxY: geometry.visibleRect.maxY,
@@ -521,14 +538,16 @@ private struct ChatSearchOverlaysView: View {
 
 
 extension ChatView {
-    func sendMessage(retryContent: String? = nil) {
+    /// `retryContent` re-sends text without saving a new user message; `presetBody` sends and saves the given
+    /// text instead of the composer contents.
+    func sendMessage(retryContent: String? = nil, presetBody: String? = nil) {
         Task { @MainActor in
-            await sendMessageInternal(retryContent: retryContent)
+            await sendMessageInternal(retryContent: retryContent, presetBody: presetBody)
         }
     }
 
     @MainActor
-    private func sendMessageInternal(retryContent: String?) async {
+    private func sendMessageInternal(retryContent: String?, presetBody: String?) async {
         guard chatViewModel.canSendMessage else {
             currentError = ErrorMessage(
                 apiError: .noApiService("No API service selected. Select the API service to send your first message"),
@@ -545,6 +564,10 @@ extension ChatView {
         if let retryText = retryContent {
             // Retry mode: Use provided text, do not save new user message
             messageBody = retryText
+        } else if let presetBody {
+            errorCardState.resetAttempts()
+            messageBody = presetBody
+            saveNewMessageInStore(with: messageBody)
         } else {
             errorCardState.resetAttempts()
             // Normal send: ensure attachment bytes are persisted before saving message + sending
@@ -624,7 +647,7 @@ extension ChatView {
 
     /// `textSnapshot` overrides the composer text when the caller already captured (and cleared) it.
     private func prepareMessageBody(clearInput: Bool, textSnapshot: String? = nil) -> String {
-        let text = textSnapshot ?? composerState.text
+        let text = QuoteFormatter.message(quote: composerState.quote, text: textSnapshot ?? composerState.text)
         var messageContents: [MessageContent] = []
 
         if !text.isEmpty {
@@ -655,6 +678,7 @@ extension ChatView {
             }
             composerState.attachedImages = []
             composerState.attachedFiles = []
+            composerState.quote = nil
         }
         
         return messageBody
@@ -1232,5 +1256,21 @@ extension ChatView {
 
     private func requestComposerFocus() {
         composerFocusToken += 1
+    }
+
+    // MARK: - Selection Actions
+
+    private func quoteInReply(_ text: String) {
+        composerState.quote = text
+        requestComposerFocus()
+    }
+
+    /// Sends the selection with a request to explain it, leaving anything typed in the composer alone.
+    private func explainSelection(_ text: String) {
+        guard !isStreaming, !chat.waitingForResponse else {
+            quoteInReply(text)
+            return
+        }
+        sendMessage(presetBody: QuoteFormatter.message(quote: text, text: "Explain this."))
     }
 }

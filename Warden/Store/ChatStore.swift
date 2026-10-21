@@ -230,6 +230,45 @@ final class ChatStore: ObservableObject {
 
     func createNewChat(preferredModel: String) -> ChatEntity? {
         let chat = ChatEntity(context: viewContext)
+        configureNewChat(chat, preferredModel: preferredModel, defaultService: getDefaultAPIService())
+
+        do {
+            try viewContext.save()
+            return chat
+        } catch {
+            WardenLog.coreData.error(
+                "Error saving new chat: \(error.localizedDescription, privacy: .public)"
+            )
+            viewContext.rollback()
+            return nil
+        }
+    }
+
+    /// Creates a chat in its own `TemporaryChatContext`. The caller must keep the context alive while the chat
+    /// is shown, since managed objects don't retain their context.
+    func createTemporaryChat(preferredModel: String) -> (chat: ChatEntity, context: TemporaryChatContext) {
+        let context = TemporaryChatContext(parent: viewContext)
+        let chat = ChatEntity(context: context)
+        let defaultService = getDefaultAPIService().flatMap { context.object(with: $0.objectID) as? APIServiceEntity }
+        configureNewChat(chat, preferredModel: preferredModel, defaultService: defaultService)
+        return (chat, context)
+    }
+
+    /// Adds a temporary chat to the history and returns the same chat in the main context.
+    func persistTemporaryChat(_ chat: ChatEntity) -> ChatEntity? {
+        guard let context = chat.managedObjectContext as? TemporaryChatContext else { return chat }
+        chat.updatedDate = Date()
+        do {
+            try context.commit()
+        } catch {
+            WardenLog.coreData.error("Error saving temporary chat: \(error.localizedDescription, privacy: .public)")
+            viewContext.rollback()
+            return nil
+        }
+        return try? viewContext.existingObject(with: chat.objectID) as? ChatEntity
+    }
+
+    private func configureNewChat(_ chat: ChatEntity, preferredModel: String, defaultService: APIServiceEntity?) {
         chat.id = UUID()
         chat.newChat = true
         chat.temperature = 0.8
@@ -243,7 +282,7 @@ final class ChatStore: ObservableObject {
         chat.gptModel = preferredModel
         chat.name = "New Chat"
 
-        if let defaultService = getDefaultAPIService() {
+        if let defaultService {
             chat.apiService = defaultService
             chat.gptModel = defaultService.model ?? AppConstants.chatGptDefaultModel
 
@@ -257,17 +296,6 @@ final class ChatStore: ObservableObject {
             }
         }
         applyProviderReasoningDefaults(to: chat)
-
-        do {
-            try viewContext.save()
-            return chat
-        } catch {
-            WardenLog.coreData.error(
-                "Error saving new chat: \(error.localizedDescription, privacy: .public)"
-            )
-            viewContext.rollback()
-            return nil
-        }
     }
 
     func deleteAllPersonas() {
@@ -598,6 +626,27 @@ final class ChatStore: ObservableObject {
         }
     }
 
+    /// Chats outside projects in sidebar order: pinned first, then most recently updated.
+    nonisolated static func sidebarOrder(_ chats: [ChatEntity]) -> [ChatEntity] {
+        chats
+            .filter { $0.project == nil }
+            .sorted { lhs, rhs in
+                if lhs.isPinned != rhs.isPinned { return lhs.isPinned }
+                return lhs.updatedDate > rhs.updatedDate
+            }
+    }
+
+    /// The chat `offset` steps away from `current` in `chats`, wrapping around; the first chat when
+    /// `current` isn't in the list.
+    nonisolated static func cycledChat(from current: ChatEntity?, in chats: [ChatEntity], offset: Int) -> ChatEntity? {
+        guard !chats.isEmpty else { return nil }
+        guard let current, let index = chats.firstIndex(of: current) else {
+            return offset >= 0 ? chats.first : chats.last
+        }
+        let count = chats.count
+        return chats[((index + offset) % count + count) % count]
+    }
+
     func getChatsPaginated(limit: Int = 50, offset: Int = 0, projectId: UUID? = nil) -> [ChatEntity] {
         let predicate = projectId.map { NSPredicate(format: "project.id == %@", $0 as CVarArg) }
         return fetchEntities(
@@ -772,6 +821,9 @@ final class ChatStore: ObservableObject {
 
     /// Fetches image data for a given image attachment UUID.
     func imageData(for id: UUID) async -> Data? {
+        if let cached = TemporaryAttachmentCache.shared.imageData(for: id) {
+            return cached
+        }
         let context = persistenceController.container.newBackgroundContext()
         return await context.performAsync {
             let fetchRequest: NSFetchRequest<ImageEntity> = ImageEntity.fetchRequest()
@@ -783,6 +835,9 @@ final class ChatStore: ObservableObject {
 
     /// Fetches file metadata (fileName and blobID) for a given file attachment UUID.
     func fileMetadata(for id: UUID) async -> (fileName: String, blobID: String)? {
+        if let cached = TemporaryAttachmentCache.shared.file(for: id) {
+            return cached.blobID.map { (fileName: cached.fileName, blobID: $0) }
+        }
         let context = persistenceController.container.newBackgroundContext()
         return await context.performAsync {
             let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
@@ -801,6 +856,9 @@ final class ChatStore: ObservableObject {
 
     /// Fetches fallback text content for a given file attachment UUID.
     func fileFallbackText(for id: UUID) async -> String? {
+        if let cached = TemporaryAttachmentCache.shared.file(for: id) {
+            return cached.textContent
+        }
         let context = persistenceController.container.newBackgroundContext()
         return await context.performAsync {
             let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()

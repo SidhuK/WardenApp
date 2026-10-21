@@ -36,23 +36,26 @@ struct NewChatContextRow: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Button {
-                showingMoveToProject = true
-            } label: {
-                ContextRowLabel(title: projectTitle) {
-                    Image(systemName: chat.project == nil ? "folder" : "folder.fill")
-                        .foregroundStyle(projectColor)
+            // Projects live in the history, which a temporary chat isn't part of until it's saved.
+            if !chat.isTemporary {
+                Button {
+                    showingMoveToProject = true
+                } label: {
+                    ContextRowLabel(title: projectTitle) {
+                        Image(systemName: chat.project == nil ? "folder" : "folder.fill")
+                            .foregroundStyle(projectColor)
+                    }
                 }
-            }
-            .buttonStyle(.plain)
-            .help("Choose a project for this chat")
-            .accessibilityLabel("Project")
-            .accessibilityValue(projectTitle)
-            .sheet(isPresented: $showingMoveToProject) {
-                MoveToProjectView(chats: [chat], onComplete: {})
-            }
+                .buttonStyle(.plain)
+                .help("Choose a project for this chat")
+                .accessibilityLabel("Project")
+                .accessibilityValue(projectTitle)
+                .sheet(isPresented: $showingMoveToProject) {
+                    MoveToProjectView(chats: [chat], onComplete: {})
+                }
 
-            separator
+                separator
+            }
 
             Button {
                 showingPersonaPopover.toggle()

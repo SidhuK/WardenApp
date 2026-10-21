@@ -39,6 +39,11 @@ struct ContentView: View {
     @State private var showingEditProject = false
     @State private var projectToEdit: ProjectEntity?
 
+    /// Owns the selected temporary chat; managed objects don't retain their context.
+    @State private var temporaryChatContext: TemporaryChatContext?
+    @State private var quickSwitcherMode: QuickSwitcherMode?
+    @State private var quickSwitcherProjects: [ProjectEntity] = []
+
     var body: some View {
         ZStack {
             Color(nsColor: .controlBackgroundColor)
@@ -74,6 +79,34 @@ struct ContentView: View {
                 newChat()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .newTemporaryChat)) { notification in
+            guard isForThisWindow(notification) else { return }
+            newTemporaryChat()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showQuickSwitcher)) { notification in
+            guard isForThisWindow(notification) else { return }
+            toggleQuickSwitcher(.all)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showModelSwitcher)) { notification in
+            guard isForThisWindow(notification) else { return }
+            toggleQuickSwitcher(.models)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .selectChatAtIndex)) { notification in
+            guard isForThisWindow(notification), let index = notification.userInfo?["index"] as? Int else { return }
+            let ordered = ChatStore.sidebarOrder(Array(chats))
+            if ordered.indices.contains(index) {
+                selectedChat = ordered[index]
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .cycleRecentChats)) { notification in
+            guard isForThisWindow(notification), let offset = notification.userInfo?["offset"] as? Int else { return }
+            if let chat = ChatStore.cycledChat(from: selectedChat, in: Array(chats), offset: offset) {
+                selectedChat = chat
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            temporaryChatContext?.discard()
+        }
         .onReceive(NotificationCenter.default.publisher(for: AppConstants.createNewProjectNotification)) { _ in
             showingCreateProject = true
         }
@@ -99,6 +132,9 @@ struct ContentView: View {
             setupSelectedProjectChange(oldValue: oldValue, newValue: newValue)
         }
         .environmentObject(previewStateManager)
+        .overlay(alignment: .top) {
+            quickSwitcherOverlay
+        }
         .overlay(alignment: .top) {
             ToastManager()
         }
@@ -274,8 +310,14 @@ struct ContentView: View {
     }
 
     private func setupSelectedChatChange(oldValue: ChatEntity?, newValue: ChatEntity?) {
-        if self.openedChatId != newValue?.id.uuidString {
-            self.openedChatId = newValue?.id.uuidString
+        if let context = temporaryChatContext, newValue?.managedObjectContext !== context {
+            context.discard()
+            temporaryChatContext = nil
+        }
+        // A saved temporary chat keeps its ID, so the prefix makes the chat view rebuild on the main context.
+        let newOpenedChatId = newValue.map { ($0.isTemporary ? "temporary-" : "") + $0.id.uuidString }
+        if self.openedChatId != newOpenedChatId {
+            self.openedChatId = newOpenedChatId
             previewStateManager.hidePreview()
         }
         if newValue != nil {
@@ -295,6 +337,110 @@ struct ContentView: View {
         selectedChat = store.createNewChat(preferredModel: gptModel)
     }
 
+    func newTemporaryChat() {
+        temporaryChatContext?.discard()
+        let (chat, context) = store.createTemporaryChat(preferredModel: gptModel)
+        temporaryChatContext = context
+        selectedChat = chat
+    }
+
+    private func saveTemporaryChat() {
+        guard let chat = selectedChat, chat.isTemporary else { return }
+        guard let saved = store.persistTemporaryChat(chat) else {
+            NotificationCenter.default.post(
+                name: AppConstants.showToastNotification,
+                object: nil,
+                userInfo: ["message": "Couldn't save the chat", "icon": "exclamationmark.triangle"]
+            )
+            return
+        }
+        temporaryChatContext = nil
+        selectedChat = saved
+        NotificationCenter.default.post(
+            name: AppConstants.showToastNotification,
+            object: nil,
+            userInfo: ["message": "Chat saved to history", "icon": "checkmark.circle.fill"]
+        )
+    }
+
+    /// Menu commands carry the key window's number so only that window reacts.
+    private func isForThisWindow(_ notification: Notification) -> Bool {
+        guard let windowId = window?.windowNumber else { return false }
+        return notification.userInfo?["windowId"] as? Int == windowId
+    }
+
+    // MARK: - Quick Switcher
+
+    private func toggleQuickSwitcher(_ mode: QuickSwitcherMode) {
+        if quickSwitcherMode == mode {
+            quickSwitcherMode = nil
+            return
+        }
+        quickSwitcherProjects = store.getAllProjects()
+        quickSwitcherMode = mode
+    }
+
+    @ViewBuilder
+    private var quickSwitcherOverlay: some View {
+        if let mode = quickSwitcherMode {
+            ZStack(alignment: .top) {
+                Color.black.opacity(0.12)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture { quickSwitcherMode = nil }
+
+                QuickSwitcherView(
+                    mode: mode,
+                    chats: Array(chats),
+                    projects: quickSwitcherProjects,
+                    apiServices: Array(apiServices),
+                    currentChat: selectedChat,
+                    onCommand: performQuickSwitcherCommand,
+                    onDismiss: { quickSwitcherMode = nil }
+                )
+                .id(mode)
+                .padding(.top, 72)
+            }
+            .transition(.opacity)
+        }
+    }
+
+    private func performQuickSwitcherCommand(_ command: QuickSwitcherCommand) {
+        quickSwitcherMode = nil
+        switch command {
+        case .openChat(let chat):
+            selectedChat = chat
+        case .openProject(let project):
+            selectedProject = project
+        case .newChat:
+            newChat()
+        case .newTemporaryChat:
+            newTemporaryChat()
+        case .selectModel(let provider, let modelId):
+            switchModel(provider: provider, modelId: modelId)
+        case .moveChat(let project):
+            guard let chat = selectedChat, !chat.isTemporary else { return }
+            store.moveChatsToProject(project, chats: [chat])
+        case .openSettings:
+            openSettings()
+        }
+    }
+
+    private func switchModel(provider: String, modelId: String) {
+        if selectedChat == nil {
+            newChat()
+        }
+        guard let chat = selectedChat, let context = chat.managedObjectContext else { return }
+        // A temporary chat can only point at services from its own context.
+        let services = apiServices.compactMap { context.object(with: $0.objectID) as? APIServiceEntity }
+        BetterCompactModelSelector.selectModel(provider: provider, modelId: modelId, for: chat, from: services)
+        do {
+            try context.save()
+        } catch {
+            WardenLog.coreData.error("Failed to save model switch: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     func openSettings() {
         SettingsWindowManager.shared.openSettingsWindow()
     }
@@ -311,7 +457,8 @@ struct ContentView: View {
             projectToEdit: $projectToEdit,
             previewStateManager: previewStateManager,
             onOpenSettings: openSettings,
-            onNewChat: newChat
+            onNewChat: newChat,
+            onSaveTemporaryChat: saveTemporaryChat
         )
     }
 }
@@ -331,6 +478,7 @@ private struct ContentDetailView: View {
 
     let onOpenSettings: () -> Void
     let onNewChat: () -> Void
+    let onSaveTemporaryChat: () -> Void
 
     var body: some View {
         HSplitView {
@@ -366,9 +514,16 @@ private struct ContentDetailView: View {
                 .frame(minWidth: 400)
                 .id(project.id)
         } else if let chat = selectedChat {
-            ChatView(viewContext: viewContext, chat: chat)
-                .frame(minWidth: 400)
-                .id(openedChatId)
+            if let temporaryContext = chat.managedObjectContext as? TemporaryChatContext {
+                ChatView(viewContext: temporaryContext, chat: chat, onSaveTemporaryChat: onSaveTemporaryChat)
+                    .environment(\.managedObjectContext, temporaryContext)
+                    .frame(minWidth: 400)
+                    .id(openedChatId)
+            } else {
+                ChatView(viewContext: viewContext, chat: chat)
+                    .frame(minWidth: 400)
+                    .id(openedChatId)
+            }
         } else {
             WelcomeScreen(
                 chatsCount: chatsCount,

@@ -15,6 +15,9 @@ class BackgroundDataLoader {
     /// - Parameter uuid: The unique identifier of the image entity
     /// - Returns: The image data if found, nil otherwise
     func loadImageData(uuid: UUID) -> Data? {
+        if let cached = TemporaryAttachmentCache.shared.imageData(for: uuid) {
+            return cached
+        }
         let backgroundContext = persistenceController.container.newBackgroundContext()
         var result: Data? = nil
 
@@ -40,6 +43,14 @@ class BackgroundDataLoader {
     /// - Parameter uuid: The unique identifier of the file entity
     /// - Returns: Formatted file content string if found, nil otherwise
     func loadFileContent(uuid: UUID) -> String? {
+        if let cached = TemporaryAttachmentCache.shared.file(for: uuid) {
+            return Self.formattedFileContent(
+                fileName: cached.fileName,
+                fileSize: cached.fileSize,
+                fileType: cached.fileType,
+                textContent: cached.textContent
+            )
+        }
         let backgroundContext = persistenceController.container.newBackgroundContext()
         var result: String? = nil
 
@@ -51,19 +62,12 @@ class BackgroundDataLoader {
             do {
                 let results = try backgroundContext.fetch(fetchRequest)
                 if let fileEntity = results.first {
-                    let fileName = fileEntity.fileName ?? "Unknown File"
-                    let fileSize = fileEntity.fileSize
-                    let fileType = fileEntity.fileType ?? "unknown"
-                    let textContent = fileEntity.textContent ?? ""
-
-                    // Format the file content for the AI
-                    result = """
-                    File: \(fileName) (\(fileType.uppercased()) file)
-                    Size: \(ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file))
-
-                    Content:
-                    \(textContent)
-                    """
+                    result = Self.formattedFileContent(
+                        fileName: fileEntity.fileName ?? "Unknown File",
+                        fileSize: fileEntity.fileSize,
+                        fileType: fileEntity.fileType ?? "unknown",
+                        textContent: fileEntity.textContent ?? ""
+                    )
                 }
             } catch {
                 WardenLog.coreData.error(
@@ -73,6 +77,21 @@ class BackgroundDataLoader {
         }
 
         return result
+    }
+
+    private static func formattedFileContent(
+        fileName: String,
+        fileSize: Int64,
+        fileType: String,
+        textContent: String
+    ) -> String {
+        """
+        File: \(fileName) (\(fileType.uppercased()) file)
+        Size: \(ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file))
+
+        Content:
+        \(textContent)
+        """
     }
 
     /// Loads file data by fetching metadata via ChatStore and reading from disk.
@@ -106,6 +125,19 @@ class BackgroundDataLoader {
         var result: FileAttachment? = nil
 
         backgroundContext.performAndWait {
+            if let cached = TemporaryAttachmentCache.shared.file(for: uuid) {
+                result = FileAttachment(
+                    id: uuid,
+                    fileName: cached.fileName,
+                    fileSize: cached.fileSize,
+                    fileTypeExtension: cached.fileType,
+                    textContent: cached.textContent,
+                    imageData: cached.imageData,
+                    thumbnailData: cached.thumbnailData
+                )
+                return
+            }
+
             let fetchRequest: NSFetchRequest<FileEntity> = FileEntity.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             fetchRequest.fetchLimit = 1

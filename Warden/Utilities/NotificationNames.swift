@@ -10,5 +10,10 @@ extension Notification.Name {
     static let openPreferences = Notification.Name("OpenPreferences")
     static let openInlineSettings = Notification.Name("OpenInlineSettings")
     static let codeBlockRendered = Notification.Name("CodeBlockRendered")
+    static let showQuickSwitcher = Notification.Name("ShowQuickSwitcher")
+    static let showModelSwitcher = Notification.Name("ShowModelSwitcher")
+    static let newTemporaryChat = Notification.Name("NewTemporaryChat")
+    static let selectChatAtIndex = Notification.Name("SelectChatAtIndex")
+    static let cycleRecentChats = Notification.Name("CycleRecentChats")
 }
 
