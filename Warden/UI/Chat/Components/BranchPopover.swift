@@ -31,6 +31,10 @@ struct BranchPopover: View {
             } else if let error = errorMessage {
                 errorView(error)
             } else {
+                if !existingBranches.isEmpty {
+                    existingBranchesSection
+                    Divider().opacity(0.5)
+                }
                 ModelSelectorList(
                     apiServices: Array(apiServices),
                     selectedProviderType: nil,
@@ -85,6 +89,80 @@ struct BranchPopover: View {
         .padding(.vertical, 12)
     }
     
+    // MARK: - Existing Branches
+
+    /// Branches started at this message, plus, for a reply, those started at the question it answers
+    /// (which is where "Retry with another model" branches from).
+    private var existingBranches: [ChatEntity] {
+        var sourceIDs: Set<Int64> = [sourceMessage.id]
+        if origin == .assistant,
+           let question = sourceChat.messagesArray
+            .filter({ $0.own && $0.id < sourceMessage.id })
+            .max(by: { $0.id < $1.id }) {
+            sourceIDs.insert(question.id)
+        }
+        return sourceChat.childChatsArray
+            .filter { !$0.isDeleted && $0.managedObjectContext != nil && sourceIDs.contains($0.branchSourceMessageID) }
+            .sorted { $0.createdDate < $1.createdDate }
+    }
+
+    private var existingBranchesSection: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("BRANCHES FROM HERE")
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(existingBranches, id: \.objectID) { branch in
+                        Button {
+                            NotificationCenter.default.post(
+                                name: .openChatByID,
+                                object: nil,
+                                userInfo: ["chatObjectID": branch.objectID]
+                            )
+                            onDismiss()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.triangle.branch")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(branch.name.isEmpty ? "Untitled Branch" : branch.name)
+                                        .font(.system(size: 12))
+                                        .lineLimit(1)
+                                    Text(branchModelName(branch))
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 5)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open this branch")
+                    }
+                }
+            }
+            .frame(maxHeight: 120)
+        }
+        .padding(.bottom, 6)
+    }
+
+    private func branchModelName(_ branch: ChatEntity) -> String {
+        let provider = branch.apiService?.type
+        guard !branch.gptModel.isEmpty else { return branch.apiService?.name ?? "" }
+        return ModelMetadata.formatModelComponents(modelId: branch.gptModel, provider: provider).displayName
+    }
+
     // MARK: - Creating State
     
     private var creatingView: some View {

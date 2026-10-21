@@ -272,7 +272,7 @@ struct ChatBubbleView: View {
             }
 
             // Branch button with inline popover
-            if !content.systemMessage, let msg = message {
+            if !content.systemMessage, let msg = message, msg.chat?.isTemporary != true {
                 BranchToolbarButton(message: msg)
             }
 

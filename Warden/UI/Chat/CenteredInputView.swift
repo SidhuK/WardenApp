@@ -208,7 +208,12 @@ struct CenteredInputView: View {
     }
 
     private func loadHome() {
-        recentChats = store.recentChats(in: chat.project, excluding: chat, limit: Self.recentChatLimit)
+        recentChats = store.recentChats(
+            in: chat.project,
+            // A temporary chat isn't in the store, so it can't be (and needn't be) excluded from the fetch.
+            excluding: chat.isTemporary ? nil : chat,
+            limit: Self.recentChatLimit
+        )
         usedPrompts = PromptLibraryManager.shared.topPrompts(limit: Self.promptLimit).filter { $0.usageCount > 0 }
         nonEmptyChatCount = store.countNonEmptyChats()
         hasLoadedHome = true

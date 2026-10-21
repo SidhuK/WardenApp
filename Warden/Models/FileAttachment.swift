@@ -529,6 +529,22 @@ final class FileAttachment: Identifiable, ObservableObject {
             entity.thumbnailData = thumbnailData
             entity.blobID = blobID
 
+            if let temporaryContext = contextToUse as? TemporaryChatContext {
+                temporaryContext.registerAttachment(id)
+                TemporaryAttachmentCache.shared.storeFile(
+                    TemporaryAttachmentCache.FileRecord(
+                        fileName: fileName,
+                        fileSize: fileSize,
+                        fileType: fileTypeString ?? "unknown",
+                        textContent: textContent,
+                        imageData: imageData,
+                        thumbnailData: thumbnailData,
+                        blobID: blobID
+                    ),
+                    for: id
+                )
+            }
+
             do {
                 try contextToUse.save()
             } catch {
